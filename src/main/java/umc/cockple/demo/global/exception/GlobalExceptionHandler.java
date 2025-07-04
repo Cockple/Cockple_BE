@@ -3,7 +3,9 @@ package umc.cockple.demo.global.exception;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -33,7 +35,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * 비즈니스 로직 예외
      */
     @ExceptionHandler(GeneralException.class)
-    public ResponseEntity<BaseResponse<Void>> handleGeneralException(
+    public ResponseEntity<Object> handleGeneralException(
             GeneralException ex, WebRequest request) {
 
         ErrorReasonDTO errorReason = ex.getErrorReason();
@@ -51,9 +53,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * @Valid 어노테이션으로 binding error 발생 시 (@RequestBody)
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<BaseResponse<Void>> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex, WebRequest request) {
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
         String requestURI = getRequestURI(request);
         List<String> fieldErrors = extractFieldErrors(ex);
@@ -85,7 +87,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @Validated 어노테이션으로 binding error 발생 시 (@PathVariable, @RequestParam)
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<BaseResponse<Void>> handleConstraintViolation(
+    public ResponseEntity<Object> handleConstraintViolation(
             ConstraintViolationException ex, WebRequest request) {
 
         String requestURI = getRequestURI(request);
@@ -122,7 +124,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * RequestParam 타입 변환 실패
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<BaseResponse<Void>> handleMethodArgumentTypeMismatch(
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatch(
             MethodArgumentTypeMismatchException ex, WebRequest request) {
 
         String requestURI = getRequestURI(request);
@@ -153,9 +155,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * 필수 RequestParam 누락
      */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<BaseResponse<Void>> handleMissingServletRequestParameter(
-            MissingServletRequestParameterException ex, WebRequest request) {
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
         String requestURI = getRequestURI(request);
 
@@ -172,9 +174,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * JSON 파싱 오류 (@RequestBody)
      */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<BaseResponse<Void>> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex, WebRequest request) {
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
         String requestURI = getRequestURI(request);
 
@@ -194,7 +196,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * 최종 예외
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<BaseResponse<Void>> handleGlobalException(
+    public ResponseEntity<Object> handleGlobalException(
             Exception ex, WebRequest request) {
 
         String requestURI = getRequestURI(request);
