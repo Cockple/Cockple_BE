@@ -9,10 +9,10 @@ import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
 @AllArgsConstructor
 public class GeneralException extends RuntimeException {
 
-  private BaseErrorCode code;
+    private BaseErrorCode code;
 
-  public ErrorReasonDTO getErrorReason() {
-    return this.code.getReason();
-  }
+    public ErrorReasonDTO getErrorReason() {
+        return this.code.getReason();
+    }
 
 }
