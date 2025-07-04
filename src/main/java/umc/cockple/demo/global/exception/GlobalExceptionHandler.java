@@ -48,7 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("Unexpected exception: uri={}, type={}, message={}, stackTrace={}",
                 requestURI, ex.getClass().getSimpleName(), ex.getMessage(), getStackTrace(ex));
 
-        BaseResponse<Void> response = BaseResponse.error(CommonErrorCode._INTERNAL_SERVER_ERROR);
+        BaseResponse<Void> response = BaseResponse.error(CommonErrorCode.INTERNAL_SERVER_ERROR);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
