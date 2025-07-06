@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.mapping.MemberExercise;
+import umc.cockple.demo.domain.member.domain.MemberExercise;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

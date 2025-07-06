@@ -10,8 +10,6 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.MemberStatus;
-import umc.cockple.demo.mapping.MemberExercise;
-import umc.cockple.demo.mapping.MemberParty;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;

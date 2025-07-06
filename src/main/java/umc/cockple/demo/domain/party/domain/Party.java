@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.global.enums.ActivityTime;
 import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.mapping.MemberParty;
+import umc.cockple.demo.domain.member.domain.MemberParty;
 
 import java.util.ArrayList;
 import java.util.List;
