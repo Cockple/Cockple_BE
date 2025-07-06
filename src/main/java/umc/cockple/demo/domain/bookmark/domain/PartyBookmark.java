@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.enums.PartyOrderType;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
