@@ -22,9 +22,6 @@ public class ExerciseAddr extends BaseEntity {
     private String addr2; // 시군구
 
     @Column(nullable = false)
-    private String addr3; // 동읍면
-
-    @Column(nullable = false)
     private String streetAddr;
 
     @Column(nullable = false)
