@@ -24,7 +24,8 @@ public class SecurityConfig {
                 "/swagger-resources/**",
                 "/configuration/**",
                 "/webjars/**",
-                "/favicon.ico"
+                "/favicon.ico",
+                "/error"
         );
     }
 
