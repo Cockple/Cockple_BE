@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.terms.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.mapping.MemberTerms;
+import umc.cockple.demo.domain.member.domain.MemberTerms;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;
