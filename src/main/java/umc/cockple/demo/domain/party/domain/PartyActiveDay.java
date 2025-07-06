@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.party.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.enums.ActiveDay;
+import umc.cockple.demo.global.enums.ActiveDay;
 
 @Entity
 @Builder

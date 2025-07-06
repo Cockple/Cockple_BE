@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.member.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.enums.ExerciseOrderType;
+import umc.cockple.demo.global.enums.ExerciseOrderType;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;

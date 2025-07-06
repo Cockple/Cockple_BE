@@ -3,9 +3,9 @@ package umc.cockple.demo.domain.member.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.enums.PartyOrderType;
-import umc.cockple.demo.enums.MemberPartyStatus;
-import umc.cockple.demo.enums.Role;
+import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.global.enums.MemberPartyStatus;
+import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;

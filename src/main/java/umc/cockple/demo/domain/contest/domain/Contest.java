@@ -2,9 +2,9 @@ package umc.cockple.demo.domain.contest.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.enums.Level;
-import umc.cockple.demo.enums.MedalType;
-import umc.cockple.demo.enums.ParticipationType;
+import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 

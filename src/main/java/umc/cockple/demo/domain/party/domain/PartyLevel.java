@@ -2,8 +2,8 @@ package umc.cockple.demo.domain.party.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.enums.Gender;
-import umc.cockple.demo.enums.Level;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 
 @Entity
 @Builder

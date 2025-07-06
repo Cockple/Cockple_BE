@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.party.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.enums.Keyword;
+import umc.cockple.demo.global.enums.Keyword;
 
 @Entity
 @Builder
