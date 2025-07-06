@@ -3,8 +3,8 @@ package umc.cockple.demo.domain.party.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
-import umc.cockple.demo.enums.ActivityTime;
-import umc.cockple.demo.enums.ParticipationType;
+import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.mapping.MemberParty;
 

@@ -3,7 +3,6 @@ package umc.cockple.demo.domain.notification.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.enums.NotificationType;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
