@@ -1,9 +1,12 @@
 package umc.cockple.demo.domain.exercise.dto;
 
 import jakarta.validation.constraints.*;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 
 public record ExerciseCreateRequestDTO(
 
@@ -48,14 +51,26 @@ public record ExerciseCreateRequestDTO(
         String notice
 ) {
     public LocalDate toParsedDate() {
-        return LocalDate.parse(date);
+        try {
+            return LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_FORMAT);
+        }
     }
 
     public LocalTime toParsedStartTime() {
-        return LocalTime.parse(startTime);
+        try {
+            return LocalTime.parse(startTime);
+        } catch (DateTimeParseException e) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_START_TIME_FORMAT);
+        }
     }
 
     public LocalTime toParsedEndTime() {
-        return LocalTime.parse(endTime);
+        try {
+            return LocalTime.parse(endTime);
+        } catch (DateTimeParseException e) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_END_TIME_FORMAT);
+        }
     }
 }
