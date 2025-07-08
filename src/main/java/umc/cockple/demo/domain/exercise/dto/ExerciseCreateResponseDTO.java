@@ -1,9 +1,12 @@
 package umc.cockple.demo.domain.exercise.dto;
 
+import lombok.Builder;
+
 import java.time.LocalDateTime;
 
+@Builder
 public record ExerciseCreateResponseDTO(
-    Long exerciseId,
-    LocalDateTime createdAt
+        Long exerciseId,
+        LocalDateTime createdAt
 ) {
 }
