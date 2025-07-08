@@ -24,7 +24,7 @@ public class Exercise extends BaseEntity {
     private Long id;
 
     @JoinColumn(name = "addr_id")
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private ExerciseAddr exerciseAddr;
 
     @JoinColumn(name = "party_id")
