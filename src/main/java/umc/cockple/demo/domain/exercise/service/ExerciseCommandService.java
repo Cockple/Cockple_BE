@@ -54,7 +54,6 @@ public class ExerciseCommandService {
 
         exerciseAddrRepository.save(exercise.getExerciseAddr());
         Exercise savedExercise = exerciseRepository.save(exercise);
-        partyRepository.save(party);
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
