@@ -1,4 +1,10 @@
 package umc.cockple.demo.domain.party.dto;
 
-public class PartyAddrCreateCommand {
+import lombok.Builder;
+
+@Builder
+public record PartyAddrCreateCommand(
+        String addr1,
+        String addr2
+) {
 }
