@@ -3,10 +3,11 @@ package umc.cockple.demo.domain.party.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.ActivityTime;
 import umc.cockple.demo.global.enums.ParticipationType;
-import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.domain.member.domain.MemberParty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,5 +72,13 @@ public class Party extends BaseEntity {
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
     private List<MemberParty> memberParties = new ArrayList<>();
 
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Exercise> exercises = new ArrayList<>();
+
+    public void addExercise(Exercise exercise) {
+        this.exercises.add(exercise);
+        this.exerciseCount = exercises.size();
+    }
 
 }
