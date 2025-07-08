@@ -2,6 +2,9 @@ package umc.cockple.demo.domain.exercise.dto;
 
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 public record ExerciseCreateRequestDTO(
 
         @NotBlank(message = "운동 날짜는 필수입니다.")
@@ -27,7 +30,7 @@ public record ExerciseCreateRequestDTO(
         String startTime,
 
         @NotBlank(message = "종료 시간은 필수입니다.")
-        @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$",  message = "시간 형식: HH:mm")
+        @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "시간 형식: HH:mm")
         String endTime,
 
         @NotNull(message = "모집 인원은 필수입니다.")
@@ -44,4 +47,15 @@ public record ExerciseCreateRequestDTO(
         @Size(max = 45, message = "공지사항은 45자를 초과할 수 없습니다")
         String notice
 ) {
+    public LocalDate toParsedDate() {
+        return LocalDate.parse(date);
+    }
+
+    public LocalTime toParsedStartTime() {
+        return LocalTime.parse(startTime);
+    }
+
+    public LocalTime toParsedEndTime() {
+        return LocalTime.parse(endTime);
+    }
 }
