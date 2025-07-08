@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateRequestDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateResponseDTO;
+import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -32,7 +33,7 @@ public class ExerciseController {
             @PathVariable Long partyId,
             @Valid @RequestBody ExerciseCreateRequestDTO request,
             Authentication authentication
-    ){
+    ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
