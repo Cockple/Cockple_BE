@@ -53,7 +53,8 @@ public class Party extends BaseEntity {
 
     @ColumnDefault("0")
     @Column(nullable = false)
-    private Integer exerciseCount;
+    @Builder.Default
+    private Integer exerciseCount = 0;
 
     private String content;
 
@@ -61,15 +62,19 @@ public class Party extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActivityTime activityTime;
 
+    @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyActiveDay> activeDays = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyKeyword> keywords = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyLevel> levels = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberParty> memberParties = new ArrayList<>();
 
