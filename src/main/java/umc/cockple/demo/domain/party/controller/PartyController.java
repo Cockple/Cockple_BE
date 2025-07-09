@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class PartyController {
 
     private final PartyCommandService partyCommandService;
 
-    @PostMapping("/parties")
+    @PostMapping(value = "/parties", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "모임 생성",
             description = "새로운 모임을 생성합니다. 성공 시 사용자는 해당 모임의 모임장이 됩니다.")
     @ApiResponse(responseCode = "201", description = "모임 생성 성공")
