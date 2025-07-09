@@ -41,8 +41,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         PartyAddrCreateCommand addrCommand = partyConverter.toAddrCreateCommand(request);
 
         //2. 모임장이 될 사용자 조회
-        Member owner = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Member owner = findMemberOrThrow(memberId);
 
         //3. 주소 처리 (조회 또는 새로 생성)
         PartyAddr partyAddr = findOrCreatePartyAddr(addrCommand);
@@ -60,6 +59,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         // 7. ResponseDTO로 변환하여 반환
         return partyConverter.toCreateResponseDTO(savedParty);
+    }
+
+    private Member findMemberOrThrow(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
     //주소가 이미 존재하면 조회, 없으면 새로 생성하여 저장
