@@ -67,7 +67,7 @@ public class Party extends BaseEntity {
     private List<PartyKeyword> keywords = new ArrayList<>();
 
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
-    private List<PartyLevel> addresses = new ArrayList<>();
+    private List<PartyLevel> levels = new ArrayList<>();
 
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
     private List<MemberParty> memberParties = new ArrayList<>();
