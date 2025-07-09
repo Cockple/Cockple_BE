@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -95,6 +96,9 @@ public class ExerciseCommandService {
         Member member = getMember(memberId);
         validateExerciseJoin(exercise, member);
 
+        MemberExercise memberExercise = exercise.addParticipant(member);
+
+        memberExerciseRepository.save(memberExercise);
     }
 
     private Exercise getExercise(Long exerciseId) {

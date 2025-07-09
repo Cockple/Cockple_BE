@@ -36,4 +36,13 @@ public class MemberExercise extends BaseEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ExerciseOrderType orderType;
+
+    public static MemberExercise createParticipation(Exercise exercise, Member member, Integer participantNum) {
+        return MemberExercise.builder()
+                .exercise(exercise)
+                .member(member)
+                .joinedAt(LocalDateTime.now())
+                .participantNum(participantNum)
+                .build();
+    }
 }
