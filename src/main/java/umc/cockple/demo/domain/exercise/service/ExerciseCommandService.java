@@ -99,6 +99,8 @@ public class ExerciseCommandService {
         MemberExercise memberExercise = exercise.addParticipant(member);
 
         memberExerciseRepository.save(memberExercise);
+
+        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
     }
 
     private Exercise getExercise(Long exerciseId) {

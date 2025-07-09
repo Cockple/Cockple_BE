@@ -3,10 +3,11 @@ package umc.cockple.demo.domain.exercise.converter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateRequestDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateResponseDTO;
+import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberExercise;
+
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -37,6 +38,15 @@ public class ExerciseConverter {
         return ExerciseCreateResponseDTO.builder()
                 .exerciseId(exercise.getId())
                 .createdAt(exercise.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseJoinResponseDTO toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
+        return ExerciseJoinResponseDTO.builder()
+                .participantId(memberExercise.getId())
+                .participantNumber(memberExercise.getParticipantNum())
+                .joinedAt(memberExercise.getJoinedAt())
+                .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
 }
