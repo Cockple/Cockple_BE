@@ -7,13 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateRequestDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateResponseDTO;
+import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
@@ -83,5 +81,25 @@ public class ExerciseCommandService {
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
+    }
+
+    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
+
+        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = getExercise(exerciseId);
+        Member member = getMember(memberId);
+
+    }
+
+    private Exercise getExercise(Long exerciseId) {
+        return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+
+    private Member getMember(Long memberId) {
+        return memeberRepository.findById(memberId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.Member_NOT_FOUND));
     }
 }
