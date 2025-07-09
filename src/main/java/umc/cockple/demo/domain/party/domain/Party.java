@@ -105,7 +105,11 @@ public class Party extends BaseEntity {
         //다중 선택 정보를 추가하기 위한 메서드
         command.activityDay().forEach(day -> party.addActiveDay(ActiveDay.valueOf(day)));
         command.femaleLevel().forEach(level -> party.addLevel(Gender.FEMALE, Level.valueOf(level)));
-        command.maleLevel().forEach(level -> party.addLevel(Gender.MALE, Level.valueOf(level)));
+
+        if (command.maleLevel() != null) {
+            //여복일 경우 추가를 생략
+            command.maleLevel().forEach(level -> party.addLevel(Gender.MALE, Level.valueOf(level)));
+        }
 
         return party;
     }
