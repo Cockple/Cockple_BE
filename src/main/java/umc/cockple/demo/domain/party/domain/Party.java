@@ -89,7 +89,7 @@ public class Party extends BaseEntity {
                 .minAge(command.minAge())
                 .maxAge(command.maxAge())
                 .price(command.price())
-                .joinPrice(command.joinFee())
+                .joinPrice(command.joinPrice())
                 .designatedCock(command.designatedCock())
                 .content(command.content())
                 .activityTime(ActivityTime.valueOf(command.activityTime())) //enum으로 변환

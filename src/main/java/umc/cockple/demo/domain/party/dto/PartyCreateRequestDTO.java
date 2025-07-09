@@ -38,7 +38,7 @@ public record PartyCreateRequestDTO (
     String designatedCock,
 
     @NotNull(message = "가입비 정보는 필수입니다. 없는 경우 없음을 체크해주세요.")
-    Integer joinFee,
+    Integer joinPrice,
 
     @NotNull(message = "월 회비 정보는 필수입니다. 없는 경우 없음을 체크해주세요.")
     Integer price,

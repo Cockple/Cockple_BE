@@ -22,7 +22,7 @@ public class PartyConverter {
                 .minAge(request.minAge())
                 .maxAge(request.maxAge())
                 .price(request.price())
-                .joinFee(request.joinFee())
+                .joinPrice(request.joinPrice())
                 .designatedCock(request.designatedCock())
                 .content(request.content())
                 .build();

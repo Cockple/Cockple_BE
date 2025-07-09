@@ -15,7 +15,7 @@ public record PartyCreateCommand(
         Integer minAge,
         Integer maxAge,
         Integer price,
-        Integer joinFee,
+        Integer joinPrice,
         String designatedCock,
         String content
 ) {
