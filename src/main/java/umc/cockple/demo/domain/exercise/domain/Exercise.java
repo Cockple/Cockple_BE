@@ -3,11 +3,13 @@ package umc.cockple.demo.domain.exercise.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,4 +77,23 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
+    public MemberExercise addParticipant(Member member) {
+
+        Integer participantNum = calculateNextParticipantNumber();
+
+        MemberExercise memberExercise = MemberExercise.createParticipation(this, member, participantNum);
+
+        addToParticipants(memberExercise);
+
+        return memberExercise;
+    }
+
+    private Integer calculateNextParticipantNumber() {
+        return this.nowCapacity + 1;
+    }
+
+    private void addToParticipants(MemberExercise memberExercise) {
+        this.memberExercises.add(memberExercise);
+        this.nowCapacity++;
+    }
 }
