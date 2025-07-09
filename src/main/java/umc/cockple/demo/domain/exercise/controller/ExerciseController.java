@@ -49,7 +49,7 @@ public class ExerciseController {
     @PostMapping("/exercises/{exerciseId}/participants")
     @Operation(summary = "운동 신청",
             description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
-    @ApiResponse(responseCode = "0", description = "운동 신청 성공")
+    @ApiResponse(responseCode = "200", description = "운동 신청 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음")
     public BaseResponse<ExerciseJoinResponseDTO> JoinExercise(
