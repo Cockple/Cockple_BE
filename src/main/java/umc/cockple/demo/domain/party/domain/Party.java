@@ -61,24 +61,24 @@ public class Party extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActivityTime activityTime;
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyActiveDay> activeDays = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyKeyword> keywords = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyLevel> levels = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberParty> memberParties = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Exercise> exercises = new ArrayList<>();
 
     @Setter
-    @OneToOne(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
 
     public static Party create(PartyCreateCommand command, PartyAddr addr, String imageUrl, Member owner) {
