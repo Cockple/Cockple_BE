@@ -24,4 +24,10 @@ public class PartyImg {
     @Column(nullable = false)
     private String imgKey;
 
+    public static PartyImg create(String imageUrl, Party party) {
+        return PartyImg.builder()
+                .imgUrl(imageUrl)
+                .party(party)
+                .build();
+    }
 }

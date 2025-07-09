@@ -44,4 +44,11 @@ public class MemberParty extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private PartyOrderType orderType;
 
+    public static MemberParty createOwner(Member member, Party party) {
+        return MemberParty.builder()
+                .member(member)
+                .party(party)
+                .role(Role.party_MANAGER)
+                .build();
+    }
 }

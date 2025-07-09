@@ -26,4 +26,11 @@ public class PartyAddr extends BaseEntity {
 
     @OneToMany(mappedBy = "partyAddr", cascade = CascadeType.ALL)
     private List<Party> parties = new ArrayList<>();
+
+    public static PartyAddr create(String addr1, String addr2) {
+        return PartyAddr.builder()
+                .addr1(addr1)
+                .addr2(addr2)
+                .build();
+    }
 }
