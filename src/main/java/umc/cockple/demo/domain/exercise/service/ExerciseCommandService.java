@@ -109,8 +109,8 @@ public class ExerciseCommandService {
 
     private void validateExerciseJoin(Exercise exercise, Member member) {
         validateExerciseNotStarted(exercise);
-        validateDuplicatedJoin(exercise, member);
-        validateAllowedJoin(exercise, member);
+        validateAlreadyJoined(exercise, member);
+        validateJoinPermission(exercise, member);
     }
 
     private void validateExerciseNotStarted(Exercise exercise) {
@@ -120,13 +120,13 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateDuplicatedJoin(Exercise exercise, Member member) {
+    private void validateAlreadyJoined(Exercise exercise, Member member) {
         if(memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
             throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
         }
     }
 
-    private void validateAllowedJoin(Exercise exercise, Member member) {
+    private void validateJoinPermission(Exercise exercise, Member member) {
         if(isPartyMember(exercise, member)) {
             return;
         }
