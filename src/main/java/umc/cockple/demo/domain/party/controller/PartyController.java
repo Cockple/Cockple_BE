@@ -33,7 +33,7 @@ public class PartyController {
     @ApiResponse(responseCode = "403", description = "모임 생성 권한 없음")
     public BaseResponse<PartyCreateResponseDTO> createParty(
             //사진 파일을 함께 보내기 위해 @RequestPart로 구현
-            @RequestPart("createpartyRequest") @Valid PartyCreateRequestDTO request,
+            @RequestPart("createPartyRequest") @Valid PartyCreateRequestDTO request,
             @RequestPart(value = "profileImg", required = false) MultipartFile profileImage,
             Authentication authentication
     ){
