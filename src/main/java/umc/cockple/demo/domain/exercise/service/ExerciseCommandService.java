@@ -100,6 +100,8 @@ public class ExerciseCommandService {
 
         memberExerciseRepository.save(memberExercise);
 
+        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
+
         return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
     }
 
