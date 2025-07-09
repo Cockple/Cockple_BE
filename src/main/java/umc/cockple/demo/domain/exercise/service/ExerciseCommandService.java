@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Role;
@@ -30,6 +31,7 @@ public class ExerciseCommandService {
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final MemberRepository memberRepository;
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
@@ -99,7 +101,7 @@ public class ExerciseCommandService {
 
 
     private Member getMember(Long memberId) {
-        return memeberRepository.findById(memberId)
+        return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.Member_NOT_FOUND));
     }
 }
