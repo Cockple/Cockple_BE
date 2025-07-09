@@ -13,7 +13,6 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseCreateRequestDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateResponseDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.repository.ExerciseAddrRepository;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -33,9 +32,7 @@ public class ExerciseCommandService {
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
-    private final ExerciseAddrRepository exerciseAddrRepository;
     private final ExerciseConverter exerciseConverter;
-
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
 
@@ -72,7 +69,6 @@ public class ExerciseCommandService {
         if (!isOwner && !isManager)
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
     }
-
 
     private void validateExerciseTime(ExerciseCreateRequestDTO request) {
         LocalDate date = request.toParsedDate();
