@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -32,6 +33,7 @@ public class ExerciseCommandService {
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final MemberRepository memberRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
@@ -91,6 +93,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = getExercise(exerciseId);
         Member member = getMember(memberId);
+        validateExerciseJoin(exercise, member);
 
     }
 
@@ -99,9 +102,43 @@ public class ExerciseCommandService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
-
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
+
+    private void validateExerciseJoin(Exercise exercise, Member member) {
+        validateExerciseNotStarted(exercise);
+        validateDuplicatedJoin(exercise, member);
+        validateAllowedJoin(exercise, member);
+    }
+
+    private void validateExerciseNotStarted(Exercise exercise) {
+        LocalDateTime exerciseDateTime = LocalDateTime.of(exercise.getDate(), exercise.getStartTime());
+        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
+            throw new ExerciseException(ExerciseErrorCode.EXERCISE_ALREADY_STARTED);
+        }
+    }
+
+    private void validateDuplicatedJoin(Exercise exercise, Member member) {
+        if(memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
+            throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
+        }
+    }
+
+    private void validateAllowedJoin(Exercise exercise, Member member) {
+        if(isPartyMember(exercise, member)) {
+            return;
+        }
+
+        if(!exercise.getOutsideGuestAccept()) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
+        }
+    }
+
+    private boolean isPartyMember(Exercise exercise, Member member) {
+        Party party = exercise.getParty();
+        return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
 }
