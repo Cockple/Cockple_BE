@@ -137,7 +137,7 @@ public class ExerciseCommandService {
             return;
         }
 
-        if(!exercise.getOutsideGuestAccept()) {
+        if(Boolean.FALSE.equals(exercise.getOutsideGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
         }
     }
