@@ -102,6 +102,6 @@ public class ExerciseCommandService {
 
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.Member_NOT_FOUND));
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 }
