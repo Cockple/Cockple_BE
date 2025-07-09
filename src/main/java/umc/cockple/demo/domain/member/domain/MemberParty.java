@@ -10,6 +10,9 @@ import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;
 
+import static umc.cockple.demo.global.enums.MemberPartyStatus.ACCEPT;
+import static umc.cockple.demo.global.enums.PartyOrderType.EARLIEST;
+
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -21,6 +24,7 @@ public class MemberParty extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "party_id")
     private Party party;
@@ -44,4 +48,14 @@ public class MemberParty extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private PartyOrderType orderType;
 
+    public static MemberParty createOwner(Member member, Party party) {
+        return MemberParty.builder()
+                .member(member)
+                .party(party)
+                .role(Role.party_MANAGER)
+                .joinedAt(LocalDateTime.now())
+                .orderType(EARLIEST)
+                .status(ACCEPT)
+                .build();
+    }
 }

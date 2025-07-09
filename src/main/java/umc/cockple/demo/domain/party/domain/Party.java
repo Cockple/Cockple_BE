@@ -4,10 +4,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.party.dto.PartyCreateCommand;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.global.enums.ActivityTime;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.global.enums.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +53,8 @@ public class Party extends BaseEntity {
 
     @ColumnDefault("0")
     @Column(nullable = false)
-    private Integer exerciseCount;
+    @Builder.Default
+    private Integer exerciseCount = 0;
 
     private String content;
 
@@ -60,21 +62,84 @@ public class Party extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActivityTime activityTime;
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyActiveDay> activeDays = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyKeyword> keywords = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
-    private List<PartyLevel> addresses = new ArrayList<>();
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyLevel> levels = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberParty> memberParties = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Exercise> exercises = new ArrayList<>();
+
+    @Setter
+    @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PartyImg partyImg;
+
+    public static Party create(PartyCreateCommand command, PartyAddr addr, String imageUrl, Member owner) {
+        Party party = Party.builder()
+                .partyName(command.partyName())
+                .partyType(ParticipationType.valueOf(command.partyType())) //enum으로 변환
+                .ownerId(owner.getId())
+                .minAge(command.minAge())
+                .maxAge(command.maxAge())
+                .price(command.price())
+                .joinPrice(command.joinPrice())
+                .designatedCock(command.designatedCock())
+                .content(command.content())
+                .activityTime(ActivityTime.valueOf(command.activityTime())) //enum으로 변환
+                .partyAddr(addr)
+                .build();
+
+        party.addMember(MemberParty.createOwner(owner, party));
+
+        if (imageUrl != null) {
+            party.setPartyImg(PartyImg.create(imageUrl, party));
+        }
+
+        //다중 선택 정보를 추가하기 위한 메서드
+        command.activityDay().forEach(day -> party.addActiveDay(ActiveDay.valueOf(day)));
+        command.femaleLevel().forEach(level -> party.addLevel(Gender.FEMALE, Level.valueOf(level)));
+
+        if (command.maleLevel() != null) {
+            //여복일 경우 추가를 생략
+            command.maleLevel().forEach(level -> party.addLevel(Gender.MALE, Level.valueOf(level)));
+        }
+
+        return party;
+    }
+
+    public void addMember(MemberParty memberParty) {
+        this.memberParties.add(memberParty);
+        memberParty.setParty(this);
+    }
+
+    public void addActiveDay(ActiveDay day) {
+        PartyActiveDay partyActiveDay = PartyActiveDay.builder()
+                .activeDay(day)
+                .party(this)
+                .build();
+        this.activeDays.add(partyActiveDay);
+    }
+
+    public void addLevel(Gender gender, Level level) {
+        PartyLevel partyLevel = PartyLevel.builder()
+                .gender(gender)
+                .level(level)
+                .party(this)
+                .build();
+        this.levels.add(partyLevel);
+    }
 
     public void addExercise(Exercise exercise) {
         this.exercises.add(exercise);
