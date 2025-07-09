@@ -112,6 +112,7 @@ public class Party extends BaseEntity {
 
     public void addMember(MemberParty memberParty) {
         this.memberParties.add(memberParty);
+        memberParty.setParty(this);
     }
 
     public void addActiveDay(ActiveDay day) {
