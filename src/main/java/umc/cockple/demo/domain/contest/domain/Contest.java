@@ -47,7 +47,7 @@ public class Contest extends BaseEntity {
     private String content;
 
     @Column(nullable = false)
-    private Boolean contestIsOpen;
+    private Boolean contentIsOpen;
 
     @Column(nullable = false)
     private Boolean videoIsOpen;
