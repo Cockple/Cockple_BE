@@ -10,7 +10,7 @@ import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;
 
-import static umc.cockple.demo.global.enums.MemberPartyStatus.ACCEPT;
+import static umc.cockple.demo.global.enums.MemberPartyStatus.ACTIVE;
 import static umc.cockple.demo.global.enums.PartyOrderType.EARLIEST;
 
 @Entity
@@ -55,7 +55,7 @@ public class MemberParty extends BaseEntity {
                 .role(Role.party_MANAGER)
                 .joinedAt(LocalDateTime.now())
                 .orderType(EARLIEST)
-                .status(ACCEPT)
+                .status(ACTIVE)
                 .build();
     }
 }
