@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.contest.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.member.domain.Member;
 
 @Entity
 @Builder
