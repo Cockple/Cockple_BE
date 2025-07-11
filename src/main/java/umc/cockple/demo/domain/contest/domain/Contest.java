@@ -71,8 +71,13 @@ public class Contest extends BaseEntity {
                 .content(command.content())
                 .contentIsOpen(command.contentIsOpen())
                 .videoIsOpen(command.videoIsOpen())
+                .contestImgs(new ArrayList<>()) // 이거 꼭!
                 .contestVideos(new ArrayList<>())  // 안전하게 초기화
-                .contestImgs(new ArrayList<>())  // 안전하게 초기화
                 .build();
+    }
+
+    public void addContestImg(ContestImg img) {
+        this.contestImgs.add(img);
+        img.setContest(this); // 양방향 유지
     }
 }
