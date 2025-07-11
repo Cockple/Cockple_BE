@@ -41,7 +41,7 @@ public class ExerciseCommandService {
 
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
 
-        Party party = getParty(partyId);
+        Party party = findPartyOrThrow(partyId);
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
 
@@ -57,11 +57,6 @@ public class ExerciseCommandService {
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
         return exerciseConverter.toCreateResponseDTO(savedExercise);
-    }
-
-    private Party getParty(Long partyId) {
-        return partyRepository.findById(partyId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
     }
 
     private void validateMemberPermission(Long memberId, Party party) {
@@ -92,8 +87,8 @@ public class ExerciseCommandService {
 
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
-        Exercise exercise = getExercise(exerciseId);
-        Member member = getMember(memberId);
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
         validateExerciseJoin(exercise, member);
 
         MemberExercise memberExercise = exercise.addParticipant(member);
@@ -103,16 +98,6 @@ public class ExerciseCommandService {
         log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
 
         return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
-    }
-
-    private Exercise getExercise(Long exerciseId) {
-        return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
-    private Member getMember(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
     private void validateExerciseJoin(Exercise exercise, Member member) {
@@ -147,6 +132,25 @@ public class ExerciseCommandService {
     private boolean isPartyMember(Exercise exercise, Member member) {
         Party party = exercise.getParty();
         return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+
+    /**
+     * 조회 메서드
+     */
+    private Exercise findExerciseOrThrow(Long exerciseId) {
+        return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Member findMemberOrThrow(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Party findPartyOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
     }
 
 }
