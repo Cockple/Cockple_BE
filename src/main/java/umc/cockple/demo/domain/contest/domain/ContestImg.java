@@ -29,4 +29,12 @@ public class ContestImg {
     @Column(nullable = false)
     private Integer imgOrder;
 
+    public void setContest(Contest contest) {
+        this.contest = contest;
+
+        // 양방향 연관관계 유지
+        if (!contest.getContestImgs().contains(this)) {
+            contest.getContestImgs().add(this);
+        }
+    }
 }
