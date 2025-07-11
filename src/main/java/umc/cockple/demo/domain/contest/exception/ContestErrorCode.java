@@ -10,6 +10,7 @@ import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
 @RequiredArgsConstructor
 public enum ContestErrorCode implements BaseErrorCode {
 
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST201", "존재하지 않는 회원입니다."),
 
     //Save
     IMAGE_UPLOAD_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "CONTEST901", "이미지 업로드에 실패했습니다."),

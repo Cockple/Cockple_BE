@@ -12,6 +12,8 @@ import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.ContestRecordCreateCommand;
 import umc.cockple.demo.domain.contest.dto.ContestRecordCreateRequestDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordCreateResponseDTO;
+import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
+import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -47,19 +49,58 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         log.info("[대회 기록 등록 시작] - memberId: {}, 대회명: {}", memberId, request.contestName());
 
         // 1. 회원 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("회원이 존재하지 않습니다"));
+        Member member = getMember(memberId);
 
         //2. DTO -> Command
         ContestRecordCreateCommand contestRecordCommand = contestConverter.toCreateCommand(request, memberId, contestImgs);
-
-        log.info("받은 공개 여부 - content: {}, video: {}", request.contentIsOpen(), request.videoIsOpen());
-
 
         // 3. Command → Contest Entity 생성
         Contest contest = Contest.create(contestRecordCommand, member);
 
         // 4. 이미지 업로드 -> ContestImg로 변환
+        try {
+            extractedImg(contestRecordCommand, contest);
+        } catch (Exception e) {
+            log.error("이미지 업로드 중 예외 발생", e);
+            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_FAIL);
+        }
+
+        // 5. 영상 URL -> ContestVideo로 변환
+        try {
+            extractedVideo(contestRecordCommand, contest);
+        } catch (Exception e) {
+            log.error("영상 URL 처리 중 예외 발생", e);
+            throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
+        }
+
+        // 6. 저장
+        Contest savedContest;
+        try {
+            savedContest = contestRepository.save(contest);
+        } catch (Exception e) {
+            log.error("대회 기록 저장 중 예외 발생", e);
+            throw new ContestException(ContestErrorCode.CONTEST_SAVE_FAIL);
+        }
+
+        log.info("대회 기록 등록 완료 - contestId: {}", savedContest.getId());
+
+        // 7. 응답 변환
+        return contestConverter.toCreateResponseDTO(savedContest);
+    }
+
+    private static void extractedVideo(ContestRecordCreateCommand contestRecordCommand, Contest contest) {
+        if (contestRecordCommand.contestVideos() != null) {
+            for (int i = 0; i < contestRecordCommand.contestVideos().size(); i++) {
+                String videoUrl = contestRecordCommand.contestVideos().get(i);
+
+                ContestVideo contestVideo = ContestVideo.of(contest, videoUrl, i);
+
+                contest.getContestVideos().add(contestVideo);
+            }
+        }
+    }
+
+    private void extractedImg(ContestRecordCreateCommand contestRecordCommand, Contest contest) {
         if (contestRecordCommand.contestImgs() != null) {
             List<String> imageUrls = imageService.uploadImages(contestRecordCommand.contestImgs());
 
@@ -67,40 +108,16 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 String imgUrl = imageUrls.get(i);
                 String uniqueKey = UUID.randomUUID().toString(); // 나중에 파일명 대체 가능
 
-
-                ContestImg contestImg = ContestImg.builder()
-                        .contest(contest)
-                        .imgUrl(imgUrl)
-                        .imgKey(uniqueKey) // 임시 키
-                        .imgOrder(i)
-                        .build();
-
+                ContestImg contestImg = ContestImg.of(contest, imgUrl, uniqueKey, i);
                 contest.addContestImg(contestImg);
             }
         }
+    }
 
-        // 5. 영상 URL -> ContestVideo로 변환
-        if (contestRecordCommand.contestVideos() != null) {
-            for (int i = 0; i < contestRecordCommand.contestVideos().size(); i++) {
-                String videoUrl = contestRecordCommand.contestVideos().get(i);
-
-                ContestVideo contestVideo = ContestVideo.builder()
-                        .contest(contest)
-                        .videoUrl(videoUrl)
-                        .videoOrder(i)
-                        .build();
-
-                contest.getContestVideos().add(contestVideo);
-            }
-        }
-
-        // 6. 저장
-        Contest savedContest = contestRepository.save(contest);
-
-        log.info("대회 기록 등록 완료 - contestId: {}", savedContest.getId());
-
-        // 7. 응답 변환
-        return contestConverter.toCreateResponseDTO(savedContest);
+    private Member getMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ContestException(ContestErrorCode.MEMBER_NOT_FOUND));
+        return member;
     }
 
     // todo: 수정
