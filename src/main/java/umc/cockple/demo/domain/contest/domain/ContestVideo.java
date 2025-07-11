@@ -24,4 +24,12 @@ public class ContestVideo {
 
     @Column(nullable = false)
     private Integer videoOrder;
+
+    public static ContestVideo of(Contest contest, String videoUrl, Integer videoOrder) {
+        ContestVideo contestVideo = new ContestVideo().builder()
+                .contest(contest)
+                .videoUrl(videoUrl)
+                .videoOrder(videoOrder)
+                .build();
+    }
 }
