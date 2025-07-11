@@ -26,4 +26,12 @@ public class PartyJoinRequest {
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
+
+    public static PartyJoinRequest create(Member member, Party party) {
+        return PartyJoinRequest.builder()
+                .member(member)
+                .party(party)
+                .status(RequestStatus.PENDING)
+                .build();
+    }
 }
