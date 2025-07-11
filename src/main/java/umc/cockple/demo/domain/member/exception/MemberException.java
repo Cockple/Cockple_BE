@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.party.exception;
+package umc.cockple.demo.domain.member.exception;
 
 import umc.cockple.demo.global.exception.GeneralException;
 import umc.cockple.demo.global.response.code.BaseErrorCode;
