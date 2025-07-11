@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -32,6 +33,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final PartyAddrRepository partyAddrRepository;
     private final PartyJoinRequestRepository partyJoinRequestRepository;
     private final MemberRepository memberRepository;
+    private final MemberPartyRepository memberPartyRepository;
     private final PartyConverter partyConverter;
     private final ImageService imageService;
 
@@ -104,7 +106,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         if (memberPartyRepository.existsByPartyAndMember(party, member)) {
             throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
         }
-
         //이미 보낸 신청이 있는지 확인
         if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
