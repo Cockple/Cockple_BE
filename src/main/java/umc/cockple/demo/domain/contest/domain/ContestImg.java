@@ -36,4 +36,13 @@ public class ContestImg {
             contest.getContestImgs().add(this);
         }
     }
+
+    public static ContestImg of(Contest contest, String imgUrl, String imgKey, int imgOrder) {
+        return ContestImg.builder()
+                .contest(contest)
+                .imgUrl(imgUrl)
+                .imgKey(imgKey)
+                .imgOrder(imgOrder)
+                .build();
+    }
 }
