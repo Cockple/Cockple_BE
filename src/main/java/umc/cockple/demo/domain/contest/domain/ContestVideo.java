@@ -26,12 +26,10 @@ public class ContestVideo {
     private Integer videoOrder;
 
     public static ContestVideo of(Contest contest, String videoUrl, Integer videoOrder) {
-        ContestVideo contestVideo = new ContestVideo().builder()
+        return ContestVideo.builder()
                 .contest(contest)
                 .videoUrl(videoUrl)
                 .videoOrder(videoOrder)
                 .build();
-
-        return contestVideo;
     }
 }
