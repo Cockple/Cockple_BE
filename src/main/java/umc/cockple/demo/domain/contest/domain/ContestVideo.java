@@ -31,5 +31,7 @@ public class ContestVideo {
                 .videoUrl(videoUrl)
                 .videoOrder(videoOrder)
                 .build();
+
+        return contestVideo;
     }
 }
