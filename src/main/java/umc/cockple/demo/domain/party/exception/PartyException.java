@@ -1,7 +1,11 @@
 package umc.cockple.demo.domain.party.exception;
 
-public class PartyException extends RuntimeException {
-  public PartyException(String message) {
-    super(message);
-  }
+import umc.cockple.demo.global.exception.GeneralException;
+import umc.cockple.demo.global.response.code.BaseErrorCode;
+
+public class PartyException extends GeneralException {
+
+    public PartyException(BaseErrorCode code) {
+        super(code);
+    }
 }
