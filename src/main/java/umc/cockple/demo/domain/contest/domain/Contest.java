@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.contest.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.contest.dto.ContestRecordCreateCommand;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
@@ -47,14 +48,36 @@ public class Contest extends BaseEntity {
     private String content;
 
     @Column(nullable = false)
-    private Boolean contestIsOpen;
+    private Boolean contentIsOpen = true;
 
     @Column(nullable = false)
-    private Boolean videoIsOpen;
+    private Boolean videoIsOpen = true;
 
     @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL)
     private List<ContestImg> contestImgs = new ArrayList<>();
 
     @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL)
     private List<ContestVideo> contestVideos = new ArrayList<>();
+
+
+    public static Contest create(ContestRecordCreateCommand command, Member member) {
+        return Contest.builder()
+                .member(member)
+                .contestName(command.contestName())
+                .date(command.date())
+                .medalType(command.medalType())
+                .type(command.type())
+                .level(command.level())
+                .content(command.content())
+                .contentIsOpen(command.contentIsOpen())
+                .videoIsOpen(command.videoIsOpen())
+                .contestImgs(new ArrayList<>()) // 이거 꼭!
+                .contestVideos(new ArrayList<>())  // 안전하게 초기화
+                .build();
+    }
+
+    public void addContestImg(ContestImg img) {
+        this.contestImgs.add(img);
+        img.setContest(this); // 양방향 유지
+    }
 }
