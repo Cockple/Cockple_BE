@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.contest.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.member.domain.Member;
 
 @Entity
 @Builder
@@ -29,4 +28,21 @@ public class ContestImg {
     @Column(nullable = false)
     private Integer imgOrder;
 
+    public void setContest(Contest contest) {
+        this.contest = contest;
+
+        // 양방향 연관관계 유지
+        if (!contest.getContestImgs().contains(this)) {
+            contest.getContestImgs().add(this);
+        }
+    }
+
+    public static ContestImg of(Contest contest, String imgUrl, String imgKey, int imgOrder) {
+        return ContestImg.builder()
+                .contest(contest)
+                .imgUrl(imgUrl)
+                .imgKey(imgKey)
+                .imgOrder(imgOrder)
+                .build();
+    }
 }
