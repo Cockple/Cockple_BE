@@ -86,7 +86,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("가입신청 완료 - JoinRequestId: {}", savedPartyJoinRequest.getId());
 
         //ResponseDTO로 변환하여 반환
-        return PartyConverter.toJoinResponseDTO(savedPartyJoinRequest);
+        return partyConverter.toJoinResponseDTO(savedPartyJoinRequest);
     }
 
     //사용자 조회
@@ -107,7 +107,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
             throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
         }
         //이미 보낸 신청이 있는지 확인
-        if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING) {
+        if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING)) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
         }
     }
