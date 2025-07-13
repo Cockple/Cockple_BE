@@ -65,4 +65,24 @@ public class ExerciseController {
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
+
+    @PostMapping("/exercises/{exerciseId}/guests")
+    @Operation(summary = "게스트 초대",
+            description = "파티 멤버가 게스트를 운동에 초대합니다. 운동의 게스트 허용 정책을 확인합니다.")
+    @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
+    public BaseResponse<GuestInviteResponseDTO> inviteGuest(
+            @PathVariable Long exerciseId,
+            @Valid @RequestBody GuestInviteRequestDTO request,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long inviterId = 1L; // 임시값
+
+        GuestInviteResponseDTO response = exerciseCommandService.inviteGuest(
+                exerciseId, inviterId, request);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
 }
