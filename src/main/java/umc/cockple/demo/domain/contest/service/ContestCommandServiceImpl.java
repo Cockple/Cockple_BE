@@ -96,8 +96,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
         log.info("[대회 기록 수정 시작] - memberId: {}, contestId: {}", memberId, contestId);
 
-        // 1. 회원 & 대회 조회
-        Member member = getMember(memberId);
+        // 1. 대회 조회
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
 
