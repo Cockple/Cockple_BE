@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -41,20 +40,15 @@ public class ExerciseCommandService {
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
-
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
 
         Party party = findPartyOrThrow(partyId);
-        validateMemberPermission(memberId, party);
-        validateExerciseTime(request);
+        validateCreateExercise(memberId, request, party);
 
         ExerciseCreateCommand exerciseCommand = exerciseConverter.toCreateCommand(request);
         ExerciseAddrCreateCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
 
-        ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
-        Exercise exercise = Exercise.create(party, exerciseAddr, exerciseCommand);
-        party.addExercise(exercise);
-
+        Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         Exercise savedExercise = exerciseRepository.save(exercise);
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
@@ -68,15 +62,14 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
-        validateExerciseJoin(exercise, member);
+        validateJoinExercise(exercise, member);
 
         MemberExercise memberExercise = exercise.addParticipant(member);
+        MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
 
-        memberExerciseRepository.save(memberExercise);
+        log.info("운동 신청 종료 - memberExerciseId: {}", savedMemberExercise.getId());
 
-        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
-
-        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
+        return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
     }
 
     public GuestInviteResponseDTO inviteGuest(Long exerciseId, Long inviterId, GuestInviteRequestDTO request) {
@@ -96,6 +89,11 @@ public class ExerciseCommandService {
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
 
         return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
+    }
+
+    private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
+        validateMemberPermission(memberId, party);
+        validateExerciseTime(request);
     }
 
     private void validateMemberPermission(Long memberId, Party party) {
@@ -122,7 +120,7 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateExerciseJoin(Exercise exercise, Member member) {
+    private void validateJoinExercise(Exercise exercise, Member member) {
         validateExerciseNotStarted(exercise);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
