@@ -13,6 +13,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ImageService {
 
+    private static final String FAKE_S3_PREFIX = "https://fake-s3-bucket.com/contest-imgs/";
+
+
     //이미지 업로드 임시 코드
     public String uploadImage(MultipartFile image) {
         if (image == null || image.isEmpty()) {
@@ -39,6 +42,11 @@ public class ImageService {
         return images.stream()
                 .map(this::uploadImage)
                 .collect(Collectors.toList());
+    }
+
+    public void delete(String imgKey) {
+        String fakeUrl = FAKE_S3_PREFIX + imgKey + ".png";
+        log.info("[임시 삭제] 다음 이미지를 삭제합니다: {}", fakeUrl);
     }
 
     public String getFileKey(MultipartFile image) {

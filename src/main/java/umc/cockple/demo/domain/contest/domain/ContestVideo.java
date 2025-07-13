@@ -22,6 +22,7 @@ public class ContestVideo {
     @Column(nullable = false)
     private String videoUrl;
 
+    @Setter
     @Column(nullable = false)
     private Integer videoOrder;
 
