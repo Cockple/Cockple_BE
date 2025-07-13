@@ -148,7 +148,6 @@ public class Party extends BaseEntity {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
         Exercise exercise = Exercise.create(this, exerciseAddr, command);
 
-        // 🔥 setParty가 양방향 연관관계 설정
         this.exercises.add(exercise);
         exercise.setParty(this);
 
