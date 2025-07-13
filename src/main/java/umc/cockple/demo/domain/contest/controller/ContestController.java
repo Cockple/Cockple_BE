@@ -9,8 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateRequestDTO;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateResponseDTO;
+import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -34,7 +33,7 @@ public class ContestController {
     public BaseResponse<ContestRecordCreateResponseDTO> createContestRecord(
             //@AuthenticationPrincipal Long memberId,
             @RequestPart("request") @Valid ContestRecordCreateRequestDTO request,
-            @RequestPart(value = "ContestImg", required = false) List<MultipartFile> contestImgs
+            @RequestPart(value = "contestImg", required = false) List<MultipartFile> contestImgs
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
@@ -44,4 +43,21 @@ public class ContestController {
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
+
+    @PatchMapping(value = "/contests/my/{contestId}", consumes = {"multipart/form-data"})
+    public BaseResponse<ContestRecordUpdateResponseDTO> updateContestRecord(
+            //@AuthenticationPrincipal Long memberId
+            @PathVariable Long contestId,
+            @RequestPart("updateRequest") @Valid ContestRecordUpdateRequestDTO request,
+            @RequestPart(value = "contestImg", required = false) List<MultipartFile> contestImgsToAdd
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        //서비스 호출
+        ContestRecordUpdateResponseDTO response = contestCommandService.updateContestRecord(memberId, contestId, contestImgsToAdd, request);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
 }
