@@ -26,6 +26,8 @@ public enum ExerciseErrorCode implements BaseErrorCode {
 
     INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "EXERCISE301", "운동을 생성할 권한이 없습니다."),
     NOT_PARTY_MEMBER(HttpStatus.FORBIDDEN, "EXERCISE302", "파티 멤버만 참여할 수 있습니다."),
+    NOT_PARTY_MEMBER_FOR_GUEST_INVITE(HttpStatus.FORBIDDEN, "EXERCISE303", "파티 멤버만 게스트를 초대할 수 있습니다."),
+    GUEST_INVITATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE304", "외부 게스트 초대가 허용되지 않았습니다."),
 
     INVALID_EXERCISE_TIME(HttpStatus.BAD_REQUEST, "EXERCISE401", "종료 시간은 시작 시간보다 늦어야 합니다."),
     PAST_TIME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "EXERCISE402", "운동 시간은 과거로 할 수 없습니다."),

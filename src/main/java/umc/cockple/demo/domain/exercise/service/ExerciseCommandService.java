@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
+import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -35,6 +37,7 @@ public class ExerciseCommandService {
     private final MemberPartyRepository memberPartyRepository;
     private final MemberRepository memberRepository;
     private final MemberExerciseRepository memberExerciseRepository;
+    private final GuestRepository guestRepository;
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
@@ -59,6 +62,42 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponseDTO(savedExercise);
     }
 
+    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
+
+        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        validateExerciseJoin(exercise, member);
+
+        MemberExercise memberExercise = exercise.addParticipant(member);
+
+        memberExerciseRepository.save(memberExercise);
+
+        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
+
+        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
+    }
+
+    public GuestInviteResponseDTO inviteGuest(Long exerciseId, Long inviterId, GuestInviteRequestDTO request) {
+
+        log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
+                , exerciseId, inviterId, request.guestName());
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member inviter = findMemberOrThrow(inviterId);
+        validateGuestInvitation(exercise, inviter);
+
+        GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
+
+        Guest guest = exercise.addGuest(command);
+        Guest savedGuest = guestRepository.save(guest);
+
+        log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
+
+        return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
+    }
+
     private void validateMemberPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
         boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -81,23 +120,6 @@ public class ExerciseCommandService {
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
-    }
-
-    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
-
-        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-        validateExerciseJoin(exercise, member);
-
-        MemberExercise memberExercise = exercise.addParticipant(member);
-
-        memberExerciseRepository.save(memberExercise);
-
-        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
-
-        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
     }
 
     private void validateExerciseJoin(Exercise exercise, Member member) {
@@ -132,6 +154,27 @@ public class ExerciseCommandService {
     private boolean isPartyMember(Exercise exercise, Member member) {
         Party party = exercise.getParty();
         return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+    private void validateGuestInvitation(Exercise exercise, Member inviter) {
+        validateExerciseNotStarted(exercise);
+        validateInviterIsPartyMember(exercise, inviter);
+        validateGuestPolicy(exercise);
+    }
+
+    private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
+        Party party = exercise.getParty();
+        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
+
+        if (!isPartyMember) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
+        }
+    }
+
+    private void validateGuestPolicy(Exercise exercise) {
+        if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
+        }
     }
 
 

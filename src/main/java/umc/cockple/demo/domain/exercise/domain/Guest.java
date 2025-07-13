@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -37,4 +38,22 @@ public class Guest extends BaseEntity {
 
     @Column(nullable = false)
     private Integer participantNum;
+
+    public static Guest createForExercise(Exercise exercise, GuestInviteCommand command, Integer participantNum) {
+        return Guest.builder()
+                .exercise(exercise)
+                .guestName(command.guestName())
+                .gender(command.gender())
+                .level(command.level())
+                .inviterId(command.inviterId())
+                .participantNum(participantNum)
+                .build();
+    }
+
+    public void setExercise(Exercise exercise) {
+        this.exercise = exercise;
+        if (!exercise.getGuests().contains(this)) {
+            exercise.getGuests().add(this);
+        }
+    }
 }
