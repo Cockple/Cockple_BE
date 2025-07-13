@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.*;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
-
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -47,6 +44,15 @@ public class ExerciseConverter {
                 .participantNumber(memberExercise.getParticipantNum())
                 .joinedAt(memberExercise.getJoinedAt())
                 .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public GuestInviteCommand toGuestInviteCommand(GuestInviteRequestDTO request, Long inviterId) {
+        return GuestInviteCommand.builder()
+                .guestName(request.guestName())
+                .gender(request.toParsedGender())
+                .level(request.toParsedLevel())
+                .inviterId(inviterId)
                 .build();
     }
 }
