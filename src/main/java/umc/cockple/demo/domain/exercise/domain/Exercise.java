@@ -113,4 +113,11 @@ public class Exercise extends BaseEntity {
         guest.setExercise(this);
         this.nowCapacity++;
     }
+
+    public void setParty(Party party) {
+        this.party = party;
+        if (party != null && !party.getExercises().contains(this)) {
+            party.getExercises().add(this);
+        }
+    }
 }
