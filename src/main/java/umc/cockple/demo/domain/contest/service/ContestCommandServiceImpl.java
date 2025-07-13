@@ -100,6 +100,11 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
 
+        // 1-1. 본인 확인
+        if (!contest.getMember().getId().equals(memberId)) {
+            throw new ContestException(ContestErrorCode.NO_DELETE_AUTHORITY);
+        }
+
         // 2. 기본 필드 수정
         contest.updateFromRequest(request);
 
