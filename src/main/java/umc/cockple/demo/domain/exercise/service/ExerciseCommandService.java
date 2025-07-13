@@ -85,7 +85,7 @@ public class ExerciseCommandService {
         Member inviter = findMemberOrThrow(inviterId);
         validateGuestInvitation(exercise, inviter);
 
-
+        GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
     }
 
     private void validateMemberPermission(Long memberId, Party party) {
