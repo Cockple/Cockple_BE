@@ -62,6 +62,10 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<MemberExercise> memberExercises = new ArrayList<>();
 
+    @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Guest> guests = new ArrayList<>();
+
     public static Exercise create(Party party, ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
         return Exercise.builder()
                 .party(party)
