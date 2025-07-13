@@ -59,6 +59,23 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponseDTO(savedExercise);
     }
 
+    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
+
+        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        validateExerciseJoin(exercise, member);
+
+        MemberExercise memberExercise = exercise.addParticipant(member);
+
+        memberExerciseRepository.save(memberExercise);
+
+        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
+
+        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
+    }
+
     private void validateMemberPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
         boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -81,23 +98,6 @@ public class ExerciseCommandService {
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
-    }
-
-    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
-
-        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-        validateExerciseJoin(exercise, member);
-
-        MemberExercise memberExercise = exercise.addParticipant(member);
-
-        memberExerciseRepository.save(memberExercise);
-
-        log.info("운동 신청 종료 - memberExerciseId: {}", memberExercise.getId());
-
-        return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
     }
 
     private void validateExerciseJoin(Exercise exercise, Member member) {
