@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: cockple-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_HOST: '%'
+    command:
+      # 한글, 이모지
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - cockple-network
+    volumes:
+      - cockple-mysql-vol:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+    container_name: cockple-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - cockple-network
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      TZ: Asia/Seoul
+
+
+networks:
+  cockple-network:
+    driver: bridge
+
+volumes:
+  cockple-mysql-vol:
