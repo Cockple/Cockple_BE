@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -82,14 +83,19 @@ public class Exercise extends BaseEntity {
     }
 
     public MemberExercise addParticipant(Member member) {
-
         Integer participantNum = calculateNextParticipantNumber();
-
         MemberExercise memberExercise = MemberExercise.createParticipation(this, member, participantNum);
-
         addToParticipants(memberExercise);
 
         return memberExercise;
+    }
+
+    public Guest addGuest(GuestInviteCommand command) {
+        Integer participantNum = calculateNextParticipantNumber();
+        Guest guest = Guest.createForExercise(this, command, participantNum);
+        addToGuests(guest);
+
+        return guest;
     }
 
     private Integer calculateNextParticipantNumber() {
@@ -98,6 +104,13 @@ public class Exercise extends BaseEntity {
 
     private void addToParticipants(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
+        memberExercise.setExercise(this);
+        this.nowCapacity++;
+    }
+
+    private void addToGuests(Guest guest) {
+        this.guests.add(guest);
+        guest.setExercise(this);
         this.nowCapacity++;
     }
 }

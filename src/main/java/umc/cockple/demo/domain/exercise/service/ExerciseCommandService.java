@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
+import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -35,6 +37,7 @@ public class ExerciseCommandService {
     private final MemberPartyRepository memberPartyRepository;
     private final MemberRepository memberRepository;
     private final MemberExerciseRepository memberExerciseRepository;
+    private final GuestRepository guestRepository;
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
@@ -86,6 +89,12 @@ public class ExerciseCommandService {
         validateGuestInvitation(exercise, inviter);
 
         GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
+
+        Guest guest = exercise.addGuest(command);
+        Guest savedGuest = guestRepository.save(guest);
+
+        log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
+
     }
 
     private void validateMemberPermission(Long memberId, Party party) {
