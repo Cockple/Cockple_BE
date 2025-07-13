@@ -76,6 +76,18 @@ public class ExerciseCommandService {
         return exerciseConverter.toJoinResponseDTO(memberExercise, exercise);
     }
 
+    public GuestInviteResponseDTO inviteGuest(Long exerciseId, Long inviterId, GuestInviteRequestDTO request) {
+
+        log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
+                , exerciseId, inviterId, request.guestName());
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member inviter = findMemberOrThrow(inviterId);
+        validateGuestInvitation(exercise, inviter);
+
+
+    }
+
     private void validateMemberPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
         boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -132,6 +144,27 @@ public class ExerciseCommandService {
     private boolean isPartyMember(Exercise exercise, Member member) {
         Party party = exercise.getParty();
         return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+    private void validateGuestInvitation(Exercise exercise, Member inviter) {
+        validateExerciseNotStarted(exercise);
+        validateInviterIsPartyMember(exercise, inviter);
+        validateGuestPolicy(exercise);
+    }
+
+    private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
+        Party party = exercise.getParty();
+        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
+
+        if (!isPartyMember) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
+        }
+    }
+
+    private void validateGuestPolicy(Exercise exercise) {
+        if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
+        }
     }
 
 
