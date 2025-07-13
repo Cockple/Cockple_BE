@@ -37,28 +37,6 @@ public class ContestConverter {
     }
 
     // 대회 기록 수정
-    public ContestRecordUpdateCommand toUpdateCommand(
-            ContestRecordUpdateRequestDTO request,
-            Long memberId,
-            List<MultipartFile> contestImgs
-    ) {
-        return ContestRecordUpdateCommand.builder()
-                .memberId(memberId)
-                .contestName(request.contestName())
-                .date(request.date())
-                .medalType(request.medalType())
-                .type(request.type())
-                .level(request.level())
-                .content(request.content())
-                .contentIsOpen(request.contentIsOpen())
-                .videoIsOpen(request.videoIsOpen())
-                .contestVideos(request.contestVideos())
-                .contestVideoIdsToDelete(request.contestVideoIdsToDelete())
-                .contestImgs(contestImgs)
-                .contestImgsToDelete(request.contestImgsToDelete())
-                .build();
-    }
-
     public ContestRecordUpdateResponseDTO toUpdateResponseDTO(Contest contest) {
         return ContestRecordUpdateResponseDTO.builder()
                 .contestId(contest.getId())
