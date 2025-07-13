@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.contest.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.contest.dto.ContestRecordCreateCommand;
+import umc.cockple.demo.domain.contest.dto.ContestRecordUpdateRequestDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
@@ -53,10 +54,10 @@ public class Contest extends BaseEntity {
     @Column(nullable = false)
     private Boolean videoIsOpen = true;
 
-    @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContestImg> contestImgs = new ArrayList<>();
 
-    @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContestVideo> contestVideos = new ArrayList<>();
 
 
@@ -80,4 +81,16 @@ public class Contest extends BaseEntity {
         this.contestImgs.add(img);
         img.setContest(this); // 양방향 유지
     }
+
+    public void updateFromRequest(ContestRecordUpdateRequestDTO request) {
+        this.contestName = request.contestName();
+        this.date = request.date();
+        this.medalType = request.medalType();
+        this.type = request.type();
+        this.level = request.level();
+        this.content = request.content();
+        this.contentIsOpen = request.contentIsOpen();
+        this.videoIsOpen = request.videoIsOpen();
+    }
+
 }

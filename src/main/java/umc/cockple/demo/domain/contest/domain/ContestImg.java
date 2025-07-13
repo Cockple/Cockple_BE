@@ -25,6 +25,7 @@ public class ContestImg {
     @Column(nullable = false)
     private String imgKey;
 
+    @Setter
     @Column(nullable = false)
     private Integer imgOrder;
 

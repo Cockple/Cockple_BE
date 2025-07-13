@@ -9,9 +9,7 @@ import umc.cockple.demo.domain.contest.converter.ContestConverter;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.domain.ContestImg;
 import umc.cockple.demo.domain.contest.domain.ContestVideo;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateCommand;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateRequestDTO;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateResponseDTO;
+import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
@@ -33,11 +31,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     private final ContestConverter contestConverter;
     private final ImageService imageService; //이미지 업로드 담당
 
-    //생성
-    @Override
-    public ContestRecordCreateResponseDTO createContestRecord(
-            Long memberId, List<MultipartFile> contestImgs, ContestRecordCreateRequestDTO request) {
-        /*
+            /*
         1.	memberId로 Member 조회
         2.	DTO → Command 변환 (Converter 사용)
         3.	Contest 엔티티 생성
@@ -46,6 +40,12 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         6.	Contest 저장
         7.	ResponseDTO로 변환해서 반환
 */
+
+    // 등록
+    @Override
+    public ContestRecordCreateResponseDTO createContestRecord(
+            Long memberId, List<MultipartFile> contestImgs, ContestRecordCreateRequestDTO request) {
+
         log.info("[대회 기록 등록 시작] - memberId: {}, 대회명: {}", memberId, request.contestName());
 
         // 1. 회원 조회
@@ -88,6 +88,118 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toCreateResponseDTO(savedContest);
     }
 
+    // 수정
+    @Override
+    public ContestRecordUpdateResponseDTO updateContestRecord(
+            Long memberId, Long contestId, List<MultipartFile> contestImgs, ContestRecordUpdateRequestDTO request
+    ) {
+
+        log.info("[대회 기록 수정 시작] - memberId: {}, contestId: {}", memberId, contestId);
+
+        // 1. 회원 & 대회 조회
+        Member member = getMember(memberId);
+        Contest contest = contestRepository.findById(contestId)
+                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
+
+        // 2. 기본 필드 수정
+        contest.updateFromRequest(request);
+
+        // 3. 이미지 삭제
+        if (request.contestImgsToDelete() != null) {
+            request.contestImgsToDelete().forEach(imgKey -> {
+                contest.getContestImgs().removeIf(img -> img.getImgKey().equals(imgKey));
+                imageService.delete(imgKey);
+            });
+        }
+
+        // 4. 이미지 재정렬
+        List<ContestImg> imgs = contest.getContestImgs();
+        for (int i = 0; i < imgs.size(); i++) {
+            imgs.get(i).setImgOrder(i);
+        }
+
+        // 5. 이미지 추가
+        try {
+            extractedImg(contestImgs, contest);
+        } catch (Exception e) {
+            log.error("이미지 업로드 중 예외 발생", e);
+            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_FAIL);
+        }
+
+        // 6. 영상 삭제
+        if (request.contestVideoIdsToDelete() != null) {
+            request.contestVideoIdsToDelete().forEach(id ->
+                    contest.getContestVideos().removeIf(video -> video.getId().equals(id))
+            );
+        }
+
+        // 7. order 재정렬
+        List<ContestVideo> videos = contest.getContestVideos();
+        for (int i = 0; i < videos.size(); i++) {
+            videos.get(i).setVideoOrder(i);
+        }
+
+        // 8. 영상 추가
+        try {
+            extractedVideo(request, contest);
+        } catch (Exception e) {
+            log.error("영상 수정 중 오류 발생", e);
+            throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
+        }
+
+        // 9. 저장
+        try {
+            contestRepository.save(contest);
+        } catch (Exception e) {
+            log.error("대회 기록 수정 저장 중 예외 발생", e);
+            throw new ContestException(ContestErrorCode.CONTEST_SAVE_FAIL);
+        }
+
+        log.info("대회 기록 수정 완료 - contestId: {}", contestId);
+
+        return contestConverter.toUpdateResponseDTO(contest);
+    }
+
+    // todo: 삭제
+
+    private static void extractedVideo(ContestRecordUpdateRequestDTO request, Contest contest) {
+        if (request.contestVideos() != null) {
+            int maxOrder = contest.getContestVideos().stream()
+                    .mapToInt(ContestVideo::getVideoOrder)
+                    .max().orElse(-1);
+
+            for (int i = 0; i < request.contestVideos().size(); i++) {
+                String videoUrl = request.contestVideos().get(i);
+                ContestVideo video = ContestVideo.of(contest, videoUrl, maxOrder + i + 1);
+                contest.getContestVideos().add(video);
+            }
+        }
+    }
+
+    private void extractedImg(List<MultipartFile> contestImgs, Contest contest) {
+        if (contestImgs != null && !contestImgs.isEmpty()) {
+            int baseOrder = contest.getContestImgs().size();
+
+            // 실제 업로드된 URL들 (null 아닌 값만 들어옴)
+            List<String> imgUrls = imageService.uploadImages(contestImgs);
+
+            int totalImages = contest.getContestImgs().size() + contestImgs.size();
+            if (totalImages > 3) {
+                log.error("이미지 최대 개수 초과 예외");
+                throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
+            }
+
+            for (int i = 0; i < imgUrls.size(); i++) {
+                String imgUrl = imgUrls.get(i);
+                String imgKey = UUID.randomUUID().toString(); // 나중에 실제 키로 대체하면 됨
+
+                ContestImg img = ContestImg.of(contest, imgUrl, imgKey, baseOrder + i);
+                contest.addContestImg(img);
+            }
+        }
+    }
+
+
     private static void extractedVideo(ContestRecordCreateCommand contestRecordCommand, Contest contest) {
         if (contestRecordCommand.contestVideos() != null) {
             for (int i = 0; i < contestRecordCommand.contestVideos().size(); i++) {
@@ -119,9 +231,5 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 .orElseThrow(() -> new ContestException(ContestErrorCode.MEMBER_NOT_FOUND));
         return member;
     }
-
-    // todo: 수정
-
-    // todo: 삭제
 }
 
