@@ -95,6 +95,7 @@ public class ExerciseCommandService {
 
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
 
+        return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
     }
 
     private void validateMemberPermission(Long memberId, Party party) {
