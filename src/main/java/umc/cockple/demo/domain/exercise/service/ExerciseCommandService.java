@@ -126,8 +126,21 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
-    // ========== 검증 메서드들 ==========
+    public ExerciseCancelResponseDTO cancelParticipationByManager(
+            Long exerciseId, Long participantId, Long memberId, ExerciseManagerCancelRequestDTO request) {
 
+        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member manager = findMemberOrThrow(memberId);
+        Member participant = findMemberOrThrow(participantId);
+        validateCancelParticipationByManager(exercise, manager);
+
+
+    }
+
+
+    // ========== 검증 메서드들 ==========
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
@@ -147,6 +160,11 @@ public class ExerciseCommandService {
 
     private void validateCancelParticipation(Exercise exercise) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+    }
+
+    private void validateCancelParticipationByManager(Exercise exercise, Member manager) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+        validateMemberPermission(manager.getId(), exercise.getParty());
     }
 
     // ========== 세부 검증 메서드들 ==========
