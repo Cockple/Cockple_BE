@@ -97,7 +97,10 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
-        validateCancelParticipation(exercise, member);
+        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
+        validateCancelParticipation(exercise);
+
+
     }
 
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
@@ -183,17 +186,9 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateCancelParticipation(Exercise exercise, Member member) {
+    private void validateCancelParticipation(Exercise exercise) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
-        validateIsJoinedExercise(exercise, member);
     }
-
-    private void validateIsJoinedExercise(Exercise exercise, Member member) {
-        if (!memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
-            throw new ExerciseException(ExerciseErrorCode.NOT_JOINED_EXERCISE);
-        }
-    }
-
 
     /**
      * 조회 메서드
@@ -206,6 +201,12 @@ public class ExerciseCommandService {
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+
+    private MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
+        return memberExerciseRepository.findByExerciseAndMember(exercise, member)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 
     private Party findPartyOrThrow(Long partyId) {
