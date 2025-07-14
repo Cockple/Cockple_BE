@@ -146,14 +146,14 @@ public class Party extends BaseEntity {
 
     public Exercise createExercise(ExerciseCreateCommand command, ExerciseAddrCreateCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
-        Exercise exercise = Exercise.create(this, exerciseAddr, command);
+        return Exercise.create(exerciseAddr, command);
+    }
 
+    public void addExercise(Exercise exercise) {
         this.exercises.add(exercise);
         exercise.setParty(this);
 
         this.exerciseCount = exercises.size();
-
-        return exercise;
     }
 
 }

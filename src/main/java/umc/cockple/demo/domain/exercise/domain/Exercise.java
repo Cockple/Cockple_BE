@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -67,9 +66,8 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<Guest> guests = new ArrayList<>();
 
-    public static Exercise create(Party party, ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
+    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
         return Exercise.builder()
-                .party(party)
                 .exerciseAddr(exerciseAddr)
                 .date(command.date())
                 .startTime(command.startTime())
@@ -82,40 +80,7 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public MemberExercise addParticipant(Member member) {
-        Integer participantNum = calculateNextParticipantNumber();
-        MemberExercise memberExercise = MemberExercise.createParticipation(this, member, participantNum);
-        addToParticipants(memberExercise);
-
-        return memberExercise;
-    }
-
-    public Guest addGuest(GuestInviteCommand command) {
-        Integer participantNum = calculateNextParticipantNumber();
-        Guest guest = Guest.createForExercise(this, command, participantNum);
-        addToGuests(guest);
-
-        return guest;
-    }
-
-    public Integer removeParticipant(MemberExercise memberExercise) {
-        int removedNum = memberExercise.getParticipantNum();
-        removeFromParticipants(memberExercise);
-        reorderParticipantNumbers(removedNum);
-
-        return removedNum;
-    }
-
-    public boolean isAlreadyStarted() {
-        LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
-        return exerciseDateTime.isBefore(LocalDateTime.now());
-    }
-
-    private Integer calculateNextParticipantNumber() {
-        return this.nowCapacity + 1;
-    }
-
-    private void reorderParticipantNumbers(int removedNum) {
+    public void reorderParticipantNumbers(int removedNum) {
         memberExercises.stream()
                 .filter(me -> me.getParticipantNum() > removedNum)
                 .forEach(MemberExercise::decrementParticipantNum);
@@ -125,30 +90,40 @@ public class Exercise extends BaseEntity {
                 .forEach(g -> g.decrementParticipantNum());
     }
 
+    public boolean isAlreadyStarted() {
+        LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
+        return exerciseDateTime.isBefore(LocalDateTime.now());
+    }
+
+    public Integer calculateNextParticipantNumber() {
+        return this.nowCapacity + 1;
+    }
+
+
     /**
      * 연관관계 매핑 메서드
      */
-    private void addToParticipants(MemberExercise memberExercise) {
-        this.memberExercises.add(memberExercise);
-        memberExercise.setExercise(this);
-        this.nowCapacity++;
-    }
-
-    private void removeFromParticipants(MemberExercise memberExercise) {
-        this.memberExercises.remove(memberExercise);
-        this.nowCapacity--;
-    }
-
-    private void addToGuests(Guest guest) {
-        this.guests.add(guest);
-        guest.setExercise(this);
-        this.nowCapacity++;
-    }
-
     public void setParty(Party party) {
         this.party = party;
         if (party != null && !party.getExercises().contains(this)) {
             party.getExercises().add(this);
         }
+    }
+
+    public void addParticipation(MemberExercise memberExercise) {
+        this.memberExercises.add(memberExercise);
+        memberExercise.setExercise(this);
+        this.nowCapacity++;
+    }
+
+    public void addGuest(Guest guest) {
+        this.guests.add(guest);
+        guest.setExercise(this);
+        this.nowCapacity++;
+    }
+
+    public void removeParticipation(MemberExercise memberExercise) {
+        this.memberExercises.remove(memberExercise);
+        this.nowCapacity--;
     }
 }

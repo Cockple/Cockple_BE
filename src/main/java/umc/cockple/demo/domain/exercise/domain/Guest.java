@@ -39,9 +39,8 @@ public class Guest extends BaseEntity {
     @Column(nullable = false)
     private Integer participantNum;
 
-    public static Guest createForExercise(Exercise exercise, GuestInviteCommand command, Integer participantNum) {
+    public static Guest create(GuestInviteCommand command, Integer participantNum) {
         return Guest.builder()
-                .exercise(exercise)
                 .guestName(command.guestName())
                 .gender(command.gender())
                 .level(command.level())

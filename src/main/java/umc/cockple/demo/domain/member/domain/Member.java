@@ -74,4 +74,12 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     private List<PartyBookmark> partyBookmarks = new ArrayList<>();
 
+    public void addParticipation(MemberExercise memberExercise) {
+        this.memberExercises.add(memberExercise);
+        memberExercise.setMember(this);
+    }
+
+    public void removeParticipation(MemberExercise memberExercise) {
+        this.memberExercises.remove(memberExercise);
+    }
 }

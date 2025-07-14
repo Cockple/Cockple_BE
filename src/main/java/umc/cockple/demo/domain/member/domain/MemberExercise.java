@@ -3,7 +3,6 @@ package umc.cockple.demo.domain.member.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.global.enums.ExerciseOrderType;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -33,10 +32,8 @@ public class MemberExercise extends BaseEntity {
     @Column(nullable = false)
     private Integer participantNum;
 
-    public static MemberExercise createParticipation(Exercise exercise, Member member, Integer participantNum) {
+    public static MemberExercise create(Integer participantNum) {
         return MemberExercise.builder()
-                .exercise(exercise)
-                .member(member)
                 .joinedAt(LocalDateTime.now())
                 .participantNum(participantNum)
                 .build();
@@ -46,6 +43,13 @@ public class MemberExercise extends BaseEntity {
         this.exercise = exercise;
         if (exercise != null && !exercise.getMemberExercises().contains(this)) {
             exercise.getMemberExercises().add(this);
+        }
+    }
+
+    public void setMember(Member member) {
+        this.member = member;
+        if (member != null && !member.getMemberExercises().contains(this)) {
+            member.getMemberExercises().add(this);
         }
     }
 
