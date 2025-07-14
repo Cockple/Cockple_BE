@@ -96,14 +96,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
         log.info("[대회 기록 수정 시작] - memberId: {}, contestId: {}", memberId, contestId);
 
-        // 1. 대회 조회
-        Contest contest = contestRepository.findById(contestId)
+        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
-
-        // 1-1. 본인 확인
-        if (!contest.getMember().getId().equals(memberId)) {
-            throw new ContestException(ContestErrorCode.NO_DELETE_AUTHORITY);
-        }
 
         // 2. 기본 필드 수정
         contest.updateFromRequest(request);
@@ -164,7 +158,24 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toUpdateResponseDTO(contest);
     }
 
-    // todo: 삭제
+    // 삭제
+    @Override
+    public ContestRecordDeleteResponseDTO deleteContestRecord(Long memberId, Long contestId) {
+
+        log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
+
+        // 1. 대회 조회
+        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
+                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
+
+        // 2. 대회 삭제
+        contestRepository.delete(contest);
+
+        log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
+
+        return contestConverter.toDeleteResponseDTO(contest);
+    }
+
 
     private static void extractedVideo(ContestRecordUpdateRequestDTO request, Contest contest) {
         if (request.contestVideos() != null) {
