@@ -43,4 +43,11 @@ public class ContestConverter {
                 .UpdatedAt(contest.getUpdatedAt())
                 .build();
     }
+
+    // 대회 기록 삭제
+    public ContestRecordDeleteResponseDTO toDeleteResponseDTO(Contest contest) {
+        return ContestRecordDeleteResponseDTO.builder()
+                .deleteContestId(contest.getId())
+                .build();
+    }
 }
