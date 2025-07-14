@@ -210,7 +210,6 @@ public class ExerciseCommandService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
-
     private MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
         return memberExerciseRepository.findByExerciseAndMember(exercise, member)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
