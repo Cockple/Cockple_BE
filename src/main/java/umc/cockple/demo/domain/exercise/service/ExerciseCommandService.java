@@ -125,10 +125,30 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
+    // ========== 검증 메서드들 ==========
+
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
     }
+
+    private void validateJoinExercise(Exercise exercise, Member member) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
+        validateAlreadyJoined(exercise, member);
+        validateJoinPermission(exercise, member);
+    }
+
+    private void validateGuestInvitation(Exercise exercise, Member inviter) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
+        validateInviterIsPartyMember(exercise, inviter);
+        validateGuestPolicy(exercise);
+    }
+
+    private void validateCancelParticipation(Exercise exercise) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+    }
+
+    // ========== 세부 검증 메서드들 ==========
 
     private void validateMemberPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
@@ -152,12 +172,6 @@ public class ExerciseCommandService {
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
-    }
-
-    private void validateJoinExercise(Exercise exercise, Member member) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
-        validateAlreadyJoined(exercise, member);
-        validateJoinPermission(exercise, member);
     }
 
     private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
@@ -187,12 +201,6 @@ public class ExerciseCommandService {
         return memberPartyRepository.existsByPartyAndMember(party, member);
     }
 
-    private void validateGuestInvitation(Exercise exercise, Member inviter) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
-        validateInviterIsPartyMember(exercise, inviter);
-        validateGuestPolicy(exercise);
-    }
-
     private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
         Party party = exercise.getParty();
         boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
@@ -208,13 +216,8 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateCancelParticipation(Exercise exercise) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
-    }
+    // ========== 조회 메서드 ==========
 
-    /**
-     * 조회 메서드
-     */
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
