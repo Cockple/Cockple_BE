@@ -130,15 +130,14 @@ public class ExerciseCommandService {
     }
 
     private void validateJoinExercise(Exercise exercise, Member member) {
-        validateExerciseNotStarted(exercise);
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
     }
 
-    private void validateExerciseNotStarted(Exercise exercise) {
-        LocalDateTime exerciseDateTime = LocalDateTime.of(exercise.getDate(), exercise.getStartTime());
-        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
-            throw new ExerciseException(ExerciseErrorCode.EXERCISE_ALREADY_STARTED);
+    private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
+        if (exercise.isAlreadyStarted()) {
+            throw new ExerciseException(errorCode);
         }
     }
 
@@ -164,7 +163,7 @@ public class ExerciseCommandService {
     }
 
     private void validateGuestInvitation(Exercise exercise, Member inviter) {
-        validateExerciseNotStarted(exercise);
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
         validateInviterIsPartyMember(exercise, inviter);
         validateGuestPolicy(exercise);
     }
@@ -185,14 +184,8 @@ public class ExerciseCommandService {
     }
 
     private void validateCancelParticipation(Exercise exercise, Member member) {
-        validateAlreadyStarted(exercise);
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
         validateIsJoinedExercise(exercise, member);
-    }
-
-    private void validateAlreadyStarted(Exercise exercise) {
-        if (exercise.isAlreadyStarted()) {
-            throw new ExerciseException(ExerciseErrorCode.EXERCISE_CANCEL_NOT_ALLOWED);
-        }
     }
 
     private void validateIsJoinedExercise(Exercise exercise, Member member) {

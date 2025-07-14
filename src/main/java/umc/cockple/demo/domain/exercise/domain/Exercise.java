@@ -102,6 +102,14 @@ public class Exercise extends BaseEntity {
         return this.nowCapacity + 1;
     }
 
+    public boolean isAlreadyStarted() {
+        LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
+        return exerciseDateTime.isBefore(LocalDateTime.now());
+    }
+
+    /**
+     * 연관관계 매핑 메서드
+     */
     private void addToParticipants(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
         memberExercise.setExercise(this);
