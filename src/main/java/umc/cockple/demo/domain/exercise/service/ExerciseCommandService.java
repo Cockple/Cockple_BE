@@ -65,7 +65,11 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateJoinExercise(exercise, member);
 
-        MemberExercise memberExercise = exercise.addParticipant(member);
+        Integer participantNum = exercise.calculateNextParticipantNumber();
+        MemberExercise memberExercise = MemberExercise.createParticipation(participantNum);
+        member.addParticipation(memberExercise);
+        exercise.addParticipation(memberExercise);
+
         MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
 
         log.info("운동 신청 종료 - memberExerciseId: {}", savedMemberExercise.getId());

@@ -33,10 +33,8 @@ public class MemberExercise extends BaseEntity {
     @Column(nullable = false)
     private Integer participantNum;
 
-    public static MemberExercise createParticipation(Exercise exercise, Member member, Integer participantNum) {
+    public static MemberExercise createParticipation(Integer participantNum) {
         return MemberExercise.builder()
-                .exercise(exercise)
-                .member(member)
                 .joinedAt(LocalDateTime.now())
                 .participantNum(participantNum)
                 .build();
@@ -46,6 +44,13 @@ public class MemberExercise extends BaseEntity {
         this.exercise = exercise;
         if (exercise != null && !exercise.getMemberExercises().contains(this)) {
             exercise.getMemberExercises().add(this);
+        }
+    }
+
+    public void setMember(Member member) {
+        this.member = member;
+        if (member != null && !member.getMemberExercises().contains(this)) {
+            member.getMemberExercises().add(this);
         }
     }
 

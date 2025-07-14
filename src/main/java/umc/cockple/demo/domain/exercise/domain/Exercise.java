@@ -2,10 +2,8 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -82,14 +80,6 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public MemberExercise addParticipant(Member member) {
-        Integer participantNum = calculateNextParticipantNumber();
-        MemberExercise memberExercise = MemberExercise.createParticipation(this, member, participantNum);
-        addToParticipants(memberExercise);
-
-        return memberExercise;
-    }
-
     public Guest addGuest(GuestInviteCommand command) {
         Integer participantNum = calculateNextParticipantNumber();
         Guest guest = Guest.createForExercise(this, command, participantNum);
@@ -111,7 +101,7 @@ public class Exercise extends BaseEntity {
         return exerciseDateTime.isBefore(LocalDateTime.now());
     }
 
-    private Integer calculateNextParticipantNumber() {
+    public Integer calculateNextParticipantNumber() {
         return this.nowCapacity + 1;
     }
 
@@ -128,7 +118,7 @@ public class Exercise extends BaseEntity {
     /**
      * 연관관계 매핑 메서드
      */
-    private void addToParticipants(MemberExercise memberExercise) {
+    public void addParticipation(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
         memberExercise.setExercise(this);
         this.nowCapacity++;
