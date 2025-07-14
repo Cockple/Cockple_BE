@@ -78,4 +78,8 @@ public class Member extends BaseEntity {
         this.memberExercises.add(memberExercise);
         memberExercise.setMember(this);
     }
+
+    public void removeParticipation(MemberExercise memberExercise) {
+        this.memberExercises.remove(memberExercise);
+    }
 }

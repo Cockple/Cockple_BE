@@ -80,12 +80,14 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public Integer removeParticipant(MemberExercise memberExercise) {
-        int removedNum = memberExercise.getParticipantNum();
-        removeFromParticipants(memberExercise);
-        reorderParticipantNumbers(removedNum);
+    public void reorderParticipantNumbers(int removedNum) {
+        memberExercises.stream()
+                .filter(me -> me.getParticipantNum() > removedNum)
+                .forEach(MemberExercise::decrementParticipantNum);
 
-        return removedNum;
+        guests.stream()
+                .filter(g -> g.getParticipantNum() > removedNum)
+                .forEach(g -> g.decrementParticipantNum());
     }
 
     public boolean isAlreadyStarted() {
@@ -97,15 +99,6 @@ public class Exercise extends BaseEntity {
         return this.nowCapacity + 1;
     }
 
-    private void reorderParticipantNumbers(int removedNum) {
-        memberExercises.stream()
-                .filter(me -> me.getParticipantNum() > removedNum)
-                .forEach(MemberExercise::decrementParticipantNum);
-
-        guests.stream()
-                .filter(g -> g.getParticipantNum() > removedNum)
-                .forEach(g -> g.decrementParticipantNum());
-    }
 
     /**
      * 연관관계 매핑 메서드
@@ -123,14 +116,14 @@ public class Exercise extends BaseEntity {
         this.nowCapacity++;
     }
 
-    private void removeFromParticipants(MemberExercise memberExercise) {
-        this.memberExercises.remove(memberExercise);
-        this.nowCapacity--;
-    }
-
     public void addGuest(Guest guest) {
         this.guests.add(guest);
         guest.setExercise(this);
         this.nowCapacity++;
+    }
+
+    public void removeParticipation(MemberExercise memberExercise) {
+        this.memberExercises.remove(memberExercise);
+        this.nowCapacity--;
     }
 }

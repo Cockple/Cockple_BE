@@ -66,6 +66,7 @@ public class ExerciseCommandService {
         validateJoinExercise(exercise, member);
 
         Integer participantNum = exercise.calculateNextParticipantNumber();
+
         MemberExercise memberExercise = MemberExercise.create(participantNum);
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
@@ -87,8 +88,8 @@ public class ExerciseCommandService {
         validateGuestInvitation(exercise, inviter);
 
         GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
-
         Integer participantNum = exercise.calculateNextParticipantNumber();
+
         Guest guest = Guest.create(command, participantNum);
         exercise.addGuest(guest);
 
@@ -108,7 +109,13 @@ public class ExerciseCommandService {
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
         validateCancelParticipation(exercise);
 
-        Integer participantNumber = exercise.removeParticipant(memberExercise);
+        Integer participantNumber = memberExercise.getParticipantNum();
+
+        exercise.removeParticipation(memberExercise);
+        member.removeParticipation(memberExercise);
+
+        exercise.reorderParticipantNumbers(participantNumber);
+
         memberExerciseRepository.delete(memberExercise);
         exerciseRepository.save(exercise);
 
