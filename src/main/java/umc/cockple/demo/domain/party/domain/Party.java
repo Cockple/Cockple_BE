@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
+import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateCommand;
@@ -141,9 +144,16 @@ public class Party extends BaseEntity {
         this.levels.add(partyLevel);
     }
 
-    public void addExercise(Exercise exercise) {
+    public Exercise createExercise(ExerciseCreateCommand command, ExerciseAddrCreateCommand addrCommand) {
+        ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
+        Exercise exercise = Exercise.create(this, exerciseAddr, command);
+
         this.exercises.add(exercise);
+        exercise.setParty(this);
+
         this.exerciseCount = exercises.size();
+
+        return exercise;
     }
 
 }

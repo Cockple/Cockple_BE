@@ -44,7 +44,7 @@ public class MemberExercise extends BaseEntity {
 
     public void setExercise(Exercise exercise) {
         this.exercise = exercise;
-        if (!exercise.getMemberExercises().contains(this)) {
+        if (exercise != null && !exercise.getMemberExercises().contains(this)) {
             exercise.getMemberExercises().add(this);
         }
     }

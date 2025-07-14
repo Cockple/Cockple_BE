@@ -52,7 +52,7 @@ public class Guest extends BaseEntity {
 
     public void setExercise(Exercise exercise) {
         this.exercise = exercise;
-        if (!exercise.getGuests().contains(this)) {
+        if (exercise != null && !exercise.getGuests().contains(this)) {
             exercise.getGuests().add(this);
         }
     }
