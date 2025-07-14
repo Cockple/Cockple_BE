@@ -133,14 +133,25 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member manager = findMemberOrThrow(memberId);
-        Member participant = findMemberOrThrow(participantId);
         validateCancelParticipationByManager(exercise, manager);
 
+        ExerciseCancelResponseDTO response;
 
+        if(request.isGuest()){
+            response = cancelGuestParticipation(exercise, participantId);
+        }else{
+            response = cancelMemberParticipation(exercise, participantId);
+        }
+
+        log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
+                exerciseId, participantId, exercise.getNowCapacity());
+
+        return response;
     }
 
 
     // ========== 검증 메서드들 ==========
+
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
@@ -215,11 +226,6 @@ public class ExerciseCommandService {
         }
     }
 
-    private boolean isPartyMember(Exercise exercise, Member member) {
-        Party party = exercise.getParty();
-        return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
-
     private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
         Party party = exercise.getParty();
         boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
@@ -233,6 +239,30 @@ public class ExerciseCommandService {
         if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
         }
+    }
+
+    // ========== 비즈니스 로직 ==========
+
+    private boolean isPartyMember(Exercise exercise, Member member) {
+        Party party = exercise.getParty();
+        return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+    private ExerciseCancelResponseDTO cancelMemberParticipation(Exercise exercise, Long participantId) {
+        Member participant = findMemberOrThrow(participantId);
+        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
+
+        Integer participantNumber = memberExercise.getParticipantNum();
+
+        exercise.removeParticipation(memberExercise);
+        participant.removeParticipation(memberExercise);
+
+        exercise.reorderParticipantNumbers(participantNumber);
+        memberExerciseRepository.delete(memberExercise);
+
+        exerciseRepository.save(exercise);
+
+        return exerciseConverter.toCancelResponseDTO(exercise, participant, participantNumber);
     }
 
     // ========== 조회 메서드 ==========
