@@ -140,7 +140,7 @@ public class ExerciseCommandService {
     }
 
     private void validateJoinExercise(Exercise exercise, Member member) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED);
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
     }
