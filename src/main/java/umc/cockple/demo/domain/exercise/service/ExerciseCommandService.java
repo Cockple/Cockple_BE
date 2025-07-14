@@ -50,6 +50,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         party.addExercise(exercise);
+
         Exercise savedExercise = exerciseRepository.save(exercise);
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
@@ -115,8 +116,8 @@ public class ExerciseCommandService {
         member.removeParticipation(memberExercise);
 
         exercise.reorderParticipantNumbers(participantNumber);
-
         memberExerciseRepository.delete(memberExercise);
+
         exerciseRepository.save(exercise);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
