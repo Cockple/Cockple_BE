@@ -102,8 +102,12 @@ public class ExerciseCommandService {
 
         Integer participantNumber = exercise.removeParticipant(memberExercise);
         memberExerciseRepository.delete(memberExercise);
+        exerciseRepository.save(exercise);
 
+        log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
+                exerciseId, memberId, exercise.getNowCapacity());
 
+        return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
