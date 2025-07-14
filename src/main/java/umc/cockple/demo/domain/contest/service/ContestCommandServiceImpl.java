@@ -168,7 +168,10 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
 
-        // 2. 대회 삭제
+        // 2. 연관관계 해제 (양방향)
+        contest.removeMember();
+
+        // 3. 삭제
         contestRepository.delete(contest);
 
         log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
