@@ -80,14 +80,6 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public Guest addGuest(GuestInviteCommand command) {
-        Integer participantNum = calculateNextParticipantNumber();
-        Guest guest = Guest.createForExercise(this, command, participantNum);
-        addToGuests(guest);
-
-        return guest;
-    }
-
     public Integer removeParticipant(MemberExercise memberExercise) {
         int removedNum = memberExercise.getParticipantNum();
         removeFromParticipants(memberExercise);
@@ -118,6 +110,13 @@ public class Exercise extends BaseEntity {
     /**
      * 연관관계 매핑 메서드
      */
+    public void setParty(Party party) {
+        this.party = party;
+        if (party != null && !party.getExercises().contains(this)) {
+            party.getExercises().add(this);
+        }
+    }
+
     public void addParticipation(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
         memberExercise.setExercise(this);
@@ -129,16 +128,9 @@ public class Exercise extends BaseEntity {
         this.nowCapacity--;
     }
 
-    private void addToGuests(Guest guest) {
+    public void addGuest(Guest guest) {
         this.guests.add(guest);
         guest.setExercise(this);
         this.nowCapacity++;
-    }
-
-    public void setParty(Party party) {
-        this.party = party;
-        if (party != null && !party.getExercises().contains(this)) {
-            party.getExercises().add(this);
-        }
     }
 }

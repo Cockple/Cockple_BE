@@ -66,7 +66,7 @@ public class ExerciseCommandService {
         validateJoinExercise(exercise, member);
 
         Integer participantNum = exercise.calculateNextParticipantNumber();
-        MemberExercise memberExercise = MemberExercise.createParticipation(participantNum);
+        MemberExercise memberExercise = MemberExercise.create(participantNum);
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
 
@@ -88,7 +88,10 @@ public class ExerciseCommandService {
 
         GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
 
-        Guest guest = exercise.addGuest(command);
+        Integer participantNum = exercise.calculateNextParticipantNumber();
+        Guest guest = Guest.create(command, participantNum);
+        exercise.addGuest(guest);
+
         Guest savedGuest = guestRepository.save(guest);
 
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
