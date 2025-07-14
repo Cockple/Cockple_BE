@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.party.dto.PartyCreateRequestDTO;
 import umc.cockple.demo.domain.party.dto.PartyCreateResponseDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -53,14 +53,14 @@ public class PartyController {
     @ApiResponse(responseCode = "201", description = "가입 신청 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     @ApiResponse(responseCode = "409", description = "이미 가입했거나 신청 대기 중인 상태")
-    public BaseResponse<PartyJoinResponseDTO> createJoinRequest(
+    public BaseResponse<PartyJoinCreateResponseDTO> createJoinRequest(
             @PathVariable Long partyId,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        PartyJoinResponseDTO response = partyCommandService.createJoinRequest(partyId, memberId);
+        PartyJoinCreateResponseDTO response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 

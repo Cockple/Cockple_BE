@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.party.dto;
 import lombok.Builder;
 
 @Builder
-public record PartyJoinResponseDTO(
+public record PartyJoinCreateResponseDTO(
         Long joinRequestId
 ) {
 }

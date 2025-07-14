@@ -35,8 +35,8 @@ public class PartyConverter {
     }
 
     //모임 가입 신청 엔티티를 응답 DTO로 변환
-    public PartyJoinResponseDTO toJoinResponseDTO(PartyJoinRequest request) {
-        return PartyJoinResponseDTO.builder()
+    public PartyJoinCreateResponseDTO toJoinResponseDTO(PartyJoinRequest request) {
+        return PartyJoinCreateResponseDTO.builder()
                 .joinRequestId(request.getId())
                 .build();
     }

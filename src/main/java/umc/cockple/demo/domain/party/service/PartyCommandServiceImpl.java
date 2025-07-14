@@ -67,7 +67,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     @Override
-    public PartyJoinResponseDTO createJoinRequest(Long partyId, Long memberId) {
+    public PartyJoinCreateResponseDTO createJoinRequest(Long partyId, Long memberId) {
         log.info("가입신청 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
         //모임 및 사용자 조회
