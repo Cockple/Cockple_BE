@@ -91,6 +91,15 @@ public class ExerciseCommandService {
         return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
     }
 
+    public ExerciseCancelResponseDTO cancelParticipation(Long exerciseId, Long memberId) {
+
+        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        validateCancelParticipation(exercise, member);
+    }
+
     private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
@@ -172,6 +181,23 @@ public class ExerciseCommandService {
     private void validateGuestPolicy(Exercise exercise) {
         if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
+        }
+    }
+
+    private void validateCancelParticipation(Exercise exercise, Member member) {
+        validateAlreadyStarted(exercise);
+        validateIsJoinedExercise(exercise, member);
+    }
+
+    private void validateAlreadyStarted(Exercise exercise) {
+        if (exercise.isAlreadyStarted()) {
+            throw new ExerciseException(ExerciseErrorCode.EXERCISE_CANCEL_NOT_ALLOWED);
+        }
+    }
+
+    private void validateIsJoinedExercise(Exercise exercise, Member member) {
+        if (!memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_JOINED_EXERCISE);
         }
     }
 
