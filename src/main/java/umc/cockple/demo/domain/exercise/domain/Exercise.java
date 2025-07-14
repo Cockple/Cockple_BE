@@ -98,13 +98,31 @@ public class Exercise extends BaseEntity {
         return guest;
     }
 
-    private Integer calculateNextParticipantNumber() {
-        return this.nowCapacity + 1;
+    public Integer removeParticipant(MemberExercise memberExercise) {
+        int removedNum = memberExercise.getParticipantNum();
+        removeFromParticipants(memberExercise);
+        reorderParticipantNumbers(removedNum);
+
+        return removedNum;
     }
 
     public boolean isAlreadyStarted() {
         LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
         return exerciseDateTime.isBefore(LocalDateTime.now());
+    }
+
+    private Integer calculateNextParticipantNumber() {
+        return this.nowCapacity + 1;
+    }
+
+    private void reorderParticipantNumbers(int removedNum) {
+        memberExercises.stream()
+                .filter(me -> me.getParticipantNum() > removedNum)
+                .forEach(MemberExercise::decrementParticipantNum);
+
+        guests.stream()
+                .filter(g -> g.getParticipantNum() > removedNum)
+                .forEach(g -> g.decrementParticipantNum());
     }
 
     /**
@@ -114,6 +132,11 @@ public class Exercise extends BaseEntity {
         this.memberExercises.add(memberExercise);
         memberExercise.setExercise(this);
         this.nowCapacity++;
+    }
+
+    private void removeFromParticipants(MemberExercise memberExercise) {
+        this.memberExercises.remove(memberExercise);
+        this.nowCapacity--;
     }
 
     private void addToGuests(Guest guest) {

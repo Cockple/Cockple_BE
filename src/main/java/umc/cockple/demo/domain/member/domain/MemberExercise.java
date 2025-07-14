@@ -48,4 +48,10 @@ public class MemberExercise extends BaseEntity {
             exercise.getMemberExercises().add(this);
         }
     }
+
+    public void decrementParticipantNum() {
+        if (this.participantNum > 1) {
+            this.participantNum--;
+        }
+    }
 }

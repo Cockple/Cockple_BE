@@ -100,6 +100,9 @@ public class ExerciseCommandService {
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
         validateCancelParticipation(exercise);
 
+        Integer participantNumber = exercise.removeParticipant(memberExercise);
+        memberExerciseRepository.delete(memberExercise);
+
 
     }
 
