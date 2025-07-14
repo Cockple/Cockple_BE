@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -67,9 +68,8 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<Guest> guests = new ArrayList<>();
 
-    public static Exercise create(Party party, ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
+    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
         return Exercise.builder()
-                .party(party)
                 .exerciseAddr(exerciseAddr)
                 .date(command.date())
                 .startTime(command.startTime())

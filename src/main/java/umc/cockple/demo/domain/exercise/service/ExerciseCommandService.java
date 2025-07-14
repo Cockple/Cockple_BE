@@ -49,6 +49,7 @@ public class ExerciseCommandService {
         ExerciseAddrCreateCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
+        party.addExercise(exercise);
         Exercise savedExercise = exerciseRepository.save(exercise);
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
