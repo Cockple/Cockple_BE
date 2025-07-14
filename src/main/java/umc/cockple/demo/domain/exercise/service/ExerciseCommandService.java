@@ -241,6 +241,12 @@ public class ExerciseCommandService {
         }
     }
 
+    private void validateGuestBelongsToExercise(Guest guest, Exercise exercise) {
+        if (!guest.getExercise().getId().equals(exercise.getId())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE);
+        }
+    }
+
     // ========== 비즈니스 로직 ==========
 
     private boolean isPartyMember(Exercise exercise, Member member) {
@@ -265,11 +271,32 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, participant, participantNumber);
     }
 
+    private ExerciseCancelResponseDTO cancelGuestParticipation(Exercise exercise, Long participantId) {
+        Guest guest = findGuestOrThrow(participantId);
+        validateGuestBelongsToExercise(guest, exercise);
+
+        Integer participantNumber = guest.getParticipantNum();
+
+        exercise.removeGuest(guest);
+
+        exercise.reorderParticipantNumbers(participantNumber);
+        guestRepository.delete(guest);
+
+        exerciseRepository.save(exercise);
+
+        return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Guest findGuestOrThrow(Long guestId) {
+        return guestRepository.findById(guestId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
     }
 
     private Member findMemberOrThrow(Long memberId) {
