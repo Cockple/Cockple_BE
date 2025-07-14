@@ -56,4 +56,10 @@ public class Guest extends BaseEntity {
             exercise.getGuests().add(this);
         }
     }
+
+    public void decrementParticipantNum() {
+        if (this.participantNum > 1) {
+            this.participantNum--;
+        }
+    }
 }

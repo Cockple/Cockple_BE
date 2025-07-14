@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 
 @Component
@@ -62,6 +63,14 @@ public class ExerciseConverter {
                 .guestId(guest.getId())
                 .participantNumber(guest.getParticipantNum())
                 .invitedAt(guest.getCreatedAt())
+                .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public ExerciseCancelResponseDTO toCancelResponseDTO(Exercise exercise, Member member, Integer participantNumber) {
+        return ExerciseCancelResponseDTO.builder()
+                .memberName(member.getMemberName())
+                .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
