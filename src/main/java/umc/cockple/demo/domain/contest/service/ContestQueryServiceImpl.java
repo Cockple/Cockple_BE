@@ -29,11 +29,13 @@ public class ContestQueryServiceImpl implements ContestQueryService {
     @Override
     public ContestRecordDetailResponseDTO getMyContestRecordDetail(Long memberId, Long contestId) {
 
-        log.info("[내 대회 기록 상세 조회 시작] - memberId: {}, contestId: {}", memberId, contestId);
+        log.info("[내 대회 기록 상세조회 시작] - memberId: {}, contestId: {}", memberId, contestId);
 
         // 1. 대회 조회 + 본인 확인
         Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
+
+        log.info("대회 기록 상세조회 완료 - contestId: {}", contestId);
 
         return contestConverter.toDetailResponseDTO(contest);
     }
@@ -41,6 +43,8 @@ public class ContestQueryServiceImpl implements ContestQueryService {
     // 내 대회 기록 리스트 조회 (전체, 미입상)
     @Override
     public List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType) {
+
+        log.info("[내 대회 기록 리스트 조회 시작] - memberId: {}", memberId);
 
         // 1. 대회 전체 조회
         List<Contest> contests = contestRepository.findAllByMember_Id(memberId);
@@ -50,8 +54,13 @@ public class ContestQueryServiceImpl implements ContestQueryService {
             List<Contest> noneMedalContests = contests.stream()
                     .filter(c -> c.getMedalType() == MedalType.NONE)
                     .toList();
+
+            log.info("[미입상] 대회 기록 조회 완료 - memberId: {}", memberId);
+
             return contestConverter.toSimpleDTOList(noneMedalContests);
         }
+
+        log.info("[전체] 대회 기록 조회 완료 - memberId: {}", memberId);
 
         return contestConverter.toSimpleDTOList(contests);
     }
@@ -60,9 +69,13 @@ public class ContestQueryServiceImpl implements ContestQueryService {
     @Override
     public ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId) {
 
+        log.info("[내 메달 개수 조회 시작] - memberId: {}", memberId);
+
         int gold = contestRepository.countGoldMedalsByMemberId(memberId);
         int silver = contestRepository.countSilverMedalsByMemberId(memberId);
         int bronze = contestRepository.countBronzeMedalsByMemberId(memberId);
+
+        log.info("[내 메달 조회 완료] - memberId: {}", memberId);
 
         return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
     }
