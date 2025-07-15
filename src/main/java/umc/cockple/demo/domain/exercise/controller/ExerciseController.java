@@ -104,6 +104,28 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @DeleteMapping("/exercises/{exerciseId}/guests/{guestId}")
+    @Operation(summary = "게스트 초대 취소",
+            description = "사용자가 본인이 초대한 게스트를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "게스트 초대 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
+    @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelResponseDTO> cancelGuestInvitation(
+            @PathVariable Long exerciseId,
+            @PathVariable Long guestId,
+            Authentication authentication
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseCancelResponseDTO response = exerciseCommandService.cancelGuestInvitation(
+                exerciseId, guestId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
     @Operation(summary = "특정 참여자 운동 취소",
             description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
