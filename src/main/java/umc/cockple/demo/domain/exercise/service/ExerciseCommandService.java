@@ -134,6 +134,17 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         Guest guest = findGuestOrThrow(guestId);
         validateCancelGuestInvitation(exercise, guest, member);
+
+        Integer participantNumber = guest.getParticipantNum();
+
+        exercise.removeGuest(guest);
+
+        exercise.reorderParticipantNumbers(participantNumber);
+        guestRepository.delete(guest);
+
+        exerciseRepository.save(exercise);
+
+        return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
 
     public ExerciseCancelResponseDTO cancelParticipationByManager(
