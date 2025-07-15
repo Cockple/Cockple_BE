@@ -17,8 +17,4 @@ public interface ContestCommandService {
     ContestRecordDeleteResponseDTO deleteContestRecord(
             Long memberId, Long contestId
     );
-
-    ContestRecordDetailResponseDTO getMyContestRecordDetail(
-            Long memberId, Long contestId
-    );
 }

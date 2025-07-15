@@ -19,7 +19,6 @@ import umc.cockple.demo.global.s3.ImageService;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -178,19 +177,6 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
 
         return contestConverter.toDeleteResponseDTO(contest);
-    }
-
-    // 내 대회 기록 상세 조회
-    @Override
-    public ContestRecordDetailResponseDTO getMyContestRecordDetail(Long memberId, Long contestId) {
-
-        log.info("[내 대회 기록 상세 조회 시작] - memberId: {}, contestId: {}", memberId, contestId);
-
-        // 1. 대회 조회 + 본인 확인
-        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
-                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
-
-        return contestConverter.toDetailResponseDTO(contest);
     }
 
     private static void extractedVideo(ContestRecordUpdateRequestDTO request, Contest contest) {
