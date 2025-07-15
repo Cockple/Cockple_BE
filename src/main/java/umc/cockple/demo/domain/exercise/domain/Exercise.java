@@ -83,7 +83,7 @@ public class Exercise extends BaseEntity {
 
         guests.stream()
                 .filter(g -> g.getParticipantNum() > removedNum)
-                .forEach(g -> g.decrementParticipantNum());
+                .forEach(Guest::decrementParticipantNum);
     }
 
     public Integer getNowCapacity() {
