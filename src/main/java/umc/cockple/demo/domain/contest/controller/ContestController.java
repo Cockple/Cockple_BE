@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.domain.contest.service.ContestQueryService;
+import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -101,27 +102,17 @@ public class ContestController {
     }
 
     @GetMapping(value = "/contests/my")
-    @Operation(summary = "내 대회 기록 리스트 조회", description = "회원이 자신의 대회 기록 리스트를 조회합니다.")
+    @Operation(summary = "내 대회 기록 리스트 조회", description = "회원이 자신의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyContestRecord(
             //@AuthenticationPrincipal Long memberId
+            @RequestParam(required = false) MedalType medalType
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L;
 
-        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecords(memberId);
+        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
-
-    @GetMapping("/contests/my/no-medal")
-    @Operation(summary = "미입상 대회 기록 리스트 조회", description = "회원의 미입상(NONE) 대회 기록만 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyNonMedalContestRecords() {
-        Long memberId = 1L; // TODO: JWT 교체
-
-        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyNonMedalRecords(memberId);
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
 
 }

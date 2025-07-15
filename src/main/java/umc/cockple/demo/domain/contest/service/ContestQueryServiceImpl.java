@@ -37,25 +37,22 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         return contestConverter.toDetailResponseDTO(contest);
     }
 
-    // 내 대회 기록 리스트 조회 (전체)
+    // 내 대회 기록 리스트 조회 (전체, 미입상)
     @Override
-    public List<ContestRecordSimpleResponseDTO> getMyContestRecords(Long memberId) {
+    public List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType) {
 
+        // 1. 대회 전체 조회
         List<Contest> contests = contestRepository.findAllByMember_Id(memberId);
+
+        // 2. 미입상 요청이면 필터링
+        if (medalType == MedalType.NONE) {
+            List<Contest> noneMedalContests = contests.stream()
+                    .filter(c -> c.getMedalType() == MedalType.NONE)
+                    .toList();
+            return contestConverter.toSimpleDTOList(noneMedalContests);
+        }
 
         return contestConverter.toSimpleDTOList(contests);
-    }
-
-    // 내 대회 기록 리스트 조회 (미입상)
-    @Override
-    public List<ContestRecordSimpleResponseDTO> getMyNonMedalRecords(Long memberId) {
-        List<Contest> contests = contestRepository.findAllByMember_Id(memberId);
-
-        List<Contest> noneMedalContests = contests.stream()
-                .filter(c -> c.getMedalType() == MedalType.NONE)
-                .toList();
-
-        return ContestConverter.toSimpleDTOList(noneMedalContests);
     }
 
 }
