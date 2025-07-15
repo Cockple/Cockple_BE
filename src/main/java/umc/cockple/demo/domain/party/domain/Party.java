@@ -156,4 +156,10 @@ public class Party extends BaseEntity {
         this.exerciseCount = exercises.size();
     }
 
+    public void removeExercise(Exercise exercise) {
+        this.exercises.remove(exercise);
+
+        this.exerciseCount = exercises.size();
+    }
+
 }

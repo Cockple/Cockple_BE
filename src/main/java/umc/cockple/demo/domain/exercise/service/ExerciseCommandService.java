@@ -149,6 +149,14 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         validateDeleteExercise(exercise, memberId);
+
+        Party party = exercise.getParty();
+        party.removeExercise(exercise);
+        exerciseRepository.delete(exercise);
+
+        partyRepository.save(party);
+
+        log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exerciseId, memberId);
     }
 
 
