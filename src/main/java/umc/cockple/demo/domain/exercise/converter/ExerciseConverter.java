@@ -113,4 +113,11 @@ public class ExerciseConverter {
         }
         return null;
     }
+
+    public ExerciseUpdateResponseDTO toUpdateResponseDTO(Exercise exercise) {
+        return ExerciseUpdateResponseDTO.builder()
+                .exerciseId(exercise.getId())
+                .updatedAt(exercise.getUpdatedAt())
+                .build();
+    }
 }

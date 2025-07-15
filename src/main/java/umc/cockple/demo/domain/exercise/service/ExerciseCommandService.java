@@ -196,6 +196,11 @@ public class ExerciseCommandService {
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);
 
+        Exercise savedExercise = exerciseRepository.save(exercise);
+
+        log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
+
+        return exerciseConverter.toUpdateResponseDTO(savedExercise);
     }
 
 
