@@ -92,7 +92,7 @@ public class ContestConverter {
                 .build();
     }
 
-    public static List<ContestRecordSimpleResponseDTO> toSimpleDTOList(List<Contest> contests) {
+    public List<ContestRecordSimpleResponseDTO> toSimpleDTOList(List<Contest> contests) {
         return contests.stream()
                 .map(ContestConverter::toSimpleResponseDTO)
                 .collect(Collectors.toList());
