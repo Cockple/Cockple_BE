@@ -194,6 +194,7 @@ public class ExerciseCommandService {
         ExerciseAddrUpdateCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
 
         exercise.updateExerciseInfo(updateCommand);
+        exercise.updateExerciseAddr(addrUpdateCommand);
 
     }
 

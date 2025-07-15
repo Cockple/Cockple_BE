@@ -112,6 +112,12 @@ public class Exercise extends BaseEntity {
         }
     }
 
+    public void updateExerciseAddr(ExerciseAddrUpdateCommand command) {
+        if (this.exerciseAddr != null && command != null) {
+            this.exerciseAddr.updateAddress(command);
+        }
+    }
+
     public Integer getNowCapacity() {
         return memberExercises.size() + guests.size();
     }
@@ -152,6 +158,4 @@ public class Exercise extends BaseEntity {
     public void removeGuest(Guest guest) {
         this.guests.remove(guest);
     }
-
-
 }
