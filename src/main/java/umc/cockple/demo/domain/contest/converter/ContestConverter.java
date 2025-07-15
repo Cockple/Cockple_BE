@@ -119,7 +119,7 @@ public class ContestConverter {
         };
     }
 
-    // 내 대회 메달 개수 조회
+    // 대회 메달 개수 조회
     public ContestMedalSummaryResponseDTO toMedalSummaryResponseDTO(int gold, int silver, int bronze) {
         return ContestMedalSummaryResponseDTO.builder()
                 .myMedalTotal(gold + silver + bronze)
