@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.party.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 @Entity
@@ -10,7 +11,7 @@ import umc.cockple.demo.global.enums.RequestStatus;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class PartyJoinRequest {
+public class PartyJoinRequest extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
