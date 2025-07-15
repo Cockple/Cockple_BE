@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -78,7 +79,7 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<Slice<PartyJoinResponseDTO>> getJoinRequests(
             @PathVariable Long partyId,
-            @PageableDefault(page = 0, size = 10) Pageable pageable,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
