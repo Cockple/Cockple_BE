@@ -169,7 +169,7 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @PatchMapping("/exercises/{exerciseId")
+    @PatchMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 수정",
             description = "모임장이 생성한 운동의 정보를 수정합니다. 이미 시작된 운동은 수정할 수 없습니다.")
     @ApiResponse(responseCode = "200", description = "운동 수정 성공")
