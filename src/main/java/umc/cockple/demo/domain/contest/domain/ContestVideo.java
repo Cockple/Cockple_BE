@@ -26,11 +26,21 @@ public class ContestVideo {
     @Column(nullable = false)
     private Integer videoOrder;
 
+    public void setContest(Contest contest) {
+        this.contest = contest;
+
+        if (!contest.getContestVideos().contains(this)) {
+            contest.getContestVideos().add(this);
+        }
+    }
+
     public static ContestVideo of(Contest contest, String videoUrl, Integer videoOrder) {
-        return ContestVideo.builder()
-                .contest(contest)
+        ContestVideo video = ContestVideo.builder()
                 .videoUrl(videoUrl)
                 .videoOrder(videoOrder)
                 .build();
+        video.setContest(contest);
+        return video;
     }
+
 }

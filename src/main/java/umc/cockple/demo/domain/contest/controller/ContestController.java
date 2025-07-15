@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +47,10 @@ public class ContestController {
     }
 
     @PatchMapping(value = "/contests/my/{contestId}", consumes = {"multipart/form-data"})
+    @Operation(summary = "대회 기록 수정", description = "회원이 자신의 대회 기록을 수정합니다.")
+    @ApiResponse(responseCode = "201", description = "대회 기록 수정 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
     public BaseResponse<ContestRecordUpdateResponseDTO> updateContestRecord(
             //@AuthenticationPrincipal Long memberId
             @PathVariable Long contestId,
@@ -58,6 +64,24 @@ public class ContestController {
         ContestRecordUpdateResponseDTO response = contestCommandService.updateContestRecord(memberId, contestId, contestImgsToAdd, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @DeleteMapping(value = "/contests/my/{contestId}")
+    @Operation(summary = "대회 기록 삭제", description = "회원이 자신의 대회 기록을 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "대회 기록 삭제 성공")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    public BaseResponse<ContestRecordDeleteResponseDTO> deleteContestRecord(
+            //@AuthenticationPrincipal Long memberId
+            @PathVariable Long contestId
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ContestRecordDeleteResponseDTO response =
+                contestCommandService.deleteContestRecord(memberId, contestId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
 }

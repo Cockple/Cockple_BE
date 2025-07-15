@@ -60,9 +60,15 @@ public class Contest extends BaseEntity {
     @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContestVideo> contestVideos = new ArrayList<>();
 
+    public void setMember(Member member) {
+        this.member = member;
+        if (!member.getContests().contains(this)) {
+            member.getContests().add(this);
+        }
+    }
 
     public static Contest create(ContestRecordCreateCommand command, Member member) {
-        return Contest.builder()
+        Contest contest =  Contest.builder()
                 .member(member)
                 .contestName(command.contestName())
                 .date(command.date())
@@ -72,9 +78,21 @@ public class Contest extends BaseEntity {
                 .content(command.content())
                 .contentIsOpen(command.contentIsOpen())
                 .videoIsOpen(command.videoIsOpen())
-                .contestImgs(new ArrayList<>()) // 이거 꼭!
-                .contestVideos(new ArrayList<>())  // 안전하게 초기화
+                .contestImgs(new ArrayList<>())
+                .contestVideos(new ArrayList<>())
                 .build();
+
+        // 양방향 설정
+        contest.setMember(member);
+
+        return contest;
+    }
+
+    public void removeMember() {
+        if (this.member != null) {
+            this.member.getContests().remove(this);
+            this.member = null;
+        }
     }
 
     public void addContestImg(ContestImg img) {
