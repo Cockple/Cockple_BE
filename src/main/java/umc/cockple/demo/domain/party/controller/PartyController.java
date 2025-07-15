@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -13,7 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.party.dto.PartyCreateRequestDTO;
 import umc.cockple.demo.domain.party.dto.PartyCreateResponseDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
+import umc.cockple.demo.domain.party.service.PartyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -25,6 +30,7 @@ import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 public class PartyController {
 
     private final PartyCommandService partyCommandService;
+    private final PartyQueryService partyQueryService;
 
     @PostMapping(value = "/parties", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "모임 생성",
@@ -62,6 +68,24 @@ public class PartyController {
 
         PartyJoinCreateResponseDTO response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @GetMapping("/parties/{partyId}/join-requests")
+    @Operation(summary = "모임 가입 신청 조회",
+            description = "모임에 가입을 신청한 사용자들의 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "가입 신청 조회 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
+    public BaseResponse<Slice<PartyJoinResponseDTO>> getJoinRequests(
+            @PathVariable Long partyId,
+            @PageableDefault(page = 0, size = 10) Pageable pageable,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        Slice<PartyJoinResponseDTO> response = partyQueryService.getJoinRequests(partyId, memberId, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
 }
