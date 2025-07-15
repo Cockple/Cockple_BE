@@ -66,17 +66,17 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         return contestConverter.toSimpleDTOList(contests);
     }
 
-    // 내 메달 개수 조회
+    // 메달 개수 조회
     @Override
     public ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId) {
 
-        log.info("[내 메달 개수 조회 시작] - memberId: {}", memberId);
+        log.info("[메달 개수 조회 시작] - memberId: {}", memberId);
 
         int gold = contestRepository.countGoldMedalsByMemberId(memberId);
         int silver = contestRepository.countSilverMedalsByMemberId(memberId);
         int bronze = contestRepository.countBronzeMedalsByMemberId(memberId);
 
-        log.info("[내 메달 조회 완료] - memberId: {}", memberId);
+        log.info("[메달 조회 완료] - memberId: {}", memberId);
 
         return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
     }

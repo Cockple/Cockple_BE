@@ -153,4 +153,15 @@ public class ContestController {
         List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @GetMapping("/members/{memberId}/medals")
+    @Operation(summary = "다른 사람의 대회 메달 조회", description = "회원이 다른 사람의 메달 개수를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ContestMedalSummaryResponseDTO> getOtherMemberMedals(
+            @RequestParam Long memberId
+    ) {
+        ContestMedalSummaryResponseDTO response = contestQueryService.getMyMedalSummary(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK,response);
+    }
 }
