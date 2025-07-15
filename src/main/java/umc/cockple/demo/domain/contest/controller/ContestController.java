@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
+import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -26,6 +27,7 @@ import java.util.List;
 public class ContestController {
 
     private final ContestCommandService contestCommandService;
+    private final ContestQueryService contestQueryService;
 
     @PostMapping(value = "/contests/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "대회 기록 등록", description = "회원이 자신의 대회 기록을 등록합니다.")
@@ -68,7 +70,7 @@ public class ContestController {
 
     @DeleteMapping(value = "/contests/my/{contestId}")
     @Operation(summary = "대회 기록 삭제", description = "회원이 자신의 대회 기록을 삭제합니다.")
-    @ApiResponse(responseCode = "201", description = "대회 기록 삭제 성공")
+    @ApiResponse(responseCode = "204", description = "대회 기록 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음")
     public BaseResponse<ContestRecordDeleteResponseDTO> deleteContestRecord(
             //@AuthenticationPrincipal Long memberId
@@ -86,7 +88,7 @@ public class ContestController {
 
     @GetMapping(value = "/contests/my/{contestId}")
     @Operation(summary = "내 대회 기록 상세 조회", description = "회원이 자신의 대회 기록 하나를 조회합니다.")
-    @ApiResponse(responseCode = "201", description = "조회 성공")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ContestRecordDetailResponseDTO> getMyContestRecordDetail(
             //@AuthenticationPrincipal Long memberId,
             @PathVariable Long contestId
@@ -94,8 +96,32 @@ public class ContestController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ContestRecordDetailResponseDTO response = contestCommandService.getMyContestRecordDetail(memberId, contestId);
+        ContestRecordDetailResponseDTO response = contestQueryService.getMyContestRecordDetail(memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @GetMapping(value = "/contests/my")
+    @Operation(summary = "내 대회 기록 리스트 조회", description = "회원이 자신의 대회 기록 리스트를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyContestRecord(
+            //@AuthenticationPrincipal Long memberId
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L;
+
+        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecords(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/contests/my/no-medal")
+    @Operation(summary = "미입상 대회 기록 리스트 조회", description = "회원의 미입상(NONE) 대회 기록만 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyNonMedalContestRecords() {
+        Long memberId = 1L; // TODO: JWT 교체
+
+        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyNonMedalRecords(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
 
 }
