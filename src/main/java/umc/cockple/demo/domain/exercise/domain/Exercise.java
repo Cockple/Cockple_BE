@@ -45,9 +45,6 @@ public class Exercise extends BaseEntity {
     private Integer maxCapacity;
 
     @Column(nullable = false)
-    private Integer nowCapacity;
-
-    @Column(nullable = false)
     private Boolean partyGuestAccept;
 
     @Column(nullable = false)
