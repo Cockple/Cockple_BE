@@ -7,6 +7,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
@@ -24,6 +25,7 @@ import umc.cockple.demo.global.enums.RequestStatus;
 public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyRepository partyRepository;
     private final PartyJoinRequestRepository partyJoinRequestRepository;
+    private final PartyConverter partyConverter;
 
     @Override
     public Slice<PartyJoinResponseDTO> getJoinRequests(Long partyId, Long memberId, Pageable pageable) {
@@ -39,7 +41,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 .findByPartyAndStatus(party, RequestStatus.PENDING, pageable);
 
         log.info("가입 신청 목록 조회 완료. 조회된 항목 수: {}", requestSlice.getNumberOfElements());
-        return null;
+        return requestSlice.map(partyConverter::toPartyJoinResponseDTO);
     }
 
     //모임장 권한 확인

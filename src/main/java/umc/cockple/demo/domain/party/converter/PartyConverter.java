@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.party.converter;
 
 import org.springframework.stereotype.Component;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
@@ -34,7 +35,7 @@ public class PartyConverter {
                 .build();
     }
 
-    //모임 가입 신청 엔티티를 응답 DTO로 변환
+    //모임 가입신청을 응답 DTO로 변환
     public PartyJoinCreateResponseDTO toJoinResponseDTO(PartyJoinRequest request) {
         return PartyJoinCreateResponseDTO.builder()
                 .joinRequestId(request.getId())
@@ -46,6 +47,22 @@ public class PartyConverter {
         return PartyCreateResponseDTO.builder()
                 .partyId(party.getId())
                 .createdAt(party.getCreatedAt())
+                .build();
+    }
+
+    //모임 가입신청의 정보를 응답 DTO로 변환
+    public PartyJoinResponseDTO toPartyJoinResponseDTO(PartyJoinRequest request) {
+        Member member = request.getMember();
+        //이미지가 null인 경우 null을 전달
+        String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgUrl() : null;
+        return PartyJoinResponseDTO.builder()
+                .joinRequestId(request.getId())
+                .userId(member.getId())
+                .nickname(member.getNickname())
+                .profileImageUrl(imageUrl)
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .createdAt(request.getCreatedAt())
                 .build();
     }
 }
