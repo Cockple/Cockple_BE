@@ -90,6 +90,10 @@ public class Exercise extends BaseEntity {
         return memberExercises.size() + guests.size();
     }
 
+    public Integer calculateNextParticipantNumber() {
+        return getNowCapacity() + 1;
+    }
+
     public boolean isAlreadyStarted() {
         LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
         return exerciseDateTime.isBefore(LocalDateTime.now());
