@@ -143,4 +143,14 @@ public class ContestController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping(value = "/members/{memberId}/contests")
+    @Operation(summary = "다른 사람의 대회 기록 리스트 조회", description = "회원이 다른 사람의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getOtherMemberContestRecord(
+            @RequestParam Long memberId,
+            @RequestParam(required = false) MedalType medalType
+    ) {
+        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }

@@ -41,11 +41,11 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         return contestConverter.toDetailResponseDTO(contest, isOwner);
     }
 
-    // 내 대회 기록 리스트 조회 (전체, 미입상)
+    // 대회 기록 리스트 조회 (전체, 미입상)
     @Override
     public List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType) {
 
-        log.info("[내 대회 기록 리스트 조회 시작] - memberId: {}", memberId);
+        log.info("[대회 기록 리스트 조회 시작] - memberId: {}", memberId);
 
         // 1. 대회 전체 조회
         List<Contest> contests = contestRepository.findAllByMember_Id(memberId);

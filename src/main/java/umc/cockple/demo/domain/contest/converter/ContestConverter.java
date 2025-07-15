@@ -90,7 +90,7 @@ public class ContestConverter {
                 .build();
     }
 
-    // 내 대회 기록 심플 조회
+    // 대회 기록 심플 조회
     public static ContestRecordSimpleResponseDTO toSimpleResponseDTO(Contest contest) {
         return ContestRecordSimpleResponseDTO.builder()
                 .contestId(contest.getId())
@@ -102,7 +102,7 @@ public class ContestConverter {
                 .build();
     }
 
-    // 내 대회 기록 리스트 변환
+    // 대회 기록 리스트 변환
     public List<ContestRecordSimpleResponseDTO> toSimpleDTOList(List<Contest> contests) {
         return contests.stream()
                 .map(ContestConverter::toSimpleResponseDTO)
