@@ -5,21 +5,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Request;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.party.dto.PartyCreateRequestDTO;
-import umc.cockple.demo.domain.party.dto.PartyCreateResponseDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
+import umc.cockple.demo.global.enums.RequestAction;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -87,6 +87,20 @@ public class PartyController {
 
         Slice<PartyJoinResponseDTO> response = partyQueryService.getJoinRequests(partyId, memberId, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PatchMapping("parties/{partyId}/join-requests/{requestId}")
+    public BaseResponse<Void> actionJoinRequests(
+            @PathVariable Long partyId,
+            @PathVariable Long requestId,
+            @RequestParam PartyJoinActionRequestDTO request,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 2L; // 임시값
+
+        partyCommandService.actionJoinRequest(partyId, memberId, request, requestId);
+        return BaseResponse.success(CommonSuccessCode.OK);
     }
 
 }
