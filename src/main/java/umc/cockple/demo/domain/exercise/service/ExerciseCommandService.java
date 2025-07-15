@@ -157,6 +157,8 @@ public class ExerciseCommandService {
         partyRepository.save(party);
 
         log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        return exerciseConverter.toDeleteResponseDTO(exercise);
     }
 
 
