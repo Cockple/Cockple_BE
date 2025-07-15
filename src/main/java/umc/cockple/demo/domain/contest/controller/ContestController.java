@@ -68,7 +68,7 @@ public class ContestController {
 
     @DeleteMapping(value = "/contests/my/{contestId}")
     @Operation(summary = "대회 기록 삭제", description = "회원이 자신의 대회 기록을 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "대회 기록 삭제 성공")
+    @ApiResponse(responseCode = "201", description = "대회 기록 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음")
     public BaseResponse<ContestRecordDeleteResponseDTO> deleteContestRecord(
             //@AuthenticationPrincipal Long memberId
@@ -81,6 +81,20 @@ public class ContestController {
         ContestRecordDeleteResponseDTO response =
                 contestCommandService.deleteContestRecord(memberId, contestId);
 
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping(value = "/contests/my/{contestId}")
+    @Operation(summary = "내 대회 기록 상세 조회", description = "회원이 자신의 대회 기록 하나를 조회합니다.")
+    @ApiResponse(responseCode = "201", description = "조회 성공")
+    public BaseResponse<ContestRecordDetailResponseDTO> getMyContestRecordDetail(
+            //@AuthenticationPrincipal Long memberId,
+            @PathVariable Long contestId
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ContestRecordDetailResponseDTO response = contestCommandService.getMyContestRecordDetail(memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
