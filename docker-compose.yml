@@ -6,7 +6,7 @@ services:
     container_name: cockple-mysql
     restart: unless-stopped
     ports:
-      - "3307:3306"
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -21,8 +21,7 @@ services:
       - cockple-mysql-vol:/var/lib/mysql
 
   app:
-    build:
-      context: .
+    image: ${DOCKER_HUB_ID}/${DOCKER_HUB_REPOSITORY}
     container_name: cockple-app
     ports:
       - "8080:8080"
@@ -31,8 +30,9 @@ services:
     networks:
       - cockple-network
     environment:
-      SPRING_PROFILES_ACTIVE: docker
       TZ: Asia/Seoul
+    volumes:
+      - cockple-app-vol:/root
 
 
 networks:
@@ -41,3 +41,4 @@ networks:
 
 volumes:
   cockple-mysql-vol:
+  cockple-app-vol:

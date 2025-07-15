@@ -97,6 +97,21 @@ public class ContestController {
         Long memberId = 1L; // 임시값
 
         ContestRecordDetailResponseDTO response = contestQueryService.getMyContestRecordDetail(memberId, contestId);
+      
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping(value = "/contests/my")
+    @Operation(summary = "내 대회 기록 리스트 조회", description = "회원이 자신의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyContestRecord(
+            //@AuthenticationPrincipal Long memberId
+            @RequestParam(required = false) MedalType medalType
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L;
+
+        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 

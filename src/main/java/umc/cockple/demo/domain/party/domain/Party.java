@@ -122,6 +122,11 @@ public class Party extends BaseEntity {
         return party;
     }
 
+    public Exercise createExercise(ExerciseCreateCommand command, ExerciseAddrCreateCommand addrCommand) {
+        ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
+        return Exercise.create(exerciseAddr, command);
+    }
+
     public void addMember(MemberParty memberParty) {
         this.memberParties.add(memberParty);
         memberParty.setParty(this);
@@ -144,14 +149,15 @@ public class Party extends BaseEntity {
         this.levels.add(partyLevel);
     }
 
-    public Exercise createExercise(ExerciseCreateCommand command, ExerciseAddrCreateCommand addrCommand) {
-        ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
-        return Exercise.create(exerciseAddr, command);
-    }
-
     public void addExercise(Exercise exercise) {
         this.exercises.add(exercise);
         exercise.setParty(this);
+
+        this.exerciseCount = exercises.size();
+    }
+
+    public void removeExercise(Exercise exercise) {
+        this.exercises.remove(exercise);
 
         this.exerciseCount = exercises.size();
     }
