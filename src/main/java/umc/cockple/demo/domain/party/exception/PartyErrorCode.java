@@ -18,8 +18,11 @@ public enum PartyErrorCode implements BaseErrorCode {
      */
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
 
+    INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "PARTY301", "해당 작업을 수행할 권한이 없습니다."),
+
     ALREADY_MEMBER(HttpStatus.CONFLICT, "PARTY401", "이미 가입된 모임입니다."),
     JOIN_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY402", "처리 대기중인 가입 신청이 존재합니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;
