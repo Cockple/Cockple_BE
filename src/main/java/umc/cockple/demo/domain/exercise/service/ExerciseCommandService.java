@@ -126,6 +126,16 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
+    public ExerciseCancelResponseDTO cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
+
+        log.info("운동 참여 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        Guest guest = findGuestOrThrow(guestId);
+        validateCancelGuestInvitation(exercise, guest, member);
+    }
+
     public ExerciseCancelResponseDTO cancelParticipationByManager(
             Long exerciseId, Long participantId, Long memberId, ExerciseManagerCancelRequestDTO request) {
 
@@ -165,6 +175,11 @@ public class ExerciseCommandService {
 
     private void validateCancelParticipation(Exercise exercise) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+    }
+
+    private void validateCancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
+        validateGuestBelongsToExercise(guest, exercise);
+        validateGuestInvitedByMember(guest, member);
     }
 
     private void validateCancelParticipationByManager(Exercise exercise, Member manager) {
@@ -238,6 +253,12 @@ public class ExerciseCommandService {
     private void validateGuestBelongsToExercise(Guest guest, Exercise exercise) {
         if (!guest.getExercise().getId().equals(exercise.getId())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE);
+        }
+    }
+
+    private void validateGuestInvitedByMember(Guest guest, Member member) {
+        if (!guest.getInviterId().equals(member.getId())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER);
         }
     }
 
