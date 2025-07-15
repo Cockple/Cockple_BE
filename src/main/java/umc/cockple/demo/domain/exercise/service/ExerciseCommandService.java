@@ -246,7 +246,6 @@ public class ExerciseCommandService {
         validateMemberPermission(member.getId(), exercise.getParty());
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
         validateUpdateTime(request, exercise);
-
     }
 
     // ========== 세부 검증 메서드들 ==========
