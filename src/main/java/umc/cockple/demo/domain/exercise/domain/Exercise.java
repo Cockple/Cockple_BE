@@ -70,7 +70,6 @@ public class Exercise extends BaseEntity {
                 .startTime(command.startTime())
                 .endTime(command.endTime())
                 .maxCapacity(command.maxCapacity())
-                .nowCapacity(0)
                 .partyGuestAccept(command.partyGuestAccept())
                 .outsideGuestAccept(command.outsideGuestAccept())
                 .notice(command.notice())
@@ -92,11 +91,6 @@ public class Exercise extends BaseEntity {
         return exerciseDateTime.isBefore(LocalDateTime.now());
     }
 
-    public Integer calculateNextParticipantNumber() {
-        return this.nowCapacity + 1;
-    }
-
-
     /**
      * 연관관계 매핑 메서드
      */
@@ -110,22 +104,18 @@ public class Exercise extends BaseEntity {
     public void addParticipation(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
         memberExercise.setExercise(this);
-        this.nowCapacity++;
     }
 
     public void addGuest(Guest guest) {
         this.guests.add(guest);
         guest.setExercise(this);
-        this.nowCapacity++;
     }
 
     public void removeParticipation(MemberExercise memberExercise) {
         this.memberExercises.remove(memberExercise);
-        this.nowCapacity--;
     }
 
     public void removeGuest(Guest guest) {
         this.guests.remove(guest);
-        this.nowCapacity--;
     }
 }
