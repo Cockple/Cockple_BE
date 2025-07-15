@@ -182,6 +182,16 @@ public class ExerciseCommandService {
         return exerciseConverter.toDeleteResponseDTO(exercise);
     }
 
+    public ExerciseUpdateResponseDTO updateExercise(Long exerciseId, Long memberId, ExerciseUpdateRequestDTO request) {
+
+        log.info("운동 업데이트 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        validateUpdateExercise(exercise, member, request);
+
+    }
+
 
     // ========== 검증 메서드들 ==========
 
@@ -219,6 +229,13 @@ public class ExerciseCommandService {
 
     private void validateDeleteExercise(Exercise exercise, Long memberId) {
         validateMemberPermission(memberId, exercise.getParty());
+    }
+
+    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateRequestDTO request) {
+        validateMemberPermission(member.getId(), exercise.getParty());
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
+        validateUpdateTime(request, exercise);
+
     }
 
     // ========== 세부 검증 메서드들 ==========
@@ -293,6 +310,29 @@ public class ExerciseCommandService {
     private void validateGuestInvitedByMember(Guest guest, Member member) {
         if (!guest.getInviterId().equals(member.getId())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER);
+        }
+    }
+
+    private void validateUpdateTime(ExerciseUpdateRequestDTO request, Exercise exercise) {
+        LocalTime newStartTime = request.toParsedStartTime();
+        LocalTime newEndTime = request.toParsedEndTime();
+        LocalDate newDate = request.toParsedDate();
+
+        LocalTime currentStartTime = exercise.getStartTime();
+        LocalTime currentEndTime = exercise.getEndTime();
+        LocalDate currentDate = exercise.getDate();
+
+        LocalTime startTime = newStartTime != null ? newStartTime : currentStartTime;
+        LocalTime endTime = newEndTime != null ? newEndTime : currentEndTime;
+        LocalDate date = newDate != null ? newDate : currentDate;
+
+        if (endTime != null && !startTime.isBefore(endTime)) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_EXERCISE_TIME);
+        }
+
+        LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
+        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
+            throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
     }
 
