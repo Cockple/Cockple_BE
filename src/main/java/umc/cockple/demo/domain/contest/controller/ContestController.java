@@ -96,7 +96,7 @@ public class ContestController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ContestRecordDetailResponseDTO response = contestQueryService.getMyContestRecordDetail(memberId, contestId);
+        ContestRecordDetailResponseDTO response = contestQueryService.getContestRecordDetail(memberId, memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -127,4 +127,20 @@ public class ContestController {
 
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
+
+    @GetMapping(value = "/members/{memberId}/contests/{contestId}")
+    @Operation(summary = "다른 사람의 대회 기록 상세 조회", description = "다른 사람의 대회 기록 하나를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ContestRecordDetailResponseDTO> getOtherMemberContestRecordDetail(
+            //@AuthenticationPrincipal Long loginMemberId,
+            @PathVariable Long memberId,
+            @PathVariable Long contestId
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long loginMemberId = 2L; // 임시값
+
+        ContestRecordDetailResponseDTO response = contestQueryService.getContestRecordDetail(loginMemberId, memberId, contestId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
 }
