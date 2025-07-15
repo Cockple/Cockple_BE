@@ -126,4 +126,9 @@ public class Exercise extends BaseEntity {
         this.memberExercises.remove(memberExercise);
         this.nowCapacity--;
     }
+
+    public void removeGuest(Guest guest) {
+        this.guests.remove(guest);
+        this.nowCapacity--;
+    }
 }

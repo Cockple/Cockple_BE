@@ -24,6 +24,7 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE202", "존재하지 않는 운동입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE203", "존재하지 않는 멤버입니다."),
     MEMBER_EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE204", "존재하지 않는 운동 참여입니다."),
+    GUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE205", "존재하지 않는 게스트입니다."),
 
     INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "EXERCISE301", "운동을 생성할 권한이 없습니다."),
     NOT_PARTY_MEMBER(HttpStatus.FORBIDDEN, "EXERCISE302", "파티 멤버만 참여할 수 있습니다."),
@@ -35,7 +36,8 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     EXERCISE_ALREADY_STARTED_PARTICIPATION(HttpStatus.BAD_REQUEST, "EXERCISE403", "이미 시작된 운동에는 참여할 수 없습니다."),
     EXERCISE_ALREADY_STARTED_INVITATION(HttpStatus.BAD_REQUEST, "EXERCISE404", "이미 시작된 운동에는 초대할 수 없습니다."),
     EXERCISE_ALREADY_STARTED_CANCEL(HttpStatus.BAD_REQUEST, "EXERCISE405", "이미 시작된 운동에는 취소할 수 없습니다."),
-    ALREADY_JOINED_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE406", "이미 참여 신청한 운동입니다.");
+    ALREADY_JOINED_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE406", "이미 참여 신청한 운동입니다."),
+    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "게스트가 이 운동에 참여해있지 않습니다..");
 
 
     private final HttpStatus httpStatus;
