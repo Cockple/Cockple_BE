@@ -74,6 +74,9 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     private List<PartyBookmark> partyBookmarks = new ArrayList<>();
 
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ProfileImg profileImg;
+
     public void addParticipation(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
         memberExercise.setMember(this);
@@ -81,5 +84,13 @@ public class Member extends BaseEntity {
 
     public void removeParticipation(MemberExercise memberExercise) {
         this.memberExercises.remove(memberExercise);
+    }
+
+    public void updateProfileImg(ProfileImg newProfileImg) {
+        this.profileImg = newProfileImg;
+        // 양방향 관계 설정
+        if (newProfileImg != null) {
+            newProfileImg.setMember(this);
+        }
     }
 }
