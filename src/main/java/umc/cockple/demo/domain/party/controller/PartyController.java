@@ -90,14 +90,20 @@ public class PartyController {
     }
 
     @PatchMapping("parties/{partyId}/join-requests/{requestId}")
+    @Operation(summary = "모임 가입 신청 처리",
+        description = "모임장이 가입 신청을 승인하거나 거절합니다.")
+    @ApiResponse(responseCode = "200", description = "가입 신청 처리 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 가입 신청")
+    @ApiResponse(responseCode = "409", description = "이미 처리된 가입 신청")
     public BaseResponse<Void> actionJoinRequests(
             @PathVariable Long partyId,
             @PathVariable Long requestId,
-            @RequestParam PartyJoinActionRequestDTO request,
+            @RequestBody @Valid PartyJoinActionRequestDTO request,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = 1L; // 임시값
 
         partyCommandService.actionJoinRequest(partyId, memberId, request, requestId);
         return BaseResponse.success(CommonSuccessCode.OK);
