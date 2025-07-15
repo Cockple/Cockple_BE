@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.contest.converter.ContestConverter;
 import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.contest.dto.ContestMedalSummaryResponseDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordDetailResponseDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordSimpleResponseDTO;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
@@ -53,6 +54,17 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         }
 
         return contestConverter.toSimpleDTOList(contests);
+    }
+
+    // 내 메달 개수 조회
+    @Override
+    public ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId) {
+
+        int gold = contestRepository.countGoldMedalsByMemberId(memberId);
+        int silver = contestRepository.countSilverMedalsByMemberId(memberId);
+        int bronze = contestRepository.countBronzeMedalsByMemberId(memberId);
+
+        return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
     }
 
 }

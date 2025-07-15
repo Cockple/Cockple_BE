@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.contest.service;
 
+import umc.cockple.demo.domain.contest.dto.ContestMedalSummaryResponseDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordDetailResponseDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordSimpleResponseDTO;
 import umc.cockple.demo.global.enums.MedalType;
@@ -11,4 +12,5 @@ public interface ContestQueryService {
 
     List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType);
 
+    ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId);
 }
