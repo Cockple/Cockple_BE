@@ -58,4 +58,15 @@ public class MemberParty extends BaseEntity {
                 .status(ACTIVE)
                 .build();
     }
+
+    public static MemberParty create(Party party, Member member) {
+        return MemberParty.builder()
+                .member(member)
+                .party(party)
+                .role(Role.party_MEMBER)
+                .joinedAt(LocalDateTime.now())
+                .orderType(EARLIEST)
+                .status(ACTIVE)
+                .build();
+    }
 }
