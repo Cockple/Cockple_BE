@@ -136,7 +136,7 @@ public class ExerciseController {
     public BaseResponse<ExerciseCancelResponseDTO> cancelParticipationByManager(
             @PathVariable Long exerciseId,
             @PathVariable Long participantId,
-            @RequestBody ExerciseManagerCancelRequestDTO request,
+            @Valid @RequestBody ExerciseManagerCancelRequestDTO request,
             Authentication authentication
     ) {
 
