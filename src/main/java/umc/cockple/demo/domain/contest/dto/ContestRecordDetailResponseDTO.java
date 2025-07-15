@@ -17,6 +17,8 @@ public record ContestRecordDetailResponseDTO(
         ParticipationType type,
         Level level,
         String content,
+        Boolean contentIsOpen,
+        Boolean videoIsOpen,
         List<String> contestImgUrls,
         List<String> contestVideoUrls
 ) {
