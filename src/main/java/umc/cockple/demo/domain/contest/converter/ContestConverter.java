@@ -55,7 +55,7 @@ public class ContestConverter {
                 .build();
     }
 
-    // 본인 대회 기록 상세 조회
+    // 내 대회 기록 상세 조회
     public ContestRecordDetailResponseDTO toDetailResponseDTO(Contest contest) {
         List<String> imgUrls = contest.getContestImgs().stream()
                 .sorted(Comparator.comparing(ContestImg::getImgOrder))
@@ -78,5 +78,34 @@ public class ContestConverter {
                 .contestImgUrls(imgUrls)
                 .contestVideoUrls(videoUrls)
                 .build();
+    }
+
+    // 내 대회 기록 심플 조회
+    public static ContestRecordSimpleResponseDTO toSimpleResponseDTO(Contest contest) {
+        return ContestRecordSimpleResponseDTO.builder()
+                .contestId(contest.getId())
+                .contestName(contest.getContestName())
+                .type(contest.getType())
+                .level(contest.getLevel())
+                .date(contest.getDate())
+                .medalImgUrl(getMedalImgUrl(contest))
+                .build();
+    }
+
+    // 내 대회 기록 리스트 변환
+    public List<ContestRecordSimpleResponseDTO> toSimpleDTOList(List<Contest> contests) {
+        return contests.stream()
+                .map(ContestConverter::toSimpleResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // todo: 임시 Url
+    public static String getMedalImgUrl(Contest contest) {
+        return switch (contest.getMedalType()) {
+            case GOLD -> "/images/medal/gold.png";
+            case SILVER ->  "/images/medal/silver.png";
+            case BRONZE -> "/images/medal/bronze.png";
+            case NONE -> "/images/medal/none.png";
+        };
     }
 }

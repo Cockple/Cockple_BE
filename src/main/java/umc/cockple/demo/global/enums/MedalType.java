@@ -4,5 +4,6 @@ public enum MedalType {
 
     GOLD,
     SILVER,
-    BRONZE
+    BRONZE,
+    NONE
 }

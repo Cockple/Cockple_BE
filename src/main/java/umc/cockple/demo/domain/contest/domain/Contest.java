@@ -49,10 +49,10 @@ public class Contest extends BaseEntity {
     private String content;
 
     @Column(nullable = false)
-    private Boolean contentIsOpen = true;
+    private Boolean contentIsOpen;
 
     @Column(nullable = false)
-    private Boolean videoIsOpen = true;
+    private Boolean videoIsOpen;
 
     @OneToMany(mappedBy = "contest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ContestImg> contestImgs = new ArrayList<>();
