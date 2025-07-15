@@ -86,6 +86,10 @@ public class Exercise extends BaseEntity {
                 .forEach(g -> g.decrementParticipantNum());
     }
 
+    public Integer getNowCapacity() {
+        return memberExercises.size() + guests.size();
+    }
+
     public boolean isAlreadyStarted() {
         LocalDateTime exerciseDateTime = LocalDateTime.of(this.date, this.startTime);
         return exerciseDateTime.isBefore(LocalDateTime.now());
