@@ -82,4 +82,10 @@ public class ExerciseConverter {
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
+
+    public ExerciseDeleteResponseDTO toDeleteResponseDTO(Exercise exercise) {
+        return ExerciseDeleteResponseDTO.builder()
+                .deletedExerciseId(exercise.getId())
+                .build();
+    }
 }

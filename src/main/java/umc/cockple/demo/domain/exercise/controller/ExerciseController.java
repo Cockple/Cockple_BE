@@ -126,4 +126,24 @@ public class ExerciseController {
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @DeleteMapping("/exercises/{exerciseId}")
+    @Operation(summary = "운동 삭제",
+            description = "모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
+    @ApiResponse(responseCode = "200", description = "운동 삭제 성공")
+    @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
+    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
+    public BaseResponse<ExerciseDeleteResponseDTO> deleteExercise(
+            @PathVariable Long exerciseId,
+            Authentication authentication
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseDeleteResponseDTO response = exerciseCommandService.deleteExercise(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }

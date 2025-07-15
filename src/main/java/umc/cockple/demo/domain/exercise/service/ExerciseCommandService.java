@@ -143,6 +143,24 @@ public class ExerciseCommandService {
         return response;
     }
 
+    public ExerciseDeleteResponseDTO deleteExercise(Long exerciseId, Long memberId) {
+
+        log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        validateDeleteExercise(exercise, memberId);
+
+        Party party = exercise.getParty();
+        party.removeExercise(exercise);
+        exerciseRepository.delete(exercise);
+
+        partyRepository.save(party);
+
+        log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        return exerciseConverter.toDeleteResponseDTO(exercise);
+    }
+
 
     // ========== 검증 메서드들 ==========
 
@@ -170,6 +188,10 @@ public class ExerciseCommandService {
     private void validateCancelParticipationByManager(Exercise exercise, Member manager) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
         validateMemberPermission(manager.getId(), exercise.getParty());
+    }
+
+    private void validateDeleteExercise(Exercise exercise, Long memberId) {
+        validateMemberPermission(memberId, exercise.getParty());
     }
 
     // ========== 세부 검증 메서드들 ==========
