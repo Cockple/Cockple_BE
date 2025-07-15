@@ -95,8 +95,6 @@ public class ExerciseConverter {
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
                 .maxCapacity(request.maxCapacity())
-                .partyGuestAccept(request.allowMemberGuestsInvitation())
-                .outsideGuestAccept(request.allowExternalGuests())
                 .notice(request.notice())
                 .build();
     }
