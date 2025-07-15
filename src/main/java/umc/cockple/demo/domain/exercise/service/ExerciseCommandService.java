@@ -190,6 +190,9 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateUpdateExercise(exercise, member, request);
 
+        ExerciseUpdateCommand updateCommand = exerciseConverter.toUpdateCommand(request);
+        ExerciseAddrUpdateCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
+
     }
 
 
