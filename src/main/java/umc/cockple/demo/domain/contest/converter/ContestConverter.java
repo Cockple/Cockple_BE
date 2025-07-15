@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.contest.domain.ContestImg;
 import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,6 +57,16 @@ public class ContestConverter {
 
     // 본인 대회 기록 상세 조회
     public ContestRecordDetailResponseDTO toDetailResponseDTO(Contest contest) {
+        List<String> imgUrls = contest.getContestImgs().stream()
+                .sorted(Comparator.comparing(ContestImg::getImgOrder))
+                .map(ContestImg::getImgUrl)
+                .collect(Collectors.toList());
+
+        List<String> videoUrls = contest.getContestVideos().stream()
+                .sorted(Comparator.comparing(ContestVideo::getVideoOrder))
+                .map(ContestVideo::getVideoUrl)
+                .collect(Collectors.toList());
+
         return ContestRecordDetailResponseDTO.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())
@@ -64,15 +75,8 @@ public class ContestConverter {
                 .type(contest.getType())
                 .level(contest.getLevel())
                 .content(contest.getContent())
-                .contestImgUrls(
-                        contest.getContestImgs().stream()
-                                .map(ContestImg::getImgUrl)
-                                .collect(Collectors.toList())
-                )
-                .contestVideoUrls(
-                        contest.getContestVideos().stream()
-                                .map(ContestVideo::getVideoUrl)
-                                .collect(Collectors.toList()))
+                .contestImgUrls(imgUrls)
+                .contestVideoUrls(videoUrls)
                 .build();
     }
 }
