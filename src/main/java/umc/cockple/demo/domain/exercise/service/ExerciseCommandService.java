@@ -189,6 +189,7 @@ public class ExerciseCommandService {
     }
 
     private void validateCancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
         validateGuestBelongsToExercise(guest, exercise);
         validateGuestInvitedByMember(guest, member);
     }
