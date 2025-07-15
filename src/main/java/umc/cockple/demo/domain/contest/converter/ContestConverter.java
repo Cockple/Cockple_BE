@@ -55,17 +55,25 @@ public class ContestConverter {
                 .build();
     }
 
-    // 내 대회 기록 상세 조회
-    public ContestRecordDetailResponseDTO toDetailResponseDTO(Contest contest) {
+    // 대회 기록 상세 조회
+    public ContestRecordDetailResponseDTO toDetailResponseDTO(Contest contest, Boolean isOwner) {
         List<String> imgUrls = contest.getContestImgs().stream()
                 .sorted(Comparator.comparing(ContestImg::getImgOrder))
                 .map(ContestImg::getImgUrl)
                 .collect(Collectors.toList());
 
-        List<String> videoUrls = contest.getContestVideos().stream()
-                .sorted(Comparator.comparing(ContestVideo::getVideoOrder))
+        // video 링크 공개여부 처리
+        List<String> videoUrls = (contest.getVideoIsOpen() || isOwner)
+                ? contest.getContestVideos().stream()
+                .sorted(Comparator.comparingInt(ContestVideo::getVideoOrder))
                 .map(ContestVideo::getVideoUrl)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+                : List.of();
+
+        // 기록 공개여부 처리
+        String content = (contest.getContentIsOpen() || isOwner)
+                ? contest.getContent()
+                : "";
 
         return ContestRecordDetailResponseDTO.builder()
                 .contestId(contest.getId())
@@ -74,8 +82,10 @@ public class ContestConverter {
                 .medalType(contest.getMedalType())
                 .type(contest.getType())
                 .level(contest.getLevel())
-                .content(contest.getContent())
+                .contentIsOpen(contest.getContentIsOpen())
+                .content(content)
                 .contestImgUrls(imgUrls)
+                .videoIsOpen(contest.getVideoIsOpen())
                 .contestVideoUrls(videoUrls)
                 .build();
     }
