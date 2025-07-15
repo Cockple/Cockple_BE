@@ -114,4 +114,17 @@ public class ContestController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/contests/my/medals")
+    @Operation(summary = "내 대회 메달 조회", description = "회원이 자신의 메달 개수를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ContestMedalSummaryResponseDTO> getMyMedals(
+            //@AuthenticationPrincipal Long memberId
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L;
+
+        ContestMedalSummaryResponseDTO response = contestQueryService.getMyMedalSummary(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK,response);
+    }
 }
