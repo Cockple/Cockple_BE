@@ -2,7 +2,9 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.dto.ExerciseAddrUpdateCommand;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateCommand;
 import umc.cockple.demo.domain.exercise.dto.GuestInviteCommand;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -86,6 +88,30 @@ public class Exercise extends BaseEntity {
                 .forEach(Guest::decrementParticipantNum);
     }
 
+    public void updateExerciseInfo(ExerciseUpdateCommand command) {
+        if (command.date() != null) {
+            this.date = command.date();
+        }
+        if (command.startTime() != null) {
+            this.startTime = command.startTime();
+        }
+        if (command.endTime() != null) {
+            this.endTime = command.endTime();
+        }
+        if (command.maxCapacity() != null) {
+            this.maxCapacity = command.maxCapacity();
+        }
+        if (command.partyGuestAccept() != null) {
+            this.partyGuestAccept = command.partyGuestAccept();
+        }
+        if (command.outsideGuestAccept() != null) {
+            this.outsideGuestAccept = command.outsideGuestAccept();
+        }
+        if (command.notice() != null) {
+            this.notice = command.notice();
+        }
+    }
+
     public Integer getNowCapacity() {
         return memberExercises.size() + guests.size();
     }
@@ -126,4 +152,6 @@ public class Exercise extends BaseEntity {
     public void removeGuest(Guest guest) {
         this.guests.remove(guest);
     }
+
+
 }
