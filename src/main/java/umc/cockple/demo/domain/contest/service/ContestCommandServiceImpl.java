@@ -244,9 +244,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     }
 
     private Member getMember(Long memberId) {
-        Member member = memberRepository.findById(memberId)
+        return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.MEMBER_NOT_FOUND));
-        return member;
     }
 }
 
