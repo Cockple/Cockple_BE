@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.member.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -25,19 +26,15 @@ public class MemberController {
 
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
-    private final ObjectMapper objectMapper;
 
-    @PatchMapping(value = "/my/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/my/profile")
     @Operation(summary = "프로필 수정 API",
             description = "사용자가 자신의 프로필 수정")
-    public BaseResponse<Object> updateProfile(@RequestPart("updateProfileRequestDto") String  updateProfileRequestDto,
-                                              @RequestPart(value = "profileImg", required = false) MultipartFile profileImage) throws IOException {
+    public BaseResponse<Object> updateProfile(@RequestBody @Valid UpdateProfileRequestDTO requestDTO) throws IOException {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
-        UpdateProfileRequestDTO requestDto = objectMapper.readValue(updateProfileRequestDto, UpdateProfileRequestDTO.class);
-
-        memberCommandService.updateProfile(requestDto, profileImage, memberId);
+        memberCommandService.updateProfile(requestDTO, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 

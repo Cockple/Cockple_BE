@@ -10,7 +10,8 @@ public record UpdateProfileRequestDTO(
         String memberName,
         LocalDate birth,
         Level level,
-        List<Keyword> keywords
+        List<Keyword> keywords,
+        String imgUrl
 
 ) {
 }

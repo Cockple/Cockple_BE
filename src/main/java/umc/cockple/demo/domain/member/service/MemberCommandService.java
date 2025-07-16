@@ -30,7 +30,7 @@ public class MemberCommandService {
 
     private final ImageService imageService;
 
-    public void updateProfile(UpdateProfileRequestDTO requestDto, MultipartFile file, Long memberId) {
+    public void updateProfile(UpdateProfileRequestDTO requestDto, Long memberId) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
 
@@ -54,14 +54,14 @@ public class MemberCommandService {
         memberKeywordRepository.saveAll(keywords);
 
         // 이미지 -> 저장 후 url 받아오기
-        String imgUrl = imageService.uploadImage(file);
+        String imgUrl = requestDto.imgUrl();
 
-        // 기존 이미지 존재시 이미지 새로 업로드 (S3 연동 후 바뀌는 메서드에 따라 파라미터 변경 가능)
+        // 기존 이미지 존재시 이미지 새로 업로드
         if (member.getProfileImg() != null) {
-            imageService.delete(member.getProfileImg().getImgUrl());
 
             // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
             if (!member.getProfileImg().getImgUrl().equals(imgUrl)) {
+                imageService.delete(member.getProfileImg().getImgUrl());
                 member.getProfileImg().updateProfile(imgUrl);
             }
 
