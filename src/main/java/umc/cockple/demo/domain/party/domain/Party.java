@@ -8,7 +8,6 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
-import umc.cockple.demo.domain.party.dto.PartyCreateCommand;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.*;
 

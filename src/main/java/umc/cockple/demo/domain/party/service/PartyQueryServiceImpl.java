@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
