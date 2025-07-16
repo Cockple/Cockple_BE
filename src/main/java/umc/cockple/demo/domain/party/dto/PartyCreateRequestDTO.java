@@ -3,8 +3,6 @@ package umc.cockple.demo.domain.party.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 

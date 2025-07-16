@@ -93,4 +93,9 @@ public class Member extends BaseEntity {
             newProfileImg.setMember(this);
         }
     }
+
+    public void addMemberParty(MemberParty memberParty) {
+        this.memberParties.add(memberParty);
+        memberParty.setMember(this);
+    }
 }

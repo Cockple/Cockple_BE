@@ -17,12 +17,14 @@ public enum PartyErrorCode implements BaseErrorCode {
      * 4xx: 비즈니스 로직 위반
      */
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
+    JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
+    JOIN_REQUEST_PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY203", "해당 모임에서 존재하지 않는 가입신청입니다."),
 
     INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "PARTY301", "해당 작업을 수행할 권한이 없습니다."),
 
     ALREADY_MEMBER(HttpStatus.CONFLICT, "PARTY401", "이미 가입된 모임입니다."),
-    JOIN_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY402", "처리 대기중인 가입 신청이 존재합니다.");
-
+    JOIN_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY402", "처리 대기중인 가입 신청이 존재합니다."),
+    JOIN_REQUEST_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY403", "이미 처리된 가입 신청입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
