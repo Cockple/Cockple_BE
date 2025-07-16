@@ -104,4 +104,11 @@ public class Member extends BaseEntity {
         this.keywords = keywords;
         this.profileImg = img;
     }
+
+    public void updateMember(UpdateProfileRequestDto requestDto, List<MemberKeyword> keywords) {
+        this.memberName = requestDto.getMemberName();
+        this.birth = requestDto.getBirth();
+        this.level = requestDto.getLevel();
+        this.keywords = keywords;
+    }
 }

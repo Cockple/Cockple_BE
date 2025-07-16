@@ -27,4 +27,9 @@ public class ProfileImg {
         this.member = member;
     }
 
+    // 프로필 사진 수정시 url만 변경
+    public void updateProfile(String imgUrl) {
+        this.imgUrl = imgUrl;
+    }
+
 }

@@ -34,21 +34,6 @@ public class MemberCommandService {
         // 회원 찾기
         Member member = findByMemberId(memberId);
 
-        // 이미지 -> 저장 후 url 받아오기
-        String imgUrl = imageService.uploadImage(file);
-
-        // 받아온 이미지로 profile객체 생성
-        ProfileImg img = ProfileImg.builder()
-                .member(member)
-                .imgUrl(imgUrl)
-                .build()
-        ;
-
-        // 기존 이미지 존재 시 삭제 (S3 연동 후 바뀌는 메서드에 따라 파라미터 변경 가능)
-        if (member.getProfileImg() != null) {
-            imageService.delete(member.getProfileImg().getImgUrl());
-        }
-
         // 기존 키워드 삭제
         memberKeywordRepository.deleteAllByMember(member);
 
@@ -59,12 +44,36 @@ public class MemberCommandService {
                         .keyword(keyword)
                         .build())
                 .toList()
-        ;
+                ;
 
         memberKeywordRepository.saveAll(keywords);
 
-        // 회원 정보 수정하기
-        member.updateMember(requestDto, keywords, img);
+        // 이미지 -> 저장 후 url 받아오기
+        String imgUrl = imageService.uploadImage(file);
+
+        // 기존 이미지 존재시 이미지 새로 업로드 (S3 연동 후 바뀌는 메서드에 따라 파라미터 변경 가능)
+        if (member.getProfileImg() != null) {
+            imageService.delete(member.getProfileImg().getImgUrl());
+
+            // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
+            if (!member.getProfileImg().getImgUrl().equals(imgUrl)) {
+                member.getProfileImg().updateProfile(imgUrl);
+            }
+
+            // 회원 정보 수정하기 (프로필 사진 제외)
+            member.updateMember(requestDto, keywords);
+
+        } else {
+            // 받아온 이미지로 profile객체 생성
+            ProfileImg img = ProfileImg.builder()
+                    .member(member)
+                    .imgUrl(imgUrl)
+                    .build()
+                    ;
+
+            // 회원 정보 수정하기 (프로필 사진까지)
+            member.updateMember(requestDto, keywords, img);
+        }
     }
 
 
