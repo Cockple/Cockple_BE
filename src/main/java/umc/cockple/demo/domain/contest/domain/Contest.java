@@ -2,8 +2,8 @@ package umc.cockple.demo.domain.contest.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.contest.dto.ContestRecordCreateCommand;
-import umc.cockple.demo.domain.contest.dto.ContestRecordUpdateRequestDTO;
+import umc.cockple.demo.domain.contest.dto.ContestRecordCreateDTO;
+import umc.cockple.demo.domain.contest.dto.ContestRecordUpdateDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
@@ -67,7 +67,7 @@ public class Contest extends BaseEntity {
         }
     }
 
-    public static Contest create(ContestRecordCreateCommand command, Member member) {
+    public static Contest create(ContestRecordCreateDTO.Command command, Member member) {
         Contest contest =  Contest.builder()
                 .member(member)
                 .contestName(command.contestName())
@@ -100,7 +100,7 @@ public class Contest extends BaseEntity {
         img.setContest(this); // 양방향 유지
     }
 
-    public void updateFromRequest(ContestRecordUpdateRequestDTO request) {
+    public void updateFromRequest(ContestRecordUpdateDTO.Request request) {
         this.contestName = request.contestName();
         this.date = request.date();
         this.medalType = request.medalType();

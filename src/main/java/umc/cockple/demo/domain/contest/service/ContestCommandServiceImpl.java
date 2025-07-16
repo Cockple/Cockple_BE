@@ -43,8 +43,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
     // 등록
     @Override
-    public ContestRecordCreateResponseDTO createContestRecord(
-            Long memberId, List<MultipartFile> contestImgs, ContestRecordCreateRequestDTO request) {
+    public ContestRecordCreateDTO.Response createContestRecord(
+            Long memberId, List<MultipartFile> contestImgs, ContestRecordCreateDTO.Request request) {
 
         log.info("[대회 기록 등록 시작] - memberId: {}, 대회명: {}", memberId, request.contestName());
 
@@ -52,7 +52,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         Member member = getMember(memberId);
 
         //2. DTO -> Command
-        ContestRecordCreateCommand contestRecordCommand = contestConverter.toCreateCommand(request, memberId, contestImgs);
+        ContestRecordCreateDTO.Command contestRecordCommand = contestConverter.toCreateCommand(request, memberId, contestImgs);
 
         // 3. Command → Contest Entity 생성
         Contest contest = Contest.create(contestRecordCommand, member);
@@ -90,8 +90,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
     // 수정
     @Override
-    public ContestRecordUpdateResponseDTO updateContestRecord(
-            Long memberId, Long contestId, List<MultipartFile> contestImgs, ContestRecordUpdateRequestDTO request
+    public ContestRecordUpdateDTO.Response updateContestRecord(
+            Long memberId, Long contestId, List<MultipartFile> contestImgs, ContestRecordUpdateDTO.Request request
     ) {
 
         log.info("[대회 기록 수정 시작] - memberId: {}, contestId: {}", memberId, contestId);
@@ -160,7 +160,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
     // 삭제
     @Override
-    public ContestRecordDeleteResponseDTO deleteContestRecord(Long memberId, Long contestId) {
+    public ContestRecordDeleteDTO.Response deleteContestRecord(Long memberId, Long contestId) {
 
         log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
 
@@ -179,7 +179,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toDeleteResponseDTO(contest);
     }
 
-    private static void extractedVideo(ContestRecordUpdateRequestDTO request, Contest contest) {
+    private static void extractedVideo(ContestRecordUpdateDTO.Request request, Contest contest) {
         if (request.contestVideos() != null) {
             int maxOrder = contest.getContestVideos().stream()
                     .mapToInt(ContestVideo::getVideoOrder)
@@ -217,7 +217,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     }
 
 
-    private static void extractedVideo(ContestRecordCreateCommand contestRecordCommand, Contest contest) {
+    private static void extractedVideo(ContestRecordCreateDTO.Command contestRecordCommand, Contest contest) {
         if (contestRecordCommand.contestVideos() != null) {
             for (int i = 0; i < contestRecordCommand.contestVideos().size(); i++) {
                 String videoUrl = contestRecordCommand.contestVideos().get(i);
@@ -229,7 +229,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         }
     }
 
-    private void extractedImg(ContestRecordCreateCommand contestRecordCommand, Contest contest) {
+    private void extractedImg(ContestRecordCreateDTO.Command contestRecordCommand, Contest contest) {
         if (contestRecordCommand.contestImgs() != null) {
             List<String> imageUrls = imageService.uploadImages(contestRecordCommand.contestImgs());
 

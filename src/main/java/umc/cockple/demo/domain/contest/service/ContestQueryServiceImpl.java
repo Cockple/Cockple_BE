@@ -6,9 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.contest.converter.ContestConverter;
 import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.contest.dto.ContestMedalSummaryResponseDTO;
-import umc.cockple.demo.domain.contest.dto.ContestRecordDetailResponseDTO;
-import umc.cockple.demo.domain.contest.dto.ContestRecordSimpleResponseDTO;
+import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
@@ -27,7 +25,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
     // 대회 기록 상세 조회
     @Override
-    public ContestRecordDetailResponseDTO getContestRecordDetail(Long loginMemberId, Long memberId, Long contestId) {
+    public ContestRecordDetailDTO.Response getContestRecordDetail(Long loginMemberId, Long memberId, Long contestId) {
 
         log.info("[대회 기록 상세조회 시작] - 요청자: {}, 기록주인: {}, contestId: {}", loginMemberId, memberId, contestId);
 
@@ -43,7 +41,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
     // 대회 기록 리스트 조회 (전체, 미입상)
     @Override
-    public List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType) {
+    public List<ContestRecordSimpleDTO.Response> getMyContestRecordsByMedalType(Long memberId, MedalType medalType) {
 
         log.info("[대회 기록 리스트 조회 시작] - memberId: {}", memberId);
 
@@ -68,7 +66,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
     // 메달 개수 조회
     @Override
-    public ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId) {
+    public ContestMedalSummaryDTO.Response getMyMedalSummary(Long memberId) {
 
         log.info("[메달 개수 조회 시작] - memberId: {}", memberId);
 
