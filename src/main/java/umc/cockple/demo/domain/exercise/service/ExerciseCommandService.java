@@ -79,7 +79,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
     }
 
-    public GuestInviteResponseDTO inviteGuest(Long exerciseId, Long inviterId, GuestInviteRequestDTO request) {
+    public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
 
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
                 , exerciseId, inviterId, request.guestName());
@@ -88,7 +88,7 @@ public class ExerciseCommandService {
         Member inviter = findMemberOrThrow(inviterId);
         validateGuestInvitation(exercise, inviter);
 
-        GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
+        ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
         Integer participantNum = exercise.calculateNextParticipantNumber();
 
         Guest guest = Guest.create(command, participantNum);

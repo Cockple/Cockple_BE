@@ -70,15 +70,15 @@ public class ExerciseController {
     @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<GuestInviteResponseDTO> inviteGuest(
+    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
             @PathVariable Long exerciseId,
-            @Valid @RequestBody GuestInviteRequestDTO request,
+            @Valid @RequestBody ExerciseGuestInviteDTO.Request request,
             Authentication authentication
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long inviterId = 1L; // 임시값
 
-        GuestInviteResponseDTO response = exerciseCommandService.inviteGuest(
+        ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
                 exerciseId, inviterId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

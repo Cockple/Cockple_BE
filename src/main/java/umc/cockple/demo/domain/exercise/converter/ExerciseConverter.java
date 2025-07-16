@@ -49,8 +49,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public GuestInviteCommand toGuestInviteCommand(GuestInviteRequestDTO request, Long inviterId) {
-        return GuestInviteCommand.builder()
+    public ExerciseGuestInviteDTO.Command toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
+        return ExerciseGuestInviteDTO.Command.builder()
                 .guestName(request.guestName())
                 .gender(request.toParsedGender())
                 .level(request.toParsedLevel())
@@ -58,8 +58,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public GuestInviteResponseDTO toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
-        return GuestInviteResponseDTO.builder()
+    public ExerciseGuestInviteDTO.Response toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
+        return ExerciseGuestInviteDTO.Response.builder()
                 .guestId(guest.getId())
                 .participantNumber(guest.getParticipantNum())
                 .invitedAt(guest.getCreatedAt())
