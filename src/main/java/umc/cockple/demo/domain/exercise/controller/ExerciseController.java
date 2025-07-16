@@ -133,17 +133,17 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
     @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelResponseDTO> cancelParticipationByManager(
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
             @PathVariable Long exerciseId,
             @PathVariable Long participantId,
-            @Valid @RequestBody ExerciseManagerCancelRequestDTO request,
+            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request,
             Authentication authentication
     ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseCancelResponseDTO response = exerciseCommandService.cancelParticipationByManager(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(
                 exerciseId, participantId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

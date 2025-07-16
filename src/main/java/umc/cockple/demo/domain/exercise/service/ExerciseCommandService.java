@@ -149,8 +149,8 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
 
-    public ExerciseCancelResponseDTO cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long memberId, ExerciseManagerCancelRequestDTO request) {
+    public ExerciseCancelDTO.Response cancelParticipationByManager(
+            Long exerciseId, Long participantId, Long memberId, ExerciseCancelDTO.ByManagerRequest request) {
 
         log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, memberId);
 
@@ -158,7 +158,7 @@ public class ExerciseCommandService {
         Member manager = findMemberOrThrow(memberId);
         validateCancelParticipationByManager(exercise, manager);
 
-        ExerciseCancelResponseDTO response = executeParticipantCancellation(exercise, participantId, request);
+        ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
                 exerciseId, participantId, exercise.getNowCapacity());
@@ -355,7 +355,7 @@ public class ExerciseCommandService {
         return memberPartyRepository.existsByPartyAndMember(party, member);
     }
 
-    private ExerciseCancelResponseDTO executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseManagerCancelRequestDTO request) {
+    private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         if(request.isGuest()){
             log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
             return cancelGuestParticipation(exercise, participantId);
@@ -365,7 +365,7 @@ public class ExerciseCommandService {
         return cancelMemberParticipation(exercise, participantId);
     }
 
-    private ExerciseCancelResponseDTO cancelGuestParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = findGuestOrThrow(participantId);
         validateGuestBelongsToExercise(guest, exercise);
 
@@ -381,7 +381,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
 
-    private ExerciseCancelResponseDTO cancelMemberParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = findMemberOrThrow(participantId);
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
 
