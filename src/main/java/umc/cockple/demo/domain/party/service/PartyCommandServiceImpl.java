@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -15,7 +14,9 @@ import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -23,7 +24,6 @@ import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.RequestAction;
 import umc.cockple.demo.global.enums.RequestStatus;
-import umc.cockple.demo.global.s3.ImageService;
 
 @Service
 @Transactional
@@ -39,12 +39,12 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final PartyConverter partyConverter;
 
     @Override
-    public PartyCreateResponseDTO createParty(Long memberId, PartyCreateRequestDTO request) {
+    public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
         log.info("모임 생성 시작 - memberId: {}", memberId);
 
         //DTO -> Command 객체로 변환
-        PartyCreateCommand partyCommand = partyConverter.toCreateCommand(request);
-        PartyAddrCreateCommand addrCommand = partyConverter.toAddrCreateCommand(request);
+        PartyCreateDTO.Command partyCommand = partyConverter.toCreateCommand(request);
+        PartyCreateDTO.AddrCommand addrCommand = partyConverter.toAddrCreateCommand(request);
 
         //모임장이 될 사용자 조회
         Member owner = findMemberOrThrow(memberId);
@@ -61,11 +61,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
         //ResponseDTO로 변환하여 반환
-        return partyConverter.toCreateResponseDTO(savedParty);
+        return partyConverter.toCreateResponse(savedParty);
     }
 
     @Override
-    public PartyJoinCreateResponseDTO createJoinRequest(Long partyId, Long memberId) {
+    public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
         log.info("가입신청 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
         //모임 및 사용자 조회
@@ -84,11 +84,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("가입신청 완료 - JoinRequestId: {}", savedPartyJoinRequest.getId());
 
         //ResponseDTO로 변환하여 반환
-        return partyConverter.toJoinResponseDTO(savedPartyJoinRequest);
+        return partyConverter.toJoinResponse(savedPartyJoinRequest);
     }
 
     @Override
-    public void actionJoinRequest(Long partyId, Long memberId, PartyJoinActionRequestDTO request, Long requestId) {
+    public void actionJoinRequest(Long partyId, Long memberId, PartyJoinActionDTO.Request request, Long requestId) {
         log.info("가입신청 처리 시작 - partyId: {}, memberId: {}, requestId: {}", partyId, memberId, requestId);
 
         //모임, 가입신청 조회
@@ -171,7 +171,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     //주소가 이미 존재하면 조회, 없으면 새로 생성하여 저장
-    private PartyAddr findOrCreatePartyAddr(PartyAddrCreateCommand command) {
+    private PartyAddr findOrCreatePartyAddr(PartyCreateDTO.AddrCommand command) {
         return partyAddrRepository.findByAddr1AndAddr2(command.addr1(), command.addr2())
                 .orElseGet(() -> {
                     PartyAddr newAddr = PartyAddr.create(command.addr1(), command.addr2());

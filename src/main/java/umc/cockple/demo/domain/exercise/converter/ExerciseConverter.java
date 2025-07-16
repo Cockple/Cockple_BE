@@ -33,14 +33,14 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCreateDTO.Response toCreateResponseDTO(Exercise exercise) {
+    public ExerciseCreateDTO.Response toCreateResponse(Exercise exercise) {
         return ExerciseCreateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .createdAt(exercise.getCreatedAt())
                 .build();
     }
 
-    public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
+    public ExerciseJoinDTO.Response toJoinResponse(MemberExercise memberExercise, Exercise exercise) {
         return ExerciseJoinDTO.Response.builder()
                 .participantId(memberExercise.getId())
                 .participantNumber(memberExercise.getParticipantNum())

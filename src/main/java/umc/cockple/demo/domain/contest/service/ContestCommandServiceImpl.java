@@ -85,7 +85,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         log.info("대회 기록 등록 완료 - contestId: {}", savedContest.getId());
 
         // 7. 응답 변환
-        return contestConverter.toCreateResponseDTO(savedContest);
+        return contestConverter.toCreateResponse(savedContest);
     }
 
     // 수정

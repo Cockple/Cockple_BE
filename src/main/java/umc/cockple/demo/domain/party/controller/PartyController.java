@@ -12,8 +12,10 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -35,15 +37,15 @@ public class PartyController {
     @ApiResponse(responseCode = "201", description = "모임 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 유효성 검증 실패 또는 잘못된 요청 형식")
     @ApiResponse(responseCode = "403", description = "모임 생성 권한 없음")
-    public BaseResponse<PartyCreateResponseDTO> createParty(
-            @RequestBody @Valid PartyCreateRequestDTO request,
+    public BaseResponse<PartyCreateDTO.Response> createParty(
+            @RequestBody @Valid PartyCreateDTO.Request request,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
         //서비스 호출
-        PartyCreateResponseDTO response = partyCommandService.createParty(memberId, request);
+        PartyCreateDTO.Response response = partyCommandService.createParty(memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
@@ -54,14 +56,14 @@ public class PartyController {
     @ApiResponse(responseCode = "201", description = "가입 신청 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     @ApiResponse(responseCode = "409", description = "이미 가입했거나 신청 대기 중인 상태")
-    public BaseResponse<PartyJoinCreateResponseDTO> createJoinRequest(
+    public BaseResponse<PartyJoinCreateDTO.Response> createJoinRequest(
             @PathVariable Long partyId,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 2L; // 임시값
 
-        PartyJoinCreateResponseDTO response = partyCommandService.createJoinRequest(partyId, memberId);
+        PartyJoinCreateDTO.Response response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
@@ -71,7 +73,7 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "가입 신청 조회 성공")
     @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
-    public BaseResponse<Slice<PartyJoinResponseDTO>> getJoinRequests(
+    public BaseResponse<Slice<PartyJoinDTO.Response>> getJoinRequests(
             @PathVariable Long partyId,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
@@ -79,7 +81,7 @@ public class PartyController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        Slice<PartyJoinResponseDTO> response = partyQueryService.getJoinRequests(partyId, memberId, pageable);
+        Slice<PartyJoinDTO.Response> response = partyQueryService.getJoinRequests(partyId, memberId, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -93,7 +95,7 @@ public class PartyController {
     public BaseResponse<Void> actionJoinRequests(
             @PathVariable Long partyId,
             @PathVariable Long requestId,
-            @RequestBody @Valid PartyJoinActionRequestDTO request,
+            @RequestBody @Valid PartyJoinActionDTO.Request request,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
