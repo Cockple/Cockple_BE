@@ -5,7 +5,6 @@ import umc.cockple.demo.domain.party.dto.PartyCreateRequestDTO;
 import umc.cockple.demo.domain.party.dto.PartyCreateResponseDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionRequestDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
-import umc.cockple.demo.global.response.BaseResponse;
 
 public interface PartyCommandService {
 
