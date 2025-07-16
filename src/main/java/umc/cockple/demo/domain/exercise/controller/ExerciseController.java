@@ -28,9 +28,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "201", description = "운동 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ExerciseCreateResponseDTO> createExercise(
+    public BaseResponse<ExerciseCreateDTO.Response> createExercise(
             @PathVariable Long partyId,
-            @Valid @RequestBody ExerciseCreateRequestDTO request,
+            @Valid @RequestBody ExerciseCreateDTO.Request request,
             Authentication authentication
     ) {
 
@@ -38,7 +38,7 @@ public class ExerciseController {
         Long memberId = 1L; // 임시값
 
         // 서비스 호출
-        ExerciseCreateResponseDTO response = exerciseCommandService.createExercise(
+        ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
                 partyId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

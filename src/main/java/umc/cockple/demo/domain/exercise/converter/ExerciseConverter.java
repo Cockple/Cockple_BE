@@ -12,8 +12,8 @@ import umc.cockple.demo.domain.member.domain.MemberExercise;
 @RequiredArgsConstructor
 public class ExerciseConverter {
 
-    public ExerciseCreateCommand toCreateCommand(ExerciseCreateRequestDTO request) {
-        return ExerciseCreateCommand.builder()
+    public ExerciseCreateDTO.Command toCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateDTO.Command.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -24,8 +24,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseAddrCreateCommand toAddrCreateCommand(ExerciseCreateRequestDTO request) {
-        return ExerciseAddrCreateCommand.builder()
+    public ExerciseCreateDTO.AddrCommand toAddrCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateDTO.AddrCommand.builder()
                 .roadAddress(request.roadAddress())
                 .buildingName(request.buildingName())
                 .latitude(request.latitude())
@@ -33,8 +33,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCreateResponseDTO toCreateResponseDTO(Exercise exercise) {
-        return ExerciseCreateResponseDTO.builder()
+    public ExerciseCreateDTO.Response toCreateResponseDTO(Exercise exercise) {
+        return ExerciseCreateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .createdAt(exercise.getCreatedAt())
                 .build();

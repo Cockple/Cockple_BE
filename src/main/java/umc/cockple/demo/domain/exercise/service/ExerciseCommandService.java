@@ -39,14 +39,14 @@ public class ExerciseCommandService {
     private final GuestRepository guestRepository;
     private final ExerciseConverter exerciseConverter;
 
-    public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
+    public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
 
         Party party = findPartyOrThrow(partyId);
         validateCreateExercise(memberId, request, party);
 
-        ExerciseCreateCommand exerciseCommand = exerciseConverter.toCreateCommand(request);
-        ExerciseAddrCreateCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
+        ExerciseCreateDTO.Command exerciseCommand = exerciseConverter.toCreateCommand(request);
+        ExerciseCreateDTO.AddrCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         party.addExercise(exercise);
@@ -206,7 +206,7 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
+    private void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
     }
@@ -259,7 +259,7 @@ public class ExerciseCommandService {
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
     }
 
-    private void validateExerciseTime(ExerciseCreateRequestDTO request) {
+    private void validateExerciseTime(ExerciseCreateDTO.Request request) {
         LocalDate date = request.toParsedDate();
         LocalTime startTime = request.toParsedStartTime();
         LocalTime endTime = request.toParsedEndTime();
