@@ -166,7 +166,7 @@ public class ExerciseCommandService {
         return response;
     }
 
-    public ExerciseDeleteResponseDTO deleteExercise(Long exerciseId, Long memberId) {
+    public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
 
         log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 

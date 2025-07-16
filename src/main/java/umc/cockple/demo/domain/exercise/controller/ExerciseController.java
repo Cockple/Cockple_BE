@@ -155,7 +155,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<ExerciseDeleteResponseDTO> deleteExercise(
+    public BaseResponse<ExerciseDeleteDTO.Response> deleteExercise(
             @PathVariable Long exerciseId,
             Authentication authentication
     ) {
@@ -163,7 +163,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseDeleteResponseDTO response = exerciseCommandService.deleteExercise(
+        ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

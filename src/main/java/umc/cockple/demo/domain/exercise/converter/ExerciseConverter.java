@@ -83,8 +83,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseDeleteResponseDTO toDeleteResponseDTO(Exercise exercise) {
-        return ExerciseDeleteResponseDTO.builder()
+    public ExerciseDeleteDTO.Response toDeleteResponseDTO(Exercise exercise) {
+        return ExerciseDeleteDTO.Response.builder()
                 .deletedExerciseId(exercise.getId())
                 .build();
     }
