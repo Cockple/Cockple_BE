@@ -25,6 +25,7 @@ public enum MemberErrorCode implements BaseErrorCode {
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "MEM_ADDR201", "해당 주소를 찾을 수 없습니다."),
 
     DUPLICATE_ADDRESS(HttpStatus.BAD_REQUEST, "MEM_ADDR401", "이미 같은 주소가 존재합니다."),
+    OVER_NUMBER_OF_ADDR(HttpStatus.BAD_REQUEST, "MEM_ADDR402", "주소 개수가 5개를 초과합니다."),
 
 
     ;

@@ -94,6 +94,11 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.DUPLICATE_ADDRESS);
         }
 
+        // 주소 개수 5개 이상인지 확인
+        if (member.getAddresses().size() >= 5) {
+            throw new MemberException(MemberErrorCode.OVER_NUMBER_OF_ADDR);
+        }
+
         // 주소 생성
         MemberAddr memberAddr = MemberAddr.builder()
                 .addr1(requestDto.addr1())
