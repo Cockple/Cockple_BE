@@ -128,7 +128,7 @@ public class ExerciseCommandService {
 
     public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
 
-        log.info("운동 참여 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+        log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
@@ -143,6 +143,8 @@ public class ExerciseCommandService {
         guestRepository.delete(guest);
 
         exerciseRepository.save(exercise);
+
+        log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
         return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
