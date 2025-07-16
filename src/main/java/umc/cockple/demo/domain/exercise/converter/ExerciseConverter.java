@@ -75,8 +75,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCancelResponseDTO toCancelResponseDTO(Exercise exercise, Guest guest, Integer participantNumber) {
-        return ExerciseCancelResponseDTO.builder()
+    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Guest guest, Integer participantNumber) {
+        return ExerciseCancelDTO.Response.builder()
                 .memberName(guest.getGuestName())
                 .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())

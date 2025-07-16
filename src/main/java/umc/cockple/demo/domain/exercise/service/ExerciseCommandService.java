@@ -126,7 +126,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
-    public ExerciseCancelResponseDTO cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
+    public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
 
         log.info("운동 참여 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
