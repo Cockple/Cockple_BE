@@ -27,6 +27,7 @@ public class MemberParty extends BaseEntity {
     @JoinColumn(name = "party_id")
     private Party party;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
     private Member member;
