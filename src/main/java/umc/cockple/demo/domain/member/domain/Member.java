@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.member.dto.request.UpdateProfileRequestDTO;
+import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -16,6 +16,8 @@ import umc.cockple.demo.global.common.BaseEntity;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 
 
 @Entity
@@ -110,10 +112,26 @@ public class Member extends BaseEntity {
         this.birth = requestDto.birth();
         this.level = requestDto.level();
         this.keywords = keywords;
+    }
 
     public void addMemberParty(MemberParty memberParty) {
         this.memberParties.add(memberParty);
         memberParty.setMember(this);
 
+    }
+
+    public boolean hasDuplicateAddr(CreateMemberAddrRequestDTO requestDTO) {
+        List<MemberAddr> addresses = this.getAddresses();
+        return
+                addresses.stream()
+                        .anyMatch(addr ->
+                                addr.getAddr1().equals(requestDTO.addr1()) &&
+                                addr.getAddr2().equals(requestDTO.addr2()) &&
+                                addr.getAddr3().equals(requestDTO.addr3()) &&
+                                addr.getStreetAddr().equals(requestDTO.streetAddr()) &&
+                                addr.getBuildingName().equals(requestDTO.buildingName()) &&
+                                addr.getLatitude().equals(requestDTO.latitude()) &&
+                                addr.getLongitude().equals(requestDTO.longitude())
+                        );
     }
 }
