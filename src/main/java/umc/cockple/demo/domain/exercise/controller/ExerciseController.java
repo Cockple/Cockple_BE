@@ -28,9 +28,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "201", description = "운동 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ExerciseCreateResponseDTO> createExercise(
+    public BaseResponse<ExerciseCreateDTO.Response> createExercise(
             @PathVariable Long partyId,
-            @Valid @RequestBody ExerciseCreateRequestDTO request,
+            @Valid @RequestBody ExerciseCreateDTO.Request request,
             Authentication authentication
     ) {
 
@@ -38,7 +38,7 @@ public class ExerciseController {
         Long memberId = 1L; // 임시값
 
         // 서비스 호출
-        ExerciseCreateResponseDTO response = exerciseCommandService.createExercise(
+        ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
                 partyId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -50,7 +50,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 신청 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ExerciseJoinResponseDTO> JoinExercise(
+    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
             @PathVariable Long exerciseId,
             Authentication authentication
     ){
@@ -58,7 +58,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseJoinResponseDTO response = exerciseCommandService.joinExercise(
+        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -70,15 +70,15 @@ public class ExerciseController {
     @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<GuestInviteResponseDTO> inviteGuest(
+    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
             @PathVariable Long exerciseId,
-            @Valid @RequestBody GuestInviteRequestDTO request,
+            @Valid @RequestBody ExerciseGuestInviteDTO.Request request,
             Authentication authentication
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long inviterId = 1L; // 임시값
 
-        GuestInviteResponseDTO response = exerciseCommandService.inviteGuest(
+        ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
                 exerciseId, inviterId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -90,7 +90,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelResponseDTO> cancelParticipation(
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
             @PathVariable Long exerciseId,
             Authentication authentication
     ) {
@@ -98,7 +98,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseCancelResponseDTO response = exerciseCommandService.cancelParticipation(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -111,7 +111,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
     @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelResponseDTO> cancelGuestInvitation(
+    public BaseResponse<ExerciseCancelDTO.Response> cancelGuestInvitation(
             @PathVariable Long exerciseId,
             @PathVariable Long guestId,
             Authentication authentication
@@ -120,7 +120,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseCancelResponseDTO response = exerciseCommandService.cancelGuestInvitation(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
                 exerciseId, guestId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -133,17 +133,17 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
     @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelResponseDTO> cancelParticipationByManager(
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
             @PathVariable Long exerciseId,
             @PathVariable Long participantId,
-            @Valid @RequestBody ExerciseManagerCancelRequestDTO request,
+            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request,
             Authentication authentication
     ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseCancelResponseDTO response = exerciseCommandService.cancelParticipationByManager(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(
                 exerciseId, participantId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -155,7 +155,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<ExerciseDeleteResponseDTO> deleteExercise(
+    public BaseResponse<ExerciseDeleteDTO.Response> deleteExercise(
             @PathVariable Long exerciseId,
             Authentication authentication
     ) {
@@ -163,7 +163,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseDeleteResponseDTO response = exerciseCommandService.deleteExercise(
+        ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -176,16 +176,16 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseUpdateResponseDTO> updateExercise(
+    public BaseResponse<ExerciseUpdateDTO.Response> updateExercise(
             @PathVariable Long exerciseId,
-            @Valid @RequestBody ExerciseUpdateRequestDTO request,
+            @Valid @RequestBody ExerciseUpdateDTO.Request request,
             Authentication authentication
     ){
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseUpdateResponseDTO response = exerciseCommandService.updateExercise(
+        ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

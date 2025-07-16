@@ -12,8 +12,8 @@ import umc.cockple.demo.domain.member.domain.MemberExercise;
 @RequiredArgsConstructor
 public class ExerciseConverter {
 
-    public ExerciseCreateCommand toCreateCommand(ExerciseCreateRequestDTO request) {
-        return ExerciseCreateCommand.builder()
+    public ExerciseCreateDTO.Command toCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateDTO.Command.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -24,8 +24,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseAddrCreateCommand toAddrCreateCommand(ExerciseCreateRequestDTO request) {
-        return ExerciseAddrCreateCommand.builder()
+    public ExerciseCreateDTO.AddrCommand toAddrCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateDTO.AddrCommand.builder()
                 .roadAddress(request.roadAddress())
                 .buildingName(request.buildingName())
                 .latitude(request.latitude())
@@ -33,15 +33,15 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCreateResponseDTO toCreateResponseDTO(Exercise exercise) {
-        return ExerciseCreateResponseDTO.builder()
+    public ExerciseCreateDTO.Response toCreateResponseDTO(Exercise exercise) {
+        return ExerciseCreateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .createdAt(exercise.getCreatedAt())
                 .build();
     }
 
-    public ExerciseJoinResponseDTO toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
-        return ExerciseJoinResponseDTO.builder()
+    public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
+        return ExerciseJoinDTO.Response.builder()
                 .participantId(memberExercise.getId())
                 .participantNumber(memberExercise.getParticipantNum())
                 .joinedAt(memberExercise.getJoinedAt())
@@ -49,8 +49,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public GuestInviteCommand toGuestInviteCommand(GuestInviteRequestDTO request, Long inviterId) {
-        return GuestInviteCommand.builder()
+    public ExerciseGuestInviteDTO.Command toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
+        return ExerciseGuestInviteDTO.Command.builder()
                 .guestName(request.guestName())
                 .gender(request.toParsedGender())
                 .level(request.toParsedLevel())
@@ -58,8 +58,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public GuestInviteResponseDTO toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
-        return GuestInviteResponseDTO.builder()
+    public ExerciseGuestInviteDTO.Response toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
+        return ExerciseGuestInviteDTO.Response.builder()
                 .guestId(guest.getId())
                 .participantNumber(guest.getParticipantNum())
                 .invitedAt(guest.getCreatedAt())
@@ -67,30 +67,30 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCancelResponseDTO toCancelResponseDTO(Exercise exercise, Member member, Integer participantNumber) {
-        return ExerciseCancelResponseDTO.builder()
+    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Member member, Integer participantNumber) {
+        return ExerciseCancelDTO.Response.builder()
                 .memberName(member.getMemberName())
                 .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
 
-    public ExerciseCancelResponseDTO toCancelResponseDTO(Exercise exercise, Guest guest, Integer participantNumber) {
-        return ExerciseCancelResponseDTO.builder()
+    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Guest guest, Integer participantNumber) {
+        return ExerciseCancelDTO.Response.builder()
                 .memberName(guest.getGuestName())
                 .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
 
-    public ExerciseDeleteResponseDTO toDeleteResponseDTO(Exercise exercise) {
-        return ExerciseDeleteResponseDTO.builder()
+    public ExerciseDeleteDTO.Response toDeleteResponseDTO(Exercise exercise) {
+        return ExerciseDeleteDTO.Response.builder()
                 .deletedExerciseId(exercise.getId())
                 .build();
     }
 
-    public ExerciseUpdateCommand toUpdateCommand(ExerciseUpdateRequestDTO request) {
-        return ExerciseUpdateCommand.builder()
+    public ExerciseUpdateDTO.Command toUpdateCommand(ExerciseUpdateDTO.Request request) {
+        return ExerciseUpdateDTO.Command.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -99,10 +99,10 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseAddrUpdateCommand toAddrUpdateCommand(ExerciseUpdateRequestDTO request) {
+    public ExerciseUpdateDTO.AddrCommand toAddrUpdateCommand(ExerciseUpdateDTO.Request request) {
         if (request.roadAddress() != null || request.buildingName() != null ||
                 request.latitude() != null || request.longitude() != null) {
-            return ExerciseAddrUpdateCommand.builder()
+            return ExerciseUpdateDTO.AddrCommand.builder()
                     .roadAddress(request.roadAddress())
                     .buildingName(request.buildingName())
                     .latitude(request.latitude())
@@ -112,8 +112,8 @@ public class ExerciseConverter {
         return null;
     }
 
-    public ExerciseUpdateResponseDTO toUpdateResponseDTO(Exercise exercise) {
-        return ExerciseUpdateResponseDTO.builder()
+    public ExerciseUpdateDTO.Response toUpdateResponseDTO(Exercise exercise) {
+        return ExerciseUpdateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .updatedAt(exercise.getUpdatedAt())
                 .build();

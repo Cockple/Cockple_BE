@@ -110,6 +110,7 @@ public class Member extends BaseEntity {
         this.birth = requestDto.birth();
         this.level = requestDto.level();
         this.keywords = keywords;
+    }
 
     public void addMemberParty(MemberParty memberParty) {
         this.memberParties.add(memberParty);

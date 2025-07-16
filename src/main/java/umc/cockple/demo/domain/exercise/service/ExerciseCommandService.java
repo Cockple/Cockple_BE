@@ -39,14 +39,14 @@ public class ExerciseCommandService {
     private final GuestRepository guestRepository;
     private final ExerciseConverter exerciseConverter;
 
-    public ExerciseCreateResponseDTO createExercise(Long partyId, Long memberId, ExerciseCreateRequestDTO request) {
+    public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
 
         Party party = findPartyOrThrow(partyId);
         validateCreateExercise(memberId, request, party);
 
-        ExerciseCreateCommand exerciseCommand = exerciseConverter.toCreateCommand(request);
-        ExerciseAddrCreateCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
+        ExerciseCreateDTO.Command exerciseCommand = exerciseConverter.toCreateCommand(request);
+        ExerciseCreateDTO.AddrCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         party.addExercise(exercise);
@@ -58,7 +58,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponseDTO(savedExercise);
     }
 
-    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
+    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
 
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -79,7 +79,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
     }
 
-    public GuestInviteResponseDTO inviteGuest(Long exerciseId, Long inviterId, GuestInviteRequestDTO request) {
+    public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
 
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
                 , exerciseId, inviterId, request.guestName());
@@ -88,7 +88,7 @@ public class ExerciseCommandService {
         Member inviter = findMemberOrThrow(inviterId);
         validateGuestInvitation(exercise, inviter);
 
-        GuestInviteCommand command = exerciseConverter.toGuestInviteCommand(request, inviterId);
+        ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
         Integer participantNum = exercise.calculateNextParticipantNumber();
 
         Guest guest = Guest.create(command, participantNum);
@@ -101,7 +101,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
     }
 
-    public ExerciseCancelResponseDTO cancelParticipation(Long exerciseId, Long memberId) {
+    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
 
         log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -126,9 +126,9 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
     }
 
-    public ExerciseCancelResponseDTO cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
+    public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
 
-        log.info("운동 참여 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+        log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
@@ -144,11 +144,13 @@ public class ExerciseCommandService {
 
         exerciseRepository.save(exercise);
 
+        log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+
         return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
 
-    public ExerciseCancelResponseDTO cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long memberId, ExerciseManagerCancelRequestDTO request) {
+    public ExerciseCancelDTO.Response cancelParticipationByManager(
+            Long exerciseId, Long participantId, Long memberId, ExerciseCancelDTO.ByManagerRequest request) {
 
         log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, memberId);
 
@@ -156,7 +158,7 @@ public class ExerciseCommandService {
         Member manager = findMemberOrThrow(memberId);
         validateCancelParticipationByManager(exercise, manager);
 
-        ExerciseCancelResponseDTO response = executeParticipantCancellation(exercise, participantId, request);
+        ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
                 exerciseId, participantId, exercise.getNowCapacity());
@@ -164,7 +166,7 @@ public class ExerciseCommandService {
         return response;
     }
 
-    public ExerciseDeleteResponseDTO deleteExercise(Long exerciseId, Long memberId) {
+    public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
 
         log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -182,7 +184,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toDeleteResponseDTO(exercise);
     }
 
-    public ExerciseUpdateResponseDTO updateExercise(Long exerciseId, Long memberId, ExerciseUpdateRequestDTO request) {
+    public ExerciseUpdateDTO.Response updateExercise(Long exerciseId, Long memberId, ExerciseUpdateDTO.Request request) {
 
         log.info("운동 업데이트 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -190,8 +192,8 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateUpdateExercise(exercise, member, request);
 
-        ExerciseUpdateCommand updateCommand = exerciseConverter.toUpdateCommand(request);
-        ExerciseAddrUpdateCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
+        ExerciseUpdateDTO.Command updateCommand = exerciseConverter.toUpdateCommand(request);
+        ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
 
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);
@@ -206,7 +208,7 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateCreateExercise(Long memberId, ExerciseCreateRequestDTO request, Party party) {
+    private void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
     }
@@ -242,7 +244,7 @@ public class ExerciseCommandService {
         validateMemberPermission(memberId, exercise.getParty());
     }
 
-    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateRequestDTO request) {
+    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         validateMemberPermission(member.getId(), exercise.getParty());
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
         validateUpdateTime(request, exercise);
@@ -259,7 +261,7 @@ public class ExerciseCommandService {
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
     }
 
-    private void validateExerciseTime(ExerciseCreateRequestDTO request) {
+    private void validateExerciseTime(ExerciseCreateDTO.Request request) {
         LocalDate date = request.toParsedDate();
         LocalTime startTime = request.toParsedStartTime();
         LocalTime endTime = request.toParsedEndTime();
@@ -323,7 +325,7 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateUpdateTime(ExerciseUpdateRequestDTO request, Exercise exercise) {
+    private void validateUpdateTime(ExerciseUpdateDTO.Request request, Exercise exercise) {
         LocalTime newStartTime = request.toParsedStartTime();
         LocalTime newEndTime = request.toParsedEndTime();
         LocalDate newDate = request.toParsedDate();
@@ -353,7 +355,7 @@ public class ExerciseCommandService {
         return memberPartyRepository.existsByPartyAndMember(party, member);
     }
 
-    private ExerciseCancelResponseDTO executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseManagerCancelRequestDTO request) {
+    private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         if(request.isGuest()){
             log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
             return cancelGuestParticipation(exercise, participantId);
@@ -363,7 +365,7 @@ public class ExerciseCommandService {
         return cancelMemberParticipation(exercise, participantId);
     }
 
-    private ExerciseCancelResponseDTO cancelGuestParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = findGuestOrThrow(participantId);
         validateGuestBelongsToExercise(guest, exercise);
 
@@ -379,7 +381,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
     }
 
-    private ExerciseCancelResponseDTO cancelMemberParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = findMemberOrThrow(participantId);
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
 

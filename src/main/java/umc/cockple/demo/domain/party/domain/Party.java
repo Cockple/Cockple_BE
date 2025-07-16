@@ -5,8 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateCommand;
@@ -122,7 +121,7 @@ public class Party extends BaseEntity {
         return party;
     }
 
-    public Exercise createExercise(ExerciseCreateCommand command, ExerciseAddrCreateCommand addrCommand) {
+    public Exercise createExercise(ExerciseCreateDTO.Command command, ExerciseCreateDTO.AddrCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
         return Exercise.create(exerciseAddr, command);
     }

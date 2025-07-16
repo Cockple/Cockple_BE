@@ -2,8 +2,8 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrCreateCommand;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrUpdateCommand;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
@@ -35,7 +35,7 @@ public class ExerciseAddr extends BaseEntity {
     @Column(nullable = false)
     private Float longitude;
 
-    public static ExerciseAddr create(ExerciseAddrCreateCommand command) {
+    public static ExerciseAddr create(ExerciseCreateDTO.AddrCommand command) {
         AddressParts addressParts = parseRoadAddress(command.roadAddress());
 
         return ExerciseAddr.builder()
@@ -48,7 +48,7 @@ public class ExerciseAddr extends BaseEntity {
                 .build();
     }
 
-    public void updateAddress(ExerciseAddrUpdateCommand command) {
+    public void updateAddress(ExerciseUpdateDTO.AddrCommand command) {
         if (command.roadAddress() != null && !command.roadAddress().isEmpty()) {
             AddressParts addressParts = parseRoadAddress(command.roadAddress());
             this.addr1 = addressParts.addr1();
