@@ -176,16 +176,16 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseUpdateResponseDTO> updateExercise(
+    public BaseResponse<ExerciseUpdateDTO.Response> updateExercise(
             @PathVariable Long exerciseId,
-            @Valid @RequestBody ExerciseUpdateRequestDTO request,
+            @Valid @RequestBody ExerciseUpdateDTO.Request request,
             Authentication authentication
     ){
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseUpdateResponseDTO response = exerciseCommandService.updateExercise(
+        ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

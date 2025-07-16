@@ -184,7 +184,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toDeleteResponseDTO(exercise);
     }
 
-    public ExerciseUpdateResponseDTO updateExercise(Long exerciseId, Long memberId, ExerciseUpdateRequestDTO request) {
+    public ExerciseUpdateDTO.Response updateExercise(Long exerciseId, Long memberId, ExerciseUpdateDTO.Request request) {
 
         log.info("운동 업데이트 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -192,8 +192,8 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateUpdateExercise(exercise, member, request);
 
-        ExerciseUpdateCommand updateCommand = exerciseConverter.toUpdateCommand(request);
-        ExerciseAddrUpdateCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
+        ExerciseUpdateDTO.Command updateCommand = exerciseConverter.toUpdateCommand(request);
+        ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
 
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);
@@ -244,7 +244,7 @@ public class ExerciseCommandService {
         validateMemberPermission(memberId, exercise.getParty());
     }
 
-    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateRequestDTO request) {
+    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         validateMemberPermission(member.getId(), exercise.getParty());
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
         validateUpdateTime(request, exercise);
@@ -325,7 +325,7 @@ public class ExerciseCommandService {
         }
     }
 
-    private void validateUpdateTime(ExerciseUpdateRequestDTO request, Exercise exercise) {
+    private void validateUpdateTime(ExerciseUpdateDTO.Request request, Exercise exercise) {
         LocalTime newStartTime = request.toParsedStartTime();
         LocalTime newEndTime = request.toParsedEndTime();
         LocalDate newDate = request.toParsedDate();

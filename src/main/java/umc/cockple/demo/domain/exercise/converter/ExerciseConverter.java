@@ -89,8 +89,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseUpdateCommand toUpdateCommand(ExerciseUpdateRequestDTO request) {
-        return ExerciseUpdateCommand.builder()
+    public ExerciseUpdateDTO.Command toUpdateCommand(ExerciseUpdateDTO.Request request) {
+        return ExerciseUpdateDTO.Command.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -99,10 +99,10 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseAddrUpdateCommand toAddrUpdateCommand(ExerciseUpdateRequestDTO request) {
+    public ExerciseUpdateDTO.AddrCommand toAddrUpdateCommand(ExerciseUpdateDTO.Request request) {
         if (request.roadAddress() != null || request.buildingName() != null ||
                 request.latitude() != null || request.longitude() != null) {
-            return ExerciseAddrUpdateCommand.builder()
+            return ExerciseUpdateDTO.AddrCommand.builder()
                     .roadAddress(request.roadAddress())
                     .buildingName(request.buildingName())
                     .latitude(request.latitude())
@@ -112,8 +112,8 @@ public class ExerciseConverter {
         return null;
     }
 
-    public ExerciseUpdateResponseDTO toUpdateResponseDTO(Exercise exercise) {
-        return ExerciseUpdateResponseDTO.builder()
+    public ExerciseUpdateDTO.Response toUpdateResponseDTO(Exercise exercise) {
+        return ExerciseUpdateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .updatedAt(exercise.getUpdatedAt())
                 .build();

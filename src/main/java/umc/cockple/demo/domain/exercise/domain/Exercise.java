@@ -2,9 +2,8 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseAddrUpdateCommand;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -87,7 +86,7 @@ public class Exercise extends BaseEntity {
                 .forEach(Guest::decrementParticipantNum);
     }
 
-    public void updateExerciseInfo(ExerciseUpdateCommand command) {
+    public void updateExerciseInfo(ExerciseUpdateDTO.Command command) {
         if (command.date() != null) {
             this.date = command.date();
         }
@@ -111,7 +110,7 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public void updateExerciseAddr(ExerciseAddrUpdateCommand command) {
+    public void updateExerciseAddr(ExerciseUpdateDTO.AddrCommand command) {
         if (this.exerciseAddr != null && command != null) {
             this.exerciseAddr.updateAddress(command);
         }
