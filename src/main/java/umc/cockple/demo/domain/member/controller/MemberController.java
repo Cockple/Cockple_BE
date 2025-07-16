@@ -4,21 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.security.SecurityUtil;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.member.dto.MemberRequestDto;
+import umc.cockple.demo.domain.member.dto.request.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
-import java.io.DataInput;
 import java.io.IOException;
-
-import static umc.cockple.demo.domain.member.dto.MemberRequestDto.*;
 
 @RestController
 @RequestMapping("/api")
@@ -39,9 +35,10 @@ public class MemberController {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
-        UpdateProfileRequestDto requestDto = objectMapper.readValue(updateProfileRequestDto, UpdateProfileRequestDto.class);
+        UpdateProfileRequestDTO requestDto = objectMapper.readValue(updateProfileRequestDto, UpdateProfileRequestDTO.class);
 
         memberCommandService.updateProfile(requestDto, profileImage, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
+
 }

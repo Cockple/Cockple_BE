@@ -6,7 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.member.dto.MemberRequestDto;
+import umc.cockple.demo.domain.member.dto.request.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static umc.cockple.demo.domain.member.dto.MemberRequestDto.*;
 
 @Entity
 @Builder
@@ -97,18 +96,18 @@ public class Member extends BaseEntity {
         }
     }
 
-    public void updateMember(UpdateProfileRequestDto requestDto, List<MemberKeyword> keywords, ProfileImg img) {
-        this.memberName = requestDto.getMemberName();
-        this.birth = requestDto.getBirth();
-        this.level = requestDto.getLevel();
+    public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords, ProfileImg img) {
+        this.memberName = requestDto.memberName();
+        this.birth = requestDto.birth();
+        this.level = requestDto.level();
         this.keywords = keywords;
         this.profileImg = img;
     }
 
-    public void updateMember(UpdateProfileRequestDto requestDto, List<MemberKeyword> keywords) {
-        this.memberName = requestDto.getMemberName();
-        this.birth = requestDto.getBirth();
-        this.level = requestDto.getLevel();
+    public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords) {
+        this.memberName = requestDto.memberName();
+        this.birth = requestDto.birth();
+        this.level = requestDto.level();
         this.keywords = keywords;
     }
 }

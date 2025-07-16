@@ -8,16 +8,15 @@ import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberKeyword;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.dto.MemberRequestDto;
+import umc.cockple.demo.domain.member.dto.request.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.s3.ImageService;
 
 import java.util.List;
-
-import static umc.cockple.demo.domain.member.dto.MemberRequestDto.*;
 
 @Service
 @Transactional
@@ -27,10 +26,11 @@ public class MemberCommandService {
 
     private final MemberRepository memberRepository;
     private final MemberKeywordRepository memberKeywordRepository;
+    private final MemberAddrRepository memberAddrRepository;
 
     private final ImageService imageService;
 
-    public void updateProfile(UpdateProfileRequestDto requestDto, MultipartFile file, Long memberId) {
+    public void updateProfile(UpdateProfileRequestDTO requestDto, MultipartFile file, Long memberId) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
 
@@ -38,13 +38,18 @@ public class MemberCommandService {
         memberKeywordRepository.deleteAllByMember(member);
 
         // 받아온 키워드 반영
-        List<MemberKeyword> keywords = requestDto.getKeywords().stream()
-                .map(keyword -> MemberKeyword.builder()
-                        .member(member)
-                        .keyword(keyword)
-                        .build())
-                .toList()
-                ;
+        List<MemberKeyword> keywords = requestDto.keywords().stream()
+                .map(keyword -> {
+                    MemberKeyword memberKeyword = MemberKeyword.builder()
+                            .member(member)
+                            .keyword(keyword)
+                            .build();
+
+                    member.getKeywords().add(memberKeyword);
+                    return memberKeyword;
+
+                })
+                .toList();
 
         memberKeywordRepository.saveAll(keywords);
 
@@ -77,8 +82,10 @@ public class MemberCommandService {
     }
 
 
+
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
+
 }
