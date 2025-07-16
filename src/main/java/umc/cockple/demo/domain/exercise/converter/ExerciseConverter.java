@@ -88,4 +88,34 @@ public class ExerciseConverter {
                 .deletedExerciseId(exercise.getId())
                 .build();
     }
+
+    public ExerciseUpdateCommand toUpdateCommand(ExerciseUpdateRequestDTO request) {
+        return ExerciseUpdateCommand.builder()
+                .date(request.toParsedDate())
+                .startTime(request.toParsedStartTime())
+                .endTime(request.toParsedEndTime())
+                .maxCapacity(request.maxCapacity())
+                .notice(request.notice())
+                .build();
+    }
+
+    public ExerciseAddrUpdateCommand toAddrUpdateCommand(ExerciseUpdateRequestDTO request) {
+        if (request.roadAddress() != null || request.buildingName() != null ||
+                request.latitude() != null || request.longitude() != null) {
+            return ExerciseAddrUpdateCommand.builder()
+                    .roadAddress(request.roadAddress())
+                    .buildingName(request.buildingName())
+                    .latitude(request.latitude())
+                    .longitude(request.longitude())
+                    .build();
+        }
+        return null;
+    }
+
+    public ExerciseUpdateResponseDTO toUpdateResponseDTO(Exercise exercise) {
+        return ExerciseUpdateResponseDTO.builder()
+                .exerciseId(exercise.getId())
+                .updatedAt(exercise.getUpdatedAt())
+                .build();
+    }
 }
