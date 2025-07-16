@@ -6,15 +6,15 @@ import umc.cockple.demo.domain.contest.dto.*;
 import java.util.List;
 
 public interface ContestCommandService {
-    ContestRecordCreateResponseDTO createContestRecord(
-            Long memberId, List<MultipartFile> ContestImage, ContestRecordCreateRequestDTO request
+    ContestRecordCreateDTO.Response createContestRecord(
+            Long memberId, List<MultipartFile> ContestImage, ContestRecordCreateDTO.Request request
     );
 
-    ContestRecordUpdateResponseDTO updateContestRecord(
-            Long memberId, Long contestId, List<MultipartFile> ContestImage, ContestRecordUpdateRequestDTO request
+    ContestRecordUpdateDTO.Response updateContestRecord(
+            Long memberId, Long contestId, List<MultipartFile> ContestImage, ContestRecordUpdateDTO.Request request
     );
 
-    ContestRecordDeleteResponseDTO deleteContestRecord(
+    ContestRecordDeleteDTO.Response deleteContestRecord(
             Long memberId, Long contestId
     );
 }

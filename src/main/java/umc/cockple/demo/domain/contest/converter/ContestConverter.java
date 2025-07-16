@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 public class ContestConverter {
 
     // 대회 기록 등록
-    public ContestRecordCreateCommand toCreateCommand(ContestRecordCreateRequestDTO request, Long memberId, List<MultipartFile> contestImgs) {
-        return ContestRecordCreateCommand.builder()
+    public ContestRecordCreateDTO.Command toCreateCommand(ContestRecordCreateDTO.Request request, Long memberId, List<MultipartFile> contestImgs) {
+        return ContestRecordCreateDTO.Command.builder()
                 .memberId(memberId)
                 .contestName(request.contestName())
                 .date(request.date())
@@ -33,30 +33,30 @@ public class ContestConverter {
                 .build();
     }
 
-    public ContestRecordCreateResponseDTO toCreateResponseDTO(Contest contest) {
-        return ContestRecordCreateResponseDTO.builder()
+    public ContestRecordCreateDTO.Response toCreateResponseDTO(Contest contest) {
+        return ContestRecordCreateDTO.Response.builder()
                 .contestId(contest.getId())
                 .createdAt(contest.getCreatedAt())
                 .build();
     }
 
     // 대회 기록 수정
-    public ContestRecordUpdateResponseDTO toUpdateResponseDTO(Contest contest) {
-        return ContestRecordUpdateResponseDTO.builder()
+    public ContestRecordUpdateDTO.Response toUpdateResponseDTO(Contest contest) {
+        return ContestRecordUpdateDTO.Response.builder()
                 .contestId(contest.getId())
                 .UpdatedAt(contest.getUpdatedAt())
                 .build();
     }
 
     // 대회 기록 삭제
-    public ContestRecordDeleteResponseDTO toDeleteResponseDTO(Contest contest) {
-        return ContestRecordDeleteResponseDTO.builder()
+    public ContestRecordDeleteDTO.Response toDeleteResponseDTO(Contest contest) {
+        return ContestRecordDeleteDTO.Response.builder()
                 .deleteContestId(contest.getId())
                 .build();
     }
 
     // 대회 기록 상세 조회
-    public ContestRecordDetailResponseDTO toDetailResponseDTO(Contest contest, Boolean isOwner) {
+    public ContestRecordDetailDTO.Response toDetailResponseDTO(Contest contest, Boolean isOwner) {
         List<String> imgUrls = contest.getContestImgs().stream()
                 .sorted(Comparator.comparing(ContestImg::getImgOrder))
                 .map(ContestImg::getImgUrl)
@@ -75,7 +75,7 @@ public class ContestConverter {
                 ? contest.getContent()
                 : "";
 
-        return ContestRecordDetailResponseDTO.builder()
+        return ContestRecordDetailDTO.Response.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())
                 .date(contest.getDate())
@@ -91,8 +91,8 @@ public class ContestConverter {
     }
 
     // 대회 기록 심플 조회
-    public static ContestRecordSimpleResponseDTO toSimpleResponseDTO(Contest contest) {
-        return ContestRecordSimpleResponseDTO.builder()
+    public static ContestRecordSimpleDTO.Response toSimpleResponseDTO(Contest contest) {
+        return ContestRecordSimpleDTO.Response.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())
                 .type(contest.getType())
@@ -103,7 +103,7 @@ public class ContestConverter {
     }
 
     // 대회 기록 리스트 변환
-    public List<ContestRecordSimpleResponseDTO> toSimpleDTOList(List<Contest> contests) {
+    public List<ContestRecordSimpleDTO.Response> toSimpleDTOList(List<Contest> contests) {
         return contests.stream()
                 .map(ContestConverter::toSimpleResponseDTO)
                 .collect(Collectors.toList());
@@ -120,8 +120,8 @@ public class ContestConverter {
     }
 
     // 대회 메달 개수 조회
-    public ContestMedalSummaryResponseDTO toMedalSummaryResponseDTO(int gold, int silver, int bronze) {
-        return ContestMedalSummaryResponseDTO.builder()
+    public ContestMedalSummaryDTO.Response toMedalSummaryResponseDTO(int gold, int silver, int bronze) {
+        return ContestMedalSummaryDTO.Response.builder()
                 .myMedalTotal(gold + silver + bronze)
                 .goldCount(gold)
                 .silverCount(silver)

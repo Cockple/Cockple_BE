@@ -34,16 +34,16 @@ public class ContestController {
     @ApiResponse(responseCode = "201", description = "대회 기록 등록 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ContestRecordCreateResponseDTO> createContestRecord(
+    public BaseResponse<ContestRecordCreateDTO.Response> createContestRecord(
             //@AuthenticationPrincipal Long memberId,
-            @RequestPart("request") @Valid ContestRecordCreateRequestDTO request,
+            @RequestPart("request") @Valid ContestRecordCreateDTO.Request request,
             @RequestPart(value = "contestImg", required = false) List<MultipartFile> contestImgs
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
         // 서비스 호출
-        ContestRecordCreateResponseDTO response = contestCommandService.createContestRecord(memberId, contestImgs, request);
+        ContestRecordCreateDTO.Response response = contestCommandService.createContestRecord(memberId, contestImgs, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
@@ -53,17 +53,17 @@ public class ContestController {
     @ApiResponse(responseCode = "201", description = "대회 기록 수정 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ContestRecordUpdateResponseDTO> updateContestRecord(
+    public BaseResponse<ContestRecordUpdateDTO.Response> updateContestRecord(
             //@AuthenticationPrincipal Long memberId
             @PathVariable Long contestId,
-            @RequestPart("updateRequest") @Valid ContestRecordUpdateRequestDTO request,
+            @RequestPart("updateRequest") @Valid ContestRecordUpdateDTO.Request request,
             @RequestPart(value = "contestImg", required = false) List<MultipartFile> contestImgsToAdd
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
         //서비스 호출
-        ContestRecordUpdateResponseDTO response = contestCommandService.updateContestRecord(memberId, contestId, contestImgsToAdd, request);
+        ContestRecordUpdateDTO.Response response = contestCommandService.updateContestRecord(memberId, contestId, contestImgsToAdd, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
@@ -72,7 +72,7 @@ public class ContestController {
     @Operation(summary = "대회 기록 삭제", description = "회원이 자신의 대회 기록을 삭제합니다.")
     @ApiResponse(responseCode = "204", description = "대회 기록 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ContestRecordDeleteResponseDTO> deleteContestRecord(
+    public BaseResponse<ContestRecordDeleteDTO.Response> deleteContestRecord(
             //@AuthenticationPrincipal Long memberId
             @PathVariable Long contestId
     ) {
@@ -80,7 +80,7 @@ public class ContestController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ContestRecordDeleteResponseDTO response =
+        ContestRecordDeleteDTO.Response response =
                 contestCommandService.deleteContestRecord(memberId, contestId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -89,41 +89,41 @@ public class ContestController {
     @GetMapping(value = "/contests/my/{contestId}")
     @Operation(summary = "내 대회 기록 상세 조회", description = "회원이 자신의 대회 기록 하나를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ContestRecordDetailResponseDTO> getMyContestRecordDetail(
+    public BaseResponse<ContestRecordDetailDTO.Response> getMyContestRecordDetail(
             //@AuthenticationPrincipal Long memberId,
             @PathVariable Long contestId
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ContestRecordDetailResponseDTO response = contestQueryService.getContestRecordDetail(memberId, memberId, contestId);
+        ContestRecordDetailDTO.Response response = contestQueryService.getContestRecordDetail(memberId, memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @GetMapping(value = "/contests/my")
     @Operation(summary = "내 대회 기록 리스트 조회", description = "회원이 자신의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getMyContestRecord(
+    public BaseResponse<List<ContestRecordSimpleDTO.Response>> getMyContestRecord(
             //@AuthenticationPrincipal Long memberId
             @RequestParam(required = false) MedalType medalType
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L;
 
-        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
+        List<ContestRecordSimpleDTO.Response> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/contests/my/medals")
     @Operation(summary = "내 대회 메달 조회", description = "회원이 자신의 메달 개수를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ContestMedalSummaryResponseDTO> getMyMedals(
+    public BaseResponse<ContestMedalSummaryDTO.Response> getMyMedals(
             //@AuthenticationPrincipal Long memberId
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L;
 
-        ContestMedalSummaryResponseDTO response = contestQueryService.getMyMedalSummary(memberId);
+        ContestMedalSummaryDTO.Response response = contestQueryService.getMyMedalSummary(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
@@ -131,7 +131,7 @@ public class ContestController {
     @GetMapping(value = "/members/{memberId}/contests/{contestId}")
     @Operation(summary = "다른 사람의 대회 기록 상세 조회", description = "다른 사람의 대회 기록 하나를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ContestRecordDetailResponseDTO> getOtherMemberContestRecordDetail(
+    public BaseResponse<ContestRecordDetailDTO.Response> getOtherMemberContestRecordDetail(
             //@AuthenticationPrincipal Long loginMemberId,
             @PathVariable Long memberId,
             @PathVariable Long contestId
@@ -139,28 +139,28 @@ public class ContestController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long loginMemberId = 2L; // 임시값
 
-        ContestRecordDetailResponseDTO response = contestQueryService.getContestRecordDetail(loginMemberId, memberId, contestId);
+        ContestRecordDetailDTO.Response response = contestQueryService.getContestRecordDetail(loginMemberId, memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @GetMapping(value = "/members/{memberId}/contests")
     @Operation(summary = "다른 사람의 대회 기록 리스트 조회", description = "회원이 다른 사람의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<List<ContestRecordSimpleResponseDTO>> getOtherMemberContestRecord(
+    public BaseResponse<List<ContestRecordSimpleDTO.Response>> getOtherMemberContestRecord(
             @RequestParam Long memberId,
             @RequestParam(required = false) MedalType medalType
     ) {
-        List<ContestRecordSimpleResponseDTO> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
+        List<ContestRecordSimpleDTO.Response> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/members/{memberId}/medals")
     @Operation(summary = "다른 사람의 대회 메달 조회", description = "회원이 다른 사람의 메달 개수를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ContestMedalSummaryResponseDTO> getOtherMemberMedals(
+    public BaseResponse<ContestMedalSummaryDTO.Response> getOtherMemberMedals(
             @RequestParam Long memberId
     ) {
-        ContestMedalSummaryResponseDTO response = contestQueryService.getMyMedalSummary(memberId);
+        ContestMedalSummaryDTO.Response response = contestQueryService.getMyMedalSummary(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
