@@ -96,6 +96,7 @@ public class Member extends BaseEntity {
         }
     }
 
+
     public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords, ProfileImg img) {
         this.memberName = requestDto.memberName();
         this.birth = requestDto.birth();
@@ -109,5 +110,10 @@ public class Member extends BaseEntity {
         this.birth = requestDto.birth();
         this.level = requestDto.level();
         this.keywords = keywords;
+
+    public void addMemberParty(MemberParty memberParty) {
+        this.memberParties.add(memberParty);
+        memberParty.setMember(this);
+
     }
 }

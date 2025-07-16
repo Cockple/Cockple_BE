@@ -8,9 +8,10 @@ import umc.cockple.demo.global.enums.MedalType;
 import java.util.List;
 
 public interface ContestQueryService {
-    ContestRecordDetailResponseDTO getMyContestRecordDetail(Long memberId, Long contestId);
+    ContestRecordDetailResponseDTO getContestRecordDetail(Long loginMemberId, Long memberId, Long contestId);
 
     List<ContestRecordSimpleResponseDTO> getMyContestRecordsByMedalType(Long memberId, MedalType medalType);
 
     ContestMedalSummaryResponseDTO getMyMedalSummary(Long memberId);
+
 }
