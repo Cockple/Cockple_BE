@@ -58,7 +58,7 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponseDTO(savedExercise);
     }
 
-    public ExerciseJoinResponseDTO joinExercise(Long exerciseId, Long memberId) {
+    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
 
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 

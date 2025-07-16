@@ -40,8 +40,8 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseJoinResponseDTO toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
-        return ExerciseJoinResponseDTO.builder()
+    public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
+        return ExerciseJoinDTO.Response.builder()
                 .participantId(memberExercise.getId())
                 .participantNumber(memberExercise.getParticipantNum())
                 .joinedAt(memberExercise.getJoinedAt())

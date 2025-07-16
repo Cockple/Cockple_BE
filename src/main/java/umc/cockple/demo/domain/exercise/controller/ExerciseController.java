@@ -50,7 +50,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 신청 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ExerciseJoinResponseDTO> JoinExercise(
+    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
             @PathVariable Long exerciseId,
             Authentication authentication
     ){
@@ -58,7 +58,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseJoinResponseDTO response = exerciseCommandService.joinExercise(
+        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
