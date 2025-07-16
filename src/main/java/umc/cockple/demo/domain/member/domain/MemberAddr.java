@@ -41,4 +41,13 @@ public class MemberAddr extends BaseEntity {
     @Column(nullable = false)
     private Boolean isMain;
 
+
+    public void notMainAddr() {
+        this.isMain = false;
+    }
+
+    public void beMainAddr() {
+        this.isMain = true;
+    }
+
 }

@@ -16,7 +16,19 @@ public enum MemberErrorCode implements BaseErrorCode {
      * 3xx: 권한/인증 문제
      * 4xx: 비즈니스 로직 위반
      */
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER201", "해당 사용자를 찾을 수 없습니다.");
+
+    // 회원 관련
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER201", "해당 사용자를 찾을 수 없습니다."),
+
+
+    // 회원 주소 관련
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "MEM_ADDR201", "해당 주소를 찾을 수 없습니다."),
+
+    DUPLICATE_ADDRESS(HttpStatus.BAD_REQUEST, "MEM_ADDR401", "이미 같은 주소가 존재합니다."),
+    OVER_NUMBER_OF_ADDR(HttpStatus.BAD_REQUEST, "MEM_ADDR402", "주소 개수가 5개를 초과합니다."),
+
+
+    ;
 
     private final HttpStatus httpStatus;
     private final String code;

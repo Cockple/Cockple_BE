@@ -6,9 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberKeyword;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.dto.request.UpdateProfileRequestDTO;
+import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
@@ -17,6 +18,8 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.s3.ImageService;
 
 import java.util.List;
+
+import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 
 @Service
 @Transactional
@@ -81,11 +84,62 @@ public class MemberCommandService {
         }
     }
 
+    public CreateMemberAddrResponseDTO addMemberNewAddr(CreateMemberAddrRequestDTO requestDto, Long memberId) {
 
+        // 회원 찾기
+        Member member = findByMemberId(memberId);
+
+        // 원하는 주소가 이미 존재하고 있는지 확인
+        if (member.hasDuplicateAddr(requestDto)) {
+            throw new MemberException(MemberErrorCode.DUPLICATE_ADDRESS);
+        }
+
+        // 주소 개수 5개 이상인지 확인
+        if (member.getAddresses().size() >= 5) {
+            throw new MemberException(MemberErrorCode.OVER_NUMBER_OF_ADDR);
+        }
+
+        // 주소 생성
+        MemberAddr memberAddr = MemberAddr.builder()
+                .addr1(requestDto.addr1())
+                .addr2(requestDto.addr2())
+                .addr3(requestDto.addr3())
+                .streetAddr(requestDto.streetAddr())
+                .buildingName(requestDto.buildingName())
+                .latitude(requestDto.latitude())
+                .longitude(requestDto.longitude())
+                .isMain(false)
+                .member(member)
+                .build()
+        ;
+
+        // 주소 등록
+        MemberAddr newAddr = memberAddrRepository.save(memberAddr);
+        member.getAddresses().add(newAddr);
+
+        // 기존 대표주소 != 현재 등록하려는 대표주소 -> 대표주소 변경
+        if (!requestDto.nowMainAddrId().equals(requestDto.prevMainAddrId())) {
+
+            MemberAddr newMainAddr = findByAddrId(requestDto.nowMainAddrId());
+            MemberAddr prevMainAddr = findByAddrId(requestDto.prevMainAddrId());
+
+            // 새 대표주소 true처리, 이전 대표주소 false처리
+            newMainAddr.beMainAddr();
+            prevMainAddr.notMainAddr();
+        }
+
+        return new CreateMemberAddrResponseDTO(newAddr.getId());
+
+    }
 
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private MemberAddr findByAddrId(Long memberAddrId) {
+        return memberAddrRepository.findById(memberAddrId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.ADDRESS_NOT_FOUND));
     }
 
 }
