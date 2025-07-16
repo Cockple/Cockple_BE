@@ -15,7 +15,8 @@ public record UpdateProfileRequestDTO(
         @NotBlank(message = "급수는 필수입니다.")
         Level level,
         @NotBlank(message = "키워드는 필수입니다.")
-        List<Keyword> keywords
+        List<Keyword> keywords,
+        String imgUrl
 
 ) {
 }
