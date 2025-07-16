@@ -44,7 +44,7 @@ public class ImageService {
                 .collect(Collectors.toList());
     }
 
-    public void delete(String imgKey) {
+    public void delete(String imgKey) { // igmurl로 s3 key 추출해서 삭제
         String fakeUrl = FAKE_S3_PREFIX + imgKey + ".png";
         log.info("[임시 삭제] 다음 이미지를 삭제합니다: {}", fakeUrl);
     }

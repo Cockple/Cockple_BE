@@ -22,11 +22,14 @@ public class ProfileImg {
     @Column(nullable = false)
     private String imgUrl;
 
-    @Column(nullable = false)
-    private String imgKey;
 
     public void setMember(Member member) {
         this.member = member;
+    }
+
+    // 프로필 사진 수정시 url만 변경
+    public void updateProfile(String imgUrl) {
+        this.imgUrl = imgUrl;
     }
 
 }
