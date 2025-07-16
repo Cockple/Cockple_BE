@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.member.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 
@@ -10,11 +11,11 @@ import java.util.List;
 public record UpdateProfileRequestDTO(
         @NotBlank(message = "회원명은 필수입니다.")
         String memberName,
-        @NotBlank(message = "생년월일은 필수입니다.")
+        @NotNull(message = "생년월일은 필수입니다.")
         LocalDate birth,
-        @NotBlank(message = "급수는 필수입니다.")
+        @NotNull(message = "급수는 필수입니다.")
         Level level,
-        @NotBlank(message = "키워드는 필수입니다.")
+        @NotNull(message = "키워드는 필수입니다.")
         List<Keyword> keywords,
         String imgUrl
 

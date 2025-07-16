@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.member.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class CreateMemberAddrDTO {
 
@@ -16,13 +17,13 @@ public class CreateMemberAddrDTO {
             String streetAddr,
             @NotBlank(message = "건물명은 필수입니다.")
             String buildingName,
-            @NotBlank(message = "위도는 필수입니다.")
+            @NotNull(message = "위도는 필수입니다.")
             Float latitude,
-            @NotBlank(message = "경도는 필수입니다.")
+            @NotNull(message = "경도는 필수입니다.")
             Float longitude,
-            @NotBlank(message = "이전 대표주소id는 필수입니다.")
+            @NotNull(message = "이전 대표주소id는 필수입니다.")
             Long prevMainAddrId,
-            @NotBlank(message = "대표주소id는 필수입니다.")
+            @NotNull(message = "대표주소id는 필수입니다.")
             Long nowMainAddrId
     ) {
     }
