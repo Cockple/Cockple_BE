@@ -32,8 +32,8 @@ public class MemberController {
     private final ObjectMapper objectMapper;
 
     @PatchMapping(value = "/my/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "모임 가입 신청",
-            description = "사용자가 특정 모임에 가입을 신청합니다")
+    @Operation(summary = "프로필 수정 API",
+            description = "사용자가 자신의 프로필 수정")
     public BaseResponse<Object> updateProfile(@RequestPart("updateProfileRequestDto") String  updateProfileRequestDto,
                                               @RequestPart(value = "profileImg", required = false) MultipartFile profileImage) throws IOException {
         // 추후 시큐리티를 통해 id 가져옴
