@@ -90,7 +90,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelResponseDTO> cancelParticipation(
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
             @PathVariable Long exerciseId,
             Authentication authentication
     ) {
@@ -98,7 +98,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseCancelResponseDTO response = exerciseCommandService.cancelParticipation(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
