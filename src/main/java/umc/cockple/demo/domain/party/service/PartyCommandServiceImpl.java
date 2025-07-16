@@ -37,10 +37,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final PartyConverter partyConverter;
-    private final ImageService imageService;
 
     @Override
-    public PartyCreateResponseDTO createParty(Long memberId, MultipartFile profileImage, PartyCreateRequestDTO request) {
+    public PartyCreateResponseDTO createParty(Long memberId, PartyCreateRequestDTO request) {
         log.info("모임 생성 시작 - memberId: {}", memberId);
 
         //DTO -> Command 객체로 변환
@@ -53,11 +52,8 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //주소 처리 (조회 또는 새로 생성)
         PartyAddr partyAddr = findOrCreatePartyAddr(addrCommand);
 
-        //이미지 업로드 처리
-        String imageUrl = imageService.uploadImage(profileImage);
-
         //Party 엔티티 생성
-        Party newParty = Party.create(partyCommand, partyAddr, imageUrl, owner);
+        Party newParty = Party.create(partyCommand, partyAddr, owner);
 
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
