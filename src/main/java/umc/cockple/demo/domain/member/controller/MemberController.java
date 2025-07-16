@@ -50,4 +50,15 @@ public class MemberController {
         return BaseResponse.success(CommonSuccessCode.CREATED, memberCommandService.addMemberNewAddr(requestDto, memberId));
     }
 
+    @PatchMapping("/my/profile/locations/{memberAddrId}")
+    @Operation(summary = "대표 주소 변경 API",
+            description = "사용자가 자신의 대표주소 변경")
+    public BaseResponse<String> updateMainAddr(@PathVariable Long memberAddrId) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        memberCommandService.updateMainAddr(memberId, memberAddrId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
 }
