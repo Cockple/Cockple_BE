@@ -54,7 +54,7 @@ public class MemberController {
     @GetMapping(value = "/my/profile")
     @Operation(summary = "내 프로필 조회 API",
             description = "사용자가 자신의 프로필을 조회")
-    public BaseResponse<GetMyProfileResponseDTO> getProfile() {
+    public BaseResponse<GetMyProfileResponseDTO> getMyProfile() {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
