@@ -208,6 +208,7 @@ public class ExerciseCommandService {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
+        validateMemberLevel(exercise, member);
     }
 
     private void validateGuestInvitation(Exercise exercise, Member inviter) {
@@ -286,6 +287,14 @@ public class ExerciseCommandService {
 
         if(Boolean.FALSE.equals(exercise.getOutsideGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
+        }
+    }
+
+    private void validateMemberLevel(Exercise exercise, Member member) {
+        Party party = exercise.getParty();
+
+        if(!party.isLevelAllowed(member)){
+            throw new ExerciseException(ExerciseErrorCode.LEVEL_NOT_ALLOWED);
         }
     }
 

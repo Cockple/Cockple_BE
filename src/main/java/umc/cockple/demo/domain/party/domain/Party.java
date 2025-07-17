@@ -14,6 +14,7 @@ import umc.cockple.demo.global.enums.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Builder
@@ -125,6 +126,18 @@ public class Party extends BaseEntity {
     public Exercise createExercise(ExerciseCreateDTO.Command command, ExerciseCreateDTO.AddrCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
         return Exercise.create(exerciseAddr, command);
+    }
+
+    public boolean isLevelAllowed(Member member) {
+        List<Level> allowedLevels = getAllowedLevels(member.getGender());
+        return allowedLevels.contains(member.getLevel());
+    }
+
+    public List<Level> getAllowedLevels(Gender gender) {
+        return this.levels.stream()
+                .filter(partyLevel -> partyLevel.getGender() == gender)
+                .map(PartyLevel::getLevel)
+                .collect(Collectors.toList());
     }
 
     public void addMember(MemberParty memberParty) {
