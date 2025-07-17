@@ -39,14 +39,14 @@ public class PartyConverter {
     }
 
     //모임 가입신청을 응답 DTO로 변환
-    public PartyJoinCreateDTO.Response toJoinResponse(PartyJoinRequest request) {
+    public PartyJoinCreateDTO.Response toJoinResponseDTO(PartyJoinRequest request) {
         return PartyJoinCreateDTO.Response.builder()
                 .joinRequestId(request.getId())
                 .build();
     }
 
     //모임 엔티티를 응답 DTO로 변환
-    public PartyCreateDTO.Response toCreateResponse(Party party) {
+    public PartyCreateDTO.Response toCreateResponseDTO(Party party) {
         return PartyCreateDTO.Response.builder()
                 .partyId(party.getId())
                 .createdAt(party.getCreatedAt())
@@ -54,7 +54,7 @@ public class PartyConverter {
     }
 
     //모임 가입신청의 정보를 응답 DTO로 변환
-    public PartyJoinDTO.Response toPartyJoinResponse(PartyJoinRequest request) {
+    public PartyJoinDTO.Response toPartyJoinResponseDTO(PartyJoinRequest request) {
         Member member = request.getMember();
         //이미지가 null인 경우 null을 전달
         String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgUrl() : null;

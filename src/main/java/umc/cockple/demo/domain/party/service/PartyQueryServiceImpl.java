@@ -40,7 +40,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 .findByPartyAndStatus(party, RequestStatus.PENDING, pageable);
 
         log.info("가입 신청 목록 조회 완료. 조회된 항목 수: {}", requestSlice.getNumberOfElements());
-        return requestSlice.map(partyConverter::toPartyJoinResponse);
+        return requestSlice.map(partyConverter::toPartyJoinResponseDTO);
     }
 
     //모임장 권한 확인

@@ -55,7 +55,7 @@ public class ExerciseCommandService {
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
-        return exerciseConverter.toCreateResponse(savedExercise);
+        return exerciseConverter.toCreateResponseDTO(savedExercise);
     }
 
     public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
@@ -76,7 +76,7 @@ public class ExerciseCommandService {
 
         log.info("운동 신청 종료 - memberExerciseId: {}", savedMemberExercise.getId());
 
-        return exerciseConverter.toJoinResponse(savedMemberExercise, exercise);
+        return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
     }
 
     public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {

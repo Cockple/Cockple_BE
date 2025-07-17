@@ -61,7 +61,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
         //ResponseDTO로 변환하여 반환
-        return partyConverter.toCreateResponse(savedParty);
+        return partyConverter.toCreateResponseDTO(savedParty);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("가입신청 완료 - JoinRequestId: {}", savedPartyJoinRequest.getId());
 
         //ResponseDTO로 변환하여 반환
-        return partyConverter.toJoinResponse(savedPartyJoinRequest);
+        return partyConverter.toJoinResponseDTO(savedPartyJoinRequest);
     }
 
     @Override
