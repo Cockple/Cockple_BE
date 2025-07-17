@@ -23,9 +23,7 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.RequestAction;
-import umc.cockple.demo.global.enums.RequestStatus;
+import umc.cockple.demo.global.enums.*;
 
 import java.util.List;
 
@@ -161,9 +159,21 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING)) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
         }
+        //해당 모임의 모임 유형에 맞는 성별인지 확인
+        validateGenderRequirement(member, party);
 
-        //해당 모임의 급수 조건에 적합한지 검증
+        //해당 모임의 급수 조건에 적합한지 확인
         validateLevelRequirement(member, party);
+    }
+
+    private void validateGenderRequirement(Member member, Party party) {
+        ParticipationType partyType = party.getPartyType();
+        Gender memberGender = member.getGender();
+
+        //현재 모임유형에 남복은 존재하지 않으므로, 여복만 확인
+        if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
+            throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
+        }
     }
 
     private void validateLevelRequirement(Member member, Party party) {
