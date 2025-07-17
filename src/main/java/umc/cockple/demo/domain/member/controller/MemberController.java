@@ -29,6 +29,19 @@ public class MemberController {
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
 
+
+    @PatchMapping(value = "/member")
+    @Operation(summary = "회원 탈퇴 API",
+            description = "사용자 회원 탈퇴")
+    public BaseResponse<String> withdraw() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        memberCommandService.withdrawMember(memberId);
+        return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
+    }
+
+
     @PatchMapping(value = "/my/profile")
     @Operation(summary = "프로필 수정 API",
             description = "사용자가 자신의 프로필 수정")
