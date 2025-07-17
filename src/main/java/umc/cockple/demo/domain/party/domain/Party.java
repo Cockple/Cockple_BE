@@ -128,6 +128,17 @@ public class Party extends BaseEntity {
         return Exercise.create(exerciseAddr, command);
     }
 
+    public boolean isAgeValid(Member member){
+        int age = member.getAge();
+
+        if(minAge != null && age < minAge){
+            return false;
+        }if(maxAge != null && age > maxAge){
+            return false;
+        }
+        return true;
+    }
+
     public void addMember(MemberParty memberParty) {
         this.memberParties.add(memberParty);
         memberParty.setParty(this);

@@ -209,6 +209,7 @@ public class ExerciseCommandService {
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
         validateMemberLevel(exercise.getParty(), member);
+        validateMemberAge(exercise.getParty(), member);
     }
 
     private void validateGuestInvitation(Exercise exercise, Member inviter) {
@@ -297,6 +298,12 @@ public class ExerciseCommandService {
 
         if (!isLevelAllowed) {
             throw new ExerciseException(ExerciseErrorCode.MEMBER_LEVEL_NOT_ALLOWED);
+        }
+    }
+
+    private void validateMemberAge(Party party, Member member) {
+        if(!party.isAgeValid(member)){
+            throw new ExerciseException(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED);
         }
     }
 
