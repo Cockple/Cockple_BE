@@ -42,15 +42,13 @@ public class MemberController {
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
 
-    @GetMapping(value = "/my/profile/{memberId}")
+    @GetMapping(value = "/profile/{memberId}")
     @Operation(summary = "프로필 조회 API",
             description = "사용자가 다른 사람의 프로필을 조회")
     public BaseResponse<GetProfileResponseDTO> getProfile(@PathVariable Long memberId) {
 
         return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getProfile(memberId));
     }
-
-
 
     @PatchMapping(value = "/my/profile")
     @Operation(summary = "프로필 수정 API",
