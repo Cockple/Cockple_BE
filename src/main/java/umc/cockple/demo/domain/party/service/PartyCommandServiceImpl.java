@@ -52,6 +52,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //주소 처리 (조회 또는 새로 생성)
         PartyAddr partyAddr = findOrCreatePartyAddr(addrCommand);
 
+        //모임 생성 가능한지 검증
         validateCreateParty(owner, partyCommand);
 
         //Party 엔티티 생성
@@ -151,8 +152,16 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
-        //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
+        // 혼복인 경우, 남녀 급수 정보가 모두 있는지 검증
         ParticipationType partyType = command.partyType();
+        if (partyType == ParticipationType.MIX_DOUBLES) {
+            //FEMALE은 DTO단에서 검증 완료
+            if (command.maleLevel() == null || command.maleLevel().isEmpty()) {
+                throw new PartyException(PartyErrorCode.MALE_LEVEL_REQUIRED);
+            }
+        }
+
+        //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
         Gender ownerGender = owner.getGender();
         if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
             throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
