@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyJoinResponseDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
@@ -27,7 +27,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyConverter partyConverter;
 
     @Override
-    public Slice<PartyJoinResponseDTO> getJoinRequests(Long partyId, Long memberId, Pageable pageable) {
+    public Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, Pageable pageable) {
         log.info("가입 신청 목록 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
         //모임 조회
