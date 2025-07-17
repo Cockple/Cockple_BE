@@ -14,6 +14,7 @@ import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,5 +138,9 @@ public class Member extends BaseEntity {
 
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
+    }
+
+    public int getAge(){
+        return Period.between(birth, LocalDate.now()).getYears();
     }
 }
