@@ -131,6 +131,25 @@ public class MemberCommandService {
 
     }
 
+    public void updateMainAddr(Long memberId, Long addrId) {
+        // 회원 찾기
+        Member member = findByMemberId(memberId);
+
+        // 새 대표주소 찾기
+        MemberAddr newMainAddr = findByAddrId(addrId);
+
+        // 현재 대표주소 찾아서 false로 변경
+        member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .ifPresent(MemberAddr::notMainAddr)
+        ;
+
+        // 새 대표주소 true로 설정
+        newMainAddr.beMainAddr();
+    }
+
+
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
