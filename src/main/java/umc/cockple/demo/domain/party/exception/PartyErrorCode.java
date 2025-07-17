@@ -16,6 +16,11 @@ public enum PartyErrorCode implements BaseErrorCode {
      * 3xx: 권한/인증 문제
      * 4xx: 비즈니스 로직 위반
      */
+    INVALID_PARTY_TYPE(HttpStatus.BAD_REQUEST, "PARTY101", "유효하지 않은 모임 유형입니다. (WOMEN_DOUBLES 또는 MIX_DOUBLES을 입력해주세요.)"),
+    INVALID_ACTIVITY_DAY(HttpStatus.BAD_REQUEST, "PARTY102", "유효하지 않은 활동 요일입니다. (SUNDAY~SATURDAY를 리스트로 입력해주세요.)"),
+    INVALID_ACTIVITY_TIME(HttpStatus.BAD_REQUEST, "PARTY103", "유효하지 않은 활동 시간입니다. (MORNING 또는 AFTERNOON 또는 ALWAYS를 입력해주세요.)"),
+    INVALID_LEVEL_FORMAT(HttpStatus.BAD_REQUEST, "PARTY104", "유효하지 않은 급수 형식입니다."),
+
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
     JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
     JOIN_REQUEST_PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY203", "해당 모임에서 존재하지 않는 가입신청입니다."),

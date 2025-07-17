@@ -91,7 +91,7 @@ public class Party extends BaseEntity {
     public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
         Party party = Party.builder()
                 .partyName(command.partyName())
-                .partyType(ParticipationType.valueOf(command.partyType())) //enum으로 변환
+                .partyType(command.partyType())
                 .ownerId(owner.getId())
                 .minAge(command.minAge())
                 .maxAge(command.maxAge())
@@ -99,7 +99,7 @@ public class Party extends BaseEntity {
                 .joinPrice(command.joinPrice())
                 .designatedCock(command.designatedCock())
                 .content(command.content())
-                .activityTime(ActivityTime.valueOf(command.activityTime())) //enum으로 변환
+                .activityTime(command.activityTime())
                 .partyAddr(addr)
                 .build();
 
@@ -111,12 +111,11 @@ public class Party extends BaseEntity {
         }
 
         //다중 선택 정보를 추가하기 위한 메서드
-        command.activityDay().forEach(day -> party.addActiveDay(ActiveDay.valueOf(day)));
-        command.femaleLevel().forEach(level -> party.addLevel(Gender.FEMALE, Level.valueOf(level)));
-
+        command.activityDay().forEach(party::addActiveDay);
+        command.femaleLevel().forEach(level -> party.addLevel(Gender.FEMALE, level));
         if (command.maleLevel() != null) {
             //여복일 경우 추가를 생략
-            command.maleLevel().forEach(level -> party.addLevel(Gender.MALE, Level.valueOf(level)));
+            command.maleLevel().forEach(level -> party.addLevel(Gender.MALE, level));
         }
 
         return party;

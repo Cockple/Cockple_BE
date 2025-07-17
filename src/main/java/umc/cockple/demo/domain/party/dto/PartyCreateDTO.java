@@ -4,8 +4,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
+import umc.cockple.demo.global.enums.ActiveDay;
+import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.global.exception.GeneralException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PartyCreateDTO {
@@ -57,16 +65,63 @@ public class PartyCreateDTO {
 
             String imgUrl
     ){
+        public List<Level> toFemaleLevelEnumList() {
+            if (femaleLevel == null) return null;
+            try {
+                return femaleLevel.stream()
+                        .map(Level::fromKorean)
+                        .toList();
+            } catch (GeneralException e) {
+                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+            }
+        }
+
+        public List<Level> toMaleLevelEnumList() {
+            if (maleLevel == null) return null;
+            try {
+                return maleLevel.stream()
+                        .map(Level::fromKorean)
+                        .toList();
+            } catch (GeneralException e) {
+                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+            }
+        }
+
+        public ParticipationType toParticipationTypeEnum() {
+            try {
+                return ParticipationType.valueOf(partyType);
+            } catch (IllegalArgumentException e) {
+                throw new PartyException(PartyErrorCode.INVALID_PARTY_TYPE);
+            }
+        }
+
+        public ActivityTime toActivityTimeEnum() {
+            try {
+                return ActivityTime.valueOf(activityTime);
+            } catch (IllegalArgumentException e) {
+                throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_TIME);
+            }
+        }
+
+        public List<ActiveDay> toActiveDayEnumList() {
+            try {
+                return activityDay.stream()
+                        .map(ActiveDay::valueOf)
+                        .toList();
+            } catch (IllegalArgumentException e) {
+                throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_DAY);
+            }
+        }
     }
 
     @Builder
     public record Command(
             String partyName,
-            String partyType,
-            List<String> femaleLevel,
-            List<String> maleLevel,
-            List<String> activityDay,
-            String activityTime,
+            ParticipationType partyType,
+            List<Level> femaleLevel,
+            List<Level> maleLevel,
+            List<ActiveDay> activityDay,
+            ActivityTime activityTime,
             Integer minAge,
             Integer maxAge,
             Integer price,
