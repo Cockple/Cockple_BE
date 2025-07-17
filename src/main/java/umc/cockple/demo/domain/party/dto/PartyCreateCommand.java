@@ -17,6 +17,7 @@ public record PartyCreateCommand(
         Integer price,
         Integer joinPrice,
         String designatedCock,
-        String content
+        String content,
+        String imgUrl
 ) {
 }

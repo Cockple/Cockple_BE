@@ -24,6 +24,7 @@ public class PartyConverter {
                 .joinPrice(request.joinPrice())
                 .designatedCock(request.designatedCock())
                 .content(request.content())
+                .imgUrl(request.imgUrl())
                 .build();
     }
 

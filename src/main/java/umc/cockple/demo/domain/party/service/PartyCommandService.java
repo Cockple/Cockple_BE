@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
 
 public interface PartyCommandService {
 
-    PartyCreateResponseDTO createParty(Long memberId, MultipartFile profileImage, PartyCreateRequestDTO request);
+    PartyCreateResponseDTO createParty(Long memberId, PartyCreateRequestDTO request);
 
     PartyJoinCreateResponseDTO createJoinRequest(Long partyId, Long memberId);
 

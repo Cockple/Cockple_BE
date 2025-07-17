@@ -88,7 +88,7 @@ public class Party extends BaseEntity {
     @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
 
-    public static Party create(PartyCreateCommand command, PartyAddr addr, String imageUrl, Member owner) {
+    public static Party create(PartyCreateCommand command, PartyAddr addr, Member owner) {
         Party party = Party.builder()
                 .partyName(command.partyName())
                 .partyType(ParticipationType.valueOf(command.partyType())) //enum으로 변환
@@ -105,7 +105,8 @@ public class Party extends BaseEntity {
 
         party.addMember(MemberParty.createOwner(owner, party));
 
-        if (imageUrl != null) {
+        String imageUrl = command.imgUrl();
+        if (imageUrl != null && !imageUrl.isBlank()) {
             party.setPartyImg(PartyImg.create(imageUrl, party));
         }
 
