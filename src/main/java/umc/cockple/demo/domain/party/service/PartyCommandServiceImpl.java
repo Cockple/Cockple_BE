@@ -164,6 +164,19 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //해당 모임의 급수 조건에 적합한지 확인
         validateLevelRequirement(member, party);
+
+        //해당 모임의 나이 조건에 적합한지 확인
+        validateAgeRequirement(member, party);
+    }
+
+    private void validateAgeRequirement(Member member, Party party) {
+        Integer minAge = party.getMinAge();
+        Integer maxAge = party.getMaxAge();
+        Integer memberBirthYear = member.getBirth().getYear();
+
+        if(minAge > memberBirthYear || memberBirthYear > maxAge){
+            throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
+        }
     }
 
     private void validateGenderRequirement(Member member, Party party) {
