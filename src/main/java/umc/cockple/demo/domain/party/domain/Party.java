@@ -128,18 +128,6 @@ public class Party extends BaseEntity {
         return Exercise.create(exerciseAddr, command);
     }
 
-    public boolean isLevelAllowed(Member member) {
-        List<Level> allowedLevels = getAllowedLevels(member.getGender());
-        return allowedLevels.contains(member.getLevel());
-    }
-
-    public List<Level> getAllowedLevels(Gender gender) {
-        return this.levels.stream()
-                .filter(partyLevel -> partyLevel.getGender() == gender)
-                .map(PartyLevel::getLevel)
-                .collect(Collectors.toList());
-    }
-
     public void addMember(MemberParty memberParty) {
         this.memberParties.add(memberParty);
         memberParty.setParty(this);
