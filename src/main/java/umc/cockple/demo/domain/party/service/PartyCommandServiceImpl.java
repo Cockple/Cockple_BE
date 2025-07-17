@@ -47,16 +47,15 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //DTO -> Command 객체로 변환
         PartyCreateDTO.Command partyCommand = partyConverter.toCreateCommand(request);
         PartyCreateDTO.AddrCommand addrCommand = partyConverter.toAddrCreateCommand(request);
-
         //모임장이 될 사용자 조회
         Member owner = findMemberOrThrow(memberId);
-
         //주소 처리 (조회 또는 새로 생성)
         PartyAddr partyAddr = findOrCreatePartyAddr(addrCommand);
 
+        validateCreateParty(owner, partyCommand);
+
         //Party 엔티티 생성
         Party newParty = Party.create(partyCommand, partyAddr, owner);
-
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
 
@@ -65,6 +64,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //ResponseDTO로 변환하여 반환
         return partyConverter.toCreateResponseDTO(savedParty);
     }
+
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
@@ -148,6 +148,16 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         if(!party.getOwnerId().equals(memberId)){
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
+    }
+
+    private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
+        //생성하려는 모임의 모임 유형에 본인도 적합한 성별인지 확인
+        ParticipationType partyType = command.partyType();
+        Gender memberGender = owner.getGender();
+        if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
+            throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
+        }
+
     }
 
     private void validateJoinRequest(Member member, Party party) {
