@@ -62,4 +62,9 @@ public class MemberParty extends BaseEntity {
                 .status(ACTIVE)
                 .build();
     }
+
+    public boolean isLeader() {
+        if (this.role == Role.party_MANAGER) return true;
+        return false;
+    }
 }

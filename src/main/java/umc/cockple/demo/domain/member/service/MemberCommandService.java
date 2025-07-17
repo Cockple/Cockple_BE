@@ -4,16 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.member.domain.MemberKeyword;
-import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.s3.ImageService;
 
 import java.util.List;
@@ -31,6 +29,27 @@ public class MemberCommandService {
     private final MemberAddrRepository memberAddrRepository;
 
     private final ImageService imageService;
+
+
+    // ==================== 회원 관련 ===================
+
+    public void withdrawMember(Long memberId) {
+        // 회원 찾기
+        Member member = findByMemberId(memberId);
+
+        // 탈퇴 가능여부 검증
+        validateCanWithdraw(member);
+
+        // 참여중인 운동, 모임에서 나가기
+        member.getMemberExercises().clear();
+        member.getMemberParties().clear();
+
+        // 활성화 여부 해제
+        member.withdraw();
+    }
+
+
+    // ==================== 프로필 관련 ===================
 
     public void updateProfile(UpdateProfileRequestDTO requestDto, Long memberId) {
         // 회원 찾기
@@ -82,6 +101,10 @@ public class MemberCommandService {
             member.updateMember(requestDto, keywords, img);
         }
     }
+
+
+
+    // ==================== 주소 관련 ===================
 
     public CreateMemberAddrResponseDTO addMemberNewAddr(CreateMemberAddrRequestDTO requestDto, Long memberId) {
 
@@ -179,4 +202,18 @@ public class MemberCommandService {
                 .orElseThrow(() -> new MemberException(MemberErrorCode.ADDRESS_NOT_FOUND));
     }
 
+    private void validateCanWithdraw(Member member) {
+        // 이미 탈퇴했을 경우 -> 탈퇴 불가
+        if (member.getIsActive() == MemberStatus.INACTIVE) {
+            throw new MemberException(MemberErrorCode.ALREADY_WITHDRAW);
+        }
+
+        // 모임장인 경우 -> 탈퇴 불가
+        boolean isLeader = member.getMemberParties().stream()
+                .anyMatch(MemberParty::isLeader);
+
+        if (isLeader) {
+            throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
+        }
+    }
 }

@@ -20,6 +20,9 @@ public enum MemberErrorCode implements BaseErrorCode {
     // 회원 관련
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER201", "해당 사용자를 찾을 수 없습니다."),
 
+    ALREADY_WITHDRAW(HttpStatus.UNAUTHORIZED, "MEMBER301", "이미 탈퇴한 회원입니다."),
+
+    MANAGER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "MEMBER401", "모임장은 탈퇴할 수 없습니다. 모임 삭제를 먼저 해주세요."),
 
     // 회원 주소 관련
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "MEM_ADDR201", "해당 주소를 찾을 수 없습니다."),
