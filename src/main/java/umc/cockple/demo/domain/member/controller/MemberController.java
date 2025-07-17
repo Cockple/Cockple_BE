@@ -61,4 +61,14 @@ public class MemberController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
+    @DeleteMapping("/my/profile/locations/{memberAddrId}")
+    @Operation(summary = "회원 주소 삭제 API",
+            description = "사용자가 자신의 주소 중 원하는 주소를 삭제")
+    public BaseResponse<String> deleteMemberAddr(@PathVariable Long memberAddrId) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        memberCommandService.deleteMemberAddr(memberId, memberAddrId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
 }

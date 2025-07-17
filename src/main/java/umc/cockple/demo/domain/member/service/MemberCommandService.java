@@ -149,6 +149,28 @@ public class MemberCommandService {
         newMainAddr.beMainAddr();
     }
 
+    public void deleteMemberAddr(Long memberId, Long addrId) {
+        // 회원 찾기
+        Member member = findByMemberId(memberId);
+
+        // 지우려는 주소 조회
+        MemberAddr addr = findByAddrId(addrId);
+
+        // 지우려는 주소가 대표주소인지 확인 -> 대표주소면 지울 수 없음
+        if (addr.getIsMain()) {
+            throw new MemberException(MemberErrorCode.CANNOT_REMOVE_MAIN_ADDR);
+        }
+
+        // 주소가 1개 이하면 삭제 불가
+        if (member.getAddresses().size() <= 1) {
+            throw new MemberException(MemberErrorCode.MEMBER_ADDRESS_MINIMUM_REQUIRED);
+        }
+
+        // 회원 -> addr에서 삭제
+        member.getAddresses().remove(addr);
+
+    }
+
 
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
