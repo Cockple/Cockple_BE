@@ -31,6 +31,7 @@ public enum MemberErrorCode implements BaseErrorCode {
     OVER_NUMBER_OF_ADDR(HttpStatus.BAD_REQUEST, "MEM_ADDR402", "주소 개수가 5개를 초과합니다."),
     CANNOT_REMOVE_MAIN_ADDR(HttpStatus.BAD_REQUEST, "MEM_ADDR403", "대표주소는 삭제할 수 없습니다."),
     MEMBER_ADDRESS_MINIMUM_REQUIRED(HttpStatus.BAD_REQUEST, "MEM_ADDR404", "주소가 적어도 1개 이상 필요합니다."),
+    MAIN_ADDRESS_NULL(HttpStatus.BAD_REQUEST, "MEM_ADDR405", "대표 주소가 존재하지 않습니다."),
 
     ;
 

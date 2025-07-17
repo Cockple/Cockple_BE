@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -25,6 +27,26 @@ import static umc.cockple.demo.domain.member.converter.MemberConverter.*;
 public class MemberQueryService {
 
     private final MemberRepository memberRepository;
+
+    public GetMyProfileResponseDTO getMyProfile(Long memberId) {
+        // 회원 조회
+        Member member = findByMemberId(memberId);
+
+        // 프로필 조회하기
+        GetProfileResponseDTO profileDto = getProfile(memberId);
+
+        // 대표 주소 추출
+        MemberAddr memberAddr = member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
+
+        // 운동 개수 추출
+        int exerciseCnt = member.getMemberExercises().size();
+
+        return toGetMyProfileResponseDTO(profileDto, memberAddr, exerciseCnt);
+    }
+
 
     public GetProfileResponseDTO getProfile(Long memberId) {
         // 회원 조회
@@ -46,6 +68,9 @@ public class MemberQueryService {
 
         return memberToGetProfileResponseDTO(member, goldMedal, silverMedal, bronzeMedal, imgUrl);
     }
+
+
+
 
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
