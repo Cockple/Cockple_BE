@@ -1,14 +1,16 @@
 package umc.cockple.demo.domain.party.service;
 
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
+import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.party.dto.PartyCreateRequestDTO;
+import umc.cockple.demo.domain.party.dto.PartyCreateResponseDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinActionRequestDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinCreateResponseDTO;
 
 public interface PartyCommandService {
 
-    PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request);
+    PartyCreateResponseDTO createParty(Long memberId, PartyCreateRequestDTO request);
 
-    PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId);
+    PartyJoinCreateResponseDTO createJoinRequest(Long partyId, Long memberId);
 
-    void actionJoinRequest(Long partyId, Long memberId, PartyJoinActionDTO.Request request, Long requestId);
+    void actionJoinRequest(Long partyId, Long memberId, PartyJoinActionRequestDTO request, Long requestId);
 }

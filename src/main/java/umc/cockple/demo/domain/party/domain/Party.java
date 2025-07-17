@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyCreateCommand;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.*;
 
@@ -88,7 +88,7 @@ public class Party extends BaseEntity {
     @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
 
-    public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
+    public static Party create(PartyCreateCommand command, PartyAddr addr, Member owner) {
         Party party = Party.builder()
                 .partyName(command.partyName())
                 .partyType(ParticipationType.valueOf(command.partyType())) //enum으로 변환

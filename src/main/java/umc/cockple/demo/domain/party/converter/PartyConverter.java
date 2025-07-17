@@ -4,16 +4,14 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.domain.party.dto.*;
 
 @Component
 public class PartyConverter {
 
-    //모임 생성 요청 DTO를 PartyCreateDTO.Command로 변환
-    public PartyCreateDTO.Command toCreateCommand(PartyCreateDTO.Request request){
-        return PartyCreateDTO.Command.builder()
+    //모임 생성 요청 DTO를 PartyCreateCommand로 변환
+    public PartyCreateCommand toCreateCommand(PartyCreateRequestDTO request){
+        return PartyCreateCommand.builder()
                 .partyName(request.partyName())
                 .partyType(request.partyType())
                 .femaleLevel(request.femaleLevel())
@@ -30,35 +28,35 @@ public class PartyConverter {
                 .build();
     }
 
-    //모임 생성 요청 DTO를 PartyCreateDTO.AddrCommand로 변환
-    public PartyCreateDTO.AddrCommand toAddrCreateCommand(PartyCreateDTO.Request request) {
-        return PartyCreateDTO.AddrCommand.builder()
+    //모임 생성 요청 DTO를 PartyAddrCreateCommand로 변환
+    public PartyAddrCreateCommand toAddrCreateCommand(PartyCreateRequestDTO request) {
+        return PartyAddrCreateCommand.builder()
                 .addr1(request.addr1())
                 .addr2(request.addr2())
                 .build();
     }
 
     //모임 가입신청을 응답 DTO로 변환
-    public PartyJoinCreateDTO.Response toJoinResponse(PartyJoinRequest request) {
-        return PartyJoinCreateDTO.Response.builder()
+    public PartyJoinCreateResponseDTO toJoinResponseDTO(PartyJoinRequest request) {
+        return PartyJoinCreateResponseDTO.builder()
                 .joinRequestId(request.getId())
                 .build();
     }
 
     //모임 엔티티를 응답 DTO로 변환
-    public PartyCreateDTO.Response toCreateResponse(Party party) {
-        return PartyCreateDTO.Response.builder()
+    public PartyCreateResponseDTO toCreateResponseDTO(Party party) {
+        return PartyCreateResponseDTO.builder()
                 .partyId(party.getId())
                 .createdAt(party.getCreatedAt())
                 .build();
     }
 
     //모임 가입신청의 정보를 응답 DTO로 변환
-    public PartyJoinDTO.Response toPartyJoinResponse(PartyJoinRequest request) {
+    public PartyJoinResponseDTO toPartyJoinResponseDTO(PartyJoinRequest request) {
         Member member = request.getMember();
         //이미지가 null인 경우 null을 전달
         String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgUrl() : null;
-        return PartyJoinDTO.Response.builder()
+        return PartyJoinResponseDTO.builder()
                 .joinRequestId(request.getId())
                 .userId(member.getId())
                 .nickname(member.getNickname())
