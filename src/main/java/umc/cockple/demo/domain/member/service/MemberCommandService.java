@@ -98,6 +98,14 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.OVER_NUMBER_OF_ADDR);
         }
 
+        // 기존 대표주소 해제
+        member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .ifPresent(MemberAddr::notMainAddr)
+        ;
+
+
         // 주소 생성
         MemberAddr memberAddr = MemberAddr.builder()
                 .addr1(requestDto.addr1())
@@ -107,7 +115,7 @@ public class MemberCommandService {
                 .buildingName(requestDto.buildingName())
                 .latitude(requestDto.latitude())
                 .longitude(requestDto.longitude())
-                .isMain(false)
+                .isMain(true)
                 .member(member)
                 .build()
         ;
@@ -115,17 +123,6 @@ public class MemberCommandService {
         // 주소 등록
         MemberAddr newAddr = memberAddrRepository.save(memberAddr);
         member.getAddresses().add(newAddr);
-
-        // 기존 대표주소 != 현재 등록하려는 대표주소 -> 대표주소 변경
-        if (!requestDto.nowMainAddrId().equals(requestDto.prevMainAddrId())) {
-
-            MemberAddr newMainAddr = findByAddrId(requestDto.nowMainAddrId());
-            MemberAddr prevMainAddr = findByAddrId(requestDto.prevMainAddrId());
-
-            // 새 대표주소 true처리, 이전 대표주소 false처리
-            newMainAddr.beMainAddr();
-            prevMainAddr.notMainAddr();
-        }
 
         return new CreateMemberAddrResponseDTO(newAddr.getId());
 
