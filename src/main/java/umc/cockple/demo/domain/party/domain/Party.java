@@ -40,8 +40,10 @@ public class Party extends BaseEntity {
     @Column(nullable = false)
     private Long ownerId;
 
+    @Column(nullable = false)
     private Integer minAge;
 
+    @Column(nullable = false)
     private Integer maxAge;
 
     @Column(nullable = false)
