@@ -43,7 +43,6 @@ public class ExerciseConverter {
     public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
         return ExerciseJoinDTO.Response.builder()
                 .participantId(memberExercise.getId())
-                .participantNumber(memberExercise.getParticipantNum())
                 .joinedAt(memberExercise.getJoinedAt())
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
@@ -61,24 +60,21 @@ public class ExerciseConverter {
     public ExerciseGuestInviteDTO.Response toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
         return ExerciseGuestInviteDTO.Response.builder()
                 .guestId(guest.getId())
-                .participantNumber(guest.getParticipantNum())
                 .invitedAt(guest.getCreatedAt())
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
 
-    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Member member, Integer participantNumber) {
+    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Member member) {
         return ExerciseCancelDTO.Response.builder()
                 .memberName(member.getMemberName())
-                .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
 
-    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Guest guest, Integer participantNumber) {
+    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Guest guest) {
         return ExerciseCancelDTO.Response.builder()
                 .memberName(guest.getGuestName())
-                .cancelledParticipationNumber(participantNumber)
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }

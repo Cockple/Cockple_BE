@@ -9,7 +9,6 @@ public class ExerciseJoinDTO {
     @Builder
     public record Response(
             Long participantId,
-            Integer participantNumber,
             LocalDateTime joinedAt,
             Integer currentParticipants
     ) {

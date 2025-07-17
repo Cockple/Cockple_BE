@@ -66,9 +66,7 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateJoinExercise(exercise, member);
 
-        Integer participantNum = exercise.calculateNextParticipantNumber();
-
-        MemberExercise memberExercise = MemberExercise.create(participantNum);
+        MemberExercise memberExercise = MemberExercise.create();
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
 
@@ -89,9 +87,8 @@ public class ExerciseCommandService {
         validateGuestInvitation(exercise, inviter);
 
         ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
-        Integer participantNum = exercise.calculateNextParticipantNumber();
 
-        Guest guest = Guest.create(command, participantNum);
+        Guest guest = Guest.create(command);
         exercise.addGuest(guest);
 
         Guest savedGuest = guestRepository.save(guest);
@@ -110,12 +107,9 @@ public class ExerciseCommandService {
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
         validateCancelParticipation(exercise);
 
-        Integer participantNumber = memberExercise.getParticipantNum();
-
         exercise.removeParticipation(memberExercise);
         member.removeParticipation(memberExercise);
 
-        exercise.reorderParticipantNumbers(participantNumber);
         memberExerciseRepository.delete(memberExercise);
 
         exerciseRepository.save(exercise);
@@ -123,7 +117,7 @@ public class ExerciseCommandService {
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exerciseId, memberId, exercise.getNowCapacity());
 
-        return exerciseConverter.toCancelResponseDTO(exercise, member, participantNumber);
+        return exerciseConverter.toCancelResponseDTO(exercise, member);
     }
 
     public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
@@ -135,18 +129,15 @@ public class ExerciseCommandService {
         Guest guest = findGuestOrThrow(guestId);
         validateCancelGuestInvitation(exercise, guest, member);
 
-        Integer participantNumber = guest.getParticipantNum();
-
         exercise.removeGuest(guest);
 
-        exercise.reorderParticipantNumbers(participantNumber);
         guestRepository.delete(guest);
 
         exerciseRepository.save(exercise);
 
         log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
+        return exerciseConverter.toCancelResponseDTO(exercise, guest);
     }
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
@@ -369,33 +360,27 @@ public class ExerciseCommandService {
         Guest guest = findGuestOrThrow(participantId);
         validateGuestBelongsToExercise(guest, exercise);
 
-        Integer participantNumber = guest.getParticipantNum();
-
         exercise.removeGuest(guest);
 
-        exercise.reorderParticipantNumbers(participantNumber);
         guestRepository.delete(guest);
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, guest, participantNumber);
+        return exerciseConverter.toCancelResponseDTO(exercise, guest);
     }
 
     private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = findMemberOrThrow(participantId);
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
 
-        Integer participantNumber = memberExercise.getParticipantNum();
-
         exercise.removeParticipation(memberExercise);
         participant.removeParticipation(memberExercise);
 
-        exercise.reorderParticipantNumbers(participantNumber);
         memberExerciseRepository.delete(memberExercise);
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, participant, participantNumber);
+        return exerciseConverter.toCancelResponseDTO(exercise, participant);
     }
 
     // ========== 조회 메서드 ==========

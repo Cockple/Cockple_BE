@@ -36,16 +36,12 @@ public class Guest extends BaseEntity {
     @Column(nullable = false)
     private Long inviterId;
 
-    @Column(nullable = false)
-    private Integer participantNum;
-
-    public static Guest create(ExerciseGuestInviteDTO.Command command, Integer participantNum) {
+    public static Guest create(ExerciseGuestInviteDTO.Command command) {
         return Guest.builder()
                 .guestName(command.guestName())
                 .gender(command.gender())
                 .level(command.level())
                 .inviterId(command.inviterId())
-                .participantNum(participantNum)
                 .build();
     }
 
@@ -53,12 +49,6 @@ public class Guest extends BaseEntity {
         this.exercise = exercise;
         if (exercise != null && !exercise.getGuests().contains(this)) {
             exercise.getGuests().add(this);
-        }
-    }
-
-    public void decrementParticipantNum() {
-        if (this.participantNum > 1) {
-            this.participantNum--;
         }
     }
 }

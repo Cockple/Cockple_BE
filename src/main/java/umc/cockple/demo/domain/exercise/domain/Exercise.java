@@ -76,16 +76,6 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public void reorderParticipantNumbers(int removedNum) {
-        memberExercises.stream()
-                .filter(me -> me.getParticipantNum() > removedNum)
-                .forEach(MemberExercise::decrementParticipantNum);
-
-        guests.stream()
-                .filter(g -> g.getParticipantNum() > removedNum)
-                .forEach(Guest::decrementParticipantNum);
-    }
-
     public void updateExerciseInfo(ExerciseUpdateDTO.Command command) {
         if (command.date() != null) {
             this.date = command.date();

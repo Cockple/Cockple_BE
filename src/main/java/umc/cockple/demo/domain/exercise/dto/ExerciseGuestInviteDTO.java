@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.exercise.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 
 public class ExerciseGuestInviteDTO {
 
+    @Schema(name = "ExerciseGuestInviteRequest", description = "게스트 초대 요청")
     public record Request(
             @NotBlank(message = "게스트 이름은 필수입니다.")
             @Size(max = 17, message = "게스트 이름은 17자 이하여야 합니다.")
@@ -42,7 +44,6 @@ public class ExerciseGuestInviteDTO {
     @Builder
     public record Response(
             Long guestId,
-            Integer participantNumber,
             LocalDateTime invitedAt,
             Integer currentParticipants
     ) {

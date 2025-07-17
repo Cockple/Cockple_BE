@@ -29,13 +29,9 @@ public class MemberExercise extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
-    @Column(nullable = false)
-    private Integer participantNum;
-
-    public static MemberExercise create(Integer participantNum) {
+    public static MemberExercise create() {
         return MemberExercise.builder()
                 .joinedAt(LocalDateTime.now())
-                .participantNum(participantNum)
                 .build();
     }
 
@@ -50,12 +46,6 @@ public class MemberExercise extends BaseEntity {
         this.member = member;
         if (member != null && !member.getMemberExercises().contains(this)) {
             member.getMemberExercises().add(this);
-        }
-    }
-
-    public void decrementParticipantNum() {
-        if (this.participantNum > 1) {
-            this.participantNum--;
         }
     }
 }
