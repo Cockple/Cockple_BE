@@ -216,4 +216,5 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
         }
     }
+
 }

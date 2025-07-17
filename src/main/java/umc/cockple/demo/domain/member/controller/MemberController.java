@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
@@ -40,6 +41,15 @@ public class MemberController {
         memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
+
+    @GetMapping(value = "/my/profile/{memberId}")
+    @Operation(summary = "프로필 조회 API",
+            description = "사용자가 다른 사람의 프로필을 조회")
+    public BaseResponse<GetProfileResponseDTO> getProfile(@PathVariable Long memberId) {
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getProfile(memberId));
+    }
+
 
 
     @PatchMapping(value = "/my/profile")
