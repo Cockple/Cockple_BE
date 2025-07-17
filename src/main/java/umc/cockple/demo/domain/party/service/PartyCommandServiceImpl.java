@@ -153,8 +153,8 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
         //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
         ParticipationType partyType = command.partyType();
-        Gender memberGender = owner.getGender();
-        if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
+        Gender ownerGender = owner.getGender();
+        if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
             throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
         }
 
@@ -165,6 +165,20 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         if(minAge > ownerBirthYear || ownerBirthYear > maxAge){
             throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
+        }
+
+        //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
+        Level ownerLevel = owner.getLevel();
+        List<Level> requiredLevels;
+
+        if (ownerGender == Gender.FEMALE) {
+            requiredLevels = command.femaleLevel();
+        } else { // MALE
+            requiredLevels = command.maleLevel();
+        }
+
+        if (!requiredLevels.contains(ownerLevel)) {
+            throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
         }
 
     }
