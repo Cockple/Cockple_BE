@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.party.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -28,7 +29,7 @@ public class PartyCreateDTO {
             @NotNull(message = "모임 유형은 필수입니다.")
             String partyType,
 
-            @NotNull(message = "여자 급수는 필수 선택 항목입니다.")
+            @NotEmpty(message = "여자 급수는 필수 선택 항목입니다.")
             List<String> femaleLevel,
 
             List<String> maleLevel,
@@ -39,10 +40,10 @@ public class PartyCreateDTO {
             @NotNull(message = "활동 지역(시/군/구)은 필수 선택 항목입니다.")
             String addr2,
 
-            @NotNull(message = "활동 요일은 필수 선택 항목입니다.")
+            @NotEmpty(message = "활동 요일은 필수 선택 항목입니다.")
             List<String> activityDay,
 
-            @NotNull(message = "활동 시간은 필수 선택 항목입니다.")
+            @NotEmpty(message = "활동 시간은 필수 선택 항목입니다.")
             String activityTime,
 
             @NotNull(message = "지정콕 정보는 필수입니다. 없는 경우 없음을 체크해주세요.")
