@@ -31,8 +31,6 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     NOT_PARTY_MEMBER_FOR_GUEST_INVITE(HttpStatus.FORBIDDEN, "EXERCISE303", "파티 멤버만 게스트를 초대할 수 있습니다."),
     GUEST_INVITATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE304", "외부 게스트 초대가 허용되지 않았습니다."),
     GUEST_NOT_INVITED_BY_MEMBER(HttpStatus.FORBIDDEN, "EXERCISE305", "본인이 아닌 다른 사용자에 의해 초대된 게스트입니다."),
-    MEMBER_LEVEL_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE306", "해당 급수로는 이 운동에 참여할 수 없습니다."),
-    MEMBER_AGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE307", "해당 나이로는 이 운동에 참여할 수 없습니다."),
 
     INVALID_EXERCISE_TIME(HttpStatus.BAD_REQUEST, "EXERCISE401", "종료 시간은 시작 시간보다 늦어야 합니다."),
     PAST_TIME_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "EXERCISE402", "운동 시간은 과거로 할 수 없습니다."),
@@ -41,7 +39,9 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     EXERCISE_ALREADY_STARTED_CANCEL(HttpStatus.BAD_REQUEST, "EXERCISE405", "이미 시작된 운동에는 취소할 수 없습니다."),
     EXERCISE_ALREADY_STARTED_UPDATE(HttpStatus.BAD_REQUEST, "EXERCISE406", "이미 시작된 운동은 수정할 수 없습니다."),
     ALREADY_JOINED_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "이미 참여 신청한 운동입니다."),
-    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE408", "게스트가 이 운동에 참여해있지 않습니다..");
+    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE408", "게스트가 이 운동에 참여해있지 않습니다.."),
+    MEMBER_LEVEL_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE409", "해당 급수로는 이 운동에 참여할 수 없습니다."),
+    MEMBER_AGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE410", "해당 나이로는 이 운동에 참여할 수 없습니다.");
 
 
     private final HttpStatus httpStatus;
