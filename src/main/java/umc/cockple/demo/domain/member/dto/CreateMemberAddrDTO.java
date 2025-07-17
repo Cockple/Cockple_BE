@@ -20,11 +20,8 @@ public class CreateMemberAddrDTO {
             @NotNull(message = "위도는 필수입니다.")
             Float latitude,
             @NotNull(message = "경도는 필수입니다.")
-            Float longitude,
-            @NotNull(message = "이전 대표주소id는 필수입니다.")
-            Long prevMainAddrId,
-            @NotNull(message = "대표주소id는 필수입니다.")
-            Long nowMainAddrId
+            Float longitude
+
     ) {
     }
 
