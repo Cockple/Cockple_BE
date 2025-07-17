@@ -62,7 +62,7 @@ public class ExerciseCommandService {
 
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
-        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
         validateJoinExercise(exercise, member);
 
@@ -208,6 +208,8 @@ public class ExerciseCommandService {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
+        validateMemberLevel(exercise.getParty(), member);
+        validateMemberAge(exercise.getParty(), member);
     }
 
     private void validateGuestInvitation(Exercise exercise, Member inviter) {
@@ -286,6 +288,22 @@ public class ExerciseCommandService {
 
         if(Boolean.FALSE.equals(exercise.getOutsideGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
+        }
+    }
+
+    private void validateMemberLevel(Party party, Member member) {
+        boolean isLevelAllowed = party.getLevels().stream()
+                .anyMatch(pl -> pl.getGender() == member.getGender() &&
+                        pl.getLevel() == member.getLevel());
+
+        if (!isLevelAllowed) {
+            throw new ExerciseException(ExerciseErrorCode.MEMBER_LEVEL_NOT_ALLOWED);
+        }
+    }
+
+    private void validateMemberAge(Party party, Member member) {
+        if(!party.isAgeValid(member)){
+            throw new ExerciseException(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED);
         }
     }
 
@@ -387,6 +405,11 @@ public class ExerciseCommandService {
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
+        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 

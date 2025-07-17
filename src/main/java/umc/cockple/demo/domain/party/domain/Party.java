@@ -14,6 +14,7 @@ import umc.cockple.demo.global.enums.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Builder
@@ -124,6 +125,17 @@ public class Party extends BaseEntity {
     public Exercise createExercise(ExerciseCreateDTO.Command command, ExerciseCreateDTO.AddrCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
         return Exercise.create(exerciseAddr, command);
+    }
+
+    public boolean isAgeValid(Member member){
+        int age = member.getAge();
+
+        if(minAge != null && age < minAge){
+            return false;
+        }if(maxAge != null && age > maxAge){
+            return false;
+        }
+        return true;
     }
 
     public void addMember(MemberParty memberParty) {

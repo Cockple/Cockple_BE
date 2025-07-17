@@ -39,7 +39,9 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     EXERCISE_ALREADY_STARTED_CANCEL(HttpStatus.BAD_REQUEST, "EXERCISE405", "이미 시작된 운동에는 취소할 수 없습니다."),
     EXERCISE_ALREADY_STARTED_UPDATE(HttpStatus.BAD_REQUEST, "EXERCISE406", "이미 시작된 운동은 수정할 수 없습니다."),
     ALREADY_JOINED_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "이미 참여 신청한 운동입니다."),
-    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE408", "게스트가 이 운동에 참여해있지 않습니다..");
+    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE408", "게스트가 이 운동에 참여해있지 않습니다.."),
+    MEMBER_LEVEL_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE409", "해당 급수로는 이 운동에 참여할 수 없습니다."),
+    MEMBER_AGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE410", "해당 나이로는 이 운동에 참여할 수 없습니다.");
 
 
     private final HttpStatus httpStatus;
