@@ -29,7 +29,11 @@ public enum PartyErrorCode implements BaseErrorCode {
 
     ALREADY_MEMBER(HttpStatus.CONFLICT, "PARTY401", "이미 가입된 모임입니다."),
     JOIN_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY402", "처리 대기중인 가입 신청이 존재합니다."),
-    JOIN_REQUEST_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY403", "이미 처리된 가입 신청입니다.");
+    JOIN_REQUEST_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY403", "이미 처리된 가입 신청입니다."),
+    LEVEL_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY404", "모임의 급수 조건에 맞지 않습니다."),
+    GENDER_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY405", "모임 유형에 맞지 않는 성별입니다."),
+    AGE_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY406", "모임의 나이 조건에 맞지 않습니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;

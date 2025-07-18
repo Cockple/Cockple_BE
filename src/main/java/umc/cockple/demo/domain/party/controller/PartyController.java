@@ -61,7 +61,7 @@ public class PartyController {
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = 8L; // 임시값
 
         PartyJoinCreateDTO.Response response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

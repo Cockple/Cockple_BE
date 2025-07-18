@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
+import umc.cockple.demo.domain.party.domain.PartyLevel;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
@@ -22,8 +23,9 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.RequestAction;
-import umc.cockple.demo.global.enums.RequestStatus;
+import umc.cockple.demo.global.enums.*;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -156,6 +158,49 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //이미 보낸 신청이 있는지 확인
         if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING)) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
+        }
+        //해당 모임의 모임 유형에 맞는 성별인지 확인
+        validateGenderRequirement(member, party);
+
+        //해당 모임의 급수 조건에 적합한지 확인
+        validateLevelRequirement(member, party);
+
+        //해당 모임의 나이 조건에 적합한지 확인
+        validateAgeRequirement(member, party);
+    }
+
+    private void validateAgeRequirement(Member member, Party party) {
+        Integer minAge = party.getMinAge();
+        Integer maxAge = party.getMaxAge();
+        Integer memberBirthYear = member.getBirth().getYear();
+
+        if(minAge > memberBirthYear || memberBirthYear > maxAge){
+            throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
+        }
+    }
+
+    private void validateGenderRequirement(Member member, Party party) {
+        ParticipationType partyType = party.getPartyType();
+        Gender memberGender = member.getGender();
+
+        //현재 모임유형에 남복은 존재하지 않으므로, 여복만 확인
+        if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
+            throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
+        }
+    }
+
+    private void validateLevelRequirement(Member member, Party party) {
+        // 모임의 급수 조건 중, 신청자의 성별과 일치하는 조건 반환
+        List<Level> requiredLevels = party.getLevels().stream()
+                .filter(partyLevel -> partyLevel.getGender() == member.getGender())
+                .map(PartyLevel::getLevel)
+                .toList();
+
+        if (!requiredLevels.isEmpty()) {
+            // 신청자의 급수가 모임의 조건 목록에 포함되어 있는지 확인
+            if (!requiredLevels.contains(member.getLevel())) {
+                throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
+            }
         }
     }
 
