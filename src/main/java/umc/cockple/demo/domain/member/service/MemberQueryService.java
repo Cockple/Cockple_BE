@@ -97,9 +97,13 @@ public class MemberQueryService {
 
         // 모든 주소 -> DTO convert
         return member.getAddresses().stream()
+                .sorted((a, b) -> {
+                    if (a.getIsMain() && !b.getIsMain()) return -1;  // 대표주소 먼저
+                    if (!a.getIsMain() && b.getIsMain()) return 1;
+                    return a.getId().compareTo(b.getId());  // 나머지는 id 순
+                })
                 .map(MemberConverter::toGetAllAddressResponseDTO)
-                .collect(Collectors.toList())
-        ;
+                .toList();
     }
 
 
