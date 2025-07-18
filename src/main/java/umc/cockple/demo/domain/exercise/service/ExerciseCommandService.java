@@ -66,13 +66,15 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
         validateJoinExercise(exercise, member);
 
-        MemberExercise memberExercise = MemberExercise.create();
+        boolean isPartyMember = isPartyMember(exercise, member);
+        MemberExercise memberExercise = MemberExercise.create(isPartyMember);
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
 
         MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
 
-        log.info("운동 신청 종료 - memberExerciseId: {}", savedMemberExercise.getId());
+        log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
+                , savedMemberExercise.getId(), isPartyMember);
 
         return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
     }

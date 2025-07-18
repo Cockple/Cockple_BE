@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.global.common.BaseEntity;
+import umc.cockple.demo.global.enums.ExerciseMemberShipStatus;
 
 import java.time.LocalDateTime;
 
@@ -27,11 +28,15 @@ public class MemberExercise extends BaseEntity {
     private Exercise exercise;
 
     @Column(nullable = false)
-    private LocalDateTime joinedAt;
+    @Enumerated(EnumType.STRING)
+    private ExerciseMemberShipStatus exerciseMemberShipStatus;
 
-    public static MemberExercise create() {
+    public static MemberExercise create(boolean isPartyMember) {
+        ExerciseMemberShipStatus status = isPartyMember ?
+                ExerciseMemberShipStatus.PARTY_MEMBER : ExerciseMemberShipStatus.EXTERNAL_MEMBER;
+
         return MemberExercise.builder()
-                .joinedAt(LocalDateTime.now())
+                .exerciseMemberShipStatus(status)
                 .build();
     }
 
