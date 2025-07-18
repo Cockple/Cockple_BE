@@ -5,5 +5,5 @@ import org.springframework.data.domain.Slice;
 import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
 
 public interface PartyQueryService {
-    Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, Pageable pageable);
+    Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, String status, Pageable pageable);
 }

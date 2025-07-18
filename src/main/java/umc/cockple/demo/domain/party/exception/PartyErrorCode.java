@@ -21,6 +21,7 @@ public enum PartyErrorCode implements BaseErrorCode {
     INVALID_ACTIVITY_TIME(HttpStatus.BAD_REQUEST, "PARTY103", "유효하지 않은 활동 시간입니다. (MORNING 또는 AFTERNOON 또는 ALWAYS를 입력해주세요.)"),
     INVALID_LEVEL_FORMAT(HttpStatus.BAD_REQUEST, "PARTY104", "유효하지 않은 급수 형식입니다."),
     MALE_LEVEL_REQUIRED(HttpStatus.BAD_REQUEST, "PARTY105", "혼복 모임은 남녀 급수 설정이 필수입니다."),
+    INVALID_REQUEST_STATUS(HttpStatus.BAD_REQUEST, "PARTY106", "유효하지 않은 가입 신청 상태입니다. (PENDING 또는 APPROVED를 입력해주세요.)"),
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
     JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
