@@ -34,8 +34,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         Party party = findPartyOrThrow(partyId);
         //모임장 권한이 있는지 확인
         validateOwnerPermission(party, memberId);
-        //status ENUM으로 변환
-        RequestStatus requestStatus = RequestStatus.valueOf(status.toUpperCase());
+        //status를 ENUM으로 변환 및 검증
+        RequestStatus requestStatus = parseRequestStatus(status);
 
         //조회 로직 수행
         Slice<PartyJoinRequest> requestSlice = partyJoinRequestRepository
@@ -56,5 +56,13 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private Party findPartyOrThrow(Long partyId) {
         return partyRepository.findById(partyId)
                 .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
+    }
+
+    private RequestStatus parseRequestStatus(String status) {
+        try {
+            return RequestStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
+        }
     }
 }
