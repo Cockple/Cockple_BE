@@ -14,7 +14,8 @@ public class PartyJoinDTO {
             String profileImageUrl,
             String gender,
             String level,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
     ) {
     }
 }
