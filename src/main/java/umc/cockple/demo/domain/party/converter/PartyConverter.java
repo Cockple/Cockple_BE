@@ -7,6 +7,9 @@ import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.global.enums.RequestStatus;
+
+import java.time.LocalDateTime;
 
 @Component
 public class PartyConverter {
@@ -56,6 +59,8 @@ public class PartyConverter {
     //모임 가입신청의 정보를 응답 DTO로 변환
     public PartyJoinDTO.Response toPartyJoinResponseDTO(PartyJoinRequest request) {
         Member member = request.getMember();
+        // status가 PENDING이 아닐 경우에만 updatedAt 값을 설정
+        LocalDateTime updatedAt = (request.getStatus() != RequestStatus.PENDING) ? request.getUpdatedAt() : null;
         //이미지가 null인 경우 null을 전달
         String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgUrl() : null;
         return PartyJoinDTO.Response.builder()
@@ -66,7 +71,7 @@ public class PartyConverter {
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
                 .createdAt(request.getCreatedAt())
-                .updatedAt(request.getUpdatedAt())
+                .updatedAt(updatedAt)
                 .build();
     }
 }
