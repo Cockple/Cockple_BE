@@ -85,7 +85,7 @@ public class MemberController {
     @PostMapping("/my/profile/locations")
     @Operation(summary = "회원 주소 추가 API",
             description = "사용자가 자신의 주소 추가")
-    public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody CreateMemberAddrRequestDTO requestDto) {
+    public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody @Valid CreateMemberAddrRequestDTO requestDto) {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 

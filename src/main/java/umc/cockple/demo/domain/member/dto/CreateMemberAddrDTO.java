@@ -15,7 +15,7 @@ public class CreateMemberAddrDTO {
             String addr3,
             @NotBlank(message = "도로명은 필수입니다.")
             String streetAddr,
-            @NotBlank(message = "건물명은 필수입니다.")
+
             String buildingName,
             @NotNull(message = "위도는 필수입니다.")
             Float latitude,
