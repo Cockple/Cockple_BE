@@ -66,6 +66,7 @@ public class PartyConverter {
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
                 .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
                 .build();
     }
 }
