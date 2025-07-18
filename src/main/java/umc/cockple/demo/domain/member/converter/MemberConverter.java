@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.member.converter;
 
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
@@ -49,6 +50,20 @@ public class MemberConverter {
                 .addr3(addr.getAddr3())
                 .buildingName(addr.getBuildingName())
                 .streetAddr(addr.getStreetAddr())
+                .build();
+    }
+
+    public static GetAllAddressResponseDTO toGetAllAddressResponseDTO(MemberAddr addr) {
+        return GetAllAddressResponseDTO.builder()
+                .addrId(addr.getId())
+                .addr1(addr.getAddr1())
+                .addr2(addr.getAddr2())
+                .addr3(addr.getAddr3())
+                .streetAddr(addr.getStreetAddr())
+                .buildingName(addr.getBuildingName())
+                .latitude(addr.getLatitude())
+                .longitude(addr.getLongitude())
+                .isMainAddr(addr.getIsMain())
                 .build();
     }
 }

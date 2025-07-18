@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
@@ -16,6 +17,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.MedalType;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -84,6 +86,22 @@ public class MemberQueryService {
         return toGetNowAddressResponseDTO(mainAddress);
     }
 
+    public List<GetAllAddressResponseDTO> getAllAddress(Long memberId) {
+        // 해당 회원 조회
+        Member member = findByMemberId(memberId);
+
+        // 주소가 존재하지 않을 시 예외처리
+        if (member.getAddresses().isEmpty()) {
+            throw new MemberException(MemberErrorCode.MEMBER_ADDRESS_MINIMUM_REQUIRED);
+        }
+
+        // 모든 주소 -> DTO convert
+        return member.getAddresses().stream()
+                .map(MemberConverter::toGetAllAddressResponseDTO)
+                .collect(Collectors.toList())
+        ;
+    }
+
 
     /*
      * private 메서드
@@ -99,5 +117,4 @@ public class MemberQueryService {
                 .findFirst()
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
     }
-
 }

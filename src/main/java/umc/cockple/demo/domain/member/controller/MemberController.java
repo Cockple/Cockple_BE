@@ -9,16 +9,14 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
-import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
-import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
-import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
+import umc.cockple.demo.domain.member.dto.*;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.io.IOException;
+import java.util.List;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 
@@ -125,4 +123,14 @@ public class MemberController {
 
     }
 
+    @GetMapping("/my/profile/locations")
+    @Operation(summary = "회원 주소 전체 조회 API",
+            description = "사용자가 등록한 모든 주소를 조회")
+    public BaseResponse<List<GetAllAddressResponseDTO>> getAllAddress() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        List<GetAllAddressResponseDTO> addresses = memberQueryService.getAllAddress(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, addresses);
+    }
 }
