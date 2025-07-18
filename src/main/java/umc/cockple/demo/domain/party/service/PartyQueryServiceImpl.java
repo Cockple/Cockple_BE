@@ -27,17 +27,19 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyConverter partyConverter;
 
     @Override
-    public Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, Pageable pageable) {
+    public Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, String status, Pageable pageable) {
         log.info("가입 신청 목록 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
         //모임 조회
         Party party = findPartyOrThrow(partyId);
         //모임장 권한이 있는지 확인
         validateOwnerPermission(party, memberId);
+        //status ENUM으로 변환
+        RequestStatus requestStatus = RequestStatus.valueOf(status.toUpperCase());
 
         //조회 로직 수행
         Slice<PartyJoinRequest> requestSlice = partyJoinRequestRepository
-                .findByPartyAndStatus(party, RequestStatus.PENDING, pageable);
+                .findByPartyAndStatus(party, requestStatus, pageable);
 
         log.info("가입 신청 목록 조회 완료. 조회된 항목 수: {}", requestSlice.getNumberOfElements());
         return requestSlice.map(partyConverter::toPartyJoinResponseDTO);

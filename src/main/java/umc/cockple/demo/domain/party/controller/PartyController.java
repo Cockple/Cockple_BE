@@ -75,13 +75,14 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<Slice<PartyJoinDTO.Response>> getJoinRequests(
             @PathVariable Long partyId,
+            @RequestParam(name = "status") String status,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        Slice<PartyJoinDTO.Response> response = partyQueryService.getJoinRequests(partyId, memberId, pageable);
+        Slice<PartyJoinDTO.Response> response = partyQueryService.getJoinRequests(partyId, memberId, status, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
