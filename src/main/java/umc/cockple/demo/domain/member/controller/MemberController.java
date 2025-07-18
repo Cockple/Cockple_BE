@@ -116,7 +116,7 @@ public class MemberController {
 
     @GetMapping("/my/location")
     @Operation(summary = "회원 현재 위치 조회 API",
-            description = "사용자의 현재 위치를 조회 (홈 화면 상단에 해당 위치의 동을 띄울 때 사용")
+            description = "사용자의 현재 위치를 조회 (홈 화면 상단에 해당 위치의 동을 띄울 때 사용)")
     public BaseResponse<GetNowAddressResponseDTO> getNowAddress() {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;

@@ -6,7 +6,7 @@ import lombok.Builder;
 public record GetNowAddressResponseDTO(
         Long memberAddrId,
         String addr3,
-        Float latitude,
-        Float longitude
+        String buildingName,
+        String streetAddr
 ) {
 }

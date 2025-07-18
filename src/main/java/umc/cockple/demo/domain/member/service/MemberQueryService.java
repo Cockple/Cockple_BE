@@ -70,6 +70,20 @@ public class MemberQueryService {
         return memberToGetProfileResponseDTO(member, goldMedal, silverMedal, bronzeMedal, imgUrl);
     }
 
+    /*
+     * 주소 관련 조회 메서드
+     * */
+
+    public GetNowAddressResponseDTO getNowAddress(Long memberId) {
+        // 해당 회원 조회
+        Member member = findByMemberId(memberId);
+
+        // 대표 주소 추출
+        MemberAddr mainAddress = findMainAddress(member);
+
+        return toGetNowAddressResponseDTO(mainAddress);
+    }
+
 
     /*
      * private 메서드
