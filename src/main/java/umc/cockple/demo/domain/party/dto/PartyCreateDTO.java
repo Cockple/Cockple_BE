@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.party.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,7 @@ import java.util.List;
 public class PartyCreateDTO {
 
     @Builder
+    @Schema(name = "PartyCreateRequestDTO", description = "모임 생성 요청")
     public record Request(
 
             @NotBlank(message = "모임 이름은 필수입니다.")
