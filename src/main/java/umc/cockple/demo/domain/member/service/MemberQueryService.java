@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
+import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -28,6 +29,9 @@ public class MemberQueryService {
 
     private final MemberRepository memberRepository;
 
+    /*
+    * 프로필 관련 조회 메서드
+    * */
     public GetMyProfileResponseDTO getMyProfile(Long memberId) {
         // 회원 조회
         Member member = findByMemberId(memberId);
@@ -36,10 +40,7 @@ public class MemberQueryService {
         GetProfileResponseDTO profileDto = getProfile(memberId);
 
         // 대표 주소 추출
-        MemberAddr memberAddr = member.getAddresses().stream()
-                .filter(MemberAddr::getIsMain)
-                .findFirst()
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
+        MemberAddr memberAddr = findMainAddress(member);
 
         // 운동 개수 추출
         int exerciseCnt = member.getMemberExercises().size();
@@ -70,10 +71,19 @@ public class MemberQueryService {
     }
 
 
-
-
+    /*
+     * private 메서드
+     * */
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
+
+    private static MemberAddr findMainAddress(Member member) {
+        return member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
+    }
+
 }

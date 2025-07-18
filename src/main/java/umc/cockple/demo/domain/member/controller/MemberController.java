@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
+import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
@@ -43,6 +44,10 @@ public class MemberController {
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
 
+
+    // ============== 프로필 관련 =================
+
+
     @GetMapping(value = "/profile/{memberId}")
     @Operation(summary = "프로필 조회 API",
             description = "사용자가 다른 사람의 프로필을 조회")
@@ -72,6 +77,10 @@ public class MemberController {
         memberCommandService.updateProfile(requestDTO, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
+
+
+    // =========== 주소 관련 ==============
+
 
     @PostMapping("/my/profile/locations")
     @Operation(summary = "회원 주소 추가 API",
@@ -104,4 +113,16 @@ public class MemberController {
         memberCommandService.deleteMemberAddr(memberId, memberAddrId);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
+
+    @GetMapping("/my/location")
+    @Operation(summary = "회원 현재 위치 조회 API",
+            description = "사용자의 현재 위치를 조회 (홈 화면 상단에 해당 위치의 동을 띄울 때 사용")
+    public BaseResponse<GetNowAddressResponseDTO> getNowAddress() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getNowAddress(memberId));
+
+    }
+
 }
