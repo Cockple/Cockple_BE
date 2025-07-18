@@ -47,16 +47,16 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //DTO -> Command 객체로 변환
         PartyCreateDTO.Command partyCommand = partyConverter.toCreateCommand(request);
         PartyCreateDTO.AddrCommand addrCommand = partyConverter.toAddrCreateCommand(request);
-
         //모임장이 될 사용자 조회
         Member owner = findMemberOrThrow(memberId);
-
         //주소 처리 (조회 또는 새로 생성)
         PartyAddr partyAddr = findOrCreatePartyAddr(addrCommand);
 
+        //모임 생성 가능한지 검증
+        validateCreateParty(owner, partyCommand);
+
         //Party 엔티티 생성
         Party newParty = Party.create(partyCommand, partyAddr, owner);
-
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
 
@@ -65,6 +65,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //ResponseDTO로 변환하여 반환
         return partyConverter.toCreateResponseDTO(savedParty);
     }
+
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
@@ -148,6 +149,47 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         if(!party.getOwnerId().equals(memberId)){
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
+    }
+
+    private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
+        // 혼복인 경우, 남녀 급수 정보가 모두 있는지 검증
+        ParticipationType partyType = command.partyType();
+        if (partyType == ParticipationType.MIX_DOUBLES) {
+            //FEMALE은 DTO단에서 검증 완료
+            if (command.maleLevel() == null || command.maleLevel().isEmpty()) {
+                throw new PartyException(PartyErrorCode.MALE_LEVEL_REQUIRED);
+            }
+        }
+
+        //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
+        Gender ownerGender = owner.getGender();
+        if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
+            throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
+        }
+
+        //생성하려는 모임의 나이 조건에 본인도 적합한지 확인
+        Integer minAge = command.minAge();
+        Integer maxAge = command.maxAge();
+        Integer ownerBirthYear = owner.getBirth().getYear();
+
+        if(minAge > ownerBirthYear || ownerBirthYear > maxAge){
+            throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
+        }
+
+        //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
+        Level ownerLevel = owner.getLevel();
+        List<Level> requiredLevels;
+
+        if (ownerGender == Gender.FEMALE) {
+            requiredLevels = command.femaleLevel();
+        } else { // MALE
+            requiredLevels = command.maleLevel();
+        }
+
+        if (!requiredLevels.contains(ownerLevel)) {
+            throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
+        }
+
     }
 
     private void validateJoinRequest(Member member, Party party) {
