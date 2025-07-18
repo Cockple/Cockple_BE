@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
+import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
@@ -39,6 +41,24 @@ public class MemberController {
 
         memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
+    }
+
+    @GetMapping(value = "/profile/{memberId}")
+    @Operation(summary = "프로필 조회 API",
+            description = "사용자가 다른 사람의 프로필을 조회")
+    public BaseResponse<GetProfileResponseDTO> getProfile(@PathVariable Long memberId) {
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getProfile(memberId));
+    }
+
+    @GetMapping(value = "/my/profile")
+    @Operation(summary = "내 프로필 조회 API",
+            description = "사용자가 자신의 프로필을 조회")
+    public BaseResponse<GetMyProfileResponseDTO> getMyProfile() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getMyProfile(memberId));
     }
 
 
