@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.global.common.BaseEntity;
+import umc.cockple.demo.global.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
@@ -43,6 +44,10 @@ public class Guest extends BaseEntity {
                 .level(command.level())
                 .inviterId(command.inviterId())
                 .build();
+    }
+
+    public ExerciseMemberShipStatus getExerciseMemberShipStatus() {
+        return ExerciseMemberShipStatus.GUEST;
     }
 
     public void setExercise(Exercise exercise) {
