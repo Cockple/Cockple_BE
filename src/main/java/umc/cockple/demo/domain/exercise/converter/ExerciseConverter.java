@@ -43,7 +43,7 @@ public class ExerciseConverter {
     public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
         return ExerciseJoinDTO.Response.builder()
                 .participantId(memberExercise.getId())
-                .joinedAt(memberExercise.getJoinedAt())
+                .joinedAt(memberExercise.getCreatedAt())
                 .currentParticipants(exercise.getNowCapacity())
                 .build();
     }
