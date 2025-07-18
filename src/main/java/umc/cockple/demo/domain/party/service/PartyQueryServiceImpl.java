@@ -48,7 +48,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //memberParty 반환
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
 
-        PartyDetailDTO.Response response = PartyConverter.toPartyDetailResponseDTO(party, memberParty);
+        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty);
 
         log.info("모임 상세 정보 조회 완료 - partyId: {}", partyId);
         return response;

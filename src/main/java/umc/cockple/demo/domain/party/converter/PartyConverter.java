@@ -2,17 +2,54 @@ package umc.cockple.demo.domain.party.converter;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyDetailDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class PartyConverter {
+
+    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt) {
+        // 급수 정보 가공
+        String femaleLevel = getLevelString(party, Gender.FEMALE);
+        String maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
+                null : getLevelString(party, Gender.MALE);
+        // 멤버 정보 가공
+        String memberStatus = memberPartyOpt.isPresent() ? "MEMBER" : "NOT_MEMBER";
+        String memberRole = memberPartyOpt.map(mp -> mp.getRole().name()).orElse(null);
+
+        return PartyDetailDTO.Response.builder()
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .memberStatus(memberStatus)
+                .memberRole(memberRole)
+                .addr1(party.getPartyAddr().getAddr1())
+                .addr2(party.getPartyAddr().getAddr2())
+                .activityDays(party.getActiveDays().stream().map(day -> day.getActiveDay().getKoreanName()).toList())
+                .activityTime(party.getActivityTime().getKoreanName())
+                .femaleLevel(femaleLevel)
+                .maleLevel(maleLevel)
+                .minAge(party.getMinAge())
+                .maxAge(party.getMaxAge())
+                .price(party.getPrice())
+                .joinPrice(party.getJoinPrice())
+                .designatedCock(party.getDesignatedCock())
+                .content(party.getContent())
+                .keywords(party.getKeywords().stream().map(kw -> kw.getKeyword().getKoreanName()).toList())
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .build();
+    }
 
     //모임 생성 요청 DTO를 PartyCreateDTO.Command로 변환
     public PartyCreateDTO.Command toCreateCommand(PartyCreateDTO.Request request){
@@ -73,5 +110,14 @@ public class PartyConverter {
                 .createdAt(request.getCreatedAt())
                 .updatedAt(updatedAt)
                 .build();
+    }
+
+    private String getLevelString(Party party, Gender gender) {
+        String levelString = party.getLevels().stream()
+                .filter(l -> l.getGender() == gender)
+                .map(l -> l.getLevel().getKoreanName())
+                .collect(Collectors.joining(", "));
+
+        return levelString.isEmpty() ? null : levelString;
     }
 }
