@@ -14,6 +14,7 @@ import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,9 +23,9 @@ public class PartyConverter {
 
     public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt) {
         // 급수 정보 가공
-        String femaleLevel = getLevelString(party, Gender.FEMALE);
-        String maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
-                null : getLevelString(party, Gender.MALE);
+        List<String> femaleLevel = getLevelList(party, Gender.FEMALE);
+        List<String> maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
+                null : getLevelList(party, Gender.MALE);
         // 멤버 정보 가공
         String memberStatus = memberPartyOpt.isPresent() ? "MEMBER" : "NOT_MEMBER";
         String memberRole = memberPartyOpt.map(mp -> mp.getRole().name()).orElse(null);
@@ -112,12 +113,12 @@ public class PartyConverter {
                 .build();
     }
 
-    private String getLevelString(Party party, Gender gender) {
-        String levelString = party.getLevels().stream()
+    private List<String> getLevelList(Party party, Gender gender) {
+        List<String> levelList = party.getLevels().stream()
                 .filter(l -> l.getGender() == gender)
                 .map(l -> l.getLevel().getKoreanName())
-                .collect(Collectors.joining(", "));
+                .toList();
 
-        return levelString.isEmpty() ? null : levelString;
+        return levelList.isEmpty() ? null : levelList;
     }
 }
