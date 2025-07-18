@@ -28,6 +28,7 @@ public class MemberAddr extends BaseEntity {
     @Column(nullable = false)
     private String addr3; // 동읍면
 
+    @Column(nullable = false)
     private String streetAddr; // 도로명주소
 
     private String buildingName; // 건물명

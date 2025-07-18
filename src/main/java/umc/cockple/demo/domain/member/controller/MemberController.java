@@ -9,15 +9,14 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
-import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
-import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
+import umc.cockple.demo.domain.member.dto.*;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.io.IOException;
+import java.util.List;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 
@@ -42,6 +41,10 @@ public class MemberController {
         memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
+
+
+    // ============== 프로필 관련 =================
+
 
     @GetMapping(value = "/profile/{memberId}")
     @Operation(summary = "프로필 조회 API",
@@ -73,10 +76,14 @@ public class MemberController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
+
+    // =========== 주소 관련 ==============
+
+
     @PostMapping("/my/profile/locations")
     @Operation(summary = "회원 주소 추가 API",
             description = "사용자가 자신의 주소 추가")
-    public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody CreateMemberAddrRequestDTO requestDto) {
+    public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody @Valid CreateMemberAddrRequestDTO requestDto) {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
@@ -103,5 +110,27 @@ public class MemberController {
 
         memberCommandService.deleteMemberAddr(memberId, memberAddrId);
         return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+    @GetMapping("/my/location")
+    @Operation(summary = "회원 현재 위치 조회 API",
+            description = "사용자의 현재 위치를 조회 (홈 화면 상단에 해당 위치의 동을 띄울 때 사용)")
+    public BaseResponse<GetNowAddressResponseDTO> getNowAddress() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getNowAddress(memberId));
+
+    }
+
+    @GetMapping("/my/profile/locations")
+    @Operation(summary = "회원 주소 전체 조회 API",
+            description = "사용자가 등록한 모든 주소를 조회")
+    public BaseResponse<List<GetAllAddressResponseDTO>> getAllAddress() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        List<GetAllAddressResponseDTO> addresses = memberQueryService.getAllAddress(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, addresses);
     }
 }
