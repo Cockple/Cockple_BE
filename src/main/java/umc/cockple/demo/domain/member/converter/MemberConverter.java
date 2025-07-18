@@ -30,6 +30,8 @@ public class MemberConverter {
                 .gender(dto.gender())
                 .level(dto.level())
                 .addr3(mainAddr.getAddr3())
+                .streetAddr(mainAddr.getStreetAddr())
+                .buildingName(mainAddr.getBuildingName())
                 .latitude(mainAddr.getLatitude())
                 .longitude(mainAddr.getLongitude())
                 .profileImgUrl(dto.profileImgUrl())

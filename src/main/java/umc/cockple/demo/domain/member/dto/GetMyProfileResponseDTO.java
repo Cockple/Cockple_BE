@@ -16,6 +16,8 @@ public record GetMyProfileResponseDTO(
         Gender gender,
         Level level,
         String addr3,
+        String streetAddr,
+        String buildingName,
         Float latitude,
         Float longitude,
         String profileImgUrl,
