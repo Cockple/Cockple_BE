@@ -10,11 +10,14 @@ public class PartyDetailDTO {
     public record Response(
             Long partyId,
             String partyName,
-            MemberInfo memberInfo,
-            AddrInfo partyAddr,
+            String memberStatus,
+            String memberRole,
+            String addr1,
+            String addr2,
             List<String> activityDays,
             String activityTime,
-            LevelInfo partyLevel,
+            String femaleLevel,
+            String maleLevel,
             Integer minAge,
             Integer maxAge,
             Integer price,
@@ -23,23 +26,5 @@ public class PartyDetailDTO {
             String content,
             List<String> keywords,
             String partyImgUrl
-    ) {}
-
-    @Builder
-    public record MemberInfo(
-            String status,
-            String role
-    ) {}
-
-    @Builder
-    public record AddrInfo(
-            String addr1,
-            String addr2
-    ) {}
-
-    @Builder
-    public record LevelInfo(
-            String femaleLevel,
-            String maleLevel
     ) {}
 }
