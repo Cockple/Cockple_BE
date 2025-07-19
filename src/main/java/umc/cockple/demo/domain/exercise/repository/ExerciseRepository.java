@@ -10,10 +10,18 @@ import java.util.Optional;
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
 
     @Query("""
-        SELECT e FROM Exercise e 
-        JOIN FETCH e.party p 
-        JOIN FETCH p.levels 
-        WHERE e.id = :exerciseId
-        """)
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.party p 
+            JOIN FETCH p.levels 
+            WHERE e.id = :exerciseId
+            """)
     Optional<Exercise> findByIdWithPartyLevels(@Param("exerciseId") Long exerciseId);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.party p 
+            JOIN FETCH e.exerciseAddr
+            WHERE e.id = :exerciseId
+            """)
+    Optional<Exercise> findExerciseWithBasicInfo(@Param("exerciseId") Long exerciseId);
 }
