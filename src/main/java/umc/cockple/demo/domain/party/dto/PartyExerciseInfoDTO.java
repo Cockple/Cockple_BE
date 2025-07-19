@@ -1,4 +1,9 @@
 package umc.cockple.demo.domain.party.dto;
 
-public class PartyExcerciesInfoDTO {
-}
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+public record PartyExerciseInfoDTO(
+        Long partyId,
+        Long count
+) {}
