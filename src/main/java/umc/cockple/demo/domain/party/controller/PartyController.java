@@ -31,6 +31,8 @@ public class PartyController {
     @GetMapping("/{partyId}")
     @Operation(summary = "모임 상세 정보 조회",
             description = "특정 모임의 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 생성 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     public BaseResponse<PartyDetailDTO.Response> getPartyDetails(
             @PathVariable Long partyId,
             Authentication authentication
