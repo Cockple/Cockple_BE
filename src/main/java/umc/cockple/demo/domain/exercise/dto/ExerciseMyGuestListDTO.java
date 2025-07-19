@@ -20,6 +20,7 @@ public class ExerciseMyGuestListDTO {
     @Builder
     public record GuestInfo(
             Long guestId,
+            Boolean isWaiting,
             Integer participantNumber,
             String name,
             Gender gender,
