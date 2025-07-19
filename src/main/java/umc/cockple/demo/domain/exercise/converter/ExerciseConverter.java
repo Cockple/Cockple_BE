@@ -150,4 +150,19 @@ public class ExerciseConverter {
                 .inviterName(null)
                 .build();
     }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(Guest guest, String inviterName) {
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(guest.getId())
+                .participantNumber(0)
+                .imgUrl(null)
+                .name(guest.getGuestName())
+                .gender(guest.getGender().name())
+                .level(guest.getLevel().name())
+                .participantType(guest.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(inviterName)
+                .build();
+    }
 }

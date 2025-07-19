@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -24,6 +25,7 @@ import umc.cockple.demo.global.enums.Role;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +54,9 @@ public class ExerciseQueryService {
 
         List<MemberExercise> memberExercises = findMemberExercisesWithMemberAndProfile(exerciseId);
         List<ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
+
+        List<Guest> guests = findGuests(exerciseId);
+        List<ParticipantInfo> guestParticipants = buildGuestParticipantInfos(guests);
 
 
         return null;
@@ -92,6 +97,25 @@ public class ExerciseQueryService {
                 .toList();
     }
 
+    private List<ParticipantInfo> buildGuestParticipantInfos(List<Guest> guests) {
+        if (guests.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> inviterIds = guests.stream()
+                .map(Guest::getInviterId)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> inviterNames = memberRepository.findMemberNamesByIds(inviterIds);
+
+        return guests.stream()
+                .map(guest -> {
+                    String inviterName = inviterNames.getOrDefault(guest.getInviterId(), "알 수 없음");
+                    return exerciseConverter.toParticipantInfo(guest, inviterName);
+                })
+                .toList();
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -106,5 +130,9 @@ public class ExerciseQueryService {
 
     private List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
         return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId, MemberStatus.ACTIVE);
+    }
+
+    private List<Guest> findGuests(Long exerciseId) {
+        return guestRepository.findByExerciseId(exerciseId);
     }
 }
