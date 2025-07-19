@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyDetailDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.domain.party.dto.PartySimpleDTO;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
@@ -38,6 +39,19 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final MemberPartyRepository memberPartyRepository;
 
     @Override
+    public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
+        log.info("내 모임 간략화 조회 시작 - partyId: {}", memberId);
+        //사용자 조회
+        Member member = findMemberOrThrow(memberId);
+
+        //memberParty 조회 로직 수행
+        Slice<MemberParty> memberPartySlice = memberPartyRepository.findByMember(member, pageable);
+
+        log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
+        return memberPartySlice.map(partyConverter::toPartySimpleDTO);
+    }
+
+    @Override
     public PartyDetailDTO.Response getPartyDetails(Long partyId, Long memberId) {
         log.info("모임 상세 정보 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
@@ -45,7 +59,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         Party party = findPartyOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
 
-        //memberParty 반환
+        //memberParty 조회 로직 수행
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
 
         PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty);

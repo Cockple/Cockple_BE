@@ -28,10 +28,27 @@ public class PartyController {
     private final PartyCommandService partyCommandService;
     private final PartyQueryService partyQueryService;
 
+    @GetMapping("/my/parties/simple")
+    @Operation(summary = "내 모임 간략화 조회",
+            description = "사용자가 가입한 내 모임을 간략화하여 조회합니다. ")
+    @ApiResponse(responseCode = "200", description = "모임 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    public BaseResponse<Slice<PartySimpleDTO.Response>> getSimpleParties(
+            @PageableDefault(page = 0, size = 10, sort = {"createdAt", "party.partyName"}, direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        Slice<PartySimpleDTO.Response> response = partyQueryService.getSimpleMyParties(memberId, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+
     @GetMapping("/{partyId}")
     @Operation(summary = "모임 상세 정보 조회",
             description = "특정 모임의 상세 정보를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "모임 생성 성공")
+    @ApiResponse(responseCode = "200", description = "모임 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     public BaseResponse<PartyDetailDTO.Response> getPartyDetails(
             @PathVariable Long partyId,

@@ -5,10 +5,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyDetailDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.enums.RequestStatus;
@@ -20,6 +17,17 @@ import java.util.stream.Collectors;
 
 @Component
 public class PartyConverter {
+
+    public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty) {
+        Party party = memberParty.getParty();
+        return PartySimpleDTO.Response.builder()
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .addr1(party.getPartyAddr().getAddr1())
+                .addr2(party.getPartyAddr().getAddr2())
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .build();
+    }
 
     public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt) {
         // 급수 정보 가공
@@ -121,4 +129,5 @@ public class PartyConverter {
 
         return levelList.isEmpty() ? null : levelList;
     }
+
 }

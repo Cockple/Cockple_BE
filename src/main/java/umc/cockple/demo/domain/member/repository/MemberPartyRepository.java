@@ -1,5 +1,7 @@
 package umc.cockple.demo.domain.member.repository;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +28,6 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
             @Param("partyId") Long partyId, @Param("memberIds") List<Long> memberIds);
 
     Optional<MemberParty> findByPartyAndMember(Party party, Member member);
+
+    Slice<MemberParty> findByMember(Member member, Pageable pageable);
 }
