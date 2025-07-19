@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
@@ -50,6 +51,8 @@ public class ExerciseQueryService {
         Party party = exercise.getParty();
         boolean isManager = checkManagerPermission(party, member);
 
+        ExerciseDetailDTO.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
+
         List<MemberExercise> memberExercises = findMemberExercisesWithMemberAndProfile(exerciseId);
         List<ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
 
@@ -65,6 +68,16 @@ public class ExerciseQueryService {
     private boolean checkManagerPermission(Party party, Member member) {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
                 party.getId(), member.getId(), Role.party_MANAGER);
+    }
+
+    private ExerciseDetailDTO.ExerciseInfo createExerciseInfo(Exercise exercise) {
+        ExerciseAddr addr = exercise.getExerciseAddr();
+
+        return ExerciseDetailDTO.ExerciseInfo.builder()
+                .notice(exercise.getNotice())
+                .buildingName(addr.getBuildingName())
+                .location(addr.getStreetAddr())
+                .build();
     }
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
