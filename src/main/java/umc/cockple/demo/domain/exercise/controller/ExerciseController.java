@@ -211,4 +211,23 @@ public class ExerciseController {
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @GetMapping("/exercises/{exerciseId}/guests")
+    @Operation(summary = "내가 초대한 운동 게스트 조회",
+            description = "내가 초대한 운동 게스트 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 상세 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
+    public BaseResponse<ExerciseMyGuestListDTO.Response> getMyInvitedGuests(
+            @PathVariable Long exerciseId,
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }
