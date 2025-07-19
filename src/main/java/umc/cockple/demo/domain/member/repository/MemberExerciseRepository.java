@@ -25,6 +25,6 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
             AND m.isActive = :memberStatus
             ORDER BY me.createdAt ASC
             """)
-    List<MemberExercise> findMemberParticipantsByExerciseId(
+    List<MemberExercise> findByExerciseIdWithMemberAndProfile(
             @Param("exerciseId") Long exerciseId, @Param("memberStatus") MemberStatus memberStatus);
 }

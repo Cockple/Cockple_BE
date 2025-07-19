@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -35,6 +36,7 @@ public class ExerciseQueryService {
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
+    private final GuestRepository guestRepository;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -48,7 +50,7 @@ public class ExerciseQueryService {
         Party party = exercise.getParty();
         boolean isManager = checkManagerPermission(party, member);
 
-        List<MemberExercise> memberExercises = findMemberExercisesWithInfo(exerciseId);
+        List<MemberExercise> memberExercises = findMemberExercisesWithMemberAndProfile(exerciseId);
         List<ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
 
 
@@ -102,7 +104,7 @@ public class ExerciseQueryService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
-    private List<MemberExercise> findMemberExercisesWithInfo(Long exerciseId) {
-        return memberExerciseRepository.findMemberParticipantsByExerciseId(exerciseId, MemberStatus.ACTIVE);
+    private List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
+        return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId, MemberStatus.ACTIVE);
     }
 }
