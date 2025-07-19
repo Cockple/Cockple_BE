@@ -11,5 +11,5 @@ public interface PartyQueryService {
     Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, String status, Pageable pageable);
     PartyDetailDTO.Response getPartyDetails(Long partyId, Long memberId);
     Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable);
-    Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, Pageable pageable);
+    Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable);
 }

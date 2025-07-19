@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -52,16 +53,15 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartyDTO.Response>> getMyParties(
             @RequestParam(required = false, defaultValue = "false") Boolean created,
-            @RequestParam(required = false, defaultValue = "latest") String sort,
+            @RequestParam(required = false, defaultValue = "최신순") String sort,
             @PageableDefault(size = 10) Pageable pageable,
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
         // sort 파라미터에 따라 Pageable 객체를 새로 생성
-        Pageable sortedPageable = createPageable(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sortedPageable);
+        Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sort, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -154,13 +154,4 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
-    //정렬 로직 처리
-    private Pageable createPageable(int page, int size, String sort) {
-        Sort sorting = switch (sort) {
-            case "oldest" -> Sort.by("createdAt").ascending();
-            case "exercise_count" -> Sort.by("exerciseCount").descending();
-            default -> Sort.by("createdAt").descending(); //기본값은 최신순 (createdAt 내림차순)
-        };
-        return PageRequest.of(page, size, sorting);
-    }
 }

@@ -2,8 +2,10 @@ package umc.cockple.demo.domain.party.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -22,6 +24,7 @@ import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 import java.time.LocalTime;
@@ -58,15 +61,18 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     }
 
     @Override
-    public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, Pageable pageable) {
+    public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable) {
+        //정렬 기준 문자 검증, Pageable 객체 생성
+        Pageable sortedPageable = createSortedPageable(pageable, sort);
+
         //모임 정보 조회
-        Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, pageable);
+        Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, sortedPageable);
         List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
 
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
 
-        // 3. 기본 정보와 추가 정보를 조합하여 최종 DTO 생성
+        //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
@@ -135,6 +141,18 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         } catch (IllegalArgumentException e) {
             throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
         }
+    }
+
+    //정렬 로직 처리
+    private Pageable createSortedPageable(Pageable pageable, String sort) {
+        PartyOrderType sortType = PartyOrderType.fromKorean(sort);
+
+        Sort sorting = switch (sortType) {
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case EXERCISE_COUNT -> Sort.by("exerciseCount").descending();
+            default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
+        };
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
     }
 
     private ExerciseInfo getExerciseInfo(List<Long> partyIds) {
