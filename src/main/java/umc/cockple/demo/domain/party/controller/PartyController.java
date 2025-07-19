@@ -123,7 +123,7 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<Slice<PartyJoinDTO.Response>> getJoinRequests(
             @PathVariable Long partyId,
-            @RequestParam(name = "status") String status,
+            @RequestParam(name = "status", defaultValue = "PENDING") String status,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){
@@ -159,7 +159,7 @@ public class PartyController {
         Sort sorting = switch (sort) {
             case "oldest" -> Sort.by("createdAt").ascending();
             case "exercise_count" -> Sort.by("exerciseCount").descending();
-            default -> Sort.by("createdAt").descending(); //기본값은 최신순
+            default -> Sort.by("createdAt").descending(); //기본값은 최신순 (createdAt 내림차순)
         };
         return PageRequest.of(page, size, sorting);
     }
