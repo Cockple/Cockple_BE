@@ -21,6 +21,7 @@ import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 public class ExerciseController {
 
     private final ExerciseCommandService exerciseCommandService;
+    private final ExerciseQueryService exerciseQueryService;
 
     @PostMapping("/parties/{partyId}/exercises")
     @Operation(summary = "운동 생성",
@@ -187,6 +188,25 @@ public class ExerciseController {
 
         ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/{exerciseId}")
+    @Operation(summary = "운동 상세 조회",
+            description = "운동의 상세 정보를 조회합니다. 권한, 멤버 여부, 게스트 여부에 따라 반환되는 값이 달라집니다.")
+    @ApiResponse(responseCode = "200", description = "운동 상세 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
+    public BaseResponse<ExerciseDetailDTO.Response> getExerciseDetail(
+            @PathVariable Long exerciseId,
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
