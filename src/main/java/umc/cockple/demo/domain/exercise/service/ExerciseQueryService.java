@@ -72,9 +72,7 @@ public class ExerciseQueryService {
         List<Guest> myGuests = guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
 
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, exercise.getParty());
-
-
-
+        Map<Long, GuestGroups> guestNumberMap = createGuestNumberMap(allParticipants, exercise.getMaxCapacity());
     }
 
     // ========== 비즈니스 메서드 ==========
@@ -142,6 +140,33 @@ public class ExerciseQueryService {
                 .womenCount(countByGender(waiting, "FEMALE"))
                 .list(waiting)
                 .build();
+    }
+
+    private Map<Long, GuestGroups> createGuestNumberMap(List<ParticipantInfo> allParticipants, Integer maxCapacity) {
+        Map<Long, GuestGroups> guestNumberMap = new HashMap<>();
+
+        int size = allParticipants.size();
+        for (int i = 0; i < Math.min(size, maxCapacity); i++) {
+            ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
+            if ("GUEST".equals(participant.participantType())) {
+                guestNumberMap.put(participant.participantId(),
+                        new GuestGroups(i+1, false));
+            }
+        }
+
+        if (size > maxCapacity) {
+            int waitingNumber = 1;
+            for (int i = maxCapacity; i < size; i++) {
+                ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
+                if ("GUEST".equals(participant.participantType())) {
+                    guestNumberMap.put(participant.participantId(),
+                            new GuestGroups(waitingNumber, true));
+                    waitingNumber++;
+                }
+            }
+        }
+
+        return guestNumberMap;
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -282,4 +307,9 @@ public class ExerciseQueryService {
             List<ExerciseDetailDTO.ParticipantInfo> participants,
             List<ExerciseDetailDTO.ParticipantInfo> waiting
     ) {}
+
+    private record GuestGroups(
+            Integer participantNumber,
+            Boolean isWaiting
+    ){}
 }
