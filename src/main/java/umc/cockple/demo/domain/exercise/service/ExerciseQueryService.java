@@ -56,12 +56,10 @@ public class ExerciseQueryService {
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, party);
         ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
 
-        ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(
-                groups.participants(), exercise.getMaxCapacity());
+        ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
         ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-
-        return null;
+        return exerciseConverter.toDetailResponseDTO(isManager, exerciseInfo, participantGroup, waitingGroup);
     }
 
     // ========== 비즈니스 메서드 ==========

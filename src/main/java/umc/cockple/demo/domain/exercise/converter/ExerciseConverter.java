@@ -168,4 +168,18 @@ public class ExerciseConverter {
                 .joinedAt(guest.getCreatedAt())
                 .build();
     }
+
+    public ExerciseDetailDTO.Response toDetailResponseDTO(
+            boolean isManager,
+            ExerciseDetailDTO.ExerciseInfo exerciseInfo,
+            ExerciseDetailDTO.ParticipantGroup participantGroup,
+            ExerciseDetailDTO.WaitingGroup waitingGroup) {
+
+        return ExerciseDetailDTO.Response.builder()
+                .isManager(isManager)
+                .info(exerciseInfo)
+                .participants(participantGroup)
+                .waiting(waitingGroup)
+                .build();
+    }
 }
