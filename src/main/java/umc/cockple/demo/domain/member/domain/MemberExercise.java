@@ -33,7 +33,7 @@ public class MemberExercise extends BaseEntity {
 
     public static MemberExercise create(boolean isPartyMember) {
         ExerciseMemberShipStatus status = isPartyMember ?
-                ExerciseMemberShipStatus.PARTY_MEMBER : ExerciseMemberShipStatus.EXTERNAL_MEMBER;
+                ExerciseMemberShipStatus.PARTY_MEMBER : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
 
         return MemberExercise.builder()
                 .exerciseMemberShipStatus(status)
