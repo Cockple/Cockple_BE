@@ -136,4 +136,45 @@ public class PartyQueryServiceImpl implements PartyQueryService{
             throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
         }
     }
+
+    private ExerciseInfo getExerciseInfo(List<Long> partyIds) {
+        //운동 개수 정보 조회
+        Map<Long, Integer> exerciseCountMap = exerciseRepository.findTotalExerciseCountsByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(PartyExerciseInfoDTO::partyId, dto -> dto.count().intValue()));
+
+        //가장 최신의 운동 정보 조회
+        Map<Long, String> nextExerciseInfoMap = exerciseRepository.findUpcomingExercisesByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        exercise -> exercise.getParty().getId(),
+                        this::formatNextExerciseInfo,
+                        (existing, replacement) -> existing //key중복 시 처리 방법: 최초 값(existing)만 사용
+                ));
+
+        return new ExerciseInfo(exerciseCountMap, nextExerciseInfoMap);
+    }
+
+    private String formatNextExerciseInfo(Exercise exercise) {
+        //날짜 포맷팅 ex) 05.01
+        String datePart = exercise.getDate().format(DateTimeFormatter.ofPattern("MM.dd"));
+
+        //시간 포맷팅 (오전/오후)
+        String timePart = convertToTimeOfDay(exercise.getStartTime());
+
+        return datePart + " " + timePart + " 운동";
+    }
+
+    //LocalTime을 오전/오후/저녁으로 변환하는 헬퍼 메서드
+    private String convertToTimeOfDay(LocalTime time) {
+        int hour = time.getHour();
+        if (hour >= 0 && hour < 12) {
+            return "오전";
+        } else{
+            return "오후";
+        }
+    }
+
+    //임시로 사용할 데이터 묶음을 record로 구현
+    private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {}
 }
