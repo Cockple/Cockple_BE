@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.dto;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ExerciseDetailDTO {
 
@@ -29,7 +30,7 @@ public class ExerciseDetailDTO {
             Integer totalCount,
             Integer manCount,
             Integer womenCount,
-            ParticipantInfo list
+            List<ParticipantInfo> list
     ) {
     }
 
@@ -38,7 +39,7 @@ public class ExerciseDetailDTO {
             Integer currentWaitingCount,
             Integer manCount,
             Integer womenCount,
-            ParticipantInfo list
+            List<ParticipantInfo> list
     ) {
     }
 
