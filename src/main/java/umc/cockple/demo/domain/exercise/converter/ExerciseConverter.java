@@ -7,8 +7,10 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -180,6 +182,36 @@ public class ExerciseConverter {
                 .info(exerciseInfo)
                 .participants(participantGroup)
                 .waiting(waitingGroup)
+                .build();
+    }
+
+    public ExerciseMyGuestListDTO.Response toMyGuestListResponse(
+            ExerciseMyGuestListDTO.GuestStatistics statistics,
+            List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
+
+        return ExerciseMyGuestListDTO.Response.builder()
+                .totalCount(statistics.totalCount())
+                .maleCount(statistics.maleCount())
+                .femaleCount(statistics.femaleCount())
+                .list(guestInfoList)
+                .build();
+    }
+
+    public ExerciseMyGuestListDTO.GuestInfo toGuestInfo(
+            Guest guest,
+            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestStatusMap,
+            String inviterName) {
+
+        ExerciseMyGuestListDTO.GuestGroups guestGroup = guestStatusMap.get(guest.getId());
+
+        return ExerciseMyGuestListDTO.GuestInfo.builder()
+                .guestId(guest.getId())
+                .isWaiting(guestGroup.isWaiting())
+                .participantNumber(guestGroup.participantNumber())
+                .name(guest.getGuestName())
+                .gender(guest.getGender())
+                .level(guest.getLevel())
+                .inviterName(inviterName)
                 .build();
     }
 }

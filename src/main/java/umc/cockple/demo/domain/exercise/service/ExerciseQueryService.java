@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.enums.Role;
 
@@ -68,11 +69,21 @@ public class ExerciseQueryService {
         log.info("내가 초대한 게스트 조회 시작 - exerciseId = {}, memberId = {}", exerciseId, memberId);
 
         Exercise exercise = findExerciseWithBasicInfoOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
 
-        List<Guest> myGuests = guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
+        List<Guest> myGuests = findGuestsByExerciseIdAndInviterId(exerciseId, memberId);
 
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, exercise.getParty());
-        Map<Long, GuestGroups> guestNumberMap = createGuestNumberMap(allParticipants, exercise.getMaxCapacity());
+        Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap = createGuestNumberMap(allParticipants, exercise.getMaxCapacity());
+
+        String inviterName = member.getMemberName();
+        List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList = buildGuestInfoList(myGuests, guestNumberMap, inviterName);
+
+        ExerciseMyGuestListDTO.GuestStatistics statistics = calculateGuestStatistics(guestInfoList);
+
+        log.info("내가 초대한 게스트 조회 완료 - exerciseId: {}", exerciseId);
+
+        return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
     }
 
     // ========== 비즈니스 메서드 ==========
@@ -142,15 +153,15 @@ public class ExerciseQueryService {
                 .build();
     }
 
-    private Map<Long, GuestGroups> createGuestNumberMap(List<ParticipantInfo> allParticipants, Integer maxCapacity) {
-        Map<Long, GuestGroups> guestNumberMap = new HashMap<>();
+    private Map<Long, ExerciseMyGuestListDTO.GuestGroups> createGuestNumberMap(List<ParticipantInfo> allParticipants, Integer maxCapacity) {
+        Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap = new HashMap<>();
 
         int size = allParticipants.size();
         for (int i = 0; i < Math.min(size, maxCapacity); i++) {
             ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
             if ("GUEST".equals(participant.participantType())) {
                 guestNumberMap.put(participant.participantId(),
-                        new GuestGroups(i+1, false));
+                        ExerciseMyGuestListDTO.GuestGroups.participant(i+1));
             }
         }
 
@@ -160,13 +171,33 @@ public class ExerciseQueryService {
                 ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
                 if ("GUEST".equals(participant.participantType())) {
                     guestNumberMap.put(participant.participantId(),
-                            new GuestGroups(waitingNumber, true));
+                            ExerciseMyGuestListDTO.GuestGroups.waiting(waitingNumber));
                     waitingNumber++;
                 }
             }
         }
 
         return guestNumberMap;
+    }
+
+    private List<ExerciseMyGuestListDTO.GuestInfo> buildGuestInfoList(
+            List<Guest> myGuests,
+            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap,
+            String inviterName) {
+
+        return myGuests.stream()
+                .map(guest -> exerciseConverter.toGuestInfo(guest, guestNumberMap, inviterName))
+                .toList();
+    }
+
+    private ExerciseMyGuestListDTO.GuestStatistics calculateGuestStatistics(List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
+        int totalCount = guestInfoList.size();
+        int maleCount = (int) guestInfoList.stream()
+                .filter(guest -> guest.gender() == Gender.MALE)
+                .count();
+        int femaleCount = totalCount - maleCount;
+
+        return new ExerciseMyGuestListDTO.GuestStatistics(totalCount, maleCount, femaleCount);
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -303,13 +334,12 @@ public class ExerciseQueryService {
         return guestRepository.findByExerciseId(exerciseId);
     }
 
+    private List<Guest> findGuestsByExerciseIdAndInviterId(Long exerciseId, Long memberId) {
+        return guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
+    }
+
     private record ParticipantGroups(
             List<ExerciseDetailDTO.ParticipantInfo> participants,
             List<ExerciseDetailDTO.ParticipantInfo> waiting
     ) {}
-
-    private record GuestGroups(
-            Integer participantNumber,
-            Boolean isWaiting
-    ){}
 }
