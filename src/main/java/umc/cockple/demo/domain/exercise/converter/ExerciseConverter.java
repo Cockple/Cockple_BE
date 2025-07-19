@@ -7,6 +7,9 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.global.enums.Role;
+
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -112,6 +115,71 @@ public class ExerciseConverter {
         return ExerciseUpdateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .updatedAt(exercise.getUpdatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
+        Member member = memberParticipant.getMember();
+        Role role = memberRoles.get(member.getId());
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(role.name())
+                .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toExeternalParticipantInfo(MemberExercise memberParticipant) {
+        Member member = memberParticipant.getMember();
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(Guest guest, String inviterName) {
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(guest.getId())
+                .participantNumber(0)
+                .imgUrl(null)
+                .name(guest.getGuestName())
+                .gender(guest.getGender().name())
+                .level(guest.getLevel().name())
+                .participantType(guest.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(inviterName)
+                .joinedAt(guest.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.Response toDetailResponseDTO(
+            boolean isManager,
+            ExerciseDetailDTO.ExerciseInfo exerciseInfo,
+            ExerciseDetailDTO.ParticipantGroup participantGroup,
+            ExerciseDetailDTO.WaitingGroup waitingGroup) {
+
+        return ExerciseDetailDTO.Response.builder()
+                .isManager(isManager)
+                .info(exerciseInfo)
+                .participants(participantGroup)
+                .waiting(waitingGroup)
                 .build();
     }
 }
