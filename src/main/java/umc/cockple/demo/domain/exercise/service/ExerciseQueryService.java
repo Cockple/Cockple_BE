@@ -10,7 +10,10 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Role;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,6 +23,7 @@ public class ExerciseQueryService {
 
     private final ExerciseRepository exerciseRepository;
     private final MemberRepository memberRepository;
+    private final MemberPartyRepository memberPartyRepository;
 
     public ExerciseDetailDTO.Response getExerciseDetail(Long exerciseId, Long memberId) {
 
@@ -28,7 +32,16 @@ public class ExerciseQueryService {
         Exercise exercise = findExerciseWithBasicInfoOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
 
+        boolean isManager = checkManagerPermission(exercise.getParty(), member);
+
         return null;
+    }
+
+    // ========== 비즈니스 메서드 ==========
+
+    private boolean checkManagerPermission(Party party, Member member) {
+        return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                party.getId(), member.getId(), Role.party_MANAGER);
     }
 
     // ========== 조회 메서드 ==========
