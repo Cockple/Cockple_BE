@@ -71,6 +71,8 @@ public class ExerciseQueryService {
 
         List<Guest> myGuests = guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
 
+        List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, exercise.getParty());
+
 
 
     }
