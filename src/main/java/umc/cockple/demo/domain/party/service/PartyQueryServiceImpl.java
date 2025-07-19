@@ -40,12 +40,14 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
+        log.info("내 모임 간략화 조회 시작 - partyId: {}", memberId);
         //사용자 조회
         Member member = findMemberOrThrow(memberId);
 
         //memberParty 조회 로직 수행
         Slice<MemberParty> memberPartySlice = memberPartyRepository.findByMember(member, pageable);
 
+        log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
         return memberPartySlice.map(partyConverter::toPartySimpleDTO);
     }
 
