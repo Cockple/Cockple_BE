@@ -132,6 +132,7 @@ public class ExerciseConverter {
                 .participantType(memberParticipant.getExerciseMemberShipStatus().name())
                 .partyPosition(role.name())
                 .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
                 .build();
     }
 
@@ -148,6 +149,7 @@ public class ExerciseConverter {
                 .participantType(memberParticipant.getExerciseMemberShipStatus().name())
                 .partyPosition(null)
                 .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
                 .build();
     }
 
@@ -163,6 +165,7 @@ public class ExerciseConverter {
                 .participantType(guest.getExerciseMemberShipStatus().name())
                 .partyPosition(null)
                 .inviterName(inviterName)
+                .joinedAt(guest.getCreatedAt())
                 .build();
     }
 }

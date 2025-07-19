@@ -2,6 +2,8 @@ package umc.cockple.demo.domain.exercise.dto;
 
 import lombok.Builder;
 
+import java.time.LocalDateTime;
+
 public class ExerciseDetailDTO {
 
     @Builder
@@ -50,7 +52,8 @@ public class ExerciseDetailDTO {
             String level,
             String participantType,
             String partyPosition,
-            String inviterName
+            String inviterName,
+            LocalDateTime joinedAt
     ) {
     }
 }
