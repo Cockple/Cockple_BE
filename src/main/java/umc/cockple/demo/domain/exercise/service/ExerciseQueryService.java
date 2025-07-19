@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
+import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -60,6 +61,18 @@ public class ExerciseQueryService {
         ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
         return exerciseConverter.toDetailResponseDTO(isManager, exerciseInfo, participantGroup, waitingGroup);
+    }
+
+    public ExerciseMyGuestListDTO.Response getMyInvitedGuests(Long exerciseId, Long memberId) {
+
+        log.info("내가 초대한 게스트 조회 시작 - exerciseId = {}, memberId = {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+
+        List<Guest> myGuests = guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
+
+
+
     }
 
     // ========== 비즈니스 메서드 ==========
@@ -242,6 +255,11 @@ public class ExerciseQueryService {
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
         return exerciseRepository.findExerciseWithBasicInfo(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Exercise findExerciseOrThrow(Long exerciseId) {
+        return exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 

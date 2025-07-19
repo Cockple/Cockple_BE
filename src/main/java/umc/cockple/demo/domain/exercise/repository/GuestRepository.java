@@ -15,4 +15,13 @@ public interface GuestRepository extends JpaRepository<Guest, Long> {
             ORDER BY g.createdAt ASC
             """)
     List<Guest> findByExerciseId(@Param("exerciseId") Long exerciseId);
+
+    @Query("""
+            SELECT g FROM Guest g 
+            WHERE g.exercise.id = :exerciseId 
+            AND g.inviterId = :inviterId
+            ORDER BY g.createdAt ASC
+            """)
+    List<Guest> findByExerciseIdAndInviterId(@Param("exerciseId") Long exerciseId,
+                                             @Param("inviterId") Long inviterId);
 }
