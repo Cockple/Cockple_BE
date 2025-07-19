@@ -4,16 +4,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.enums.Role;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -24,6 +34,9 @@ public class ExerciseQueryService {
     private final ExerciseRepository exerciseRepository;
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
+
+    private final ExerciseConverter exerciseConverter;
 
     public ExerciseDetailDTO.Response getExerciseDetail(Long exerciseId, Long memberId) {
 
@@ -32,7 +45,12 @@ public class ExerciseQueryService {
         Exercise exercise = findExerciseWithBasicInfoOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
 
-        boolean isManager = checkManagerPermission(exercise.getParty(), member);
+        Party party = exercise.getParty();
+        boolean isManager = checkManagerPermission(party, member);
+
+        List<MemberExercise> memberExercises = findMemberExercisesWithInfo(exerciseId);
+        List<ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
+
 
         return null;
     }
@@ -42,6 +60,34 @@ public class ExerciseQueryService {
     private boolean checkManagerPermission(Party party, Member member) {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
                 party.getId(), member.getId(), Role.party_MANAGER);
+    }
+
+    private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
+        if (memberExercises.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> memberIds = memberExercises.stream()
+                .map(me -> me.getMember().getId())
+                .toList();
+
+        Map<Long, Role> partyMemberRoles = memberPartyRepository
+                .findMemberRolesByPartyAndMembers(party.getId(), memberIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        mp -> mp.getMember().getId(),
+                        MemberParty::getRole
+                ));
+
+        return memberExercises.stream()
+                .map(me -> {
+                    if (partyMemberRoles.containsKey(me.getMember().getId())) {
+                        return exerciseConverter.toParticipantInfo(me, partyMemberRoles);
+                    } else {
+                        return exerciseConverter.toExeternalParticipantInfo(me);
+                    }
+                })
+                .toList();
     }
 
     // ========== 조회 메서드 ==========
@@ -54,5 +100,9 @@ public class ExerciseQueryService {
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private List<MemberExercise> findMemberExercisesWithInfo(Long exerciseId) {
+        return memberExerciseRepository.findMemberParticipantsByExerciseId(exerciseId, MemberStatus.ACTIVE);
     }
 }

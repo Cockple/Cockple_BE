@@ -7,6 +7,9 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.global.enums.Role;
+
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -112,6 +115,39 @@ public class ExerciseConverter {
         return ExerciseUpdateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .updatedAt(exercise.getUpdatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
+        Member member = memberParticipant.getMember();
+        Role role = memberRoles.get(member.getId());
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(role.name())
+                .inviterName(null)
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toExeternalParticipantInfo(MemberExercise memberParticipant) {
+        Member member = memberParticipant.getMember();
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(null)
                 .build();
     }
 }
