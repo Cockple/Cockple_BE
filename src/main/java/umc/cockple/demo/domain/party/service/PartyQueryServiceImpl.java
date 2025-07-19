@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -15,16 +17,19 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyDetailDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
-import umc.cockple.demo.domain.party.dto.PartySimpleDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.RequestStatus;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 //조회 용 서비스이기에 readOnly = true를 추가하여 성능 향상했습니다.
@@ -37,6 +42,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyConverter partyConverter;
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final ExerciseRepository exerciseRepository;
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
@@ -49,6 +55,23 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
         log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
         return memberPartySlice.map(partyConverter::toPartySimpleDTO);
+    }
+
+    @Override
+    public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, Pageable pageable) {
+        //모임 정보 조회
+        Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, pageable);
+        List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
+
+        //운동 정보 조회
+        ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
+
+        // 3. 기본 정보와 추가 정보를 조합하여 최종 DTO 생성
+        return partySlice.map(party -> {
+            Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
+            String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
+        });
     }
 
     @Override
