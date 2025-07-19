@@ -56,6 +56,10 @@ public class ExerciseQueryService {
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, party);
         ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
 
+        ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(
+                groups.participants(), exercise.getMaxCapacity());
+        ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
+
 
         return null;
     }
@@ -101,6 +105,30 @@ public class ExerciseQueryService {
         List<ExerciseDetailDTO.ParticipantInfo> waitingList = createWaitingList(allParticipants, maxCapacity);
 
         return new ParticipantGroups(participantList, waitingList);
+    }
+
+    private ExerciseDetailDTO.ParticipantGroup createParticipantGroup(
+            List<ExerciseDetailDTO.ParticipantInfo> participants,
+            int maxCapacity) {
+
+        return ExerciseDetailDTO.ParticipantGroup.builder()
+                .currentParticipantCount(participants.size())
+                .totalCount(maxCapacity)
+                .manCount(countByGender(participants, "MALE"))
+                .womenCount(countByGender(participants, "FEMALE"))
+                .list(participants)
+                .build();
+    }
+
+    private ExerciseDetailDTO.WaitingGroup createWaitingGroup(
+            List<ExerciseDetailDTO.ParticipantInfo> waiting) {
+
+        return ExerciseDetailDTO.WaitingGroup.builder()
+                .currentWaitingCount(waiting.size())
+                .manCount(countByGender(waiting, "MALE"))
+                .womenCount(countByGender(waiting, "FEMALE"))
+                .list(waiting)
+                .build();
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -204,6 +232,12 @@ public class ExerciseQueryService {
                 .inviterName(original.inviterName())
                 .joinedAt(original.joinedAt())
                 .build();
+    }
+
+    private int countByGender(List<ExerciseDetailDTO.ParticipantInfo> participants, String gender) {
+        return (int) participants.stream()
+                .filter(p -> gender.equals(p.gender()))
+                .count();
     }
 
     // ========== 조회 메서드 ==========
