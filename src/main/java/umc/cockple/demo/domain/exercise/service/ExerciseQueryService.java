@@ -53,11 +53,8 @@ public class ExerciseQueryService {
 
         ExerciseDetailDTO.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
 
-        List<MemberExercise> memberExercises = findMemberExercisesWithMemberAndProfile(exerciseId);
-        List<ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
-
-        List<Guest> guests = findGuests(exerciseId);
-        List<ParticipantInfo> guestParticipants = buildGuestParticipantInfos(guests);
+        List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, party);
+        ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
 
 
         return null;
@@ -79,6 +76,34 @@ public class ExerciseQueryService {
                 .location(addr.getStreetAddr())
                 .build();
     }
+
+    private List<ExerciseDetailDTO.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
+        List<MemberExercise> memberExercises = findMemberExercisesWithMemberAndProfile(exerciseId);
+        List<ExerciseDetailDTO.ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
+
+        List<Guest> guests = findGuests(exerciseId);
+        List<ExerciseDetailDTO.ParticipantInfo> guestParticipants = buildGuestParticipantInfos(guests);
+
+        List<ExerciseDetailDTO.ParticipantInfo> allParticipants = new ArrayList<>();
+        allParticipants.addAll(memberParticipants);
+        allParticipants.addAll(guestParticipants);
+
+        allParticipants.sort(Comparator.comparing(ExerciseDetailDTO.ParticipantInfo::joinedAt));
+
+        return allParticipants;
+    }
+
+    private ParticipantGroups splitParticipants(
+            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
+            int maxCapacity) {
+
+        List<ExerciseDetailDTO.ParticipantInfo> participantList = createParticipantList(allParticipants, maxCapacity);
+        List<ExerciseDetailDTO.ParticipantInfo> waitingList = createWaitingList(allParticipants, maxCapacity);
+
+        return new ParticipantGroups(participantList, waitingList);
+    }
+
+    // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
         if (memberExercises.isEmpty()) {
@@ -127,6 +152,60 @@ public class ExerciseQueryService {
                 .toList();
     }
 
+    private List<ExerciseDetailDTO.ParticipantInfo> createParticipantList(
+            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
+            int maxCapacity) {
+
+        List<ExerciseDetailDTO.ParticipantInfo> participantList = new ArrayList<>();
+        int endIndex = Math.min(allParticipants.size(), maxCapacity);
+
+        for (int i = 0; i < endIndex; i++) {
+            ExerciseDetailDTO.ParticipantInfo original = allParticipants.get(i);
+            ExerciseDetailDTO.ParticipantInfo participant = createParticipantWithNumber(original, i + 1);
+            participantList.add(participant);
+        }
+
+        return participantList;
+    }
+
+    private List<ExerciseDetailDTO.ParticipantInfo> createWaitingList(
+            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
+            int maxCapacity) {
+
+        List<ExerciseDetailDTO.ParticipantInfo> waitingList = new ArrayList<>();
+
+        if (allParticipants.size() <= maxCapacity) {
+            return waitingList;
+        }
+
+        for (int i = maxCapacity; i < allParticipants.size(); i++) {
+            ExerciseDetailDTO.ParticipantInfo original = allParticipants.get(i);
+            int waitingNumber = (i - maxCapacity) + 1;
+            ExerciseDetailDTO.ParticipantInfo waiting = createParticipantWithNumber(original, waitingNumber);
+            waitingList.add(waiting);
+        }
+
+        return waitingList;
+    }
+
+    private ExerciseDetailDTO.ParticipantInfo createParticipantWithNumber(
+            ExerciseDetailDTO.ParticipantInfo original,
+            int number) {
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(original.participantId())
+                .participantNumber(number)
+                .imgUrl(original.imgUrl())
+                .name(original.name())
+                .gender(original.gender())
+                .level(original.level())
+                .participantType(original.participantType())
+                .partyPosition(original.partyPosition())
+                .inviterName(original.inviterName())
+                .joinedAt(original.joinedAt())
+                .build();
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -146,4 +225,9 @@ public class ExerciseQueryService {
     private List<Guest> findGuests(Long exerciseId) {
         return guestRepository.findByExerciseId(exerciseId);
     }
+
+    private record ParticipantGroups(
+            List<ExerciseDetailDTO.ParticipantInfo> participants,
+            List<ExerciseDetailDTO.ParticipantInfo> waiting
+    ) {}
 }
