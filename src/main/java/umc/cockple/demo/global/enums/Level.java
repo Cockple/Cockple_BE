@@ -1,5 +1,6 @@
 package umc.cockple.demo.global.enums;
 
+import lombok.Getter;
 import umc.cockple.demo.global.exception.GeneralException;
 import umc.cockple.demo.global.response.code.status.CommonErrorCode;
 
@@ -17,6 +18,7 @@ public enum Level {
     NOVICE("왕초심"),
     NONE("급수없음");
 
+    @Getter
     private final String koreanName;
 
     Level(String koreanName) {

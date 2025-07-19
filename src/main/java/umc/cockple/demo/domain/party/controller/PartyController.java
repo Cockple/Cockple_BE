@@ -12,10 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -30,6 +27,20 @@ public class PartyController {
 
     private final PartyCommandService partyCommandService;
     private final PartyQueryService partyQueryService;
+
+    @GetMapping("/{partyId}")
+    @Operation(summary = "모임 상세 정보 조회",
+            description = "특정 모임의 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 생성 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
+    public BaseResponse<PartyDetailDTO.Response> getPartyDetails(
+            @PathVariable Long partyId,
+            Authentication authentication
+    ){
+        Long memberId = 1L; // 임시값
+        PartyDetailDTO.Response response = partyQueryService.getPartyDetails(partyId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 
     @PostMapping(value = "/parties")
     @Operation(summary = "모임 생성",

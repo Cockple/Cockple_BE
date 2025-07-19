@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> {
 
@@ -24,4 +25,5 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
     List<MemberParty> findMemberRolesByPartyAndMembers(
             @Param("partyId") Long partyId, @Param("memberIds") List<Long> memberIds);
 
+    Optional<MemberParty> findByPartyAndMember(Party party, Member member);
 }
