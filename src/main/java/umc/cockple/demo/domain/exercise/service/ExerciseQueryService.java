@@ -67,7 +67,7 @@ public class ExerciseQueryService {
 
         log.info("내가 초대한 게스트 조회 시작 - exerciseId = {}, memberId = {}", exerciseId, memberId);
 
-        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Exercise exercise = findExerciseWithBasicInfoOrThrow(exerciseId);
 
         List<Guest> myGuests = guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
 
