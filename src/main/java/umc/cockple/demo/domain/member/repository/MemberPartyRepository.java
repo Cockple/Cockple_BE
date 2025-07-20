@@ -30,4 +30,6 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
     Optional<MemberParty> findByPartyAndMember(Party party, Member member);
 
     Slice<MemberParty> findByMember(Member member, Pageable pageable);
+
+    void deleteAllByMember(Member member);
 }

@@ -8,9 +8,7 @@ import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.s3.ImageService;
 
@@ -27,6 +25,8 @@ public class MemberCommandService {
     private final MemberRepository memberRepository;
     private final MemberKeywordRepository memberKeywordRepository;
     private final MemberAddrRepository memberAddrRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
+    private final MemberPartyRepository memberPartyRepository;
 
     private final ImageService imageService;
 
@@ -41,8 +41,8 @@ public class MemberCommandService {
         validateCanWithdraw(member);
 
         // 참여중인 운동, 모임에서 나가기
-        member.getMemberExercises().clear();
-        member.getMemberParties().clear();
+        memberExerciseRepository.deleteAllByMember(member);
+        memberPartyRepository.deleteAllByMember(member);
 
         // 활성화 여부 해제
         member.withdraw();
@@ -186,7 +186,8 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.MEMBER_ADDRESS_MINIMUM_REQUIRED);
         }
 
-        // 회원 -> addr에서 삭제
+        // 주소 삭제
+        memberAddrRepository.deleteById(addrId);
         member.getAddresses().remove(addr);
 
     }
