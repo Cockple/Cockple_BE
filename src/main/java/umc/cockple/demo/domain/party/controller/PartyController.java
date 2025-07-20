@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -33,7 +35,7 @@ public class PartyController {
             description = "사용자가 가입한 내 모임을 간략화하여 조회합니다. ")
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
-    public BaseResponse<Slice<PartySimpleDTO.Response>> getSimpleParties(
+    public BaseResponse<Slice<PartySimpleDTO.Response>> getSimpleMyParties(
             @PageableDefault(page = 0, size = 10, sort = {"createdAt", "party.partyName"}, direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){
@@ -44,6 +46,24 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/my/parties")
+    @Operation(summary = "내 모임 조회",
+            description = "사용자가 가입한 내 모임을 조회합니다. ")
+    @ApiResponse(responseCode = "200", description = "모임 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    public BaseResponse<Slice<PartyDTO.Response>> getMyParties(
+            @RequestParam(required = false, defaultValue = "false") Boolean created,
+            @RequestParam(required = false, defaultValue = "최신순") String sort,
+            @PageableDefault(size = 10) Pageable pageable,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+        // sort 파라미터에 따라 Pageable 객체를 새로 생성
+
+        Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sort, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 
     @GetMapping("/{partyId}")
     @Operation(summary = "모임 상세 정보 조회",
@@ -103,7 +123,7 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<Slice<PartyJoinDTO.Response>> getJoinRequests(
             @PathVariable Long partyId,
-            @RequestParam(name = "status") String status,
+            @RequestParam(name = "status", defaultValue = "PENDING") String status,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){

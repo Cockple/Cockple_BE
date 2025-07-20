@@ -2,10 +2,14 @@ package umc.cockple.demo.domain.party.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -15,16 +19,20 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyDetailDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinDTO;
-import umc.cockple.demo.domain.party.dto.PartySimpleDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.enums.RequestStatus;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 //조회 용 서비스이기에 readOnly = true를 추가하여 성능 향상했습니다.
@@ -37,6 +45,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyConverter partyConverter;
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final ExerciseRepository exerciseRepository;
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
@@ -49,6 +58,26 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
         log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
         return memberPartySlice.map(partyConverter::toPartySimpleDTO);
+    }
+
+    @Override
+    public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable) {
+        //정렬 기준 문자 검증, Pageable 객체 생성
+        Pageable sortedPageable = createSortedPageable(pageable, sort);
+
+        //모임 정보 조회
+        Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, sortedPageable);
+        List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
+
+        //운동 정보 조회
+        ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
+
+        //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
+        return partySlice.map(party -> {
+            Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
+            String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
+        });
     }
 
     @Override
@@ -113,4 +142,57 @@ public class PartyQueryServiceImpl implements PartyQueryService{
             throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
         }
     }
+
+    //정렬 로직 처리
+    private Pageable createSortedPageable(Pageable pageable, String sort) {
+        PartyOrderType sortType = PartyOrderType.fromKorean(sort);
+
+        Sort sorting = switch (sortType) {
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case EXERCISE_COUNT -> Sort.by("exerciseCount").descending();
+            default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
+        };
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
+    }
+
+    private ExerciseInfo getExerciseInfo(List<Long> partyIds) {
+        //운동 개수 정보 조회
+        Map<Long, Integer> exerciseCountMap = exerciseRepository.findTotalExerciseCountsByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(PartyExerciseInfoDTO::partyId, dto -> dto.count().intValue()));
+
+        //가장 최신의 운동 정보 조회
+        Map<Long, String> nextExerciseInfoMap = exerciseRepository.findUpcomingExercisesByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        exercise -> exercise.getParty().getId(),
+                        this::formatNextExerciseInfo,
+                        (existing, replacement) -> existing //key중복 시 처리 방법: 최초 값(existing)만 사용
+                ));
+
+        return new ExerciseInfo(exerciseCountMap, nextExerciseInfoMap);
+    }
+
+    private String formatNextExerciseInfo(Exercise exercise) {
+        //날짜 포맷팅 ex) 05.01
+        String datePart = exercise.getDate().format(DateTimeFormatter.ofPattern("MM.dd"));
+
+        //시간 포맷팅 (오전/오후)
+        String timePart = convertToTimeOfDay(exercise.getStartTime());
+
+        return datePart + " " + timePart + " 운동";
+    }
+
+    //LocalTime을 오전/오후/저녁으로 변환하는 헬퍼 메서드
+    private String convertToTimeOfDay(LocalTime time) {
+        int hour = time.getHour();
+        if (hour >= 0 && hour < 12) {
+            return "오전";
+        } else{
+            return "오후";
+        }
+    }
+
+    //임시로 사용할 데이터 묶음을 record로 구현
+    private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {}
 }

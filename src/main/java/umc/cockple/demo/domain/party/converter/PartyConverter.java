@@ -29,6 +29,21 @@ public class PartyConverter {
                 .build();
     }
 
+    public PartyDTO.Response toMyPartyDTO(Party party, String nextExerciseInfo, Integer totalExerciseCount) {
+        //급수 조건 가공 필요
+        return PartyDTO.Response.builder()
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .addr1(party.getPartyAddr().getAddr1())
+                .addr2(party.getPartyAddr().getAddr2())
+                .femaleLevel(getLevelList(party, Gender.FEMALE))
+                .maleLevel(getLevelList(party, Gender.MALE))
+                .nextExerciseInfo(nextExerciseInfo)
+                .totalExerciseCount(totalExerciseCount)
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .build();
+    }
+
     public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt) {
         // 급수 정보 가공
         List<String> femaleLevel = getLevelList(party, Gender.FEMALE);
