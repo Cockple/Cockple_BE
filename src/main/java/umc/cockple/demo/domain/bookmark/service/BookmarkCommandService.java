@@ -64,11 +64,6 @@ public class BookmarkCommandService {
         // 찜 해제 싶은 모임 조회
         Party party = findByPartyId(partyId);
 
-        // 찜 여부 확인
-        if (!partyBookmarkRepository.existsByMemberAndParty(member, party)) {
-            throw new BookmarkException(BookmarkErrorCode.ALREADY_RELEASE_BOOKMARK);
-        }
-
         // 모임 찜 찾기
         PartyBookmark bookmark = findByMemberAndParty(member, party);
 
@@ -90,7 +85,7 @@ public class BookmarkCommandService {
 
     private PartyBookmark findByMemberAndParty(Member member, Party party) {
         return partyBookmarkRepository.findByMemberAndParty(member, party)
-                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.NOT_FOUND_PARTY_BOOKMARK));
+                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_RELEASE_BOOKMARK));
     }
 
 

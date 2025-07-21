@@ -19,7 +19,6 @@ public enum BookmarkErrorCode implements BaseErrorCode {
 
     ALREADY_BOOKMARK(HttpStatus.BAD_REQUEST, "BOOKMARK401", "이미 북마크가 되어있습니다"),
     ALREADY_RELEASE_BOOKMARK(HttpStatus.BAD_REQUEST, "BOOKMARK402", "이미 찜이 되어있지 않습니다."),
-    NOT_FOUND_PARTY_BOOKMARK(HttpStatus.NOT_FOUND, "BOOKMARK403", "해당 모임 찜이 존재하지 않습니다."),
 
 
     ;
