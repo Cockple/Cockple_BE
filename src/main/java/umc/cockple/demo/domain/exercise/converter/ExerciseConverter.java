@@ -221,7 +221,9 @@ public class ExerciseConverter {
     public PartyExerciseCalendarDTO.Response toCalenderResponse(
             List<Exercise> exercises, LocalDate start, LocalDate end, Boolean isMember, Party party) {
 
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, party, start, end);
+        PartyLevelCache levelCache = createPartyLevelCache(party);
+
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, levelCache, start, end);
 
         return PartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -232,7 +234,27 @@ public class ExerciseConverter {
                 .build();
     }
 
-    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(List<Exercise> exercises, Party party, LocalDate start, LocalDate end) {
+    private PartyLevelCache createPartyLevelCache(Party party) {
+        List<String> femaleLevel = extractLevelsByGender(party, Gender.FEMALE);
+        List<String> maleLevel = extractLevelsByGender(party, Gender.MALE);
+
+        return new PartyLevelCache(femaleLevel, maleLevel);
+    }
+
+    private List<String> extractLevelsByGender(Party party, Gender gender) {
+        List<String> levelList = party.getLevels().stream()
+                .filter(l -> l.getGender() == gender)
+                .map(l -> l.getLevel().getKoreanName())
+                .toList();
+
+        return levelList.isEmpty() ? null : levelList;
+    }
+
+    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(
+            List<Exercise> exercises,
+            PartyLevelCache levelCache,
+            LocalDate start,
+            LocalDate end) {
 
         List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -250,7 +272,7 @@ public class ExerciseConverter {
                     .toList();
 
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = weekExercises.stream()
-                    .map((Exercise exercise) -> toCalendarItem(exercise, party))
+                    .map((Exercise exercise) -> toCalendarItem(exercise, levelCache))
                     .toList();
 
             weeks.add(PartyExerciseCalendarDTO.WeeklyExercises.builder()
@@ -265,7 +287,7 @@ public class ExerciseConverter {
         return weeks;
     }
 
-    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise, Party party) {
+    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise, PartyLevelCache levelCache) {
         return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
                 .exerciseId(exercise.getId())
                 .date(exercise.getDate())
@@ -273,20 +295,17 @@ public class ExerciseConverter {
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
-                .femaleLevel(getLevelList(party, Gender.FEMALE))
-                .maleLevel(getLevelList(party, Gender.MALE))
+                .femaleLevel(levelCache.femaleLevel())
+                .maleLevel(levelCache.maleLevel())
                 .currentParticipants(exercise.getNowCapacity())
                 .maxCapacity(exercise.getMaxCapacity())
                 .build();
     }
 
-    private List<String> getLevelList(Party party, Gender gender) {
-        List<String> levelList = party.getLevels().stream()
-                .filter(l -> l.getGender() == gender)
-                .map(l -> l.getLevel().getKoreanName())
-                .toList();
-
-        return levelList.isEmpty() ? null : levelList;
+    private record PartyLevelCache(
+            List<String> femaleLevel,
+            List<String> maleLevel
+    ) {
     }
 
 }
