@@ -7,9 +7,9 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -212,6 +212,19 @@ public class ExerciseConverter {
                 .gender(guest.getGender())
                 .level(guest.getLevel())
                 .inviterName(inviterName)
+                .build();
+    }
+
+    public PartyExerciseCalenderDTO.Response toCalenderResponse(
+            List<Exercise> exercises, LocalDate start, LocalDate end, Boolean isMember, String partyName) {
+
+        List<PartyExerciseCalenderDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
+
+        return PartyExerciseCalenderDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .isMember(isMember)
+                .partyName(partyName)
                 .build();
     }
 }
