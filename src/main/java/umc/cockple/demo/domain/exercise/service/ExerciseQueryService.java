@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalenderDTO;
+import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -90,7 +90,7 @@ public class ExerciseQueryService {
         return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
     }
 
-    public PartyExerciseCalenderDTO.Response getPartyExerciseCalender(Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
+    public PartyExerciseCalendarDTO.Response getPartyExerciseCalender(Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
 
         log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
                 partyId, memberId, startDate, endDate);

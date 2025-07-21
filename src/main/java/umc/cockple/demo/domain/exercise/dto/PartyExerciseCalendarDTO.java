@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public class PartyExerciseCalenderDTO {
+public class PartyExerciseCalendarDTO {
 
     @Builder
     public record Response(

@@ -240,7 +240,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "모임 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
-    public BaseResponse<PartyExerciseCalenderDTO.Response> getPartyExerciseCalender(
+    public BaseResponse<PartyExerciseCalendarDTO.Response> getPartyExerciseCalender(
             @PathVariable Long partyId,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -250,7 +250,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        PartyExerciseCalenderDTO.Response response = exerciseQueryService.getPartyExerciseCalender(
+        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalender(
                 partyId, memberId, startDate, endDate);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

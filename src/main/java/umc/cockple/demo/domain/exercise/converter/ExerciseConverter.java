@@ -215,16 +215,17 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public PartyExerciseCalenderDTO.Response toCalenderResponse(
+    public PartyExerciseCalendarDTO.Response toCalenderResponse(
             List<Exercise> exercises, LocalDate start, LocalDate end, Boolean isMember, String partyName) {
 
-        List<PartyExerciseCalenderDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
 
-        return PartyExerciseCalenderDTO.Response.builder()
+        return PartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
                 .endDate(end)
                 .isMember(isMember)
                 .partyName(partyName)
                 .build();
     }
+
 }
