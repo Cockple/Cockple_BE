@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.exercise.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -13,6 +14,7 @@ import java.time.format.DateTimeParseException;
 public class ExerciseCreateDTO {
 
     @Builder
+    @Schema(name = "ExerciseCreateRequest", description = "운동 생성 요청")
     public record Request(
 
             @NotBlank(message = "운동 날짜는 필수입니다.")

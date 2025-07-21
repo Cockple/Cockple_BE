@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.exercise.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -12,6 +13,7 @@ import java.time.format.DateTimeParseException;
 
 public class ExerciseUpdateDTO {
 
+    @Schema(name = "ExerciseUpdateRequest", description = "운동 수정 요청")
     public record Request(
 
             @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식: YYYY-MM-DD")
