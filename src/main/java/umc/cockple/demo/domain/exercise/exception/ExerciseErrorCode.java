@@ -20,6 +20,8 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     INVALID_START_TIME_FORMAT(HttpStatus.BAD_REQUEST, "EXERCISE102", "유효하지 않은 시작 시간 형식입니다. (HH:mm 형식으로 입력해주세요)"),
     INVALID_END_TIME_FORMAT(HttpStatus.BAD_REQUEST, "EXERCISE103", "유효하지 않은 종료 시간 형식입니다. (HH:mm 형식으로 입력해주세요)"),
     INVALID_EXERCISE_TIME(HttpStatus.BAD_REQUEST, "EXERCISE104", "종료 시간은 시작 시간보다 늦어야 합니다."),
+    INCOMPLETE_DATE_RANGE(HttpStatus.BAD_REQUEST, "EXERCISE105", "시작 날짜와 종료 날짜는 둘 다 null이거나 둘 다 null이 아니어야 합니다."),
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "EXERCISE106", "종료 날짜는 시작 날짜보다 이후여야 합니다"),
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE201", "존재하지 않는 파티입니다."),
     EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE202", "존재하지 않는 운동입니다."),
@@ -39,7 +41,7 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     EXERCISE_ALREADY_STARTED_CANCEL(HttpStatus.BAD_REQUEST, "EXERCISE404", "이미 시작된 운동에는 취소할 수 없습니다."),
     EXERCISE_ALREADY_STARTED_UPDATE(HttpStatus.BAD_REQUEST, "EXERCISE405", "이미 시작된 운동은 수정할 수 없습니다."),
     ALREADY_JOINED_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE406", "이미 참여 신청한 운동입니다."),
-    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "게스트가 이 운동에 참여해있지 않습니다.."),
+    GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "게스트가 이 운동에 참여해있지 않습니다."),
     MEMBER_LEVEL_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE408", "해당 급수로는 이 운동에 참여할 수 없습니다."),
     MEMBER_AGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE409", "해당 나이로는 이 운동에 참여할 수 없습니다.");
 
