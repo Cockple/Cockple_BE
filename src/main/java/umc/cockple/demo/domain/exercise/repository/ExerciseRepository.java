@@ -49,8 +49,6 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     @Query("""
             SELECT e FROM Exercise e 
             JOIN FETCH e.exerciseAddr addr
-            LEFT JOIN FETCH e.memberExercises me
-            LEFT JOIN FETCH e.guests g
             WHERE e.party.id = :partyId 
             AND e.date BETWEEN :startDate AND :endDate
             ORDER BY e.date ASC, e.startTime ASC
@@ -59,4 +57,28 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("partyId") Long partyId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query(value = """
+            SELECT 
+                e.id as exerciseId,
+                COALESCE(me_count.member_count, 0) + COALESCE(g_count.guest_count, 0) as totalCount
+            FROM exercise e
+            LEFT JOIN (
+                SELECT exercise_id, COUNT(*) as member_count 
+                FROM member_exercise 
+                GROUP BY exercise_id
+            ) me_count ON e.id = me_count.exercise_id
+            LEFT JOIN (
+                SELECT exercise_id, COUNT(*) as guest_count 
+                FROM guest 
+                GROUP BY exercise_id
+            ) g_count ON e.id = g_count.exercise_id
+            WHERE e.party_id = :partyId 
+            AND e.date BETWEEN :startDate AND :endDate
+            """, nativeQuery = true)
+    List<Object[]> findExerciseParticipantCounts(
+            @Param("partyId") Long partyId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

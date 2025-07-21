@@ -219,11 +219,16 @@ public class ExerciseConverter {
     }
 
     public PartyExerciseCalendarDTO.Response toCalenderResponse(
-            List<Exercise> exercises, LocalDate start, LocalDate end, Boolean isMember, Party party) {
+            List<Exercise> exercises,
+            LocalDate start,
+            LocalDate end,
+            Boolean isMember,
+            Party party,
+            Map<Long, Integer> participantCounts) {
 
         PartyLevelCache levelCache = createPartyLevelCache(party);
 
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, levelCache, start, end);
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, levelCache, participantCounts, start, end);
 
         return PartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -253,6 +258,7 @@ public class ExerciseConverter {
     private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(
             List<Exercise> exercises,
             PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts,
             LocalDate start,
             LocalDate end) {
 
@@ -264,7 +270,7 @@ public class ExerciseConverter {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    convertToExerciseItems(weekExercises, levelCache);
+                    convertToExerciseItems(weekExercises, levelCache, participantCounts);
 
             weeks.add(createWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
@@ -287,10 +293,11 @@ public class ExerciseConverter {
 
     private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(
             List<Exercise> exercises,
-            PartyLevelCache levelCache) {
+            PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts) {
 
         return exercises.stream()
-                .map(exercise -> toCalendarItem(exercise, levelCache))
+                .map(exercise -> toCalendarItem(exercise, levelCache, participantCounts))
                 .toList();
     }
 
@@ -306,7 +313,11 @@ public class ExerciseConverter {
                 .build();
     }
 
-    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise, PartyLevelCache levelCache) {
+    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(
+            Exercise exercise, PartyLevelCache levelCache, Map<Long, Integer> participantCounts) {
+
+        Integer currentParticipants = participantCounts.getOrDefault(exercise.getId(), 0);
+
         return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
                 .exerciseId(exercise.getId())
                 .date(exercise.getDate())
@@ -316,7 +327,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .femaleLevel(levelCache.femaleLevel())
                 .maleLevel(levelCache.maleLevel())
-                .currentParticipants(exercise.getNowCapacity())
+                .currentParticipants(currentParticipants)
                 .maxCapacity(exercise.getMaxCapacity())
                 .build();
     }

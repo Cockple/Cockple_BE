@@ -104,9 +104,13 @@ public class ExerciseQueryService {
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
+        Map<Long, Integer> participantCounts = getParticipantCountsMap(
+                partyId, dateRange.start(), dateRange.end());
+
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end(), isMember, party);
+        return exerciseConverter.toCalenderResponse(
+                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts);
     }
 
     // ========== 검증 메서드들 ==========
@@ -403,6 +407,17 @@ public class ExerciseQueryService {
     private Party findPartyWithLevelsOrThrow(Long partyId) {
         return partyRepository.findByIdWithLevels(partyId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+    }
+
+    private Map<Long, Integer> getParticipantCountsMap(Long partyId, LocalDate start, LocalDate end) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCounts(
+                partyId, start, end);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                row -> ((Number) row[0]).longValue(),
+                row -> ((Number) row[1]).intValue()
+        ));
     }
 
     private record ParticipantGroups(
