@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -225,6 +226,54 @@ public class ExerciseConverter {
                 .endDate(end)
                 .isMember(isMember)
                 .partyName(partyName)
+                .build();
+    }
+
+    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(List<Exercise> exercises, LocalDate start, LocalDate end) {
+
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        LocalDate weekStart = start.minusDays(start.getDayOfWeek().getValue() - 1);
+
+        while (!weekStart.isAfter(end)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            LocalDate currentWeekStart = weekStart;
+            List<Exercise> weekExercises = exercises.stream()
+                    .filter(exercise -> {
+                        LocalDate exerciseDate = exercise.getDate();
+                        return (!exerciseDate.isBefore(currentWeekStart) && !exerciseDate.isAfter(weekEnd));
+                    })
+                    .toList();
+
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = weekExercises.stream()
+                    .map(this::toCalendarItem)
+                    .toList();
+
+            weeks.add(PartyExerciseCalendarDTO.WeeklyExercises.builder()
+                    .weekStartDate(currentWeekStart)
+                    .weekEndDate(weekEnd)
+                    .exercises(exerciseItems)
+                    .build());
+
+            weekStart = currentWeekStart.plusWeeks(1);
+        }
+
+        return weeks;
+    }
+
+    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise) {
+        return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .femaleLevel()
+                .maleLevel()
+                .currentParticipants(exercise.getNowCapacity())
+                .maxCapacity(exercise.getMaxCapacity())
                 .build();
     }
 
