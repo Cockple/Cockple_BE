@@ -99,13 +99,14 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         validateGetPartyExerciseCalender(startDate, endDate);
 
+        Boolean isMember = isPartyMember(party, member);
         DateRange dateRange = calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end());
+        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end(), isMember, party.getPartyName());
     }
 
     // ========== 검증 메서드들 ==========
@@ -242,6 +243,10 @@ public class ExerciseQueryService {
         int femaleCount = totalCount - maleCount;
 
         return new ExerciseMyGuestListDTO.GuestStatistics(totalCount, maleCount, femaleCount);
+    }
+
+    private boolean isPartyMember(Party party, Member member) {
+        return memberPartyRepository.existsByPartyAndMember(party, member);
     }
 
     private DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
