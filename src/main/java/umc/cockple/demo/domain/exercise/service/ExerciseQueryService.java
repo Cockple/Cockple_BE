@@ -95,7 +95,7 @@ public class ExerciseQueryService {
         log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
                 partyId, memberId, startDate, endDate);
 
-        Party party = findPartyOrThrow(partyId);
+        Party party = findPartyWithLevelsOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
         validateGetPartyExerciseCalender(startDate, endDate);
 
@@ -106,7 +106,7 @@ public class ExerciseQueryService {
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end(), isMember, party.getPartyName());
+        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end(), isMember, party);
     }
 
     // ========== 검증 메서드들 ==========
@@ -400,8 +400,8 @@ public class ExerciseQueryService {
         return guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
     }
 
-    private Party findPartyOrThrow(Long partyId) {
-        return partyRepository.findById(partyId)
+    private Party findPartyWithLevelsOrThrow(Long partyId) {
+        return partyRepository.findByIdWithLevels(partyId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
     }
 
