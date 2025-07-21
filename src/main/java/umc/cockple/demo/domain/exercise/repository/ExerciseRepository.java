@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.party.dto.PartyExerciseInfoDTO;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,4 +45,18 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             ORDER BY e.date ASC, e.startTime ASC
             """)
     List<Exercise> findUpcomingExercisesByPartyIds(@Param("partyIds") List<Long> partyIds);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.exerciseAddr addr
+            LEFT JOIN FETCH e.memberExercises me
+            LEFT JOIN FETCH e.guests g
+            WHERE e.party.id = :partyId 
+            AND e.date BETWEEN :startDate AND :endDate
+            ORDER BY e.date ASC, e.startTime ASC
+            """)
+    List<Exercise> findByPartyIdAndDateRange(
+            @Param("partyId") Long partyId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

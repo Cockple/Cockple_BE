@@ -99,7 +99,12 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         validateGetPartyExerciseCalender(startDate, endDate);
 
-        return null;
+        List<Exercise> exercises = exerciseRepository.findByPartyIdAndDateRange(
+                partyId, startDate, endDate);
+
+        log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
+
+        return exerciseConverter.toCalenderResponse(exercises, startDate, endDate);
     }
 
     // ========== 검증 메서드들 ==========
