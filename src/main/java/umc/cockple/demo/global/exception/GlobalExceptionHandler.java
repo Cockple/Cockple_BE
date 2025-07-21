@@ -62,7 +62,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.warn("Validation failed: uri={}, errors={}", requestURI, fieldErrors);
 
-        String errorMessage = buildErrorMessage(ex);
+        String errorMessage = buildAllErrorMessages(ex);
         BaseResponse<Void> response = BaseResponse.error(CommonErrorCode.VALIDATION_FAILED, errorMessage);
 
         return ResponseEntity
@@ -76,11 +76,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
     }
 
-    private static String buildErrorMessage(MethodArgumentNotValidException ex) {
-        return ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
+    private static String buildAllErrorMessages(MethodArgumentNotValidException ex) {
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
+
+        if (fieldErrors.isEmpty()) {
+            return "입력값 검증에 실패했습니다.";
+        }
+
+        List<String> errorMessages = fieldErrors.stream()
                 .map(FieldError::getDefaultMessage)
-                .orElse("입력값 검증에 실패했습니다.");
+                .distinct()
+                .toList();
+
+        if (errorMessages.size() == 1) {
+            return errorMessages.get(0);
+        } else {
+            return String.join(", ", errorMessages);
+        }
     }
 
     /**
@@ -95,7 +107,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.warn("Constraint violation: uri={}, message={}", requestURI, violations);
 
-        String errorMessage = buildErrorMessage(ex);
+        String errorMessage = buildAllErrorMessages(ex);
         BaseResponse<Void> response = BaseResponse.error(CommonErrorCode.VALIDATION_FAILED, errorMessage);
 
         return ResponseEntity
@@ -113,11 +125,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
     }
 
-    private static String buildErrorMessage(ConstraintViolationException ex) {
-        return ex.getConstraintViolations().stream()
-                .findFirst()
+    private static String buildAllErrorMessages(ConstraintViolationException ex) {
+        List<String> violationMessages = ex.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
-                .orElse("요청 파라미터가 올바르지 않습니다.");
+                .distinct()
+                .toList();
+
+        if (violationMessages.isEmpty()) {
+            return "요청 파라미터가 올바르지 않습니다.";
+        }
+
+        if (violationMessages.size() == 1) {
+            return violationMessages.get(0);
+        } else {
+            return String.join(", ", violationMessages);
+        }
     }
 
     /**
@@ -133,7 +155,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("Type mismatch: uri={}, param={}, value={}, expectedType={}",
                 requestURI, ex.getName(), ex.getValue(), expectedType);
 
-        String errorMessage = buildErrorMessage(ex, expectedType);
+        String errorMessage = buildAllErrorMessages(ex, expectedType);
         BaseResponse<Void> response = BaseResponse.error(CommonErrorCode.INVALID_PARAMETER_TYPE, errorMessage);
 
         return ResponseEntity
@@ -141,7 +163,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(response);
     }
 
-    private static String buildErrorMessage(MethodArgumentTypeMismatchException ex, String expectedType) {
+    private static String buildAllErrorMessages(MethodArgumentTypeMismatchException ex, String expectedType) {
         return String.format("파라미터 '%s'는 %s 타입이어야 합니다.",
                 ex.getName(), expectedType);
     }
