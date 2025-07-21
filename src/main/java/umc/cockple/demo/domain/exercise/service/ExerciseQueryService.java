@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalenderDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -22,10 +23,12 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.enums.Role;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +43,7 @@ public class ExerciseQueryService {
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
+    private final PartyRepository partyRepository;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -84,6 +88,40 @@ public class ExerciseQueryService {
         log.info("내가 초대한 게스트 조회 완료 - exerciseId: {}", exerciseId);
 
         return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
+    }
+
+    public PartyExerciseCalenderDTO.Response getPartyExerciseCalender(Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
+
+        log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
+                partyId, memberId, startDate, endDate);
+
+        Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
+        validateGetPartyExerciseCalender(startDate, endDate);
+
+        return null;
+    }
+
+    // ========== 검증 메서드들 ==========
+
+    private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate) {
+        validateDateRange(startDate, endDate);
+    }
+
+    // ========== 세부 검증 메서드들 ==========
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null && endDate == null) {
+            return;
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_DATE_RANGE);
+        }
+
+        if (!startDate.isBefore(endDate)) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_RANGE);
+        }
     }
 
     // ========== 비즈니스 메서드 ==========
@@ -161,7 +199,7 @@ public class ExerciseQueryService {
             ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
             if ("GUEST".equals(participant.participantType())) {
                 guestNumberMap.put(participant.participantId(),
-                        ExerciseMyGuestListDTO.GuestGroups.participant(i+1));
+                        ExerciseMyGuestListDTO.GuestGroups.participant(i + 1));
             }
         }
 
@@ -316,11 +354,6 @@ public class ExerciseQueryService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
-    private Exercise findExerciseOrThrow(Long exerciseId) {
-        return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
@@ -338,8 +371,14 @@ public class ExerciseQueryService {
         return guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
     }
 
+    private Party findPartyOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+    }
+
     private record ParticipantGroups(
             List<ExerciseDetailDTO.ParticipantInfo> participants,
             List<ExerciseDetailDTO.ParticipantInfo> waiting
-    ) {}
+    ) {
+    }
 }
