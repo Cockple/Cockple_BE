@@ -99,12 +99,13 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         validateGetPartyExerciseCalender(startDate, endDate);
 
-        List<Exercise> exercises = exerciseRepository.findByPartyIdAndDateRange(
-                partyId, startDate, endDate);
+        DateRange dateRange = calculateDateRange(startDate, endDate);
+
+        List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalenderResponse(exercises, startDate, endDate);
+        return exerciseConverter.toCalenderResponse(exercises, dateRange.start(), dateRange.end());
     }
 
     // ========== 검증 메서드들 ==========
@@ -243,6 +244,19 @@ public class ExerciseQueryService {
         return new ExerciseMyGuestListDTO.GuestStatistics(totalCount, maleCount, femaleCount);
     }
 
+    private DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null) {
+            return new DateRange(startDate, endDate);
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
+        LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
+
+        return new DateRange(defaultStart, defaultEnd);
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -359,6 +373,11 @@ public class ExerciseQueryService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
+    private List<Exercise> findExercisesByPartyIdAndDateRange(Long partyId, LocalDate startDate, LocalDate endDate) {
+        return exerciseRepository.findByPartyIdAndDateRange(
+                partyId, startDate, endDate);
+    }
+
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
@@ -386,4 +405,6 @@ public class ExerciseQueryService {
             List<ExerciseDetailDTO.ParticipantInfo> waiting
     ) {
     }
+
+    private record DateRange(LocalDate start, LocalDate end) {}
 }
