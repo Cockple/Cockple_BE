@@ -62,7 +62,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         log.warn("Validation failed: uri={}, errors={}", requestURI, fieldErrors);
 
-        String errorMessage = buildErrorMessage(ex);
+        String errorMessage = buildAllErrorMessages(ex);
         BaseResponse<Void> response = BaseResponse.error(CommonErrorCode.VALIDATION_FAILED, errorMessage);
 
         return ResponseEntity
@@ -76,11 +76,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
     }
 
-    private static String buildErrorMessage(MethodArgumentNotValidException ex) {
-        return ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
+    private static String buildAllErrorMessages(MethodArgumentNotValidException ex) {
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
+
+        if (fieldErrors.isEmpty()) {
+            return "입력값 검증에 실패했습니다.";
+        }
+
+        List<String> errorMessages = fieldErrors.stream()
                 .map(FieldError::getDefaultMessage)
-                .orElse("입력값 검증에 실패했습니다.");
+                .distinct()
+                .toList();
+
+        if (errorMessages.size() == 1) {
+            return errorMessages.get(0);
+        } else {
+            return String.join(", ", errorMessages);
+        }
     }
 
     /**
