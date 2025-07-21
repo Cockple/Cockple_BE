@@ -258,33 +258,52 @@ public class ExerciseConverter {
 
         List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
-        LocalDate weekStart = start.minusDays(start.getDayOfWeek().getValue() - 1);
-
-        while (!weekStart.isAfter(end)) {
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
             LocalDate weekEnd = weekStart.plusDays(6);
 
-            LocalDate currentWeekStart = weekStart;
-            List<Exercise> weekExercises = exercises.stream()
-                    .filter(exercise -> {
-                        LocalDate exerciseDate = exercise.getDate();
-                        return (!exerciseDate.isBefore(currentWeekStart) && !exerciseDate.isAfter(weekEnd));
-                    })
-                    .toList();
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = weekExercises.stream()
-                    .map((Exercise exercise) -> toCalendarItem(exercise, levelCache))
-                    .toList();
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
+                    convertToExerciseItems(weekExercises, levelCache);
 
-            weeks.add(PartyExerciseCalendarDTO.WeeklyExercises.builder()
-                    .weekStartDate(currentWeekStart)
-                    .weekEndDate(weekEnd)
-                    .exercises(exerciseItems)
-                    .build());
-
-            weekStart = currentWeekStart.plusWeeks(1);
+            weeks.add(createWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
 
         return weeks;
+    }
+
+    private LocalDate getWeekStart(LocalDate date) {
+        return date.minusDays(date.getDayOfWeek().getValue() - 1);
+    }
+
+    private List<Exercise> filterExercisesByWeek(List<Exercise> exercises, LocalDate weekStart, LocalDate weekEnd) {
+        return exercises.stream()
+                .filter(exercise -> {
+                    LocalDate exerciseDate = exercise.getDate();
+                    return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
+                })
+                .toList();
+    }
+
+    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(
+            List<Exercise> exercises,
+            PartyLevelCache levelCache) {
+
+        return exercises.stream()
+                .map(exercise -> toCalendarItem(exercise, levelCache))
+                .toList();
+    }
+
+    private PartyExerciseCalendarDTO.WeeklyExercises createWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return PartyExerciseCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .exercises(exerciseItems)
+                .build();
     }
 
     private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise, PartyLevelCache levelCache) {
