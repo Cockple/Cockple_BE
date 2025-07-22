@@ -77,4 +77,9 @@ public class BookmarkController {
 //        return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
 //    }
 
+    @GetMapping("/")
+    public String cdTest() {
+        return "success";
+    }
+
 }
