@@ -5,6 +5,7 @@ import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.member.domain.Member;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookmark, Long> {
@@ -12,4 +13,6 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
     Optional<ExerciseBookmark> findByMemberAndExercise(Member member, Exercise exercise);
 
     boolean existsByMemberAndExercise(Member member, Exercise exercise);
+
+    List<ExerciseBookmark> findAllByMember(Member member);
 }

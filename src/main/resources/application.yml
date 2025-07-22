@@ -5,6 +5,9 @@ server:
 spring:
   application:
     name: cockple.demo
+  profiles:
+    active: local
+
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

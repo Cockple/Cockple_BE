@@ -1,80 +1,57 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: CI/CD
+name: COCKPLE_CD
 
 on:
   push:
     branches: [ "develop" ]
-#  pull_request:
-#    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_DATABASE: cockple
-          MYSQL_ROOT_PASSWORD: 135792
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - uses: actions/checkout@v3
 
-      # Github secrets로부터 데이터를 받아서, 워크 플로우에 파일을 생성
-    - name: Make application.yml
-      run: |
-          cd ./src/main/resources
-          touch ./application.yml
-          echo "${{ secrets.PROPERTIES }}" > ./application.yml
-      shell: bash
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: "adopt"
 
-      # 빌드 잘 되는거 확인한 후 테스트 스킵 해제 예정 (H2 사용)
-    - name: Build with Gradle Wrapper (Skip Test)
-      run: |
-          chmod +x gradlew 
-          ./gradlew build -x test
 
-    ## 도커허브 로그인
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Remove existing application.yml (if exists)
+        run: |
+          rm -f src/main/resources/application.yml
 
-    ## 웹 이미지 빌드 및 도커허브에 push
-    - name: web docker build and push
-      run: |
+      - name: Make application.yml
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION }}" > src/main/resources/application-dev.yml
+          mv src/main/resources/application-dev.yml src/main/resources/application.yml
+
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: Docker BUILD_PUSH
+        run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
-    
-     ## docker compose up
-    - name: executing remote ssh commands using password
-      uses: appleboy/ssh-action@master
-      with:
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }} .
+          docker push ${{ secrets.DOCKER_REPO }}
+
+
+      - name: Deploy_EC2
+        uses: appleboy/ssh-action@master
+        id: deploy
+        with:
           host: ${{ secrets.HOST }}
-          username: ${{secrets.USERNAME}}
+          username: ubuntu
           key: ${{ secrets.KEY }}
           script: |
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
-            cd ~
-            sudo docker compose up -d app
+            cd /home/monitor  
+            sudo docker-compose down || true
+            sudo docker pull ${{ secrets.DOCKER_REPO }}
+            sudo docker-compose up -d
             sudo docker image prune -f

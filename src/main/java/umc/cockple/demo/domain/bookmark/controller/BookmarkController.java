@@ -5,10 +5,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
 import umc.cockple.demo.domain.bookmark.service.BookmarkCommandService;
 import umc.cockple.demo.domain.bookmark.service.BookmarkQueryService;
+import umc.cockple.demo.global.enums.ExerciseOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -61,5 +65,16 @@ public class BookmarkController {
         bookmarkCommandService.releaseExerciseBookmark(memberId, exerciseId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
+
+
+//    @GetMapping(value = "/exercises/bookmarks")
+//    @Operation(summary = "찜한 운동 전체 조회 API",
+//            description = "사용자가 찜한 운동을 모두 조회")
+//    public BaseResponse<List<GetAllExerciseBookmarksResponseDTO>> getAllExerciseBookmarks(@RequestParam ExerciseOrderType orderType) {
+//        // 추후 시큐리티를 통해 id 가져옴
+//        Long memberId = 1L;
+//
+//        return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
+//    }
 
 }
