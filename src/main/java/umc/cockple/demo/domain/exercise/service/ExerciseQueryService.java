@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -22,10 +23,12 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.MemberStatus;
 import umc.cockple.demo.global.enums.Role;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +43,7 @@ public class ExerciseQueryService {
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
+    private final PartyRepository partyRepository;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -84,6 +88,51 @@ public class ExerciseQueryService {
         log.info("내가 초대한 게스트 조회 완료 - exerciseId: {}", exerciseId);
 
         return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
+    }
+
+    public PartyExerciseCalendarDTO.Response getPartyExerciseCalender(Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
+
+        log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
+                partyId, memberId, startDate, endDate);
+
+        Party party = findPartyWithLevelsOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
+        validateGetPartyExerciseCalender(startDate, endDate);
+
+        Boolean isMember = isPartyMember(party, member);
+        DateRange dateRange = calculateDateRange(startDate, endDate);
+
+        List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
+
+        Map<Long, Integer> participantCounts = getParticipantCountsMap(
+                partyId, dateRange.start(), dateRange.end());
+
+        log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
+
+        return exerciseConverter.toCalenderResponse(
+                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts);
+    }
+
+    // ========== 검증 메서드들 ==========
+
+    private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate) {
+        validateDateRange(startDate, endDate);
+    }
+
+    // ========== 세부 검증 메서드들 ==========
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null && endDate == null) {
+            return;
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_DATE_RANGE);
+        }
+
+        if (!startDate.isBefore(endDate)) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_RANGE);
+        }
     }
 
     // ========== 비즈니스 메서드 ==========
@@ -161,7 +210,7 @@ public class ExerciseQueryService {
             ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
             if ("GUEST".equals(participant.participantType())) {
                 guestNumberMap.put(participant.participantId(),
-                        ExerciseMyGuestListDTO.GuestGroups.participant(i+1));
+                        ExerciseMyGuestListDTO.GuestGroups.participant(i + 1));
             }
         }
 
@@ -198,6 +247,23 @@ public class ExerciseQueryService {
         int femaleCount = totalCount - maleCount;
 
         return new ExerciseMyGuestListDTO.GuestStatistics(totalCount, maleCount, femaleCount);
+    }
+
+    private boolean isPartyMember(Party party, Member member) {
+        return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+    private DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null) {
+            return new DateRange(startDate, endDate);
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
+        LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
+
+        return new DateRange(defaultStart, defaultEnd);
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -316,9 +382,9 @@ public class ExerciseQueryService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
-    private Exercise findExerciseOrThrow(Long exerciseId) {
-        return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    private List<Exercise> findExercisesByPartyIdAndDateRange(Long partyId, LocalDate startDate, LocalDate endDate) {
+        return exerciseRepository.findByPartyIdAndDateRange(
+                partyId, startDate, endDate);
     }
 
     private Member findMemberOrThrow(Long memberId) {
@@ -338,8 +404,27 @@ public class ExerciseQueryService {
         return guestRepository.findByExerciseIdAndInviterId(exerciseId, memberId);
     }
 
+    private Party findPartyWithLevelsOrThrow(Long partyId) {
+        return partyRepository.findByIdWithLevels(partyId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+    }
+
+    private Map<Long, Integer> getParticipantCountsMap(Long partyId, LocalDate start, LocalDate end) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCounts(
+                partyId, start, end);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                row -> ((Number) row[0]).longValue(),
+                row -> ((Number) row[1]).intValue()
+        ));
+    }
+
     private record ParticipantGroups(
             List<ExerciseDetailDTO.ParticipantInfo> participants,
             List<ExerciseDetailDTO.ParticipantInfo> waiting
-    ) {}
+    ) {
+    }
+
+    private record DateRange(LocalDate start, LocalDate end) {}
 }

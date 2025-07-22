@@ -7,9 +7,12 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -214,4 +217,125 @@ public class ExerciseConverter {
                 .inviterName(inviterName)
                 .build();
     }
+
+    public PartyExerciseCalendarDTO.Response toCalenderResponse(
+            List<Exercise> exercises,
+            LocalDate start,
+            LocalDate end,
+            Boolean isMember,
+            Party party,
+            Map<Long, Integer> participantCounts) {
+
+        PartyLevelCache levelCache = createPartyLevelCache(party);
+
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, levelCache, participantCounts, start, end);
+
+        return PartyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .isMember(isMember)
+                .partyName(party.getPartyName())
+                .weeks(weeks)
+                .build();
+    }
+
+    private PartyLevelCache createPartyLevelCache(Party party) {
+        List<String> femaleLevel = extractLevelsByGender(party, Gender.FEMALE);
+        List<String> maleLevel = extractLevelsByGender(party, Gender.MALE);
+
+        return new PartyLevelCache(femaleLevel, maleLevel);
+    }
+
+    private List<String> extractLevelsByGender(Party party, Gender gender) {
+        List<String> levelList = party.getLevels().stream()
+                .filter(l -> l.getGender() == gender)
+                .map(l -> l.getLevel().getKoreanName())
+                .toList();
+
+        return levelList.isEmpty() ? null : levelList;
+    }
+
+    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(
+            List<Exercise> exercises,
+            PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts,
+            LocalDate start,
+            LocalDate end) {
+
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
+
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
+                    convertToExerciseItems(weekExercises, levelCache, participantCounts);
+
+            weeks.add(createWeeklyExercises(weekStart, weekEnd, exerciseItems));
+        }
+
+        return weeks;
+    }
+
+    private LocalDate getWeekStart(LocalDate date) {
+        return date.minusDays(date.getDayOfWeek().getValue() - 1);
+    }
+
+    private List<Exercise> filterExercisesByWeek(List<Exercise> exercises, LocalDate weekStart, LocalDate weekEnd) {
+        return exercises.stream()
+                .filter(exercise -> {
+                    LocalDate exerciseDate = exercise.getDate();
+                    return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
+                })
+                .toList();
+    }
+
+    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(
+            List<Exercise> exercises,
+            PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts) {
+
+        return exercises.stream()
+                .map(exercise -> toCalendarItem(exercise, levelCache, participantCounts))
+                .toList();
+    }
+
+    private PartyExerciseCalendarDTO.WeeklyExercises createWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return PartyExerciseCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .exercises(exerciseItems)
+                .build();
+    }
+
+    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(
+            Exercise exercise, PartyLevelCache levelCache, Map<Long, Integer> participantCounts) {
+
+        Integer currentParticipants = participantCounts.getOrDefault(exercise.getId(), 0);
+
+        return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .femaleLevel(levelCache.femaleLevel())
+                .maleLevel(levelCache.maleLevel())
+                .currentParticipants(currentParticipants)
+                .maxCapacity(exercise.getMaxCapacity())
+                .build();
+    }
+
+    private record PartyLevelCache(
+            List<String> femaleLevel,
+            List<String> maleLevel
+    ) {
+    }
+
 }

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.party.domain.Party;
 
+import java.util.Optional;
+
 public interface PartyRepository extends JpaRepository<Party, Long> {
 
     @Query("""
@@ -15,4 +17,11 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
             AND (:created = false OR p.ownerId = :memberId)
             """) //created가 true라면 p.ownerId = :memberId로 내가 만든 모임을 조회 (false라면 모든 내 모임 조회)
     Slice<Party> findMyParty(@Param("memberId") Long memberId, @Param("created") boolean created, Pageable pageable);
+
+    @Query("""
+            SELECT p FROM Party p 
+            LEFT JOIN FETCH p.levels pl
+            WHERE p.id = :partyId
+            """)
+    Optional<Party> findByIdWithLevels(@Param("partyId") Long partyId);
 }

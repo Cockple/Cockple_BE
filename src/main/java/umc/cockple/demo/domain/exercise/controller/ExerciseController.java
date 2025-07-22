@@ -14,6 +14,8 @@ import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -55,7 +57,7 @@ public class ExerciseController {
     public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
             @PathVariable Long exerciseId,
             Authentication authentication
-    ){
+    ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
@@ -182,7 +184,7 @@ public class ExerciseController {
             @PathVariable Long exerciseId,
             @Valid @RequestBody ExerciseUpdateDTO.Request request,
             Authentication authentication
-    ){
+    ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
@@ -201,7 +203,7 @@ public class ExerciseController {
     public BaseResponse<ExerciseDetailDTO.Response> getExerciseDetail(
             @PathVariable Long exerciseId,
             Authentication authentication
-    ){
+    ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
@@ -220,7 +222,7 @@ public class ExerciseController {
     public BaseResponse<ExerciseMyGuestListDTO.Response> getMyInvitedGuests(
             @PathVariable Long exerciseId,
             Authentication authentication
-    ){
+    ) {
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
@@ -230,4 +232,28 @@ public class ExerciseController {
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+
+    @GetMapping("/parties/{partyId}/exercises/calender")
+    @Operation(summary = "모임 운동 캘린더 조회",
+            description = "모임 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다")
+    @ApiResponse(responseCode = "200", description = "모임 운동 캘린더 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
+    public BaseResponse<PartyExerciseCalendarDTO.Response> getPartyExerciseCalender(
+            @PathVariable Long partyId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication authentication
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalender(
+                partyId, memberId, startDate, endDate);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
 }
