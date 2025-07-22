@@ -142,11 +142,11 @@ public class BookmarkCommandService {
 
     private PartyBookmark findByMemberAndParty(Member member, Party party) {
         return partyBookmarkRepository.findByMemberAndParty(member, party)
-                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_BOOKMARK));
+                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_RELEASE_BOOKMARK));
     }
 
     private ExerciseBookmark findByMemberAndExercise(Member member, Exercise exercise) {
         return exerciseBookmarkRepository.findByMemberAndExercise(member, exercise)
-                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_BOOKMARK));
+                .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_RELEASE_BOOKMARK));
     }
 }
