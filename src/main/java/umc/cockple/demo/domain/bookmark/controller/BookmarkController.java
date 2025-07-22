@@ -41,4 +41,13 @@ public class BookmarkController {
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
 
+    @PostMapping(value = "/exercises/{exerciseId}/bookmark")
+    @Operation(summary = "운동 찜 API",
+            description = "사용자가 원하는 운동을 찜해둘 수 있음")
+    public BaseResponse<Long> exerciseBookmark(@PathVariable Long exerciseId) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, bookmarkCommandService.exerciseBookmark(memberId, exerciseId));
+    }
 }
