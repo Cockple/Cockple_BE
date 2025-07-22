@@ -15,7 +15,7 @@ import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.global.s3.ImageService;
+import umc.cockple.demo.domain.image.service.ImageService;
 
 import java.util.List;
 import java.util.UUID;

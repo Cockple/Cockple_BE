@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.global.enums.MemberStatus;
-import umc.cockple.demo.global.s3.ImageService;
+import umc.cockple.demo.domain.image.service.ImageService;
 
 import java.util.List;
 
