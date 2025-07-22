@@ -33,7 +33,7 @@ public class BookmarkController {
     @DeleteMapping(value = "/parties/{partyId}/bookmark")
     @Operation(summary = "모임 찜 해제 API",
             description = "사용자가 찜한 모임을 해제할 수 있음")
-    public BaseResponse<Long> releasePartyBookmark(@PathVariable Long partyId) {
+    public BaseResponse<Object> releasePartyBookmark(@PathVariable Long partyId) {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
@@ -50,4 +50,16 @@ public class BookmarkController {
 
         return BaseResponse.success(CommonSuccessCode.CREATED, bookmarkCommandService.exerciseBookmark(memberId, exerciseId));
     }
+
+    @DeleteMapping(value = "/exercises/{exerciseId}/bookmark")
+    @Operation(summary = "운동 찜 해제 API",
+            description = "사용자가 찜한 운동 해제할 수 있음")
+    public BaseResponse<Object> releaseExerciseBookmark(@PathVariable Long exerciseId) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        bookmarkCommandService.releaseExerciseBookmark(memberId, exerciseId);
+        return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
+    }
+
 }

@@ -59,6 +59,7 @@ public class BookmarkCommandService {
         // 찜하기
         PartyBookmark saveBookmark = partyBookmarkRepository.save(bookmark);
         return saveBookmark.getId();
+
     }
 
 
@@ -76,6 +77,7 @@ public class BookmarkCommandService {
         // 찜 지우기
         partyBookmarkRepository.delete(bookmark);
         member.getPartyBookmarks().remove(bookmark);
+
     }
 
     // 운동 찜하기
@@ -100,6 +102,25 @@ public class BookmarkCommandService {
         // 찜하기
         ExerciseBookmark saveBookmark = exerciseBookmarkRepository.save(bookmark);
         return saveBookmark.getId();
+
+    }
+
+
+    // 운동 찜 해제하기
+    public void releaseExerciseBookmark(Long memberId, Long exerciseId) {
+        // 회원 조회하기
+        Member member = findByMemberId(memberId);
+
+        // 찜 해제 싶은 운동 조회
+        Exercise exercise = findByExerciseId(exerciseId);
+
+        // 운동 찜 찾기 -> 없으면 찜 안 되어 있는 거
+        ExerciseBookmark bookmark = findByMemberAndExercise(member, exercise);
+
+        // 찜 지우기
+        exerciseBookmarkRepository.delete(bookmark);
+        member.getExerciseBookmarks().remove(bookmark);
+
     }
 
 
