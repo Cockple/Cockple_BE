@@ -1,10 +1,13 @@
 package umc.cockple.demo.domain.bookmark.converter;
 
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
+import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
+import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyLevel;
+import umc.cockple.demo.global.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
@@ -29,6 +32,24 @@ public class BookmarkConverter {
                 .nowMemberCnt(exercise.getNowCapacity())
                 .includeParty(includeParty)
                 .includeExercise(includeExercise)
+                .build();
+    }
+
+    public static GetAllPartyBookmarkResponseDTO partyBookmarkToDTO(PartyBookmark partyBookmark, Exercise exercise, ActivityTime activityTime) {
+        Party party = partyBookmark.getParty();
+        String profileImg = party.getPartyImg() == null ? null : party.getPartyImg().getImgUrl();
+
+        return GetAllPartyBookmarkResponseDTO.builder()
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .addr1(party.getPartyAddr().getAddr1())
+                .addr2(party.getPartyAddr().getAddr2())
+                .maleLevel(getLevelList(party, Gender.MALE))
+                .femaleLevel(getLevelList(party, Gender.FEMALE))
+                .latestExerciseDate(exercise == null ? null : exercise.getDate())
+                .latestExerciseTime(activityTime)
+                .exerciseCnt(party.getExerciseCount())
+                .profileImgUrl(profileImg)
                 .build();
     }
 
