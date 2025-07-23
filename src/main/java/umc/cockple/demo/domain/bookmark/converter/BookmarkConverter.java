@@ -55,7 +55,7 @@ public class BookmarkConverter {
 
     private  static List<Level> getLevelList(Party party, Gender gender) {
         return party.getLevels().stream()
-                .filter(lever -> lever.getGender() == gender)
+                .filter(level -> level.getGender() == gender)
                 .map(PartyLevel::getLevel)
                 .toList();
     }
