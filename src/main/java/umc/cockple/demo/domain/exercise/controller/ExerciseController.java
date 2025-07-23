@@ -278,7 +278,7 @@ public class ExerciseController {
 
     @GetMapping("/exercises/parties/my")
     @Operation(summary = "내 모임 운동 조회",
-            description = "내 모임의 운동 목록을 조회합니다. 시작하지 않은 운동만 표시되며, 최대 6개의 운동만 반환합니다.)
+            description = "내 모임의 운동 목록을 조회합니다. 시작하지 않은 운동만 표시되며, 최대 6개의 운동만 반환합니다.")
     @ApiResponse(responseCode = "200", description = "내 모임 운동 조회 성공")
     public BaseResponse<MyPartyExerciseDTO.Response> getMyPartyExercise(
             Authentication authentication
