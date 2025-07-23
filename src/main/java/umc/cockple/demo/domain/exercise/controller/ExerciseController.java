@@ -250,7 +250,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalender(
+        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
                 partyId, memberId, startDate, endDate);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -270,7 +270,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalender(
+        MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
                 memberId, startDate, endDate);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
