@@ -218,7 +218,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public PartyExerciseCalendarDTO.Response toCalenderResponse(
+    public PartyExerciseCalendarDTO.Response toCalendarResponse(
             List<Exercise> exercises,
             LocalDate start,
             LocalDate end,
@@ -235,6 +235,17 @@ public class ExerciseConverter {
                 .endDate(end)
                 .isMember(isMember)
                 .partyName(party.getPartyName())
+                .weeks(weeks)
+                .build();
+    }
+
+    public MyExerciseCalendarDTO.Response toCalendarResponse(List<Exercise> exercises, LocalDate start, LocalDate end) {
+
+        List<MyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
+
+        return MyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
                 .weeks(weeks)
                 .build();
     }
@@ -272,7 +283,24 @@ public class ExerciseConverter {
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
                     convertToExerciseItems(weekExercises, levelCache, participantCounts);
 
-            weeks.add(createWeeklyExercises(weekStart, weekEnd, exerciseItems));
+            weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, exerciseItems));
+        }
+
+        return weeks;
+    }
+
+    private List<MyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(List<Exercise> exercises, LocalDate start, LocalDate end) {
+
+        List<MyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
+
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = convertToExerciseItems(weekExercises);
+
+            weeks.add(createMyWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
 
         return weeks;
@@ -301,12 +329,30 @@ public class ExerciseConverter {
                 .toList();
     }
 
-    private PartyExerciseCalendarDTO.WeeklyExercises createWeeklyExercises(
+    private List<MyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(List<Exercise> exercises) {
+        return exercises.stream()
+                .map(this::toCalendarItem)
+                .toList();
+    }
+
+    private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
 
         return PartyExerciseCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .exercises(exerciseItems)
+                .build();
+    }
+
+    private MyExerciseCalendarDTO.WeeklyExercises createMyWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return MyExerciseCalendarDTO.WeeklyExercises.builder()
                 .weekStartDate(weekStart)
                 .weekEndDate(weekEnd)
                 .exercises(exerciseItems)
@@ -329,6 +375,23 @@ public class ExerciseConverter {
                 .maleLevel(levelCache.maleLevel())
                 .currentParticipants(currentParticipants)
                 .maxCapacity(exercise.getMaxCapacity())
+                .build();
+    }
+
+    private MyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise) {
+
+        Party party = exercise.getParty();
+
+        return MyExerciseCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .build();
     }
 

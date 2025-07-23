@@ -250,8 +250,28 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalender(
+        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
                 partyId, memberId, startDate, endDate);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/my/calender")
+    @Operation(summary = "내 운동 캘린더 조회",
+            description = "내 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다")
+    @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    public BaseResponse<MyExerciseCalendarDTO.Response> getMyExerciseCalender(
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication authentication
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
+                memberId, startDate, endDate);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
