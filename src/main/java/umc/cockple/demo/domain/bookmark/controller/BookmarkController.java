@@ -67,15 +67,15 @@ public class BookmarkController {
     }
 
 
-//    @GetMapping(value = "/exercises/bookmarks")
-//    @Operation(summary = "찜한 운동 전체 조회 API",
-//            description = "사용자가 찜한 운동을 모두 조회")
-//    public BaseResponse<List<GetAllExerciseBookmarksResponseDTO>> getAllExerciseBookmarks(@RequestParam ExerciseOrderType orderType) {
-//        // 추후 시큐리티를 통해 id 가져옴
-//        Long memberId = 1L;
-//
-//        return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
-//    }
+    @GetMapping(value = "/exercises/bookmarks")
+    @Operation(summary = "찜한 운동 전체 조회 API",
+            description = "사용자가 찜한 운동을 모두 조회")
+    public BaseResponse<List<GetAllExerciseBookmarksResponseDTO>> getAllExerciseBookmarks(@RequestParam ExerciseOrderType orderType) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
+    }
 
 
 

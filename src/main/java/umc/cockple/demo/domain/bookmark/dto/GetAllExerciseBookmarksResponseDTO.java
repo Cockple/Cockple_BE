@@ -5,18 +5,17 @@ import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Builder
 public record GetAllExerciseBookmarksResponseDTO(
 
         Long exerciseId,
-        String exerciseName,
+        String partyName,
         String buildingName,
         String streetAddr,
-        Level maxFemaleLevel,
-        Level minFemaleLevel,
-        Level maxMaleLevel,
-        Level minMaleLevel,
+        List<Level> femaleLevel,
+        List<Level> maleLevel,
         LocalDate date,
         LocalTime startExerciseTime,
         LocalTime endExerciseTime,
