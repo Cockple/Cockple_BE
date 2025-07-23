@@ -276,4 +276,19 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/exercises/parties/my")
+    @Operation(summary = "내 모임 운동 조회",
+            description = "내 모임의 운동 목록을 조회합니다. 시작하지 않은 운동만 표시되며, 최대 6개의 운동만 반환합니다.)
+    @ApiResponse(responseCode = "200", description = "내 모임 운동 조회 성공")
+    public BaseResponse<MyPartyExerciseDTO.Response> getMyPartyExercise(
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }
