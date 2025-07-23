@@ -29,4 +29,10 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
             @Param("exerciseId") Long exerciseId, @Param("memberStatus") MemberStatus memberStatus);
 
     void deleteAllByMember(Member member);
+
+    @Query("select me.exercise.id " +
+            "from MemberExercise me " +
+            "where me.member.id = :memberId and me.exercise.id in :exerciseIds")
+    List<Long> findAllExerciseIdsByMemberAndExerciseIds(@Param("memberId") Long memberId,
+                                                        @Param("exerciseIds") List<Long> exerciseIds);
 }

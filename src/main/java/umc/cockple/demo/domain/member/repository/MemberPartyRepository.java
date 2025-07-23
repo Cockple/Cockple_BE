@@ -32,4 +32,10 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
     Slice<MemberParty> findByMember(Member member, Pageable pageable);
 
     void deleteAllByMember(Member member);
+
+    @Query("select mp.party.id " +
+            "from MemberParty mp " +
+            "where mp.member.id = :memberId and mp.party.id in :partyIds")
+    List<Long> findAllPartyIdsByMemberAndPartyIds(@Param("memberId") Long memberId,
+                                                  @Param("partyIds") List<Long> partyIds);
 }
