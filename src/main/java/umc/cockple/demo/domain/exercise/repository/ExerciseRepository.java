@@ -81,4 +81,18 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            WHERE me.member.id = :memberId
+            AND e.date BETWEEN :startDate AND :endDate
+            ORDER BY e.date ASC, e.startTime ASC
+            """)
+    List<Exercise> findByMemberIdAndDateRange(
+            @Param("memberId") Long memberId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

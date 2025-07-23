@@ -114,9 +114,30 @@ public class ExerciseQueryService {
                 exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts);
     }
 
+    public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
+
+        log.info("내 운동 캘린더 조회 시작 - memberId = {}, startDate = {}, endDate = {}",
+                memberId, startDate, endDate);
+
+        Member member = findMemberOrThrow(memberId);
+        validateGetMyExerciseCalendar(startDate, endDate);
+
+        DateRange dateRange = calculateDateRange(startDate, endDate);
+
+        List<Exercise> exercises = findExercisesByMemberIdAndDateRange(memberId, dateRange.start(), dateRange.end());
+
+        log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toCalendarResponse(exercises, dateRange.start(), dateRange.end());
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate) {
+        validateDateRange(startDate, endDate);
+    }
+
+    private void validateGetMyExerciseCalendar(LocalDate startDate, LocalDate endDate) {
         validateDateRange(startDate, endDate);
     }
 
@@ -386,6 +407,11 @@ public class ExerciseQueryService {
     private List<Exercise> findExercisesByPartyIdAndDateRange(Long partyId, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdAndDateRange(
                 partyId, startDate, endDate);
+    }
+
+    private List<Exercise> findExercisesByMemberIdAndDateRange(Long memberId, LocalDate startDate, LocalDate endDate) {
+        return exerciseRepository.findByMemberIdAndDateRange(
+                memberId, startDate, endDate);
     }
 
     private Member findMemberOrThrow(Long memberId) {
