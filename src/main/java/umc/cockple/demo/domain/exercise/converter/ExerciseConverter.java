@@ -395,6 +395,13 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyPartyExerciseDTO.Response toEmptyExerciseResponse() {
+        return MyPartyExerciseDTO.Response.builder()
+                .totalExercises(0)
+                .exercises(List.of())
+                .build();
+    }
+
     private record PartyLevelCache(
             List<String> femaleLevel,
             List<String> maleLevel

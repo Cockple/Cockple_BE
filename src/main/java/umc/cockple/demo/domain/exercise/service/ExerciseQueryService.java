@@ -2,17 +2,16 @@ package umc.cockple.demo.domain.exercise.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -129,6 +128,20 @@ public class ExerciseQueryService {
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toCalendarResponse(exercises, dateRange.start(), dateRange.end());
+    }
+
+    public MyPartyExerciseDTO.Response getMyPartyExercise(Long memberId) {
+
+        log.info("내 모임 운동 조회 시작 - memberId = {}", memberId);
+
+        Member member = findMemberOrThrow(memberId);
+
+        List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
+
+        if(myPartyIds.isEmpty()){
+            log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
+            return exerciseConverter.toEmptyExerciseResponse();
+        }
     }
 
     // ========== 검증 메서드들 ==========
@@ -434,6 +447,10 @@ public class ExerciseQueryService {
     private Party findPartyWithLevelsOrThrow(Long partyId) {
         return partyRepository.findByIdWithLevels(partyId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+    }
+
+    private List<Long> findPartyIdsByMemberId(Long memberId) {
+        return memberPartyRepository.findPartyIdsByMemberId(memberId);
     }
 
     private Map<Long, Integer> getParticipantCountsMap(Long partyId, LocalDate start, LocalDate end) {
