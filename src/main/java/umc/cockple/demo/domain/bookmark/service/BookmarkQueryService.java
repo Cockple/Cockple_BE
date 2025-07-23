@@ -52,7 +52,7 @@ public class BookmarkQueryService {
         List<Long> myParties = memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds);
         List<Long> myExercises = memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
 
-        // bookmakr -> dto 변환
+        // bookmark -> dto 변환
         return bookmarks.stream()
                 .map(bookmark -> {
                     boolean includeParty = myParties.contains(bookmark.getExercise().getParty().getId());
