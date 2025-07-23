@@ -142,6 +142,9 @@ public class ExerciseQueryService {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
             return exerciseConverter.toEmptyExerciseResponse();
         }
+
+        Pageable pageable = PageRequest.of(0, 6);
+        List<Exercise> recentExercises = findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
     // ========== 검증 메서드들 ==========
@@ -425,6 +428,10 @@ public class ExerciseQueryService {
     private List<Exercise> findExercisesByMemberIdAndDateRange(Long memberId, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByMemberIdAndDateRange(
                 memberId, startDate, endDate);
+    }
+
+    private List<Exercise> findRecentExercisesByPartyIds(List<Long> myPartyIds, Pageable pageable) {
+        return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
     private Member findMemberOrThrow(Long memberId) {

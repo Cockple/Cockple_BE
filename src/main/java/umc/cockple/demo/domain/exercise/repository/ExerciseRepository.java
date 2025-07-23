@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.exercise.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -96,4 +97,15 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("memberId") Long memberId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            SELECT e FROM Exercise e
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            LEFT JOIN FETCH p.partyImg
+            WHERE e.party.id IN :partyIds
+            AND (e.date > CURRENT_DATE OR (e.date = CURRENT_DATE AND e.startTime >= CURRENT_TIME))
+            ORDER BY e.date ASC, e.startTime ASC
+            """)
+    List<Exercise> findRecentExercisesByPartyIds(@Param("partyIds") List<Long> partyIds, Pageable pageable);
 }
