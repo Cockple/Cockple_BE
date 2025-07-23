@@ -239,6 +239,17 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyExerciseCalendarDTO.Response toCalendarResponse(List<Exercise> exercises, LocalDate start, LocalDate end) {
+
+        List<MyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
+
+        return MyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(weeks)
+                .build();
+    }
+
     private PartyLevelCache createPartyLevelCache(Party party) {
         List<String> femaleLevel = extractLevelsByGender(party, Gender.FEMALE);
         List<String> maleLevel = extractLevelsByGender(party, Gender.MALE);
