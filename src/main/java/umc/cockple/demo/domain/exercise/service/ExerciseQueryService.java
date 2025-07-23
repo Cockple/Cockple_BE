@@ -145,6 +145,10 @@ public class ExerciseQueryService {
 
         Pageable pageable = PageRequest.of(0, 6);
         List<Exercise> recentExercises = findRecentExercisesByPartyIds(myPartyIds, pageable);
+
+        log.info("내 모임 운동 조회 종료 - 조회된 운동 수 = {}", recentExercises.size());
+
+        return exerciseConverter.toMyPartyExerciseDTO(recentExercises);
     }
 
     // ========== 검증 메서드들 ==========
