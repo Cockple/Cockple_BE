@@ -110,7 +110,7 @@ public class ExerciseQueryService {
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalenderResponse(
+        return exerciseConverter.toCalendarResponse(
                 exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts);
     }
 

@@ -218,7 +218,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public PartyExerciseCalendarDTO.Response toCalenderResponse(
+    public PartyExerciseCalendarDTO.Response toCalendarResponse(
             List<Exercise> exercises,
             LocalDate start,
             LocalDate end,
