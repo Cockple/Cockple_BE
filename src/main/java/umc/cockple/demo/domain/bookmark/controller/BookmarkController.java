@@ -6,9 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
+import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.service.BookmarkCommandService;
 import umc.cockple.demo.domain.bookmark.service.BookmarkQueryService;
 import umc.cockple.demo.global.enums.ExerciseOrderType;
+import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -77,6 +79,15 @@ public class BookmarkController {
         return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
     }
 
+    @GetMapping(value = "/parties/bookmarks")
+    @Operation(summary = "찜한 모임 전체 조회 API",
+            description = "사용자가 찜한 모임을 모두 조회")
+    public BaseResponse<List<GetAllPartyBookmarkResponseDTO>> getAllPartyBookmarks(@RequestParam PartyOrderType orderType) {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllPartyBookmarks(memberId, orderType));
+    }
 
 
 }

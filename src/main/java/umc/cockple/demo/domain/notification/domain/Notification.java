@@ -20,6 +20,8 @@ public class Notification extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
+    private String title;
+
     @Column(nullable = false)
     private String content;
 
