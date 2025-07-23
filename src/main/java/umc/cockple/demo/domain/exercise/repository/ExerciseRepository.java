@@ -87,6 +87,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             JOIN FETCH e.memberExercises me
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
+            LEFT JOIN FETCH p.partyImg
             WHERE me.member.id = :memberId
             AND e.date BETWEEN :startDate AND :endDate
             ORDER BY e.date ASC, e.startTime ASC
