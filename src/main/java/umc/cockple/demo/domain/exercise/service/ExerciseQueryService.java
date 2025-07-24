@@ -79,6 +79,11 @@ public class ExerciseQueryService {
 
         List<Guest> myGuests = findGuestsByExerciseIdAndInviterId(exerciseId, memberId);
 
+        if (myGuests.isEmpty()) {
+            log.info("초대한 게스트가 없어 빈 응답 반환 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+            return exerciseConverter.toEmptyGuestListResponse();
+        }
+
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, exercise.getParty());
         Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap = createGuestNumberMap(allParticipants, exercise.getMaxCapacity());
 
@@ -106,6 +111,14 @@ public class ExerciseQueryService {
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
+        if (exercises.isEmpty()) {
+            log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
+                    partyId, dateRange.start(), dateRange.end());
+
+            return exerciseConverter.toEmptyPartyExerciseCalendar(
+                    dateRange.start(), dateRange.end(), isMember, party);
+        }
+
         Map<Long, Integer> participantCounts = getParticipantCountsMap(
                 partyId, dateRange.start(), dateRange.end());
 
@@ -129,6 +142,12 @@ public class ExerciseQueryService {
         DateRange dateRange = calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByMemberIdAndDateRange(memberId, dateRange.start(), dateRange.end());
+
+        if (exercises.isEmpty()) {
+            log.info("해당 기간에 참여한 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
+                    memberId, dateRange.start(), dateRange.end());
+            return exerciseConverter.toEmptyMyCalendarResponse(dateRange.start(), dateRange.end());
+        }
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 

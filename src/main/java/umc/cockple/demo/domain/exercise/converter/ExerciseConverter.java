@@ -13,6 +13,7 @@ import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -188,6 +189,15 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseMyGuestListDTO.Response toEmptyGuestListResponse() {
+        return ExerciseMyGuestListDTO.Response.builder()
+                .totalCount(0)
+                .maleCount(0)
+                .femaleCount(0)
+                .list(Collections.emptyList())
+                .build();
+    }
+
     public ExerciseMyGuestListDTO.Response toMyGuestListResponse(
             ExerciseMyGuestListDTO.GuestStatistics statistics,
             List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
@@ -218,6 +228,21 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public PartyExerciseCalendarDTO.Response toEmptyPartyExerciseCalendar(
+            LocalDate start,
+            LocalDate end,
+            Boolean isMember,
+            Party party) {
+
+        return PartyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .isMember(isMember)
+                .partyName(party.getPartyName())
+                .weeks(Collections.emptyList())
+                .build();
+    }
+
     public PartyExerciseCalendarDTO.Response toCalendarResponse(
             List<Exercise> exercises,
             LocalDate start,
@@ -237,6 +262,14 @@ public class ExerciseConverter {
                 .isMember(isMember)
                 .partyName(party.getPartyName())
                 .weeks(weeks)
+                .build();
+    }
+
+    public MyExerciseCalendarDTO.Response toEmptyMyCalendarResponse(LocalDate start, LocalDate end) {
+        return MyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(Collections.emptyList())
                 .build();
     }
 
