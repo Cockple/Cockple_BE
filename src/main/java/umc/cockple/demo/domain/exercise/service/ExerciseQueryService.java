@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
@@ -45,6 +46,7 @@ public class ExerciseQueryService {
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
     private final PartyRepository partyRepository;
+    private final ExerciseBookmarkRepository exerciseBookmarkRepository;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -108,10 +110,13 @@ public class ExerciseQueryService {
         Map<Long, Integer> participantCounts = getParticipantCountsMap(
                 partyId, dateRange.start(), dateRange.end());
 
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
         return exerciseConverter.toCalendarResponse(
-                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts);
+                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus);
     }
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
@@ -397,6 +402,10 @@ public class ExerciseQueryService {
                 .count();
     }
 
+    private static List<Long> getExerciseIds(List<Exercise> exercises) {
+        return exercises.stream().map(Exercise::getId).toList();
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -445,6 +454,21 @@ public class ExerciseQueryService {
                 row -> ((Number) row[0]).longValue(),
                 row -> ((Number) row[1]).intValue()
         ));
+    }
+
+    private Map<Long, Boolean> getExerciseBookmarkStatus(Long memberId, List<Long> exerciseIds) {
+        if (exerciseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> bookmarkedExerciseIds = exerciseBookmarkRepository
+                .findAllExerciseIdsByMemberIdAndExerciseIds(memberId, exerciseIds);
+
+        return exerciseIds.stream()
+                .collect(Collectors.toMap(
+                        exerciseId -> exerciseId,
+                        bookmarkedExerciseIds::contains
+                ));
     }
 
     private record ParticipantGroups(
