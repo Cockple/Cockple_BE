@@ -20,15 +20,21 @@ public class MyPartyExerciseCalendarDTO {
     public record WeeklyExercises(
             LocalDate weekStartDate,
             LocalDate weekEndDate,
-            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exercises
+            List<MyPartyExerciseCalendarDTO.DailyExercises> days
+    ) {
+    }
+
+    @Builder
+    public record DailyExercises(
+            LocalDate date,
+            String dayOfWeek,
+            List<ExerciseCalendarItem> exercises
     ) {
     }
 
     @Builder
     public record ExerciseCalendarItem(
             Long exerciseId,
-            LocalDate date,
-            String dayOfWeek,
             Long partyId,
             String partyName,
             String buildingName,

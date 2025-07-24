@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -412,14 +413,41 @@ public class ExerciseConverter {
 
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
-            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = toMyPartyExerciseItems(weekExercises, bookmarkStatus);
+            List<MyPartyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
+                    groupMyPartyExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus);
 
-            weeks.add(createMyPartyWeeklyExercises(weekStart, weekEnd, exerciseItems));
+            weeks.add(createMyPartyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
 
         return weeks;
     }
 
+    private List<MyPartyExerciseCalendarDTO.DailyExercises> groupMyPartyExercisesByDate(
+            List<Exercise> weekExercises,
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            Map<Long, Boolean> bookmarkStatus) {
+
+        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        List<MyPartyExerciseCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
+
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
+
+            // TODO 운동 정렬 로직
+
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
+                    toMyPartyExerciseItems(dayExercises, bookmarkStatus);
+
+            dailyExercisesList.add(createDailyExercises(date, exerciseItems));
+        }
+
+        return dailyExercisesList;
+    }
+
+    // 주별 운동 변환
     private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
@@ -447,11 +475,23 @@ public class ExerciseConverter {
     private MyPartyExerciseCalendarDTO.WeeklyExercises createMyPartyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
-            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+            List<MyPartyExerciseCalendarDTO.DailyExercises> days) {
 
         return MyPartyExerciseCalendarDTO.WeeklyExercises.builder()
                 .weekStartDate(weekStart)
                 .weekEndDate(weekEnd)
+                .days(days)
+                .build();
+    }
+
+    // 날짜별 운동 변환
+    private MyPartyExerciseCalendarDTO.DailyExercises createDailyExercises(
+            LocalDate date,
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return MyPartyExerciseCalendarDTO.DailyExercises.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
                 .build();
     }
@@ -542,8 +582,6 @@ public class ExerciseConverter {
 
         return MyPartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
                 .exerciseId(exercise.getId())
-                .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
@@ -552,7 +590,6 @@ public class ExerciseConverter {
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
-
     }
 
     private record PartyLevelCache(
