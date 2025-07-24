@@ -193,10 +193,9 @@ public class ExerciseQueryService {
         }
 
         List<Exercise> exercises = switch (orderType) {
-            case LATEST ->
-                    findExercisesByPartyIdsAndDateRangeOrderByLatestAndPartyName(myPartyIds, dateRange.start(), dateRange.end());
-            case POPULARITY ->
-                    findExercisesByPartyIdsAndDateRangeOrderByPopularityAndPartyName( myPartyIds, dateRange.start(), dateRange.end());
+            case LATEST -> findExercisesByPartyIdsAndDateRangeOrderByLatest(myPartyIds, dateRange.start(), dateRange.end());
+            case POPULARITY -> findExercisesOrderByPopularity(dateRange.start(), dateRange.end(), myPartyIds);
+
         };
 
         if (exercises.isEmpty()) {
@@ -370,6 +369,19 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
+    private List<Exercise> findExercisesOrderByPopularity(LocalDate startDate, LocalDate endDate, List<Long> myPartyIds) {
+        List<Exercise> exercises = findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
+
+        Map<Long, Integer> participantCounts = getParticipantCounts(exercises);
+
+        return exercises.stream()
+                .sorted(Comparator
+                        .comparing((Exercise e) -> participantCounts.getOrDefault(e.getId(), 0))
+                        .reversed()
+                        .thenComparing(e -> e.getParty().getPartyName()))
+                .toList();
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -502,14 +514,14 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
-    private List<Exercise> findExercisesByPartyIdsAndDateRangeOrderByLatestAndPartyName(
+    private List<Exercise> findExercisesByPartyIdsAndDateRangeOrderByLatest(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
-        return exerciseRepository.findByPartyIdsAndDateRangeOrderByLatestAndPartyName(myPartyIds, startDate, endDate);
+        return exerciseRepository.findByPartyIdsAndDateRangeOrderByLatest(myPartyIds, startDate, endDate);
     }
 
-    private List<Exercise> findExercisesByPartyIdsAndDateRangeOrderByPopularityAndPartyName(
+    private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
-        return exerciseRepository.findByPartyIdsAndDateRangeOrderByParticipantsAndPartyName(myPartyIds, startDate, endDate);
+        return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
 
     private Member findMemberOrThrow(Long memberId) {
@@ -543,6 +555,17 @@ public class ExerciseQueryService {
                 partyId, start, end);
 
         return countResults.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
+    private Map<Long, Integer> getParticipantCounts(List<Exercise> exercises) {
+        List<Long> exerciseIds = exercises.stream().map(Exercise::getId).toList();
+
+        return exerciseRepository.findParticipantCounts(exerciseIds)
+                .stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
                         row -> ((Number) row[1]).intValue()
