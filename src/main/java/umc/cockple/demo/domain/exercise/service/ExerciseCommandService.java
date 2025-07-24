@@ -55,7 +55,7 @@ public class ExerciseCommandService {
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
-        return exerciseConverter.toCreateResponseDTO(savedExercise);
+        return exerciseConverter.toCreateResponse(savedExercise);
     }
 
     public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
@@ -76,7 +76,7 @@ public class ExerciseCommandService {
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
                 , savedMemberExercise.getId(), isPartyMember);
 
-        return exerciseConverter.toJoinResponseDTO(savedMemberExercise, exercise);
+        return exerciseConverter.toJoinResponse(savedMemberExercise, exercise);
     }
 
     public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
@@ -97,7 +97,7 @@ public class ExerciseCommandService {
 
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
 
-        return exerciseConverter.toGuestInviteResponseDTO(savedGuest, exercise);
+        return exerciseConverter.toGuestInviteResponse(savedGuest, exercise);
     }
 
     public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
@@ -119,7 +119,7 @@ public class ExerciseCommandService {
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exerciseId, memberId, exercise.getNowCapacity());
 
-        return exerciseConverter.toCancelResponseDTO(exercise, member);
+        return exerciseConverter.toCancelResponse(exercise, member);
     }
 
     public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
@@ -139,7 +139,7 @@ public class ExerciseCommandService {
 
         log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, guest);
+        return exerciseConverter.toCancelResponse(exercise, guest);
     }
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
@@ -174,7 +174,7 @@ public class ExerciseCommandService {
 
         log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
-        return exerciseConverter.toDeleteResponseDTO(exercise);
+        return exerciseConverter.toDeleteResponse(exercise);
     }
 
     public ExerciseUpdateDTO.Response updateExercise(Long exerciseId, Long memberId, ExerciseUpdateDTO.Request request) {
@@ -195,7 +195,7 @@ public class ExerciseCommandService {
 
         log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
 
-        return exerciseConverter.toUpdateResponseDTO(savedExercise);
+        return exerciseConverter.toUpdateResponse(savedExercise);
     }
 
 
@@ -386,7 +386,7 @@ public class ExerciseCommandService {
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, guest);
+        return exerciseConverter.toCancelResponse(exercise, guest);
     }
 
     private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
@@ -400,7 +400,7 @@ public class ExerciseCommandService {
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponseDTO(exercise, participant);
+        return exerciseConverter.toCancelResponse(exercise, participant);
     }
 
     // ========== 조회 메서드 ==========

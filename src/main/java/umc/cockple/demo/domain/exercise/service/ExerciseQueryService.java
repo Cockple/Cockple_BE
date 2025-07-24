@@ -68,7 +68,7 @@ public class ExerciseQueryService {
         ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
         ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-        return exerciseConverter.toDetailResponseDTO(isManager, exerciseInfo, participantGroup, waitingGroup);
+        return exerciseConverter.toDetailResponse(isManager, exerciseInfo, participantGroup, waitingGroup);
     }
 
     public ExerciseMyGuestListDTO.Response getMyInvitedGuests(Long exerciseId, Long memberId) {
@@ -116,7 +116,7 @@ public class ExerciseQueryService {
             log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
                     partyId, dateRange.start(), dateRange.end());
 
-            return exerciseConverter.toEmptyPartyExerciseCalendar(
+            return exerciseConverter.toEmptyPartyCalendarResponse(
                     dateRange.start(), dateRange.end(), isMember, party);
         }
 
@@ -128,7 +128,7 @@ public class ExerciseQueryService {
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalendarResponse(
+        return exerciseConverter.toPartyCalendarResponse(
                 exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus);
     }
 
@@ -152,7 +152,7 @@ public class ExerciseQueryService {
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toCalendarResponse(exercises, dateRange.start(), dateRange.end());
+        return exerciseConverter.toMyCalendarResponse(exercises, dateRange.start(), dateRange.end());
     }
 
     public MyPartyExerciseDTO.Response getMyPartyExercise(Long memberId) {
@@ -165,7 +165,7 @@ public class ExerciseQueryService {
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
-            return exerciseConverter.toEmptyExerciseResponse();
+            return exerciseConverter.toEmptyMyPartyExerciseResponse();
         }
 
         Pageable pageable = PageRequest.of(0, 6);
@@ -389,9 +389,9 @@ public class ExerciseQueryService {
         return memberExercises.stream()
                 .map(me -> {
                     if (partyMemberRoles.containsKey(me.getMember().getId())) {
-                        return exerciseConverter.toParticipantInfo(me, partyMemberRoles);
+                        return exerciseConverter.toParticipantInfoFromMember(me, partyMemberRoles);
                     } else {
-                        return exerciseConverter.toExeternalParticipantInfo(me);
+                        return exerciseConverter.toParticipantInfoFromExternalMember(me);
                     }
                 })
                 .toList();
@@ -411,7 +411,7 @@ public class ExerciseQueryService {
         return guests.stream()
                 .map(guest -> {
                     String inviterName = inviterNames.getOrDefault(guest.getInviterId(), "알 수 없음");
-                    return exerciseConverter.toParticipantInfo(guest, inviterName);
+                    return exerciseConverter.toParticipantInfoFromGuest(guest, inviterName);
                 })
                 .toList();
     }

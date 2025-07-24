@@ -21,6 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExerciseConverter {
 
+    // ========== Command 변환 메서드들 ==========
     public ExerciseCreateDTO.Command toCreateCommand(ExerciseCreateDTO.Request request) {
         return ExerciseCreateDTO.Command.builder()
                 .date(request.toParsedDate())
@@ -42,55 +43,12 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseCreateDTO.Response toCreateResponseDTO(Exercise exercise) {
-        return ExerciseCreateDTO.Response.builder()
-                .exerciseId(exercise.getId())
-                .createdAt(exercise.getCreatedAt())
-                .build();
-    }
-
-    public ExerciseJoinDTO.Response toJoinResponseDTO(MemberExercise memberExercise, Exercise exercise) {
-        return ExerciseJoinDTO.Response.builder()
-                .participantId(memberExercise.getId())
-                .joinedAt(memberExercise.getCreatedAt())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
     public ExerciseGuestInviteDTO.Command toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
         return ExerciseGuestInviteDTO.Command.builder()
                 .guestName(request.guestName())
                 .gender(request.toParsedGender())
                 .level(request.toParsedLevel())
                 .inviterId(inviterId)
-                .build();
-    }
-
-    public ExerciseGuestInviteDTO.Response toGuestInviteResponseDTO(Guest guest, Exercise exercise) {
-        return ExerciseGuestInviteDTO.Response.builder()
-                .guestId(guest.getId())
-                .invitedAt(guest.getCreatedAt())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
-    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Member member) {
-        return ExerciseCancelDTO.Response.builder()
-                .memberName(member.getMemberName())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
-    public ExerciseCancelDTO.Response toCancelResponseDTO(Exercise exercise, Guest guest) {
-        return ExerciseCancelDTO.Response.builder()
-                .memberName(guest.getGuestName())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
-    public ExerciseDeleteDTO.Response toDeleteResponseDTO(Exercise exercise) {
-        return ExerciseDeleteDTO.Response.builder()
-                .deletedExerciseId(exercise.getId())
                 .build();
     }
 
@@ -117,65 +75,58 @@ public class ExerciseConverter {
         return null;
     }
 
-    public ExerciseUpdateDTO.Response toUpdateResponseDTO(Exercise exercise) {
+    // ========== Response 변환 메서드들 ==========
+    public ExerciseCreateDTO.Response toCreateResponse(Exercise exercise) {
+        return ExerciseCreateDTO.Response.builder()
+                .exerciseId(exercise.getId())
+                .createdAt(exercise.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseJoinDTO.Response toJoinResponse(MemberExercise memberExercise, Exercise exercise) {
+        return ExerciseJoinDTO.Response.builder()
+                .participantId(memberExercise.getId())
+                .joinedAt(memberExercise.getCreatedAt())
+                .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public ExerciseGuestInviteDTO.Response toGuestInviteResponse(Guest guest, Exercise exercise) {
+        return ExerciseGuestInviteDTO.Response.builder()
+                .guestId(guest.getId())
+                .invitedAt(guest.getCreatedAt())
+                .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public ExerciseCancelDTO.Response toCancelResponse(Exercise exercise, Member member) {
+        return ExerciseCancelDTO.Response.builder()
+                .memberName(member.getMemberName())
+                .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public ExerciseCancelDTO.Response toCancelResponse(Exercise exercise, Guest guest) {
+        return ExerciseCancelDTO.Response.builder()
+                .memberName(guest.getGuestName())
+                .currentParticipants(exercise.getNowCapacity())
+                .build();
+    }
+
+    public ExerciseDeleteDTO.Response toDeleteResponse(Exercise exercise) {
+        return ExerciseDeleteDTO.Response.builder()
+                .deletedExerciseId(exercise.getId())
+                .build();
+    }
+
+    public ExerciseUpdateDTO.Response toUpdateResponse(Exercise exercise) {
         return ExerciseUpdateDTO.Response.builder()
                 .exerciseId(exercise.getId())
                 .updatedAt(exercise.getUpdatedAt())
                 .build();
     }
 
-    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
-        Member member = memberParticipant.getMember();
-        Role role = memberRoles.get(member.getId());
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(memberParticipant.getId())
-                .participantNumber(0)
-                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
-                .name(member.getMemberName())
-                .gender(member.getGender().name())
-                .level(member.getLevel().name())
-                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
-                .partyPosition(role.name())
-                .inviterName(null)
-                .joinedAt(memberParticipant.getCreatedAt())
-                .build();
-    }
-
-    public ExerciseDetailDTO.ParticipantInfo toExeternalParticipantInfo(MemberExercise memberParticipant) {
-        Member member = memberParticipant.getMember();
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(memberParticipant.getId())
-                .participantNumber(0)
-                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
-                .name(member.getMemberName())
-                .gender(member.getGender().name())
-                .level(member.getLevel().name())
-                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
-                .partyPosition(null)
-                .inviterName(null)
-                .joinedAt(memberParticipant.getCreatedAt())
-                .build();
-    }
-
-    public ExerciseDetailDTO.ParticipantInfo toParticipantInfo(Guest guest, String inviterName) {
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(guest.getId())
-                .participantNumber(0)
-                .imgUrl(null)
-                .name(guest.getGuestName())
-                .gender(guest.getGender().name())
-                .level(guest.getLevel().name())
-                .participantType(guest.getExerciseMemberShipStatus().name())
-                .partyPosition(null)
-                .inviterName(inviterName)
-                .joinedAt(guest.getCreatedAt())
-                .build();
-    }
-
-    public ExerciseDetailDTO.Response toDetailResponseDTO(
+    public ExerciseDetailDTO.Response toDetailResponse(
             boolean isManager,
             ExerciseDetailDTO.ExerciseInfo exerciseInfo,
             ExerciseDetailDTO.ParticipantGroup participantGroup,
@@ -210,25 +161,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseMyGuestListDTO.GuestInfo toGuestInfo(
-            Guest guest,
-            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestStatusMap,
-            String inviterName) {
-
-        ExerciseMyGuestListDTO.GuestGroups guestGroup = guestStatusMap.get(guest.getId());
-
-        return ExerciseMyGuestListDTO.GuestInfo.builder()
-                .guestId(guest.getId())
-                .isWaiting(guestGroup.isWaiting())
-                .participantNumber(guestGroup.participantNumber())
-                .name(guest.getGuestName())
-                .gender(guest.getGender())
-                .level(guest.getLevel())
-                .inviterName(inviterName)
-                .build();
-    }
-
-    public PartyExerciseCalendarDTO.Response toEmptyPartyExerciseCalendar(
+    public PartyExerciseCalendarDTO.Response toEmptyPartyCalendarResponse(
             LocalDate start,
             LocalDate end,
             Boolean isMember,
@@ -243,7 +176,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public PartyExerciseCalendarDTO.Response toCalendarResponse(
+    public PartyExerciseCalendarDTO.Response toPartyCalendarResponse(
             List<Exercise> exercises,
             LocalDate start,
             LocalDate end,
@@ -254,7 +187,7 @@ public class ExerciseConverter {
 
         PartyLevelCache levelCache = createPartyLevelCache(party);
 
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, levelCache, participantCounts, bookmarkStatus, start, end);
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupPartyExerciseByWeek(exercises, levelCache, participantCounts, bookmarkStatus, start, end);
 
         return PartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -273,9 +206,9 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public MyExerciseCalendarDTO.Response toCalendarResponse(List<Exercise> exercises, LocalDate start, LocalDate end) {
+    public MyExerciseCalendarDTO.Response toMyCalendarResponse(List<Exercise> exercises, LocalDate start, LocalDate end) {
 
-        List<MyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);
+        List<MyExerciseCalendarDTO.WeeklyExercises> weeks = groupMyExerciseByWeek(exercises, start, end);
 
         return MyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -284,7 +217,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public MyPartyExerciseDTO.Response toEmptyExerciseResponse() {
+    public MyPartyExerciseDTO.Response toEmptyMyPartyExerciseResponse() {
         return MyPartyExerciseDTO.Response.builder()
                 .totalExercises(0)
                 .exercises(List.of())
@@ -294,7 +227,7 @@ public class ExerciseConverter {
     public MyPartyExerciseDTO.Response toMyPartyExerciseDTO(List<Exercise> recentExercises) {
 
         List<MyPartyExerciseDTO.Exercises> exercises = recentExercises.stream()
-                .map(this::convertToExercises)
+                .map(this::toPartyExerciseItem)
                 .toList();
 
         return MyPartyExerciseDTO.Response.builder()
@@ -303,6 +236,77 @@ public class ExerciseConverter {
                 .build();
     }
 
+    // ========== 내부 객체 변환 메서드들 ==========
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
+        Member member = memberParticipant.getMember();
+        Role role = memberRoles.get(member.getId());
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(role.name())
+                .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromExternalMember(MemberExercise memberParticipant) {
+        Member member = memberParticipant.getMember();
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(memberParticipant.getId())
+                .participantNumber(0)
+                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                .name(member.getMemberName())
+                .gender(member.getGender().name())
+                .level(member.getLevel().name())
+                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(null)
+                .joinedAt(memberParticipant.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromGuest(Guest guest, String inviterName) {
+
+        return ExerciseDetailDTO.ParticipantInfo.builder()
+                .participantId(guest.getId())
+                .participantNumber(0)
+                .imgUrl(null)
+                .name(guest.getGuestName())
+                .gender(guest.getGender().name())
+                .level(guest.getLevel().name())
+                .participantType(guest.getExerciseMemberShipStatus().name())
+                .partyPosition(null)
+                .inviterName(inviterName)
+                .joinedAt(guest.getCreatedAt())
+                .build();
+    }
+
+    public ExerciseMyGuestListDTO.GuestInfo toGuestInfo(
+            Guest guest,
+            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestStatusMap,
+            String inviterName) {
+
+        ExerciseMyGuestListDTO.GuestGroups guestGroup = guestStatusMap.get(guest.getId());
+
+        return ExerciseMyGuestListDTO.GuestInfo.builder()
+                .guestId(guest.getId())
+                .isWaiting(guestGroup.isWaiting())
+                .participantNumber(guestGroup.participantNumber())
+                .name(guest.getGuestName())
+                .gender(guest.getGender())
+                .level(guest.getLevel())
+                .inviterName(inviterName)
+                .build();
+    }
+
+    // ========== private 메서드들 ==========
     private PartyLevelCache createPartyLevelCache(Party party) {
         List<String> femaleLevel = extractLevelsByGender(party, Gender.FEMALE);
         List<String> maleLevel = extractLevelsByGender(party, Gender.MALE);
@@ -319,7 +323,21 @@ public class ExerciseConverter {
         return levelList.isEmpty() ? null : levelList;
     }
 
-    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(
+    private LocalDate getWeekStart(LocalDate date) {
+        return date.minusDays(date.getDayOfWeek().getValue() - 1);
+    }
+
+    private List<Exercise> filterExercisesByWeek(List<Exercise> exercises, LocalDate weekStart, LocalDate weekEnd) {
+        return exercises.stream()
+                .filter(exercise -> {
+                    LocalDate exerciseDate = exercise.getDate();
+                    return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
+                })
+                .toList();
+    }
+
+    // 주별 그룹화 메서드
+    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupPartyExerciseByWeek(
             List<Exercise> exercises,
             PartyLevelCache levelCache,
             Map<Long, Integer> participantCounts,
@@ -335,7 +353,7 @@ public class ExerciseConverter {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    convertToExerciseItems(weekExercises, levelCache, participantCounts, bookmarkStatus);
+                    toPartyCalendarItems(weekExercises, levelCache, participantCounts, bookmarkStatus);
 
             weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
@@ -343,7 +361,7 @@ public class ExerciseConverter {
         return weeks;
     }
 
-    private List<MyExerciseCalendarDTO.WeeklyExercises> groupExerciseByWeek(List<Exercise> exercises, LocalDate start, LocalDate end) {
+    private List<MyExerciseCalendarDTO.WeeklyExercises> groupMyExerciseByWeek(List<Exercise> exercises, LocalDate start, LocalDate end) {
 
         List<MyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -352,42 +370,12 @@ public class ExerciseConverter {
 
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = convertToExerciseItems(weekExercises);
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = toMyExerciseItems(weekExercises);
 
             weeks.add(createMyWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
 
         return weeks;
-    }
-
-    private LocalDate getWeekStart(LocalDate date) {
-        return date.minusDays(date.getDayOfWeek().getValue() - 1);
-    }
-
-    private List<Exercise> filterExercisesByWeek(List<Exercise> exercises, LocalDate weekStart, LocalDate weekEnd) {
-        return exercises.stream()
-                .filter(exercise -> {
-                    LocalDate exerciseDate = exercise.getDate();
-                    return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
-                })
-                .toList();
-    }
-
-    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(
-            List<Exercise> exercises,
-            PartyLevelCache levelCache,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus) {
-
-        return exercises.stream()
-                .map(exercise -> toCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus))
-                .toList();
-    }
-
-    private List<MyExerciseCalendarDTO.ExerciseCalendarItem> convertToExerciseItems(List<Exercise> exercises) {
-        return exercises.stream()
-                .map(this::toCalendarItem)
-                .toList();
     }
 
     private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
@@ -414,7 +402,25 @@ public class ExerciseConverter {
                 .build();
     }
 
-    private PartyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(
+    // 캘린더 아이템 변환
+    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> toPartyCalendarItems(
+            List<Exercise> exercises,
+            PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts,
+            Map<Long, Boolean> bookmarkStatus) {
+
+        return exercises.stream()
+                .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus))
+                .toList();
+    }
+
+    private List<MyExerciseCalendarDTO.ExerciseCalendarItem> toMyExerciseItems(List<Exercise> exercises) {
+        return exercises.stream()
+                .map(this::toMyCalendarItem)
+                .toList();
+    }
+
+    private PartyExerciseCalendarDTO.ExerciseCalendarItem toPartyCalendarItem(
             Exercise exercise,
             PartyLevelCache levelCache,
             Map<Long, Integer> participantCounts,
@@ -437,7 +443,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    private MyExerciseCalendarDTO.ExerciseCalendarItem toCalendarItem(Exercise exercise) {
+    private MyExerciseCalendarDTO.ExerciseCalendarItem toMyCalendarItem(Exercise exercise) {
 
         Party party = exercise.getParty();
 
@@ -454,7 +460,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    private MyPartyExerciseDTO.Exercises convertToExercises(Exercise exercise) {
+    private MyPartyExerciseDTO.Exercises toPartyExerciseItem(Exercise exercise) {
         Party party = exercise.getParty();
 
         return MyPartyExerciseDTO.Exercises.builder()
