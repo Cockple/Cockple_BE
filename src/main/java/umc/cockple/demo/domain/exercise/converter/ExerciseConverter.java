@@ -251,6 +251,25 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyPartyExerciseDTO.Response toEmptyExerciseResponse() {
+        return MyPartyExerciseDTO.Response.builder()
+                .totalExercises(0)
+                .exercises(List.of())
+                .build();
+    }
+
+    public MyPartyExerciseDTO.Response toMyPartyExerciseDTO(List<Exercise> recentExercises) {
+
+        List<MyPartyExerciseDTO.Exercises> exercises = recentExercises.stream()
+                .map(this::convertToExercises)
+                .toList();
+
+        return MyPartyExerciseDTO.Response.builder()
+                .totalExercises(recentExercises.size())
+                .exercises(exercises)
+                .build();
+    }
+
     private PartyLevelCache createPartyLevelCache(Party party) {
         List<String> femaleLevel = extractLevelsByGender(party, Gender.FEMALE);
         List<String> maleLevel = extractLevelsByGender(party, Gender.MALE);
@@ -398,6 +417,21 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .build();
+    }
+
+    private MyPartyExerciseDTO.Exercises convertToExercises(Exercise exercise) {
+        Party party = exercise.getParty();
+
+        return MyPartyExerciseDTO.Exercises.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .startTime(exercise.getStartTime())
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .build();
     }

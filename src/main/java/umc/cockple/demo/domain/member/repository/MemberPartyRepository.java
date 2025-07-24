@@ -38,4 +38,11 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
             "where mp.member.id = :memberId and mp.party.id in :partyIds")
     List<Long> findAllPartyIdsByMemberAndPartyIds(@Param("memberId") Long memberId,
                                                   @Param("partyIds") List<Long> partyIds);
+
+    @Query("""
+            SELECT mp.party.id
+            FROM MemberParty mp
+            WHERE mp.member.id = :memberId
+            """)
+    List<Long> findPartyIdsByMemberId(@Param("memberId") Long memberId);
 }
