@@ -145,4 +145,32 @@ public class PartyConverter {
         return levelList.isEmpty() ? null : levelList;
     }
 
+    public PartyMemberDTO.Response toPartyMemberDTO(List<MemberParty> memberParties, Long currentMemberId) {
+        //멤버 리스트 생성
+        List<PartyMemberDTO.MemberDetail> memberDetails = memberParties.stream()
+                .map(mp -> {
+                    Member member = mp.getMember();
+                    return PartyMemberDTO.MemberDetail.builder()
+                            .memberId(member.getId())
+                            .nickname(member.getNickname())
+                            .profileImageUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                            .role(mp.getRole().name())
+                            .gender(member.getGender().name())
+                            .level(member.getLevel().getKoreanName())
+                            .isMe(member.getId().equals(currentMemberId))
+                            .build();
+                })
+                .toList();
+
+        //모임의 멤버 관련 정보 리스트 생성
+        long femaleCount = memberDetails.stream().filter(md -> "FEMALE".equals(md.gender())).count();
+        long maleCount = memberDetails.stream().filter(md -> "MALE".equals(md.gender())).count();
+        PartyMemberDTO.Summary summary = PartyMemberDTO.Summary.builder()
+                .totalCount(memberDetails.size())
+                .femaleCount((int) femaleCount)
+                .maleCount((int) maleCount)
+                .build();
+
+        return new PartyMemberDTO.Response(summary, memberDetails);
+    }
 }
