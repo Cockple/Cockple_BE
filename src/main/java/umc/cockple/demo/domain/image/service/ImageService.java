@@ -1,10 +1,7 @@
 package umc.cockple.demo.domain.image.service;
 
-import com.amazonaws.HttpMethod;
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.Headers;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.image.exception.S3ErrorCode;
 import umc.cockple.demo.domain.image.exception.S3Exception;
 
-import java.net.URL;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,8 +19,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ImageService {
-
-    private static final String FAKE_S3_PREFIX = "https://fake-s3-bucket.com/contest-imgs/";
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -37,11 +32,30 @@ public class ImageService {
             return null;
         }
 
-        // TODO: S3 인프라 구축 후 실제 업로드 로직으로 교체 필요
-        //이미지를 보낸 경우, 실제 S3 업로드 로직 대신 하드코딩된 URL 반환
-        String tempImageUrl = "https://cockple.s3.ap-northeast-2.amazonaws.com/parties/images/default-party-img.png";
+        log.info("[이미지 업로드 시작]");
 
-        return tempImageUrl;
+        String key = getFileKey(image); // 예: contest-images/uuid.jpg
+
+        try {
+            amazonS3.putObject(
+                    bucket,
+                    key,
+                    image.getInputStream(),
+                    null // metadata 생략 가능
+            );
+
+        } catch (AmazonServiceException e) {
+            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.IMAGE_UPLOAD_AMAZON_EXCEPTION);
+        } catch (IOException e) {
+            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.IMAGE_UPLOAD_IO_EXCEPTION);
+        }
+
+        log.info("[이미지 업로드 완료]");
+
+        // 업로드된 이미지의 전체 URL 반환
+        return amazonS3.getUrl(bucket, key).toString();
     }
 
     /**
@@ -59,9 +73,14 @@ public class ImageService {
                 .collect(Collectors.toList());
     }
 
-    public void delete(String imgKey) { // igmurl로 s3 key 추출해서 삭제
-        String fakeUrl = FAKE_S3_PREFIX + imgKey + ".png";
-        log.info("[임시 삭제] 다음 이미지를 삭제합니다: {}", fakeUrl);
+    public void delete(String imgKey) {
+        try {
+            amazonS3.deleteObject(bucket, imgKey);
+            log.info("[S3 삭제 성공] {}", imgKey);
+        } catch (Exception e) {
+            log.error("[S3 삭제 실패] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.IMAGE_DELETE_EXCEPTION);
+        }
     }
 
     public String getFileKey(MultipartFile image) {
