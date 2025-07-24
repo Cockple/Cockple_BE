@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
+import umc.cockple.demo.global.enums.NotificationType;
 
 @Entity
 @Builder
@@ -25,9 +26,9 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
-//    @Column(nullable = false)
-//    @Enumerated(EnumType.STRING)
-//    private NotificationType type;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
 
     @Column(nullable = false)
     private Boolean isRead;
