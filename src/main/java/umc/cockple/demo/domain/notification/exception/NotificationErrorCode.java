@@ -15,7 +15,7 @@ public enum NotificationErrorCode implements BaseErrorCode {
      * 2xx: 서버에서 리소스를 찾을 수 없는 문제
      * 3xx: 권한/인증 문제
      * 4xx: 비즈니스 로직 위반
-     */
+     */;
 
 
 
