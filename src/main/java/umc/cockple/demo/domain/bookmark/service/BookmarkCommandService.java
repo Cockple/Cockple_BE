@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.global.enums.PartyStatus;
 
 @Service
 @Transactional
@@ -43,6 +44,9 @@ public class BookmarkCommandService {
 
         // 찜하고 싶은 모임 조회
         Party party = findByPartyId(partyId);
+
+        //모임 활성화 확인
+        validatePartyIsActive(party);
 
         // 찜 여부 확인
         if (partyBookmarkRepository.existsByMemberAndParty(member, party)) {
@@ -148,5 +152,11 @@ public class BookmarkCommandService {
     private ExerciseBookmark findByMemberAndExercise(Member member, Exercise exercise) {
         return exerciseBookmarkRepository.findByMemberAndExercise(member, exercise)
                 .orElseThrow(() -> new BookmarkException(BookmarkErrorCode.ALREADY_RELEASE_BOOKMARK));
+    }
+
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
+        }
     }
 }
