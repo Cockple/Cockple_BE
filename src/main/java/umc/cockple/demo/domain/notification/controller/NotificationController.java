@@ -1,11 +1,19 @@
 package umc.cockple.demo.domain.notification.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import umc.cockple.demo.domain.notification.domain.Notification;
+import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.service.NotificationQueryService;
+import umc.cockple.demo.global.response.BaseResponse;
+import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -15,6 +23,17 @@ import umc.cockple.demo.domain.notification.service.NotificationQueryService;
 public class NotificationController {
 
     private final NotificationQueryService notificationQueryService;
+
+    @GetMapping("/notifications")
+    @Operation(summary = "내 알림 전체 조회",
+            description = "사용자에게 온 알림 전체를 조회합니다. ")
+    public BaseResponse<List<Notification>> getAllNotifications() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
+
+        return BaseResponse.success(CommonSuccessCode.OK, notificationQueryService.getAllNotifications(memberId));
+    }
+
 
 
 }
