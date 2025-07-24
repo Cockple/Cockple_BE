@@ -41,7 +41,8 @@ public class MyPartyExerciseCalendarDTO {
             LocalTime startTime,
             LocalTime endTime,
             String profileImageUrl,
-            Boolean isBookmarked
+            Boolean isBookmarked,
+            Integer nowCapacity
     ) {
     }
 }

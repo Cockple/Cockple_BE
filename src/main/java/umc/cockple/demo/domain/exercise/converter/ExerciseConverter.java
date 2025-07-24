@@ -451,7 +451,7 @@ public class ExerciseConverter {
             }
 
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    toMyPartyExerciseItems(dayExercises, bookmarkStatus);
+                    toMyPartyExerciseItems(dayExercises, bookmarkStatus, participantCounts);
 
             dailyExercisesList.add(createDailyExercises(date, exerciseItems));
         }
@@ -526,9 +526,10 @@ public class ExerciseConverter {
                 .toList();
     }
 
-    private List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> toMyPartyExerciseItems(List<Exercise> exercises, Map<Long, Boolean> bookmarkStatus) {
+    private List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> toMyPartyExerciseItems(
+            List<Exercise> exercises, Map<Long, Boolean> bookmarkStatus, Map<Long, Integer> participantCounts) {
         return exercises.stream()
-                .map(exercise -> toMyPartyCalendarItem(exercise, bookmarkStatus))
+                .map(exercise -> toMyPartyCalendarItem(exercise, bookmarkStatus, participantCounts))
                 .toList();
     }
 
@@ -588,7 +589,7 @@ public class ExerciseConverter {
     }
 
     private MyPartyExerciseCalendarDTO.ExerciseCalendarItem toMyPartyCalendarItem(
-            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus, Map<Long, Integer> participantCounts) {
 
         Party party = exercise.getParty();
 
@@ -601,6 +602,7 @@ public class ExerciseConverter {
                 .endTime(exercise.getEndTime())
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .nowCapacity(participantCounts.getOrDefault(exercise.getId(), 0))
                 .build();
     }
 
