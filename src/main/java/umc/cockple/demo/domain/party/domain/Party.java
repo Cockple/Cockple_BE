@@ -67,6 +67,10 @@ public class Party extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActivityTime activityTime;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private PartyStatus status = PartyStatus.ACTIVE;
+
     @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyActiveDay> activeDays = new ArrayList<>();
@@ -175,4 +179,11 @@ public class Party extends BaseEntity {
         this.exerciseCount = exercises.size();
     }
 
+    public void delete() {
+        this.status = PartyStatus.INACTIVE;
+
+        // orphanRemoval=true 옵션에 의해 관계를 제거하면 DB에서도 자동으로 삭제됨
+        this.exercises.clear();
+        this.memberParties.clear();
+    }
 }
