@@ -85,6 +85,19 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     }
 
     @Override
+    public PartyMemberDTO.Response getPartyMembers(Long partyId, Long currentMemberId) {
+        log.info("모임 멤버 조회 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임 멤버 목록 조회
+        List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+
+        log.info("모임 멤버 목록 조회 완료 - partyId: {}", partyId);
+        return partyConverter.toPartyMemberDTO(memberParties, currentMemberId);
+    }
+
+    @Override
     public PartyDetailDTO.Response getPartyDetails(Long partyId, Long memberId) {
         log.info("모임 상세 정보 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
 
