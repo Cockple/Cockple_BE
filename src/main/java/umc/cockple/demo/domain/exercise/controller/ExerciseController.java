@@ -299,8 +299,9 @@ public class ExerciseController {
                     내 모임의 운동 캘린더를 조회합니다.
                     시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.
                     정렬 방식은 최신순(LATEST)과 참여인원이 많은 순(POPULARITY) 2가지로 구분됩니다. 파라미터를 없으면 최신순으로 불러옵니다.
-                    """
-    )
+                    """)
+    @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     public BaseResponse<MyPartyExerciseCalendarDTO.Response> getMyPartyExerciseCalendar(
             @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType orderType,
             @RequestParam(required = false) LocalDate startDate,
