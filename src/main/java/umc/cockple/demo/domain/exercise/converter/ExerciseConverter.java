@@ -236,6 +236,29 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyPartyExerciseCalendarDTO.Response toEmptyMyPartyCalendarResponse(LocalDate start, LocalDate end) {
+        return MyPartyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(Collections.emptyList())
+                .build();
+    }
+
+    public MyPartyExerciseCalendarDTO.Response toMyPartyCalendarResponse(
+            List<Exercise> exercises,
+            LocalDate start,
+            LocalDate end,
+            Map<Long, Boolean> bookmarkStatus) {
+
+        List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks = groupMyPartyExerciseByWeek(exercises, start, end, bookmarkStatus);
+
+        return MyPartyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(weeks)
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
@@ -361,7 +384,8 @@ public class ExerciseConverter {
         return weeks;
     }
 
-    private List<MyExerciseCalendarDTO.WeeklyExercises> groupMyExerciseByWeek(List<Exercise> exercises, LocalDate start, LocalDate end) {
+    private List<MyExerciseCalendarDTO.WeeklyExercises> groupMyExerciseByWeek(
+            List<Exercise> exercises, LocalDate start, LocalDate end) {
 
         List<MyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -373,6 +397,24 @@ public class ExerciseConverter {
             List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = toMyExerciseItems(weekExercises);
 
             weeks.add(createMyWeeklyExercises(weekStart, weekEnd, exerciseItems));
+        }
+
+        return weeks;
+    }
+
+    private List<MyPartyExerciseCalendarDTO.WeeklyExercises> groupMyPartyExerciseByWeek(
+            List<Exercise> exercises, LocalDate start, LocalDate end, Map<Long, Boolean> bookmarkStatus) {
+
+        List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
+
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = toMyPartyExerciseItems(weekExercises, bookmarkStatus);
+
+            weeks.add(createMyPartyWeeklyExercises(weekStart, weekEnd, exerciseItems));
         }
 
         return weeks;
@@ -402,6 +444,18 @@ public class ExerciseConverter {
                 .build();
     }
 
+    private MyPartyExerciseCalendarDTO.WeeklyExercises createMyPartyWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return MyPartyExerciseCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .exercises(exerciseItems)
+                .build();
+    }
+
     // 캘린더 아이템 변환
     private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> toPartyCalendarItems(
             List<Exercise> exercises,
@@ -417,6 +471,12 @@ public class ExerciseConverter {
     private List<MyExerciseCalendarDTO.ExerciseCalendarItem> toMyExerciseItems(List<Exercise> exercises) {
         return exercises.stream()
                 .map(this::toMyCalendarItem)
+                .toList();
+    }
+
+    private List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> toMyPartyExerciseItems(List<Exercise> exercises, Map<Long, Boolean> bookmarkStatus) {
+        return exercises.stream()
+                .map(exercise -> toMyPartyCalendarItem(exercise, bookmarkStatus))
                 .toList();
     }
 
@@ -473,6 +533,26 @@ public class ExerciseConverter {
                 .startTime(exercise.getStartTime())
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .build();
+    }
+
+    private MyPartyExerciseCalendarDTO.ExerciseCalendarItem toMyPartyCalendarItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return MyPartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+
     }
 
     private record PartyLevelCache(
