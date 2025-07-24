@@ -13,11 +13,14 @@ import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.domain.contest.service.ContestQueryService;
+import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,6 +31,7 @@ public class ContestController {
 
     private final ContestCommandService contestCommandService;
     private final ContestQueryService contestQueryService;
+    private final ImageService imageService;
 
     @PostMapping(value = "/contests/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "대회 기록 등록", description = "회원이 자신의 대회 기록을 등록합니다.")
@@ -163,5 +167,31 @@ public class ContestController {
         ContestMedalSummaryDTO.Response response = contestQueryService.getMyMedalSummary(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK,response);
+    }
+
+    @PostMapping(value = "/contests/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "대회 이미지 업로드", description = "S3에 이미지를 업로드하고 이미지 URL과 imgKey를 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "업로드 성공")
+    public BaseResponse<List<ImageUploadResponseDTO>> uploadContestImages(
+            //@AuthenticationPrincipal Long memberId
+            @RequestPart("images") List<MultipartFile> images){
+
+        Long memberId = 1L; // 임시값
+
+        List<String> imageUrls = imageService.uploadImages(images);
+
+        List<ImageUploadResponseDTO> response = imageUrls.stream()
+                .map(url -> new ImageUploadResponseDTO(
+                        url,
+                        extractKeyFromUrl(url)
+                ))
+                .collect(Collectors.toList());
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    private String extractKeyFromUrl(String url) {
+        int startIndex = url.indexOf("contest-images/");
+        return url.substring(startIndex);
     }
 }
