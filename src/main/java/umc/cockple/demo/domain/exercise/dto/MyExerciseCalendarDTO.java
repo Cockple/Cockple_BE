@@ -12,7 +12,7 @@ public class MyExerciseCalendarDTO {
     public record Response(
             LocalDate startDate,
             LocalDate endDate,
-            List<MyExerciseCalendarDTO.WeeklyExercises> weeks
+            List<WeeklyExercises> weeks
     ) {
     }
 
@@ -20,7 +20,7 @@ public class MyExerciseCalendarDTO {
     public record WeeklyExercises(
             LocalDate weekStartDate,
             LocalDate weekEndDate,
-            List<MyExerciseCalendarDTO.DailyExercises> days
+            List<DailyExercises> days
     ) {
     }
 
@@ -28,7 +28,7 @@ public class MyExerciseCalendarDTO {
     public record DailyExercises(
             LocalDate date,
             String dayOfWeek,
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exercises
+            List<ExerciseCalendarItem> exercises
     ) {
     }
 
