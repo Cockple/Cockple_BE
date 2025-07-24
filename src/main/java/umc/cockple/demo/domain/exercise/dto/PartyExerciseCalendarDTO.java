@@ -29,6 +29,7 @@ public class PartyExerciseCalendarDTO {
     @Builder
     public record ExerciseCalendarItem(
             Long exerciseId,
+            Boolean isBookmarked,
             LocalDate date,
             String dayOfWeek,
             LocalTime startTime,
