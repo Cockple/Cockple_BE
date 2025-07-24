@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.exercise.converter;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
@@ -377,10 +378,10 @@ public class ExerciseConverter {
 
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    toPartyCalendarItems(weekExercises, levelCache, participantCounts, bookmarkStatus);
+            List<PartyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
+                    groupPartyExerciseByDate(weekExercises, weekStart, weekEnd, levelCache, participantCounts, bookmarkStatus);
 
-            weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, exerciseItems));
+            weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
 
         return weeks;
@@ -427,6 +428,32 @@ public class ExerciseConverter {
         }
 
         return weeks;
+    }
+
+    // 날짜별 그룹화 메서드
+    private List<PartyExerciseCalendarDTO.DailyExercises> groupPartyExerciseByDate(
+            List<Exercise> weekExercises,
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            PartyLevelCache levelCache,
+            Map<Long, Integer> participantCounts,
+            Map<Long, Boolean> bookmarkStatus) {
+
+        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        List<PartyExerciseCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
+
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
+
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
+                    toPartyExerciseItems(dayExercises, levelCache, participantCounts, bookmarkStatus);
+
+            dailyExercisesList.add(createPartyDailyExercises(date, exerciseItems));
+        }
+
+        return dailyExercisesList;
     }
 
     private List<MyExerciseCalendarDTO.DailyExercises> groupMyExerciseByDate(
@@ -486,12 +513,12 @@ public class ExerciseConverter {
     private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+            List<PartyExerciseCalendarDTO.DailyExercises> days) {
 
         return PartyExerciseCalendarDTO.WeeklyExercises.builder()
                 .weekStartDate(weekStart)
                 .weekEndDate(weekEnd)
-                .exercises(exerciseItems)
+                .days(days)
                 .build();
     }
 
@@ -520,6 +547,17 @@ public class ExerciseConverter {
     }
 
     // 날짜별 운동 변환
+    private PartyExerciseCalendarDTO.DailyExercises createPartyDailyExercises(
+            LocalDate date,
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+        
+        return PartyExerciseCalendarDTO.DailyExercises.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .exercises(exerciseItems)
+                .build();
+    }
+
     private MyExerciseCalendarDTO.DailyExercises createMyDailyExercises(
             LocalDate date,
             List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
@@ -543,7 +581,7 @@ public class ExerciseConverter {
     }
 
     // 캘린더 아이템 변환
-    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> toPartyCalendarItems(
+    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> toPartyExerciseItems(
             List<Exercise> exercises,
             PartyLevelCache levelCache,
             Map<Long, Integer> participantCounts,
@@ -578,8 +616,6 @@ public class ExerciseConverter {
         return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
                 .exerciseId(exercise.getId())
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
-                .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
