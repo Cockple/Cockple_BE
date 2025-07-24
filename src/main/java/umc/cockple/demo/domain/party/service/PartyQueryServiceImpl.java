@@ -89,7 +89,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         log.info("모임 멤버 조회 시작 - partyId: {}", partyId);
         //모임 조회
         Party party = findPartyOrThrow(partyId);
-
+        //모임 활성화 확인
+        validatePartyIsActive(party);
         //모임 멤버 목록 조회
         List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
 
