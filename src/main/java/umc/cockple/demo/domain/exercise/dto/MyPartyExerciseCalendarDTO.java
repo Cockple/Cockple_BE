@@ -12,7 +12,7 @@ public class MyPartyExerciseCalendarDTO {
     public record Response(
             LocalDate startDate,
             LocalDate endDate,
-            List<MyExerciseCalendarDTO.WeeklyExercises> weeks
+            List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks
     ) {
     }
 
@@ -20,7 +20,7 @@ public class MyPartyExerciseCalendarDTO {
     public record WeeklyExercises(
             LocalDate weekStartDate,
             LocalDate weekEndDate,
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exercises
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exercises
     ) {
     }
 
