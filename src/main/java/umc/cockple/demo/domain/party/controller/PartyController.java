@@ -98,6 +98,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
+    @PatchMapping("/{partyId}/status")
+    @Operation(summary ="모임 삭제(비활성화)",
+            description = "모임장이 모임을 삭제(비활성화)합니다.")
+    public BaseResponse<Void> deleteParty(
+            @PathVariable Long partyId,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        partyCommandService.deleteParty(partyId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+
+
     @PostMapping("/parties/{partyId}/join-requests")
     @Operation(summary = "모임 가입 신청",
             description = "사용자가 특정 모임에 가입을 신청합니다")

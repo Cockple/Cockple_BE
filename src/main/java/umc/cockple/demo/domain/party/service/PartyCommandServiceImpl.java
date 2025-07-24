@@ -66,6 +66,18 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         return partyConverter.toCreateResponseDTO(savedParty);
     }
 
+    @Override
+    public void deleteParty(Long partyId, Long memberId) {
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임장 권한 확인
+        validateOwnerPermission(party, memberId);
+
+        //Party 엔티티의 상태를 INACTIVE로 변경
+        party.delete();
+    }
+
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
