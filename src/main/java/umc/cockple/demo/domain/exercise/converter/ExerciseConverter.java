@@ -13,6 +13,7 @@ import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -215,6 +216,21 @@ public class ExerciseConverter {
                 .gender(guest.getGender())
                 .level(guest.getLevel())
                 .inviterName(inviterName)
+                .build();
+    }
+
+    public PartyExerciseCalendarDTO.Response toEmptyPartyExerciseCalendar(
+            LocalDate start,
+            LocalDate end,
+            Boolean isMember,
+            Party party) {
+
+        return PartyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .isMember(isMember)
+                .partyName(party.getPartyName())
+                .weeks(Collections.emptyList())
                 .build();
     }
 

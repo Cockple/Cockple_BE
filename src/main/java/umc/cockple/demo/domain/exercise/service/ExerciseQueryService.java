@@ -105,6 +105,14 @@ public class ExerciseQueryService {
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
+        if (exercises.isEmpty()) {
+            log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
+                    partyId, dateRange.start(), dateRange.end());
+
+            return exerciseConverter.toEmptyPartyExerciseCalendar(
+                    dateRange.start(), dateRange.end(), isMember, party);
+        }
+
         Map<Long, Integer> participantCounts = getParticipantCountsMap(
                 partyId, dateRange.start(), dateRange.end());
 
