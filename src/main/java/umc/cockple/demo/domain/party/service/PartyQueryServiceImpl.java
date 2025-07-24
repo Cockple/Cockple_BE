@@ -25,6 +25,7 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.global.enums.PartyStatus;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 import java.time.LocalTime;
@@ -88,6 +89,9 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         Party party = findPartyOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
 
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+
         //memberParty 조회 로직 수행
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
 
@@ -103,6 +107,10 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
         //모임 조회
         Party party = findPartyOrThrow(partyId);
+
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+
         //모임장 권한이 있는지 확인
         validateOwnerPermission(party, memberId);
         //status를 ENUM으로 변환 및 검증
@@ -120,6 +128,13 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private void validateOwnerPermission(Party party, Long memberId) {
         if(!party.getOwnerId().equals(memberId)){
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+    }
+
+    //모임 활성화 확인
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
     }
 
