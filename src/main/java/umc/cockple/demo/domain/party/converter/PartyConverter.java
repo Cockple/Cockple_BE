@@ -11,6 +11,7 @@ import umc.cockple.demo.global.enums.ParticipationType;
 import umc.cockple.demo.global.enums.RequestStatus;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -160,6 +161,8 @@ public class PartyConverter {
                             .isMe(member.getId().equals(currentMemberId))
                             .build();
                 })
+                //Role에 따라 정렬 (모임장, 부모임장이 위로 가도록 정렬)
+                .sorted(Comparator.comparing(detail -> getRolePriority(detail.role()))) // .sort() 대신 .sorted() 사용
                 .toList();
 
         //모임의 멤버 관련 정보 리스트 생성
@@ -172,5 +175,14 @@ public class PartyConverter {
                 .build();
 
         return new PartyMemberDTO.Response(summary, memberDetails);
+    }
+
+    private int getRolePriority(String role) {
+        return switch (role) {
+            case "party_MANAGER" -> 0; // 모임장 역할
+            case "party_SUBMANAGER" -> 1; // 부모임장
+            case "party_MEMBER" -> 2; // 일반 멤버
+            default -> 99;
+        };
     }
 }
