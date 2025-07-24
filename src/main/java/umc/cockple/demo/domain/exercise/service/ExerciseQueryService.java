@@ -189,7 +189,7 @@ public class ExerciseQueryService {
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
-            return exerciseConverter.toEmptyMyPartyExerciseCalendarResponse(dateRange.start(), dateRange.end());
+            return exerciseConverter.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
         }
 
         List<Exercise> exercises = switch (orderType) {
@@ -202,12 +202,15 @@ public class ExerciseQueryService {
         if (exercises.isEmpty()) {
             log.info("해당 기간에 내 모임의 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
                     memberId, dateRange.start(), dateRange.end());
-            return exerciseConverter.toEmptyMyPartyExerciseCalendarResponse(dateRange.start(), dateRange.end());
+            return exerciseConverter.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
         }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toMyPartyExerciseCalendarDTO(exercises, dateRange.start(), dateRange.end());
+        return exerciseConverter.toMyPartyCalendarResponse(exercises, dateRange.start(), dateRange.end(), bookmarkStatus);
     }
 
     // ========== 검증 메서드들 ==========
