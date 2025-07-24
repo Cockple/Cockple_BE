@@ -24,9 +24,12 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.MemberStatus;
+import umc.cockple.demo.global.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -104,7 +107,7 @@ public class ExerciseQueryService {
 
         Party party = findPartyWithLevelsOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
-        validateGetPartyExerciseCalender(startDate, endDate);
+        validateGetPartyExerciseCalender(startDate, endDate, party);
 
         Boolean isMember = isPartyMember(party, member);
         DateRange dateRange = calculateDateRange(startDate, endDate);
@@ -177,7 +180,8 @@ public class ExerciseQueryService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate) {
+    private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
+        validatePartyIsActive(party);
         validateDateRange(startDate, endDate);
     }
 
@@ -198,6 +202,12 @@ public class ExerciseQueryService {
 
         if (!startDate.isBefore(endDate)) {
             throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_RANGE);
+        }
+    }
+
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
     }
 
