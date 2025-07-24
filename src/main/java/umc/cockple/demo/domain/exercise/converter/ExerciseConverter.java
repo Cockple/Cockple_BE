@@ -255,6 +255,14 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyExerciseCalendarDTO.Response toEmptyMyCalendarResponse(LocalDate start, LocalDate end) {
+        return MyExerciseCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(Collections.emptyList())
+                .build();
+    }
+
     public MyExerciseCalendarDTO.Response toCalendarResponse(List<Exercise> exercises, LocalDate start, LocalDate end) {
 
         List<MyExerciseCalendarDTO.WeeklyExercises> weeks = groupExerciseByWeek(exercises, start, end);

@@ -134,6 +134,12 @@ public class ExerciseQueryService {
 
         List<Exercise> exercises = findExercisesByMemberIdAndDateRange(memberId, dateRange.start(), dateRange.end());
 
+        if (exercises.isEmpty()) {
+            log.info("해당 기간에 참여한 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
+                    memberId, dateRange.start(), dateRange.end());
+            return exerciseConverter.toEmptyMyCalendarResponse(dateRange.start(), dateRange.end());
+        }
+
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toCalendarResponse(exercises, dateRange.start(), dateRange.end());
