@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.party.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
@@ -95,6 +96,10 @@ public class Party extends BaseEntity {
     @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyBookmark> partyBookmarks = new ArrayList<>();
+
     public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
         Party party = Party.builder()
                 .partyName(command.partyName())
@@ -185,5 +190,6 @@ public class Party extends BaseEntity {
         // orphanRemoval=true 옵션에 의해 관계를 제거하면 DB에서도 자동으로 삭제됨
         this.exercises.clear();
         this.memberParties.clear();
+        this.partyBookmarks.clear();
     }
 }
