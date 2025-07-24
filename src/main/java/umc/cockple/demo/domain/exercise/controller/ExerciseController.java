@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
+import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -236,7 +237,7 @@ public class ExerciseController {
 
     @GetMapping("/parties/{partyId}/exercises/calender")
     @Operation(summary = "모임 운동 캘린더 조회",
-            description = "모임 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다")
+            description = "모임 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.")
     @ApiResponse(responseCode = "200", description = "모임 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
@@ -258,7 +259,7 @@ public class ExerciseController {
 
     @GetMapping("/exercises/my/calender")
     @Operation(summary = "내 운동 캘린더 조회",
-            description = "내 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다")
+            description = "내 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.")
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     public BaseResponse<MyExerciseCalendarDTO.Response> getMyExerciseCalender(
@@ -288,6 +289,30 @@ public class ExerciseController {
         Long memberId = 1L; // 임시값
 
         MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+    
+    @GetMapping("/exercises/parties/my/calendar")
+    @Operation(summary = "내 모임 운동 캘린더 조회",
+            description = """
+                    내 모임의 운동 캘린더를 조회합니다.
+                    시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.
+                    정렬 방식은 최신순(LATEST)과 참여인원이 많은 순(POPULARITY) 2가지로 구분됩니다. 파라미터를 없으면 최신순으로 불러옵니다.
+                    """
+    )
+    public BaseResponse<MyPartyExerciseCalendarDTO.Response> getMyPartyExerciseCalendar(
+            @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType orderType,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                memberId, orderType, startDate, endDate);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
