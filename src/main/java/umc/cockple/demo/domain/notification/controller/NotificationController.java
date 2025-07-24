@@ -27,7 +27,7 @@ public class NotificationController {
     @GetMapping("/notifications")
     @Operation(summary = "내 알림 전체 조회",
             description = "사용자에게 온 알림 전체를 조회합니다. ")
-    public BaseResponse<List<Notification>> getAllNotifications() {
+    public BaseResponse<List<AllNotificationsResponseDTO>> getAllNotifications() {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 

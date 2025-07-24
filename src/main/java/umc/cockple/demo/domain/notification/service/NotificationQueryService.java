@@ -8,6 +8,8 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.controller.NotificationController;
+import umc.cockple.demo.domain.notification.converter.NotificationConverter;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
@@ -24,12 +26,17 @@ public class NotificationQueryService {
     private final MemberRepository memberRepository;
 
 
-    public List<Notification> getAllNotifications(Long memberId) {
+    public List<AllNotificationsResponseDTO> getAllNotifications(Long memberId) {
         // 회원 조회
         Member member = findByMemberId(memberId);
 
-        // 회원의 모든 알림 조회 & 반환
-        return notificationRepository.findAllByMember(member);
+        // 회원의 모든 알림 조회
+        List<Notification> notifications = notificationRepository.findAllByMember(member);
+
+        // dto 매핑 및 반환
+        return notifications.stream()
+                .map(NotificationConverter::toAllNotificationResponseDTO)
+                .toList();
     }
 
     private Member findByMemberId(Long memberId) {
