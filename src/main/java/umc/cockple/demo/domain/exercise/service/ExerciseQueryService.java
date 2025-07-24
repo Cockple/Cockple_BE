@@ -78,6 +78,11 @@ public class ExerciseQueryService {
 
         List<Guest> myGuests = findGuestsByExerciseIdAndInviterId(exerciseId, memberId);
 
+        if (myGuests.isEmpty()) {
+            log.info("초대한 게스트가 없어 빈 응답 반환 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+            return exerciseConverter.toEmptyGuestListResponse();
+        }
+
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = getAllSortedParticipants(exerciseId, exercise.getParty());
         Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap = createGuestNumberMap(allParticipants, exercise.getMaxCapacity());
 

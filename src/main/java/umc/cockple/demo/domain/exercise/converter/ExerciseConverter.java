@@ -189,6 +189,15 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseMyGuestListDTO.Response toEmptyGuestListResponse() {
+        return ExerciseMyGuestListDTO.Response.builder()
+                .totalCount(0)
+                .maleCount(0)
+                .femaleCount(0)
+                .list(Collections.emptyList())
+                .build();
+    }
+
     public ExerciseMyGuestListDTO.Response toMyGuestListResponse(
             ExerciseMyGuestListDTO.GuestStatistics statistics,
             List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
