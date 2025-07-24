@@ -396,9 +396,10 @@ public class ExerciseConverter {
 
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = toMyExerciseItems(weekExercises);
+            List<MyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
+                    groupMyExerciseByDate(weekExercises, weekStart, weekEnd);
 
-            weeks.add(createMyWeeklyExercises(weekStart, weekEnd, exerciseItems));
+            weeks.add(createMyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
 
         return weeks;
@@ -428,6 +429,28 @@ public class ExerciseConverter {
         return weeks;
     }
 
+    private List<MyExerciseCalendarDTO.DailyExercises> groupMyExerciseByDate(
+            List<Exercise> weekExercises,
+            LocalDate weekStart,
+            LocalDate weekEnd) {
+
+        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        List<MyExerciseCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
+
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
+
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
+                    toMyExerciseItems(dayExercises);
+
+            dailyExercisesList.add(createMyDailyExercises(date, exerciseItems));
+        }
+
+        return dailyExercisesList;
+    }
+
     private List<MyPartyExerciseCalendarDTO.DailyExercises> groupMyPartyExercisesByDate(
             List<Exercise> weekExercises,
             LocalDate weekStart,
@@ -453,7 +476,7 @@ public class ExerciseConverter {
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
                     toMyPartyExerciseItems(dayExercises, bookmarkStatus, participantCounts);
 
-            dailyExercisesList.add(createDailyExercises(date, exerciseItems));
+            dailyExercisesList.add(createMyPartyDailyExercises(date, exerciseItems));
         }
 
         return dailyExercisesList;
@@ -475,12 +498,12 @@ public class ExerciseConverter {
     private MyExerciseCalendarDTO.WeeklyExercises createMyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+            List<MyExerciseCalendarDTO.DailyExercises> days) {
 
         return MyExerciseCalendarDTO.WeeklyExercises.builder()
                 .weekStartDate(weekStart)
                 .weekEndDate(weekEnd)
-                .exercises(exerciseItems)
+                .days(days)
                 .build();
     }
 
@@ -497,7 +520,18 @@ public class ExerciseConverter {
     }
 
     // 날짜별 운동 변환
-    private MyPartyExerciseCalendarDTO.DailyExercises createDailyExercises(
+    private MyExerciseCalendarDTO.DailyExercises createMyDailyExercises(
+            LocalDate date,
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return MyExerciseCalendarDTO.DailyExercises.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .exercises(exerciseItems)
+                .build();
+    }
+
+    private MyPartyExerciseCalendarDTO.DailyExercises createMyPartyDailyExercises(
             LocalDate date,
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
 
@@ -562,8 +596,6 @@ public class ExerciseConverter {
 
         return MyExerciseCalendarDTO.ExerciseCalendarItem.builder()
                 .exerciseId(exercise.getId())
-                .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
