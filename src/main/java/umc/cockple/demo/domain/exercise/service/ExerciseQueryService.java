@@ -202,9 +202,12 @@ public class ExerciseQueryService {
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
 
+        Map<Long, Integer> participantCounts = getParticipantCountsMap(exerciseIds, dateRange.start(), dateRange.end());
+
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toMyPartyCalendarResponse(exercises, dateRange.start(), dateRange.end(), bookmarkStatus);
+        return exerciseConverter.toMyPartyCalendarResponse(
+                exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
     // ========== 검증 메서드들 ==========
@@ -530,6 +533,17 @@ public class ExerciseQueryService {
     private Map<Long, Integer> getParticipantCountsMap(Long partyId, LocalDate start, LocalDate end) {
         List<Object[]> countResults = exerciseRepository.findExerciseParticipantCounts(
                 partyId, start, end);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
+    private Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds, LocalDate start, LocalDate end) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                exerciseIds, start, end);
 
         return countResults.stream()
                 .collect(Collectors.toMap(

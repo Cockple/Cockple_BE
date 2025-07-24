@@ -9,13 +9,11 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -249,9 +247,12 @@ public class ExerciseConverter {
             List<Exercise> exercises,
             LocalDate start,
             LocalDate end,
-            Map<Long, Boolean> bookmarkStatus) {
+            Map<Long, Boolean> bookmarkStatus,
+            MyPartyExerciseOrderType orderType,
+            Map<Long, Integer> participantCounts) {
 
-        List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks = groupMyPartyExerciseByWeek(exercises, start, end, bookmarkStatus);
+        List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks =
+                groupMyPartyExerciseByWeek(exercises, start, end, bookmarkStatus, orderType, participantCounts);
 
         return MyPartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -404,7 +405,12 @@ public class ExerciseConverter {
     }
 
     private List<MyPartyExerciseCalendarDTO.WeeklyExercises> groupMyPartyExerciseByWeek(
-            List<Exercise> exercises, LocalDate start, LocalDate end, Map<Long, Boolean> bookmarkStatus) {
+            List<Exercise> exercises,
+            LocalDate start,
+            LocalDate end,
+            Map<Long, Boolean> bookmarkStatus,
+            MyPartyExerciseOrderType orderType,
+            Map<Long, Integer> participantCounts) {
 
         List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -414,7 +420,7 @@ public class ExerciseConverter {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<MyPartyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
-                    groupMyPartyExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus);
+                    groupMyPartyExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, orderType, participantCounts);
 
             weeks.add(createMyPartyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
@@ -426,7 +432,9 @@ public class ExerciseConverter {
             List<Exercise> weekExercises,
             LocalDate weekStart,
             LocalDate weekEnd,
-            Map<Long, Boolean> bookmarkStatus) {
+            Map<Long, Boolean> bookmarkStatus,
+            MyPartyExerciseOrderType orderType,
+            Map<Long, Integer> participantCounts) {
 
         Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
                 .collect(Collectors.groupingBy(Exercise::getDate));
@@ -436,7 +444,11 @@ public class ExerciseConverter {
         for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
             List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
 
-            // TODO 운동 정렬 로직
+            if (Objects.requireNonNull(orderType) == MyPartyExerciseOrderType.LATEST) {
+                dayExercises.sort(Comparator.comparing(Exercise::getStartTime));
+            } else if (orderType == MyPartyExerciseOrderType.POPULARITY) {
+                dayExercises.sort(Comparator.comparingInt((Exercise e) -> participantCounts.getOrDefault(e.getId(), 0)).reversed());
+            }
 
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
                     toMyPartyExerciseItems(dayExercises, bookmarkStatus);

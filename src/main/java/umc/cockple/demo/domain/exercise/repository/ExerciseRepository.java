@@ -121,4 +121,18 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("partyIds") List<Long> partyIds,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query(value = """
+            SELECT 
+                e.id as exerciseId,
+                (SELECT COUNT(*) FROM member_exercise me WHERE me.exercise_id = e.id) + 
+                (SELECT COUNT(*) FROM guest g WHERE g.exercise_id = e.id) as totalCount
+            FROM exercise e
+            WHERE e.id IN :exerciseIds
+            AND e.date BETWEEN :startDate AND :endDate
+            """, nativeQuery = true)
+    List<Object[]> findExerciseParticipantCountsByExerciseIds(
+            @Param("exerciseIds") List<Long> exerciseIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }
