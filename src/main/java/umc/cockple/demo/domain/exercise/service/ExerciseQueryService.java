@@ -182,7 +182,6 @@ public class ExerciseQueryService {
         log.info("내 모임 운동 캘린더 조회 시작 - memberId = {}, orderType = {}, 기간 = {}~{}", memberId, orderType, startDate, endDate);
 
         Member member = findMemberOrThrow(memberId);
-
         List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
 
         DateRange dateRange = calculateDateRange(startDate, endDate);
@@ -192,11 +191,7 @@ public class ExerciseQueryService {
             return exerciseConverter.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
         }
 
-        List<Exercise> exercises = switch (orderType) {
-            case LATEST -> findExercisesByPartyIdsAndDateRangeOrderByLatest(myPartyIds, dateRange.start(), dateRange.end());
-            case POPULARITY -> findExercisesOrderByPopularity(dateRange.start(), dateRange.end(), myPartyIds);
-
-        };
+        List<Exercise> exercises = findByPartyIdsAndDateRange(myPartyIds, dateRange.start(), dateRange.end());
 
         if (exercises.isEmpty()) {
             log.info("해당 기간에 내 모임의 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
@@ -369,19 +364,6 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
-    private List<Exercise> findExercisesOrderByPopularity(LocalDate startDate, LocalDate endDate, List<Long> myPartyIds) {
-        List<Exercise> exercises = findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
-
-        Map<Long, Integer> participantCounts = getParticipantCounts(exercises);
-
-        return exercises.stream()
-                .sorted(Comparator
-                        .comparing((Exercise e) -> participantCounts.getOrDefault(e.getId(), 0))
-                        .reversed()
-                        .thenComparing(e -> e.getParty().getPartyName()))
-                .toList();
-    }
-
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -514,11 +496,6 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
-    private List<Exercise> findExercisesByPartyIdsAndDateRangeOrderByLatest(
-            List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
-        return exerciseRepository.findByPartyIdsAndDateRangeOrderByLatest(myPartyIds, startDate, endDate);
-    }
-
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
@@ -555,17 +532,6 @@ public class ExerciseQueryService {
                 partyId, start, end);
 
         return countResults.stream()
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
-                        row -> ((Number) row[1]).intValue()
-                ));
-    }
-
-    private Map<Long, Integer> getParticipantCounts(List<Exercise> exercises) {
-        List<Long> exerciseIds = exercises.stream().map(Exercise::getId).toList();
-
-        return exerciseRepository.findParticipantCounts(exerciseIds)
-                .stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
                         row -> ((Number) row[1]).intValue()

@@ -116,40 +116,9 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             LEFT JOIN FETCH p.partyImg
             WHERE p.id IN :partyIds 
             AND e.date BETWEEN :startDate AND :endDate
-            ORDER BY e.date ASC, e.startTime ASC, p.partyName ASC
-            """)
-    List<Exercise> findByPartyIdsAndDateRangeOrderByLatest(
-            @Param("partyIds") List<Long> myPartyIds,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
-
-    @Query("""
-            SELECT e FROM Exercise e 
-            JOIN FETCH e.party p
-            JOIN FETCH e.exerciseAddr addr
-            LEFT JOIN FETCH p.partyImg
-            WHERE p.id IN :partyIds 
-            AND e.date BETWEEN :startDate AND :endDate
             """)
     List<Exercise> findByPartyIdsAndDateRange(
             @Param("partyIds") List<Long> partyIds,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
-
-    @Query(value = """
-            SELECT 
-                e.id,
-                COALESCE(me_count.member_count, 0) + COALESCE(g_count.guest_count, 0) as participant_count
-            FROM exercise e
-            LEFT JOIN (
-                SELECT exercise_id, COUNT(*) as member_count 
-                FROM member_exercise GROUP BY exercise_id
-            ) me_count ON e.id = me_count.exercise_id
-            LEFT JOIN (
-                SELECT exercise_id, COUNT(*) as guest_count 
-                FROM guest GROUP BY exercise_id
-            ) g_count ON e.id = g_count.exercise_id
-            WHERE e.id IN :exerciseIds
-            """, nativeQuery = true)
-    List<Object[]> findParticipantCounts(@Param("exerciseIds") List<Long> exerciseIds);
 }
