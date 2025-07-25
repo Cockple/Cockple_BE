@@ -18,7 +18,10 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.global.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -202,6 +205,7 @@ public class ExerciseCommandService {
     // ========== 검증 메서드들 ==========
 
     private void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
+        validatePartyIsActive(party);
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
     }
@@ -356,6 +360,12 @@ public class ExerciseCommandService {
         LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
+        }
+    }
+
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
     }
 

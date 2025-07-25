@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.party.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
@@ -67,6 +68,10 @@ public class Party extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActivityTime activityTime;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private PartyStatus status = PartyStatus.ACTIVE;
+
     @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyActiveDay> activeDays = new ArrayList<>();
@@ -90,6 +95,10 @@ public class Party extends BaseEntity {
     @Setter
     @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyBookmark> partyBookmarks = new ArrayList<>();
 
     public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
         Party party = Party.builder()
@@ -175,4 +184,12 @@ public class Party extends BaseEntity {
         this.exerciseCount = exercises.size();
     }
 
+    public void delete() {
+        this.status = PartyStatus.INACTIVE;
+
+        // orphanRemoval=true 옵션에 의해 관계를 제거하면 DB에서도 자동으로 삭제됨
+        this.exercises.clear();
+        this.memberParties.clear();
+        this.partyBookmarks.clear();
+    }
 }

@@ -66,6 +66,21 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         return partyConverter.toCreateResponseDTO(savedParty);
     }
 
+    @Override
+    public void deleteParty(Long partyId, Long memberId) {
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+
+        //모임장 권한 확인
+        validateOwnerPermission(party, memberId);
+
+        //Party 엔티티의 상태를 INACTIVE로 변경
+        party.delete();
+    }
+
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
@@ -74,6 +89,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //모임 및 사용자 조회
         Member member = findMemberOrThrow(memberId);
         Party party = findPartyOrThrow(partyId);
+
+        //모임 활성화 확인
+        validatePartyIsActive(party);
 
         //가입신청 가능한지 검증
         validateJoinRequest(member, party);
@@ -98,6 +116,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Party party = findPartyOrThrow(partyId);
         PartyJoinRequest partyJoinRequest = findJoinRequestOrThorow(requestId);
 
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+        
         //모임장 권한 확인
         validateOwnerPermission(party, memberId);
 
@@ -264,5 +285,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                     PartyAddr newAddr = PartyAddr.create(command.addr1(), command.addr2());
                     return partyAddrRepository.save(newAddr);
                 });
+    }
+
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
+        }
     }
 }
