@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.global.enums.ImgType;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -178,16 +179,7 @@ public class ContestController {
 
         Long memberId = 1L; // 임시값
 
-        List<String> imageUrls = imageService.uploadImages(images);
-
-        List<ImageUploadResponseDTO> response = imageUrls.stream()
-                .map(url -> new ImageUploadResponseDTO(
-                        url,
-                        extractKeyFromUrl(url)
-                ))
-                .collect(Collectors.toList());
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.success(CommonSuccessCode.OK, imageService.uploadImages(images, ImgType.CONTEST));
     }
 
     private String extractKeyFromUrl(String url) {

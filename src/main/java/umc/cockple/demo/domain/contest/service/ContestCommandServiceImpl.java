@@ -13,9 +13,11 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
+import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.global.enums.ImgType;
 
 import java.util.List;
 import java.util.UUID;
@@ -198,7 +200,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
             int baseOrder = contest.getContestImgs().size();
 
             // 실제 업로드된 URL들 (null 아닌 값만 들어옴)
-            List<String> imgUrls = imageService.uploadImages(contestImgs);
+            List<ImageUploadResponseDTO> imgUrls = imageService.uploadImages(contestImgs, ImgType.CONTEST);
 
             int totalImages = contest.getContestImgs().size() + contestImgs.size();
             if (totalImages > 3) {
@@ -207,8 +209,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
             }
 
             for (int i = 0; i < imgUrls.size(); i++) {
-                String imgUrl = imgUrls.get(i);
-                String imgKey = UUID.randomUUID().toString(); // 나중에 실제 키로 대체하면 됨
+                String imgUrl = imgUrls.get(i).imgUrl();
+                String imgKey = imageService.extractKeyFromUrl(imgUrl, ImgType.CONTEST); // 나중에 실제 키로 대체하면 됨
 
                 ContestImg img = ContestImg.of(contest, imgUrl, imgKey, baseOrder + i);
                 contest.addContestImg(img);
@@ -231,11 +233,11 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
     private void extractedImg(ContestRecordCreateDTO.Command contestRecordCommand, Contest contest) {
         if (contestRecordCommand.contestImgs() != null) {
-            List<String> imageUrls = imageService.uploadImages(contestRecordCommand.contestImgs());
+            List<ImageUploadResponseDTO> imageUrls = imageService.uploadImages(contestRecordCommand.contestImgs(), ImgType.CONTEST);
 
             for (int i = 0; i < imageUrls.size(); i++) {
-                String imgUrl = imageUrls.get(i);
-                String uniqueKey = UUID.randomUUID().toString(); // 나중에 파일명 대체 가능
+                String imgUrl = imageUrls.get(i).imgUrl();
+                String uniqueKey = imageService.extractKeyFromUrl(imgUrl, ImgType.CONTEST); // 나중에 파일명 대체 가능
 
                 ContestImg contestImg = ContestImg.of(contest, imgUrl, uniqueKey, i);
                 contest.addContestImg(contestImg);
