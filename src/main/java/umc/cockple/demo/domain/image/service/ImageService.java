@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.exception.S3ErrorCode;
 import umc.cockple.demo.domain.image.exception.S3Exception;
+import umc.cockple.demo.global.enums.ImgType;
 
 import java.io.IOException;
 import java.util.*;
@@ -27,14 +29,14 @@ public class ImageService {
 
 
     //이미지 업로드 임시 코드
-    public String uploadImage(MultipartFile image) {
+    public ImageUploadResponseDTO uploadImage(MultipartFile image, ImgType imgType) {
         if (image == null || image.isEmpty()) {
             return null;
         }
 
         log.info("[이미지 업로드 시작]");
 
-        String key = getFileKey(image); // 예: contest-images/uuid.jpg
+        String key = getFileKey(image, imgType); // 예: contest-images/uuid.jpg
 
         try {
             amazonS3.putObject(
@@ -55,7 +57,8 @@ public class ImageService {
         log.info("[이미지 업로드 완료]");
 
         // 업로드된 이미지의 전체 URL 반환
-        return amazonS3.getUrl(bucket, key).toString();
+        String imgUrl = amazonS3.getUrl(bucket, key).toString();
+        return new ImageUploadResponseDTO(imgUrl, extractKeyFromUrl(imgUrl, imgType));
     }
 
     /**
@@ -63,13 +66,13 @@ public class ImageService {
      * @param images MultipartFile 이미지 리스트
      * @return 업로드된 이미지 URL 리스트
      */
-    public List<String> uploadImages(List<MultipartFile> images) {
+    public List<ImageUploadResponseDTO> uploadImages(List<MultipartFile> images, ImgType imgType) {
         if (images == null || images.isEmpty()) {
             return List.of(); // 빈 리스트 반환
         }
 
         return images.stream()
-                .map(this::uploadImage)
+                .map(img -> uploadImage(img, imgType))
                 .collect(Collectors.toList());
     }
 
@@ -83,7 +86,7 @@ public class ImageService {
         }
     }
 
-    public String getFileKey(MultipartFile image) {
+    public String getFileKey(MultipartFile image, ImgType imgType) {
         if (image == null || image.isEmpty()) {
             return null;
         }
@@ -95,7 +98,27 @@ public class ImageService {
         // UUID 기반 유니크 키 생성
         String uuid = UUID.randomUUID().toString();
 
-        // 예: contest-images/uuid.jpg
-        return "contest-images/" + uuid + "." + extension;
+        if (imgType == ImgType.CONTEST) {
+            return "contest-images/" + uuid + "." + extension;
+        } else if (imgType == ImgType.PROFILE) {
+            return "profile-image/" + uuid + "." + extension;
+        } else {
+            return "party-images/" + uuid + "." + extension;
+        }
+
+
+    }
+
+    public String extractKeyFromUrl(String url, ImgType imgType) {
+        int startIndex;
+        if (imgType == ImgType.CONTEST) {
+            startIndex = url.indexOf("contest-images/");
+        }  else if (imgType == ImgType.PROFILE) {
+            startIndex = url.indexOf("profile-image/");
+        } else {
+            startIndex = url.indexOf("party-images/");
+        }
+
+        return url.substring(startIndex);
     }
 }
