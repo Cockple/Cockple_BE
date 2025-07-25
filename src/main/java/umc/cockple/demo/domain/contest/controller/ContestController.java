@@ -170,20 +170,4 @@ public class ContestController {
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
 
-    @PostMapping(value = "/contests/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "대회 이미지 업로드", description = "S3에 이미지를 업로드하고 이미지 URL과 imgKey를 반환합니다.")
-    @ApiResponse(responseCode = "200", description = "업로드 성공")
-    public BaseResponse<List<ImageUploadResponseDTO>> uploadContestImages(
-            //@AuthenticationPrincipal Long memberId
-            @RequestPart("images") List<MultipartFile> images){
-
-        Long memberId = 1L; // 임시값
-
-        return BaseResponse.success(CommonSuccessCode.OK, imageService.uploadImages(images, ImgType.CONTEST));
-    }
-
-    private String extractKeyFromUrl(String url) {
-        int startIndex = url.indexOf("contest-images/");
-        return url.substring(startIndex);
-    }
 }
