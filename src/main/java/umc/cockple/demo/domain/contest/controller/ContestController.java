@@ -169,5 +169,4 @@ public class ContestController {
 
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
-
 }
