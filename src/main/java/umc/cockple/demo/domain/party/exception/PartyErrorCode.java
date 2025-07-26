@@ -27,8 +27,10 @@ public enum PartyErrorCode implements BaseErrorCode {
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
     JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
     JOIN_REQUEST_PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY203", "해당 모임에서 존재하지 않는 가입신청입니다."),
+    NOT_MEMBER(HttpStatus.BAD_REQUEST, "PARTY204", "해당 모임의 멤버가 아닙니다."),
 
     INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "PARTY301", "해당 작업을 수행할 권한이 없습니다."),
+    INVALID_ACTION_FOR_OWNER(HttpStatus.FORBIDDEN, "PARTY302", "모임장은 수행할 수 없는 작업입니다."),
 
     ALREADY_MEMBER(HttpStatus.CONFLICT, "PARTY401", "이미 가입된 모임입니다."),
     JOIN_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY402", "처리 대기중인 가입 신청이 존재합니다."),
@@ -37,7 +39,6 @@ public enum PartyErrorCode implements BaseErrorCode {
     GENDER_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY405", "모임 유형에 맞지 않는 성별입니다."),
     AGE_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY406", "모임의 나이 조건에 맞지 않습니다."),
     PARTY_IS_DELETED(HttpStatus.BAD_REQUEST, "PARTY407", "이미 삭제된 모임입니다.");
-
 
     private final HttpStatus httpStatus;
     private final String code;

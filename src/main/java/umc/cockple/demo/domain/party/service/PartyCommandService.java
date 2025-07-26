@@ -13,4 +13,6 @@ public interface PartyCommandService {
     void actionJoinRequest(Long partyId, Long memberId, PartyJoinActionDTO.Request request, Long requestId);
 
     void deleteParty(Long partyId, Long memberId);
+
+    void leaveParty(Long partyId, Long memberId);
 }

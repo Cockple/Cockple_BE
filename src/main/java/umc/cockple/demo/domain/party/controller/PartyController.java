@@ -65,7 +65,7 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @GetMapping("/{partyId}")
+    @GetMapping("/parties/{partyId}")
     @Operation(summary = "모임 상세 정보 조회",
             description = "특정 모임의 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모임 상세 조회 성공")
@@ -98,7 +98,7 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
-    @PatchMapping("/{partyId}/status")
+    @PatchMapping("/parties/{partyId}/status")
     @Operation(summary ="모임 삭제(비활성화)",
             description = "모임장이 모임을 삭제(비활성화)합니다.")
     public BaseResponse<Void> deleteParty(
@@ -112,7 +112,7 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
-    @GetMapping("/{partyId}/members")
+    @GetMapping("/parties/{partyId}/members")
     @Operation(summary = "모임 멤버 조회",
                 description = "특정 모임의 멤버 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모임 멤버 조회 성공")
@@ -128,6 +128,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @DeleteMapping("/parties/{partyId}/members/my")
+    @Operation(summary = "모임 탈퇴",
+            description = "현재 로그인한 사용자가 소속된 모임에서 탈퇴합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 탈퇴 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 탈퇴 불가")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
+    public BaseResponse<Void> leaveParty(
+            @PathVariable Long partyId,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 8L; // 임시값
+
+        partyCommandService.leaveParty(partyId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
 
     @PostMapping("/parties/{partyId}/join-requests")
     @Operation(summary = "모임 가입 신청",
@@ -165,7 +181,7 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @PatchMapping("parties/{partyId}/join-requests/{requestId}")
+    @PatchMapping("/parties/{partyId}/join-requests/{requestId}")
     @Operation(summary = "모임 가입 신청 처리",
         description = "모임장이 가입 신청을 승인하거나 거절합니다.")
     @ApiResponse(responseCode = "200", description = "가입 신청 처리 성공")
