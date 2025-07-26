@@ -24,18 +24,12 @@ public class NotificationCommandService {
 
 
 
-    public void markAsReadNotification(Long memberId, Long notificationId) {
-        Member member = findByMemberId(memberId);
-
+    public void markAsReadNotification(Long notificationId) {
         Notification notification = findByNotificationId(notificationId);
 
         notification.read();
     }
 
-    private Member findByMemberId(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-    }
 
     private Notification findByNotificationId(Long notification) {
         return notificationRepository.findById(notification)

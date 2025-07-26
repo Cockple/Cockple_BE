@@ -42,7 +42,7 @@ public class NotificationController {
         // 추후 시큐리티를 통해 id 가져옴
         Long memberId = 1L;
 
-        notificationCommandService.markAsReadNotification(memberId, notificationId);
+        notificationCommandService.markAsReadNotification(notificationId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
 
