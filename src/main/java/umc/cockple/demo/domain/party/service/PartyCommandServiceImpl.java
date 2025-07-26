@@ -105,6 +105,27 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
 
+    @Override
+    public void removeMember(Long partyId, Long memberIdToRemove, Long currentMemberId) {
+        log.info("모임 멤버 삭제 시작 - partyId: {}, remover: {}, memberToRemove: {}", partyId, currentMemberId, memberIdToRemove);
+
+        //모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member remover = findMemberOrThrow(currentMemberId); //삭제를 요청한 사용자
+        Member memberToRemove = findMemberOrThrow(memberIdToRemove); // 삭제될 사용자
+        MemberParty memberPartyToRemove = findMemberPartyOrThrow(party, memberToRemove);
+
+        //모임 활성화 검증
+        validatePartyIsActive(party);
+        //모임 멤버 삭제 검증
+        validateRemovalPermission(party, remover, memberPartyToRemove);
+
+        //모임 멤버 삭제 로직 수행
+        memberPartyRepository.delete(memberPartyToRemove);
+
+        log.info("모임 멤버 삭제 완료 - partyId: {}, removed: {}", partyId, memberIdToRemove);
+    }
+
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
@@ -244,6 +265,35 @@ public class PartyCommandServiceImpl implements PartyCommandService{
             throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
         }
 
+    }
+
+    //모임 멤버 삭제 검증
+    private void validateRemovalPermission(Party party, Member remover, MemberParty memberPartyToRemove) {
+        //자기 자신을 삭제하려는 경우
+        if (remover.getId().equals(memberPartyToRemove.getMember().getId())) {
+            //부모임장인 경우에만 가능
+            MemberParty removerMemberParty = findMemberPartyOrThrow(party, remover);
+            if (removerMemberParty.getRole() == Role.party_SUBMANAGER) {
+                return;
+            } else {
+                throw new PartyException(PartyErrorCode.CANNOT_REMOVE_SELF);
+            }
+        }
+
+        //다른 사람을 삭제하려는 경우
+        MemberParty removerMemberParty = findMemberPartyOrThrow(party, remover);
+        Role removerRole = removerMemberParty.getRole();
+        Role targetRole = memberPartyToRemove.getRole();
+        //모임장은 모두 삭제 가능
+        if (removerRole == Role.party_MANAGER) {
+            return;
+        }
+        //부모임장은 일반 멤버만 삭제 가능 (모임장을 삭제하려할 경우 권한 없음)
+        if (removerRole == Role.party_SUBMANAGER && targetRole == Role.party_MEMBER) {
+            return;
+        }
+        //일반 멤버는 권한 없음
+        throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
     }
 
     //모임 가입신청 검증
