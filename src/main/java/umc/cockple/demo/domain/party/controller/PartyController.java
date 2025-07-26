@@ -128,6 +128,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @DeleteMapping("/parties/{partyId}/members/my")
+    @Operation(summary = "모임 탈퇴",
+            description = "현재 로그인한 사용자가 소속된 모임에서 탈퇴합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 탈퇴 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 탈퇴 불가")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
+    public BaseResponse<Void> leaveParty(
+            @PathVariable Long partyId,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 8L; // 임시값
+
+        partyCommandService.leaveParty(partyId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
 
     @PostMapping("/parties/{partyId}/join-requests")
     @Operation(summary = "모임 가입 신청",
