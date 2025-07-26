@@ -4,11 +4,42 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.domain.Notification;
+import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
+import umc.cockple.demo.domain.notification.exception.NotificationException;
+import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationCommandService {
+
+    private final NotificationRepository notificationRepository;
+    private final MemberRepository memberRepository;
+
+
+
+    public void markAsReadNotification(Long memberId, Long notificationId) {
+        Member member = findByMemberId(memberId);
+
+        Notification notification = findByNotificationId(notificationId);
+
+        notification.read();
+    }
+
+    private Member findByMemberId(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Notification findByNotificationId(Long notification) {
+        return notificationRepository.findById(notification)
+                .orElseThrow(() -> new NotificationException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
+    }
 
 }
