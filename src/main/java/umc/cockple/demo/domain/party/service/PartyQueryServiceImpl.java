@@ -50,7 +50,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
-        log.info("내 모임 간략화 조회 시작 - partyId: {}", memberId);
+        log.info("내 모임 간략화 조회 시작 - memberId: {}", memberId);
         //사용자 조회
         Member member = findMemberOrThrow(memberId);
 
@@ -63,6 +63,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
     @Override
     public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable) {
+        log.info("내 모임 조회 시작 - memberId: {}", memberId);
+
         //정렬 기준 문자 검증, Pageable 객체 생성
         Pageable sortedPageable = createSortedPageable(pageable, sort);
 
@@ -73,12 +75,27 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
 
+        log.info("내 모임 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
         //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
             return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
         });
+    }
+
+    @Override
+    public PartyMemberDTO.Response getPartyMembers(Long partyId, Long currentMemberId) {
+        log.info("모임 멤버 조회 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+        //모임 멤버 목록 조회
+        List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+
+        log.info("모임 멤버 목록 조회 완료 - partyId: {}", partyId);
+        return partyConverter.toPartyMemberDTO(memberParties, currentMemberId);
     }
 
     @Override
