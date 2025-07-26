@@ -108,4 +108,31 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             ORDER BY e.date ASC, e.startTime ASC
             """)
     List<Exercise> findRecentExercisesByPartyIds(@Param("partyIds") List<Long> partyIds, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.party p
+            JOIN FETCH e.exerciseAddr addr
+            LEFT JOIN FETCH p.partyImg
+            WHERE p.id IN :partyIds 
+            AND e.date BETWEEN :startDate AND :endDate
+            """)
+    List<Exercise> findByPartyIdsAndDateRange(
+            @Param("partyIds") List<Long> partyIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    @Query(value = """
+            SELECT 
+                e.id as exerciseId,
+                (SELECT COUNT(*) FROM member_exercise me WHERE me.exercise_id = e.id) + 
+                (SELECT COUNT(*) FROM guest g WHERE g.exercise_id = e.id) as totalCount
+            FROM exercise e
+            WHERE e.id IN :exerciseIds
+            AND e.date BETWEEN :startDate AND :endDate
+            """, nativeQuery = true)
+    List<Object[]> findExerciseParticipantCountsByExerciseIds(
+            @Param("exerciseIds") List<Long> exerciseIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

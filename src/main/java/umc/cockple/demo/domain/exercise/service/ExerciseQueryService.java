@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.MemberStatus;
+import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
@@ -70,7 +71,7 @@ public class ExerciseQueryService {
         ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
         ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-        return exerciseConverter.toDetailResponseDTO(isManager, exerciseInfo, participantGroup, waitingGroup);
+        return exerciseConverter.toDetailResponse(isManager, exerciseInfo, participantGroup, waitingGroup);
     }
 
     public ExerciseMyGuestListDTO.Response getMyInvitedGuests(Long exerciseId, Long memberId) {
@@ -118,7 +119,7 @@ public class ExerciseQueryService {
             log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
                     partyId, dateRange.start(), dateRange.end());
 
-            return exerciseConverter.toEmptyPartyExerciseCalendar(
+            return exerciseConverter.toEmptyPartyCalendarResponse(
                     dateRange.start(), dateRange.end(), isMember, party);
         }
 
@@ -130,7 +131,7 @@ public class ExerciseQueryService {
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return exerciseConverter.toCalendarResponse(
+        return exerciseConverter.toPartyCalendarResponse(
                 exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus);
     }
 
@@ -154,7 +155,7 @@ public class ExerciseQueryService {
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toCalendarResponse(exercises, dateRange.start(), dateRange.end());
+        return exerciseConverter.toMyCalendarResponse(exercises, dateRange.start(), dateRange.end());
     }
 
     public MyPartyExerciseDTO.Response getMyPartyExercise(Long memberId) {
@@ -165,9 +166,9 @@ public class ExerciseQueryService {
 
         List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
 
-        if(myPartyIds.isEmpty()){
+        if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
-            return exerciseConverter.toEmptyExerciseResponse();
+            return exerciseConverter.toEmptyMyPartyExerciseResponse();
         }
 
         Pageable pageable = PageRequest.of(0, 6);
@@ -176,6 +177,40 @@ public class ExerciseQueryService {
         log.info("내 모임 운동 조회 종료 - 조회된 운동 수 = {}", recentExercises.size());
 
         return exerciseConverter.toMyPartyExerciseDTO(recentExercises);
+    }
+
+    public MyPartyExerciseCalendarDTO.Response getMyPartyExerciseCalendar(
+            Long memberId, MyPartyExerciseOrderType orderType, LocalDate startDate, LocalDate endDate) {
+
+        log.info("내 모임 운동 캘린더 조회 시작 - memberId = {}, orderType = {}, 기간 = {}~{}", memberId, orderType, startDate, endDate);
+
+        Member member = findMemberOrThrow(memberId);
+        List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
+
+        DateRange dateRange = calculateDateRange(startDate, endDate);
+
+        if (myPartyIds.isEmpty()) {
+            log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
+            return exerciseConverter.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
+        }
+
+        List<Exercise> exercises = findByPartyIdsAndDateRange(myPartyIds, dateRange.start(), dateRange.end());
+
+        if (exercises.isEmpty()) {
+            log.info("해당 기간에 내 모임의 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
+                    memberId, dateRange.start(), dateRange.end());
+            return exerciseConverter.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
+        }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        Map<Long, Integer> participantCounts = getParticipantCountsMap(exerciseIds, dateRange.start(), dateRange.end());
+
+        log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toMyPartyCalendarResponse(
+                exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
     // ========== 검증 메서드들 ==========
@@ -364,9 +399,9 @@ public class ExerciseQueryService {
         return memberExercises.stream()
                 .map(me -> {
                     if (partyMemberRoles.containsKey(me.getMember().getId())) {
-                        return exerciseConverter.toParticipantInfo(me, partyMemberRoles);
+                        return exerciseConverter.toParticipantInfoFromMember(me, partyMemberRoles);
                     } else {
-                        return exerciseConverter.toExeternalParticipantInfo(me);
+                        return exerciseConverter.toParticipantInfoFromExternalMember(me);
                     }
                 })
                 .toList();
@@ -386,7 +421,7 @@ public class ExerciseQueryService {
         return guests.stream()
                 .map(guest -> {
                     String inviterName = inviterNames.getOrDefault(guest.getInviterId(), "알 수 없음");
-                    return exerciseConverter.toParticipantInfo(guest, inviterName);
+                    return exerciseConverter.toParticipantInfoFromGuest(guest, inviterName);
                 })
                 .toList();
     }
@@ -463,17 +498,20 @@ public class ExerciseQueryService {
     }
 
     private List<Exercise> findExercisesByPartyIdAndDateRange(Long partyId, LocalDate startDate, LocalDate endDate) {
-        return exerciseRepository.findByPartyIdAndDateRange(
-                partyId, startDate, endDate);
+        return exerciseRepository.findByPartyIdAndDateRange(partyId, startDate, endDate);
     }
 
     private List<Exercise> findExercisesByMemberIdAndDateRange(Long memberId, LocalDate startDate, LocalDate endDate) {
-        return exerciseRepository.findByMemberIdAndDateRange(
-                memberId, startDate, endDate);
+        return exerciseRepository.findByMemberIdAndDateRange(memberId, startDate, endDate);
     }
 
     private List<Exercise> findRecentExercisesByPartyIds(List<Long> myPartyIds, Pageable pageable) {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
+    }
+
+    private List<Exercise> findByPartyIdsAndDateRange(
+            List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
+        return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
 
     private Member findMemberOrThrow(Long memberId) {
@@ -508,9 +546,20 @@ public class ExerciseQueryService {
 
         return countResults.stream()
                 .collect(Collectors.toMap(
-                row -> ((Number) row[0]).longValue(),
-                row -> ((Number) row[1]).intValue()
-        ));
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
+    private Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds, LocalDate start, LocalDate end) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                exerciseIds, start, end);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
     }
 
     private Map<Long, Boolean> getExerciseBookmarkStatus(Long memberId, List<Long> exerciseIds) {
@@ -534,5 +583,6 @@ public class ExerciseQueryService {
     ) {
     }
 
-    private record DateRange(LocalDate start, LocalDate end) {}
+    private record DateRange(LocalDate start, LocalDate end) {
+    }
 }
