@@ -79,6 +79,28 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //Party 엔티티의 상태를 INACTIVE로 변경
         party.delete();
+
+        log.info("모임 삭제 완료 - partyId: {}", partyId);
+    }
+
+    @Override
+    public void leaveParty(Long partyId, Long memberId) {
+        log.info("모임 탈퇴 시작 - partyId: {}, memberId: {}", partyId, memberId);
+        //모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
+
+        //모임 활성화 확인
+        validatePartyIsActive(party);
+        //모임장인 경우, 탈퇴가 불가능하도록 검증
+        validateIsNotOwner(party, memberId);
+        //해당 모임의 멤버인지 검증
+        MemberParty memberParty = findMemberPartyOrThrow(party, member);
+
+        //모임 탈퇴 로직 수행
+        memberPartyRepository.delete(memberParty);
+
+        log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
 
 
@@ -170,6 +192,19 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         if(!party.getOwnerId().equals(memberId)){
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
+    }
+
+    //모임장 권한이 없음을 확인
+    private void validateIsNotOwner(Party party, Long memberId) {
+        if (party.getOwnerId().equals(memberId)) {
+            throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_OWNER);
+        }
+    }
+
+    //해당 모임의 멤버인지 확인
+    private MemberParty findMemberPartyOrThrow(Party party, Member member) {
+        return memberPartyRepository.findByPartyAndMember(party, member)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
     }
 
     private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
