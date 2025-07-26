@@ -68,13 +68,14 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
     @Override
     public void deleteParty(Long partyId, Long memberId) {
+        log.info("모임 삭제 시작 - partyId: {}", partyId);
+
         //모임 조회
         Party party = findPartyOrThrow(partyId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
-
-        //모임장 권한 확인
+        //모임장 권한 검증
         validateOwnerPermission(party, memberId);
 
         //Party 엔티티의 상태를 INACTIVE로 변경
@@ -86,15 +87,16 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     @Override
     public void leaveParty(Long partyId, Long memberId) {
         log.info("모임 탈퇴 시작 - partyId: {}, memberId: {}", partyId, memberId);
+
         //모임, 사용자 조회
         Party party = findPartyOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
         //모임장인 경우, 탈퇴가 불가능하도록 검증
         validateIsNotOwner(party, memberId);
-        //해당 모임의 멤버인지 검증
+        //해당 모임의 멤버인지 검증 및 조회
         MemberParty memberParty = findMemberPartyOrThrow(party, member);
 
         //모임 탈퇴 로직 수행
@@ -112,15 +114,13 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Member member = findMemberOrThrow(memberId);
         Party party = findPartyOrThrow(partyId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
-
         //가입신청 가능한지 검증
         validateJoinRequest(member, party);
 
         //가입신청 엔티티 생성
         PartyJoinRequest newPartyJoinRequest = PartyJoinRequest.create(member, party);
-
         //DB에 PartyJoinRequest 저장
         PartyJoinRequest savedPartyJoinRequest = partyJoinRequestRepository.save(newPartyJoinRequest);
 
@@ -136,14 +136,12 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //모임, 가입신청 조회
         Party party = findPartyOrThrow(partyId);
-        PartyJoinRequest partyJoinRequest = findJoinRequestOrThorow(requestId);
+        PartyJoinRequest partyJoinRequest = findJoinRequestOrThrow(requestId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
-        
-        //모임장 권한 확인
+        //모임장 권한 검증
         validateOwnerPermission(party, memberId);
-
         //가입신청 처리 가능한지 검증
         validateJoinRequestAction(party, partyJoinRequest);
 
@@ -157,20 +155,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("가입신청 처리 완료 - requestId: {}", requestId);
     }
 
-    private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
-        partyJoinRequest.updateStatus(RequestStatus.REJECTED);
-    }
-
-    private void approveJoinRequest(PartyJoinRequest partyJoinRequest) {
-        partyJoinRequest.updateStatus(RequestStatus.APPROVED);
-        Party party = partyJoinRequest.getParty();
-        Member member = partyJoinRequest.getMember();
-        MemberParty newMemberParty= MemberParty.create(party, member);
-        party.addMember(newMemberParty);
-    }
-
+    // ========== 조회 메서드 ==========
     //가입신청 조회
-    private PartyJoinRequest findJoinRequestOrThorow(Long requestId) {
+    private PartyJoinRequest findJoinRequestOrThrow(Long requestId) {
         return partyJoinRequestRepository.findById(requestId)
                 .orElseThrow(() -> new PartyException(PartyErrorCode.JoinRequest_NOT_FOUND));
     }
@@ -187,26 +174,37 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
     }
 
-    //모임장 권한 확인
+    //모임 멤버 조회
+    private MemberParty findMemberPartyOrThrow(Party party, Member member) {
+        return memberPartyRepository.findByPartyAndMember(party, member)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
+    }
+
+    //주소가 이미 존재하면 조회, 없으면 새로 생성하여 저장
+    private PartyAddr findOrCreatePartyAddr(PartyCreateDTO.AddrCommand command) {
+        return partyAddrRepository.findByAddr1AndAddr2(command.addr1(), command.addr2())
+                .orElseGet(() -> {
+                    PartyAddr newAddr = PartyAddr.create(command.addr1(), command.addr2());
+                    return partyAddrRepository.save(newAddr);
+                });
+    }
+
+    // ========== 검증 메서드 ==========
+    //모임장 권한 검증
     private void validateOwnerPermission(Party party, Long memberId) {
         if(!party.getOwnerId().equals(memberId)){
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
     }
 
-    //모임장 권한이 없음을 확인
+    //모임장 권한이 없음을 검증
     private void validateIsNotOwner(Party party, Long memberId) {
         if (party.getOwnerId().equals(memberId)) {
             throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_OWNER);
         }
     }
 
-    //해당 모임의 멤버인지 확인
-    private MemberParty findMemberPartyOrThrow(Party party, Member member) {
-        return memberPartyRepository.findByPartyAndMember(party, member)
-                .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
-    }
-
+    //모임 생성 검증
     private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
         // 혼복인 경우, 남녀 급수 정보가 모두 있는지 검증
         ParticipationType partyType = command.partyType();
@@ -248,22 +246,23 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
     }
 
+    //모임 가입신청 검증
     private void validateJoinRequest(Member member, Party party) {
-        //이미 가입한 멤버인지 확인
+        //이미 가입한 멤버인지 검증
         if (memberPartyRepository.existsByPartyAndMember(party, member)) {
             throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
         }
-        //이미 보낸 신청이 있는지 확인
+        //이미 보낸 신청이 있는지 검증
         if (partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING)) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
         }
-        //해당 모임의 모임 유형에 맞는 성별인지 확인
+        //해당 모임의 모임 유형에 맞는 성별인지 검증
         validateGenderRequirement(member, party);
 
-        //해당 모임의 급수 조건에 적합한지 확인
+        //해당 모임의 급수 조건에 적합한지 검증
         validateLevelRequirement(member, party);
 
-        //해당 모임의 나이 조건에 적합한지 확인
+        //해당 모임의 나이 조건에 적합한지 검증
         validateAgeRequirement(member, party);
     }
 
@@ -302,29 +301,35 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
     }
 
+    //모임 가입신청 처리 검증
     private void validateJoinRequestAction(Party party, PartyJoinRequest joinRequest) {
-        //해당 모임의 가입신청인지 확인
+        //해당 모임의 가입신청인지 검증
         if(!joinRequest.getParty().getId().equals(party.getId())){
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_PARTY_NOT_FOUND);
         }
-        //이미 처리된 가입신청인지 확인
+        //이미 처리된 가입신청인지 검증
         if(joinRequest.getStatus()!=RequestStatus.PENDING){
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
         }
     }
 
-    //주소가 이미 존재하면 조회, 없으면 새로 생성하여 저장
-    private PartyAddr findOrCreatePartyAddr(PartyCreateDTO.AddrCommand command) {
-        return partyAddrRepository.findByAddr1AndAddr2(command.addr1(), command.addr2())
-                .orElseGet(() -> {
-                    PartyAddr newAddr = PartyAddr.create(command.addr1(), command.addr2());
-                    return partyAddrRepository.save(newAddr);
-                });
-    }
-
+    //모임 활성화 여부 검증
     private void validatePartyIsActive(Party party) {
         if (party.getStatus() == PartyStatus.INACTIVE) {
             throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
+    }
+
+    // ========== 비즈니스 로직 메서드 ==========
+    private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
+        partyJoinRequest.updateStatus(RequestStatus.REJECTED);
+    }
+
+    private void approveJoinRequest(PartyJoinRequest partyJoinRequest) {
+        partyJoinRequest.updateStatus(RequestStatus.APPROVED);
+        Party party = partyJoinRequest.getParty();
+        Member member = partyJoinRequest.getMember();
+        MemberParty newMemberParty= MemberParty.create(party, member);
+        party.addMember(newMemberParty);
     }
 }

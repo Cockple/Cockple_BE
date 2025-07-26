@@ -53,7 +53,6 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         log.info("내 모임 간략화 조회 시작 - memberId: {}", memberId);
         //사용자 조회
         Member member = findMemberOrThrow(memberId);
-
         //memberParty 조회 로직 수행
         Slice<MemberParty> memberPartySlice = memberPartyRepository.findByMember(member, pageable);
 
@@ -71,11 +70,11 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //모임 정보 조회
         Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, sortedPageable);
         List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
-
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
 
         log.info("내 모임 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
+
         //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
@@ -89,7 +88,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         log.info("모임 멤버 조회 시작 - partyId: {}", partyId);
         //모임 조회
         Party party = findPartyOrThrow(partyId);
-        //모임 활성화 확인
+
+        //모임 활성화 검증
         validatePartyIsActive(party);
         //모임 멤버 목록 조회
         List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
@@ -106,7 +106,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         Party party = findPartyOrThrow(partyId);
         Member member = findMemberOrThrow(memberId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
 
         //memberParty 조회 로직 수행
@@ -125,10 +125,9 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //모임 조회
         Party party = findPartyOrThrow(partyId);
 
-        //모임 활성화 확인
+        //모임 활성화 검증
         validatePartyIsActive(party);
-
-        //모임장 권한이 있는지 확인
+        //모임장 권한이 있는지 검증
         validateOwnerPermission(party, memberId);
         //status를 ENUM으로 변환 및 검증
         RequestStatus requestStatus = parseRequestStatus(status);
@@ -141,20 +140,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return requestSlice.map(partyConverter::toPartyJoinResponseDTO);
     }
 
-    //모임장 권한 확인
-    private void validateOwnerPermission(Party party, Long memberId) {
-        if(!party.getOwnerId().equals(memberId)){
-            throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
-        }
-    }
-
-    //모임 활성화 확인
-    private void validatePartyIsActive(Party party) {
-        if (party.getStatus() == PartyStatus.INACTIVE) {
-            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
-        }
-    }
-
+    // ========== 조회 메서드 ==========
     //사용자 조회
     private Party findPartyOrThrow(Long partyId) {
         return partyRepository.findById(partyId)
@@ -167,26 +153,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
-    private RequestStatus parseRequestStatus(String status) {
-        try {
-            return RequestStatus.valueOf(status.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
-        }
-    }
-
-    //정렬 로직 처리
-    private Pageable createSortedPageable(Pageable pageable, String sort) {
-        PartyOrderType sortType = PartyOrderType.fromKorean(sort);
-
-        Sort sorting = switch (sortType) {
-            case OLDEST -> Sort.by("createdAt").ascending();
-            case EXERCISE_COUNT -> Sort.by("exerciseCount").descending();
-            default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
-        };
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
-    }
-
+    //운동 정보 조회
     private ExerciseInfo getExerciseInfo(List<Long> partyIds) {
         //운동 개수 정보 조회
         Map<Long, Integer> exerciseCountMap = exerciseRepository.findTotalExerciseCountsByPartyIds(partyIds)
@@ -205,6 +172,45 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return new ExerciseInfo(exerciseCountMap, nextExerciseInfoMap);
     }
 
+    // ========== 검증 메서드 ==========
+    //모임장 권한 검증
+    private void validateOwnerPermission(Party party, Long memberId) {
+        if(!party.getOwnerId().equals(memberId)){
+            throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+    }
+
+    //모임 활성화 검증
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
+        }
+    }
+
+    // ========== 비즈니스 로직 메서드 ==========
+    //정렬 로직 처리
+    private Pageable createSortedPageable(Pageable pageable, String sort) {
+        PartyOrderType sortType = PartyOrderType.fromKorean(sort);
+
+        Sort sorting = switch (sortType) {
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case EXERCISE_COUNT -> Sort.by("exerciseCount").descending();
+            default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
+        };
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
+    }
+
+    // ========== 데이터 변환 메서드 ==========
+    //가입신청 상태 변환
+    private RequestStatus parseRequestStatus(String status) {
+        try {
+            return RequestStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
+        }
+    }
+
+    //운동 정보 변환
     private String formatNextExerciseInfo(Exercise exercise) {
         //날짜 포맷팅 ex) 05.01
         String datePart = exercise.getDate().format(DateTimeFormatter.ofPattern("MM.dd"));
@@ -215,7 +221,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return datePart + " " + timePart + " 운동";
     }
 
-    //LocalTime을 오전/오후/저녁으로 변환하는 헬퍼 메서드
+    //LocalTime을 오전/오후로 변환
     private String convertToTimeOfDay(LocalTime time) {
         int hour = time.getHour();
         if (hour >= 0 && hour < 12) {
@@ -225,6 +231,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         }
     }
 
+    // ========== record ==========
     //임시로 사용할 데이터 묶음을 record로 구현
     private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {}
 }
