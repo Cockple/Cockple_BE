@@ -5,7 +5,7 @@ import java.time.LocalTime;
 
 public class ExerciseRecommendationDTO {
 
-    public record Resposne(
+    public record Response(
             Long exerciseId,
             Long partyId,
             String partyName,

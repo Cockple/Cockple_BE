@@ -329,14 +329,14 @@ public class ExerciseController {
                     정렬 기준은 위치, 날짜, 시간 순입니다.
                     """)
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
-    public BaseResponse<List<ExerciseRecommendationDTO.Resposne>> getRecommendedExercises(
+    public BaseResponse<List<ExerciseRecommendationDTO.Response>> getRecommendedExercises(
             Authentication authentication
     ){
 
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        List<ExerciseRecommendationDTO.Resposne> response = exerciseQueryService.getRecommendedExercises(memberId);
+        List<ExerciseRecommendationDTO.Response> response = exerciseQueryService.getRecommendedExercises(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
