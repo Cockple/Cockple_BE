@@ -6,7 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PartyRepository extends JpaRepository<Party, Long> {
@@ -24,4 +27,21 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
             WHERE p.id = :partyId
             """)
     Optional<Party> findByIdWithLevels(@Param("partyId") Long partyId);
+
+    @Query("""
+        SELECT p FROM Party p
+        WHERE p.partyAddr.addr1 = :addr1
+        AND p.minAge <= :birthYear AND p.maxAge >= :birthYear
+        AND EXISTS (
+            SELECT pl FROM p.levels pl
+            WHERE pl.gender = :gender AND pl.level = :level
+        )
+        ORDER BY p.createdAt DESC
+    """)
+    List<Party> findRecommendedParties(
+            @Param("addr1") String addr1,
+            @Param("birthYear") int birthYear,
+            @Param("gender") Gender gender,
+            @Param("level") Level level
+    );
 }
