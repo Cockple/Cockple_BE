@@ -19,6 +19,8 @@ public enum NotificationErrorCode implements BaseErrorCode {
 
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION201", "해당 알림이 존재하지 않습니다."),
 
+
+    NOTIFICATION_NOT_OWNED(HttpStatus.UNAUTHORIZED, "NOTIFICATION301", "해당 알림에 대한 권한이 없습니다."),
     ;
 
 

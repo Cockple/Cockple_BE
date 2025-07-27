@@ -9,9 +9,13 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
+import umc.cockple.demo.domain.notification.dto.MarkAsReadDTO;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.global.enums.NotificationType;
+
+import static umc.cockple.demo.domain.notification.dto.MarkAsReadDTO.*;
 
 @Service
 @Transactional
@@ -24,10 +28,18 @@ public class NotificationCommandService {
 
 
 
-    public void markAsReadNotification(Long notificationId) {
+    public Response markAsReadNotification(Long memberId, Long notificationId, NotificationType type) {
         Notification notification = findByNotificationId(notificationId);
 
+        if (!notification.getMember().getId().equals(memberId)) {
+            throw new NotificationException(NotificationErrorCode.NOTIFICATION_NOT_OWNED);
+        }
+
+        notification.changeType(type);
+
         notification.read();
+
+        return new Response(notification.getType());
     }
 
 
