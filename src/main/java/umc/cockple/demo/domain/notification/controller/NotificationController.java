@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.dto.MarkAsReadDTO;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
+import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.service.NotificationQueryService;
 import umc.cockple.demo.global.enums.NotificationType;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -38,7 +39,20 @@ public class NotificationController {
         return BaseResponse.success(CommonSuccessCode.OK, notificationQueryService.getAllNotifications(memberId));
     }
 
+  
+  
+    @GetMapping("/notifications/count")
+    @Operation(summary = "안 읽은 알림 존재여부 조회",
+            description = "사용자가 읽지 않은 알림이 있는지 확인합니다. 존재 시 알림 아이콘에 빨간 점이 표시됩니다 ")
+    public BaseResponse<ExistNewNotificationResponseDTO> checkUnReadNotification() {
+        // 추후 시큐리티를 통해 id 가져옴
+        Long memberId = 1L;
 
+        return BaseResponse.success(CommonSuccessCode.OK,notificationQueryService.checkUnreadNotification(memberId));
+    }
+  
+
+  
     @PatchMapping("/notifications/{notificationId}")
     @Operation(summary = "내 특정 알림 조회 및 읽음 처리",
             description = "특정 알림을 조회하고 읽음 처리를 진행합니다. ")
@@ -49,6 +63,5 @@ public class NotificationController {
 
         return BaseResponse.success(CommonSuccessCode.OK, notificationCommandService.markAsReadNotification(memberId, notificationId, type.type()));
     }
-
 
 }
