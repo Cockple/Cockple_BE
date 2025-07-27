@@ -2,37 +2,34 @@ package umc.cockple.demo.domain.party.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.domain.MemberKeyword;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
+import umc.cockple.demo.domain.party.domain.PartyKeyword;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.PartyOrderType;
-import umc.cockple.demo.global.enums.PartyStatus;
-import umc.cockple.demo.global.enums.RequestStatus;
+import umc.cockple.demo.global.enums.*;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +43,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final PartyConverter partyConverter;
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final MemberAddrRepository memberAddrRepository;
     private final ExerciseRepository exerciseRepository;
 
     @Override
@@ -76,6 +74,31 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         log.info("내 모임 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
 
         //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
+        return partySlice.map(party -> {
+            Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
+            String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
+        });
+    }
+
+    @Override
+    public Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Pageable pageable) {
+        log.info("모임 추천 조회 시작 - memberId: {}", memberId);
+
+        //추천의 기준이 되는 정보 조회
+        RecommendedPartiesInfo partiesInfo = getRecommendedPartiesInfo(memberId);
+        //지역, 나이대, 급수로 필터링 된 모임 목록 조회
+        List<Party> filteredParties = findFilteredParties(partiesInfo);
+
+        //키워드 일치 개수로 정렬
+        List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
+        //수동으로 페이징
+        Slice<Party> partySlice = paginate(sortedParties, pageable);
+        //운동 정보 조회
+        ExerciseInfo exerciseInfo = getExerciseInfo(partySlice.getContent().stream().map(Party::getId).toList());
+
+        log.info("모임 추천 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
+
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
@@ -147,6 +170,12 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
     }
 
+    //사용자 주소 조회
+    private MemberAddr findMainAddressOrThrow(Member member) {
+        return memberAddrRepository.findByMemberAndIsMain(member, true)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
+    }
+
     //멤버 조회
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
@@ -170,6 +199,34 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 ));
 
         return new ExerciseInfo(exerciseCountMap, nextExerciseInfoMap);
+    }
+
+    //모임 추천 정보 조회
+    private RecommendedPartiesInfo getRecommendedPartiesInfo(Long memberId) {
+        //사용자, 사용자 주소, 사용자 키워드 조회
+        Member member = findMemberOrThrow(memberId);
+        MemberAddr memberAddr = findMainAddressOrThrow(member);
+        Set<Keyword> memberKeywords = member.getKeywords().stream()
+                .map(MemberKeyword::getKeyword)
+                .collect(Collectors.toSet());
+
+        return new RecommendedPartiesInfo(
+                memberAddr.getAddr1(),
+                member.getBirth().getYear(),
+                member.getGender(),
+                member.getLevel(),
+                memberKeywords
+        );
+    }
+
+    //필터링된 모임 추천 목록 조회
+    private List<Party> findFilteredParties(RecommendedPartiesInfo partiesInfo) {
+        return partyRepository.findRecommendedParties(
+                partiesInfo.addr1(),
+                partiesInfo.birthYear(),
+                partiesInfo.gender(),
+                partiesInfo.level()
+        );
     }
 
     // ========== 검증 메서드 ==========
@@ -198,6 +255,31 @@ public class PartyQueryServiceImpl implements PartyQueryService{
             default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
         };
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
+    }
+
+    //키워드 일치 개수로 정렬
+    private List<Party> sortPartiesByKeywordMatch(List<Party> parties, Set<Keyword> memberKeywords) {
+        return parties.stream()
+                .sorted(Comparator.comparingInt((Party p) -> calculateKeywordMatchScore(p, memberKeywords)).reversed())
+                .toList();
+    }
+
+    //키워드 일치 개수 계산
+    private int calculateKeywordMatchScore(Party party, Set<Keyword> memberKeywords) {
+        Set<Keyword> partyKeywords = party.getKeywords().stream()
+                .map(PartyKeyword::getKeyword)
+                .collect(Collectors.toSet());
+        partyKeywords.retainAll(memberKeywords); //교집합 계산
+        return partyKeywords.size();
+    }
+
+    //페이징 처리
+    private Slice<Party> paginate(List<Party> sortedParties, Pageable pageable) {
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sortedParties.size());
+        List<Party> content = (start >= sortedParties.size()) ? Collections.emptyList() : sortedParties.subList(start, end);
+        boolean hasNext = end < sortedParties.size();
+        return new SliceImpl<>(content, pageable, hasNext);
     }
 
     // ========== 데이터 변환 메서드 ==========
@@ -233,5 +315,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
     // ========== record ==========
     //임시로 사용할 데이터 묶음을 record로 구현
-    private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {}
+    private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {} //운동 정보
+    private record RecommendedPartiesInfo(String addr1, int birthYear, Gender gender, Level level, Set<Keyword> keywords) {} //추천 정보
+
 }
