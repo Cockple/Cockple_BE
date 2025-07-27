@@ -145,6 +145,24 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
+    @DeleteMapping("/parties/{partyId}/members/{memberId}")
+    @Operation(summary = "모임 멤버 삭제",
+            description = "모임장 또는 부모임장이 특정 멤버를 모임에서 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 멤버 삭제 성공")
+    @ApiResponse(responseCode = "403", description = "모임 멤버 삭제 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 멤버")
+    public BaseResponse<Void> removeMember(
+            @PathVariable Long partyId,
+            @PathVariable("memberId") Long memberIdToRemove,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long currentMemberId = 1L; //현재 사용자 ID
+
+        partyCommandService.removeMember(partyId, memberIdToRemove, currentMemberId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
     @PostMapping("/parties/{partyId}/join-requests")
     @Operation(summary = "모임 가입 신청",
             description = "사용자가 특정 모임에 가입을 신청합니다")

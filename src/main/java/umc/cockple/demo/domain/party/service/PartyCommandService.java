@@ -15,4 +15,6 @@ public interface PartyCommandService {
     void deleteParty(Long partyId, Long memberId);
 
     void leaveParty(Long partyId, Long memberId);
+
+    void removeMember(Long partyId, Long memberIdToRemove, Long currentMemberId);
 }
