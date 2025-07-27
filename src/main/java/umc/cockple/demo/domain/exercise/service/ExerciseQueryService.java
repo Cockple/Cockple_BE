@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -27,11 +28,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.MemberStatus;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyStatus;
-import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.enums.*;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -211,6 +208,19 @@ public class ExerciseQueryService {
 
         return exerciseConverter.toMyPartyCalendarResponse(
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
+    }
+
+    public List<ExerciseRecommendationDTO.Response> getRecommendedExercises(Long memberId) {
+
+        log.info("운동 추천 조회 시작 - memberId: {}", memberId);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Exercise> exercises = findRecommendedExercises(
+                memberId, member.getGender(), member.getLevel(), member.getAge(), pageable);
+
     }
 
     // ========== 검증 메서드들 ==========
@@ -490,6 +500,13 @@ public class ExerciseQueryService {
         return exercises.stream().map(Exercise::getId).toList();
     }
 
+    private MemberAddr findMainAddrOrThrow(Member member) {
+        member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_ADDRESS_NOT_FOUND));
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -509,6 +526,10 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
+    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age, Pageable pageable) {
+        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age, pageable);
+    }
+
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
@@ -516,6 +537,11 @@ public class ExerciseQueryService {
 
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Member findMemberWithAddressesOrThrow(Long memberId) {
+        return memberRepository.findMemberWithAddresses(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
