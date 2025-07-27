@@ -215,7 +215,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 member.getBirth().getYear(),
                 member.getGender(),
                 member.getLevel(),
-                memberKeywords
+                memberKeywords,
+                memberId
         );
     }
 
@@ -225,7 +226,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
                 partiesInfo.addr1(),
                 partiesInfo.birthYear(),
                 partiesInfo.gender(),
-                partiesInfo.level()
+                partiesInfo.level(),
+                partiesInfo.memberId()
         );
     }
 
@@ -316,6 +318,6 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     // ========== record ==========
     //임시로 사용할 데이터 묶음을 record로 구현
     private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {} //운동 정보
-    private record RecommendedPartiesInfo(String addr1, int birthYear, Gender gender, Level level, Set<Keyword> keywords) {} //추천 정보
+    private record RecommendedPartiesInfo(String addr1, int birthYear, Gender gender, Level level, Set<Keyword> keywords, Long memberId) {} //추천 정보
 
 }

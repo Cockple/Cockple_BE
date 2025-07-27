@@ -36,12 +36,17 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
             SELECT pl FROM p.levels pl
             WHERE pl.gender = :gender AND pl.level = :level
         )
+        AND NOT EXISTS (
+            SELECT mp FROM MemberParty mp
+            WHERE mp.member.id = :memberId AND mp.party.id = p.id
+        ) 
         ORDER BY p.createdAt DESC
     """)
     List<Party> findRecommendedParties(
             @Param("addr1") String addr1,
             @Param("birthYear") int birthYear,
             @Param("gender") Gender gender,
-            @Param("level") Level level
+            @Param("level") Level level,
+            @Param("memberId") Long memberId
     );
 }
