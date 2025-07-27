@@ -221,6 +221,10 @@ public class ExerciseQueryService {
         List<Exercise> exercises = findRecommendedExercises(
                 memberId, member.getGender(), member.getLevel(), member.getAge(), pageable);
 
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        return exerciseConverter.toExerciseRecommendationResponse(exercises, bookmarkStatus);
     }
 
     // ========== 검증 메서드들 ==========
