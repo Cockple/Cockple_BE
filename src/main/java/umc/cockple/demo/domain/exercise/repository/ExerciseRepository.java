@@ -164,6 +164,5 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("memberId") Long memberId,
             @Param("gender") Gender gender,
             @Param("level") Level level,
-            @Param("age") int age,
-            Pageable pageable);
+            @Param("age") int age);
 }

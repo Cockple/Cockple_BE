@@ -217,9 +217,8 @@ public class ExerciseQueryService {
         Member member = findMemberWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = findMainAddrOrThrow(member);
 
-        Pageable pageable = PageRequest.of(0, 10);
         List<Exercise> exercises = findRecommendedExercises(
-                memberId, member.getGender(), member.getLevel(), member.getAge(), pageable);
+                memberId, member.getGender(), member.getLevel(), member.getAge());
 
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
@@ -391,6 +390,22 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
+    // 하버사인 공식을 이용한 거리 계산
+    private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
+        final double R = 6371; // 지구 반지름 (km)
+
+        double latDistance = Math.toRadians(latitude1 - latitude);
+        double lonDistance = Math.toRadians(longitude1 - longitude);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return (float) (R * c);
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -530,8 +545,8 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
-    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age, Pageable pageable) {
-        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age, pageable);
+    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age) {
+        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age);
     }
 
     private List<Exercise> findByPartyIdsAndDateRange(
