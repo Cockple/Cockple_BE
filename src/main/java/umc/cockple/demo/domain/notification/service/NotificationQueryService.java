@@ -12,9 +12,11 @@ import umc.cockple.demo.domain.notification.controller.NotificationController;
 import umc.cockple.demo.domain.notification.converter.NotificationConverter;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
+import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -39,8 +41,32 @@ public class NotificationQueryService {
                 .toList();
     }
 
+
+    public ExistNewNotificationResponseDTO checkUnreadNotification(Long memberId) {
+        Member member = findByMemberId(memberId);
+
+        List<Notification> notifications = member.getNotifications();
+
+        long count = notifications.stream()
+                .filter(notification -> notification.getIsRead().equals(false))
+                .count();
+
+        if (count > 0) {
+            return ExistNewNotificationResponseDTO.builder()
+                    .existNewNotification(true)
+                    .build();
+        } else {
+            return ExistNewNotificationResponseDTO.builder()
+                    .existNewNotification(false)
+                    .build();
+        }
+    }
+
+
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
+
+
 }
