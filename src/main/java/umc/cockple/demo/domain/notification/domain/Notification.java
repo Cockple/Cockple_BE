@@ -32,4 +32,12 @@ public class Notification extends BaseEntity {
 
     @Column(nullable = false)
     private Boolean isRead;
+
+    public void read() {
+        this.isRead = true;
+    }
+
+    public void changeType(NotificationType type) {
+        this.type = type;
+    }
 }
