@@ -210,7 +210,7 @@ public class ExerciseQueryService {
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
-    public List<ExerciseRecommendationDTO.Response> getRecommendedExercises(Long memberId) {
+    public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
 
         log.info("운동 추천 조회 시작 - memberId: {}", memberId);
 
