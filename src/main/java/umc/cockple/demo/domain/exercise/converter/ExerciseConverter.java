@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.exercise.converter;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
@@ -259,6 +258,19 @@ public class ExerciseConverter {
                 .startDate(start)
                 .endDate(end)
                 .weeks(weeks)
+                .build();
+    }
+
+    public ExerciseRecommendationDTO.Response toExerciseRecommendationResponse(
+            List<Exercise> finalExercises, Map<Long, Boolean> bookmarkStatus) {
+
+        List<ExerciseRecommendationDTO.ExerciseItem> exercises = finalExercises.stream()
+                        .map(exercise -> toExerciseRecommendationItem(exercise, bookmarkStatus))
+                        .toList();
+
+        return ExerciseRecommendationDTO.Response.builder()
+                .totalExercises(finalExercises.size())
+                .exercises(exercises)
                 .build();
     }
 
@@ -671,6 +683,25 @@ public class ExerciseConverter {
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .nowCapacity(participantCounts.getOrDefault(exercise.getId(), 0))
+                .build();
+    }
+
+    private ExerciseRecommendationDTO.ExerciseItem toExerciseRecommendationItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .imageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
 
