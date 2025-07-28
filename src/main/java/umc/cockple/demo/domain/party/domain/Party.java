@@ -10,12 +10,12 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.enums.ActiveDay;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Builder
