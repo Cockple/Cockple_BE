@@ -20,13 +20,11 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.ActivityTime;
-import umc.cockple.demo.global.enums.ExerciseOrderType;
+import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
 import umc.cockple.demo.global.enums.PartyOrderType;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +41,7 @@ public class BookmarkQueryService {
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberRepository memberRepository;
 
-    public List<GetAllExerciseBookmarksResponseDTO> getAllExerciseBookmarks(Long memberId, ExerciseOrderType orderType) {
+    public List<GetAllExerciseBookmarksResponseDTO> getAllExerciseBookmarks(Long memberId, BookmarkedExerciseOrderType orderType) {
         // 회원 조회하기
         Member member = findByMemberId(memberId);
 
@@ -52,7 +50,7 @@ public class BookmarkQueryService {
 
         // orderType에 따른 정렬
         Comparator<ExerciseBookmark> comparator = Comparator.comparing(ExerciseBookmark::getCreatedAt);
-        if (orderType == ExerciseOrderType.LATEST) comparator = comparator.reversed();
+        if (orderType == BookmarkedExerciseOrderType.LATEST) comparator = comparator.reversed();
         bookmarks.sort(comparator);
 
         // include 정보 미리 조회
