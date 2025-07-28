@@ -226,6 +226,8 @@ public class ExerciseQueryService {
         List<Long> exerciseIds = getExerciseIds(finalExercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
 
+        log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
+
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
 
