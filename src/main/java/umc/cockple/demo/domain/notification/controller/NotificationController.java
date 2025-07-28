@@ -5,13 +5,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
-import umc.cockple.demo.domain.notification.dto.MarkAsReadDTO;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.service.NotificationQueryService;
-import umc.cockple.demo.global.enums.NotificationType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 

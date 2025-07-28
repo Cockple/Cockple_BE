@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.party.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import umc.cockple.demo.global.enums.RequestAction;
+import umc.cockple.demo.domain.party.enums.RequestAction;
 
 public class PartyJoinActionDTO {
 

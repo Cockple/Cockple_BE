@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")

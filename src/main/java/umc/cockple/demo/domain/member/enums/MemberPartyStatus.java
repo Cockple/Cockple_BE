@@ -1,4 +1,4 @@
-package umc.cockple.demo.global.enums;
+package umc.cockple.demo.domain.member.enums;
 
 public enum MemberPartyStatus {
 
