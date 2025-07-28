@@ -217,13 +217,16 @@ public class ExerciseQueryService {
         Member member = findMemberWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = findMainAddrOrThrow(member);
 
-        List<Exercise> exercises = findRecommendedExercises(
+        List<Exercise> candidateExercises = findRecommendedExercises(
                 memberId, member.getGender(), member.getLevel(), member.getAge());
 
-        List<Long> exerciseIds = getExerciseIds(exercises);
+        List<ExerciseWithDistance> finalExercisesWithDistance = getFinalSortedExercises(candidateExercises, mainAddr);
+        List<Exercise> finalExercises = extractExercises(finalExercisesWithDistance);
+
+        List<Long> exerciseIds = getExerciseIds(finalExercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
 
-        return exerciseConverter.toExerciseRecommendationResponse(exercises, bookmarkStatus);
+        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
 
     // ========== 검증 메서드들 ==========
@@ -390,6 +393,26 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
+    private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
+        return candidateExercises.stream()
+                .map(exercise -> {
+                    float distance = calculateDistance(
+                            mainAddr.getLatitude(),
+                            mainAddr.getLongitude(),
+                            exercise.getExerciseAddr().getLatitude(),
+                            exercise.getExerciseAddr().getLongitude()
+                    );
+                    return new ExerciseWithDistance(exercise, distance);
+                })
+                .sorted(Comparator
+                        .comparing(ExerciseWithDistance::distance)
+                        .thenComparing(ewd -> ewd.exercise().getDate())
+                        .thenComparing(ewd -> ewd.exercise().getStartTime())
+                )
+                .limit(10)
+                .toList();
+    }
+
     // 하버사인 공식을 이용한 거리 계산
     private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
         final double R = 6371; // 지구 반지름 (km)
@@ -404,6 +427,12 @@ public class ExerciseQueryService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return (float) (R * c);
+    }
+
+    private static List<Exercise> extractExercises(List<ExerciseWithDistance> finalExercisesWithDistance) {
+        return finalExercisesWithDistance.stream()
+                .map(ExerciseWithDistance::exercise)
+                .toList();
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -630,4 +659,6 @@ public class ExerciseQueryService {
 
     private record DateRange(LocalDate start, LocalDate end) {
     }
+
+    private record ExerciseWithDistance(Exercise exercise, double distance) {}
 }
