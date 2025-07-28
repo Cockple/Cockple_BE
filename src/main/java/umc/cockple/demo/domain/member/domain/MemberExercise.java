@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.global.enums.ExerciseMemberShipStatus;
-
-import java.time.LocalDateTime;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 
 @Entity
 @Builder
