@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.party.dto.PartyExerciseInfoDTO;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -135,4 +137,32 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("exerciseIds") List<Long> exerciseIds,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            SELECT e From Exercise e
+            JOIN FETCH e.party p
+            JOIN FETCH e.exerciseAddr ea
+            JOIN FETCH p.levels pl
+            LEFT JOIN FETCH p.partyImg
+            WHERE (e.date > CURRENT_DATE or (e.date = CURRENT_DATE AND e.startTime > CURRENT_TIME))
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberParty mp
+                WHERE mp.party.id = p.id
+                AND mp.member.id = :memberId
+                AND mp.member.isActive = 'ACTIVE'
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberExercise me
+                WHERE me.exercise.id = e.id
+                AND me.member.id = :memberId
+            )
+            AND (pl.gender = :gender AND pl.level = :level)
+            AND (:age >= p.minAge AND :age <= p.maxAge)
+            AND e.outsideGuestAccept = true
+            """)
+    List<Exercise> findExercisesByMemberIdAndLevelAndAge(
+            @Param("memberId") Long memberId,
+            @Param("gender") Gender gender,
+            @Param("level") Level level,
+            @Param("age") int age);
 }

@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -27,11 +28,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.MemberStatus;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyStatus;
-import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.enums.*;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -213,6 +210,27 @@ public class ExerciseQueryService {
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
+    public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
+
+        log.info("운동 추천 조회 시작 - memberId: {}", memberId);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        List<Exercise> candidateExercises = findRecommendedExercises(
+                memberId, member.getGender(), member.getLevel(), member.getAge());
+
+        List<ExerciseWithDistance> finalExercisesWithDistance = getFinalSortedExercises(candidateExercises, mainAddr);
+        List<Exercise> finalExercises = extractExercises(finalExercisesWithDistance);
+
+        List<Long> exerciseIds = getExerciseIds(finalExercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
+
+        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
@@ -377,6 +395,48 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
+    private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
+        return candidateExercises.stream()
+                .map(exercise -> {
+                    float distance = calculateDistance(
+                            mainAddr.getLatitude(),
+                            mainAddr.getLongitude(),
+                            exercise.getExerciseAddr().getLatitude(),
+                            exercise.getExerciseAddr().getLongitude()
+                    );
+                    return new ExerciseWithDistance(exercise, distance);
+                })
+                .sorted(Comparator
+                        .comparing(ExerciseWithDistance::distance)
+                        .thenComparing(ewd -> ewd.exercise().getDate())
+                        .thenComparing(ewd -> ewd.exercise().getStartTime())
+                )
+                .limit(10)
+                .toList();
+    }
+
+    // 하버사인 공식을 이용한 거리 계산
+    private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
+        final double R = 6371; // 지구 반지름 (km)
+
+        double latDistance = Math.toRadians(latitude1 - latitude);
+        double lonDistance = Math.toRadians(longitude1 - longitude);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return (float) (R * c);
+    }
+
+    private static List<Exercise> extractExercises(List<ExerciseWithDistance> finalExercisesWithDistance) {
+        return finalExercisesWithDistance.stream()
+                .map(ExerciseWithDistance::exercise)
+                .toList();
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -490,6 +550,13 @@ public class ExerciseQueryService {
         return exercises.stream().map(Exercise::getId).toList();
     }
 
+    private MemberAddr findMainAddrOrThrow(Member member) {
+        return member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MAIN_ADDRESS_NULL));
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -509,6 +576,10 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
+    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age) {
+        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age);
+    }
+
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
@@ -516,6 +587,11 @@ public class ExerciseQueryService {
 
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Member findMemberWithAddressesOrThrow(Long memberId) {
+        return memberRepository.findMemberWithAddresses(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
@@ -585,4 +661,6 @@ public class ExerciseQueryService {
 
     private record DateRange(LocalDate start, LocalDate end) {
     }
+
+    private record ExerciseWithDistance(Exercise exercise, double distance) {}
 }
