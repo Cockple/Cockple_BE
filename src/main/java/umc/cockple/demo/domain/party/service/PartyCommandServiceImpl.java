@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.party.domain.PartyLevel;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;

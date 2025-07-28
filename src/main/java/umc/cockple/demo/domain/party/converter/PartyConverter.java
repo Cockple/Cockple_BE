@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 
 import java.time.LocalDateTime;

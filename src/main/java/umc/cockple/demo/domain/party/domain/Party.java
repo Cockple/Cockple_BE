@@ -11,6 +11,8 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.enums.ActiveDay;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.*;

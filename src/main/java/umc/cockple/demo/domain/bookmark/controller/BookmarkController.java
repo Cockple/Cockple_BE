@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.service.BookmarkCommandService;
 import umc.cockple.demo.domain.bookmark.service.BookmarkQueryService;
 import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 

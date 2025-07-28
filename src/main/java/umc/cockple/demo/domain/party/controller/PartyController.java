@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
-import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 

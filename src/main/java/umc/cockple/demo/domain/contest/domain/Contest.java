@@ -6,7 +6,7 @@ import umc.cockple.demo.domain.contest.dto.ContestRecordCreateDTO;
 import umc.cockple.demo.domain.contest.dto.ContestRecordUpdateDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.domain.contest.enums.MedalType;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 

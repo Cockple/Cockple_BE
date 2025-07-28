@@ -9,9 +9,9 @@ import lombok.Builder;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.enums.ActiveDay;
-import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.exception.GeneralException;
 
 import java.time.LocalDateTime;

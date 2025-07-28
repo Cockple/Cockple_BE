@@ -19,9 +19,9 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

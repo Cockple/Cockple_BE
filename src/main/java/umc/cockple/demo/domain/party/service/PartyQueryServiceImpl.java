@@ -21,6 +21,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.domain.PartyKeyword;
 import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
