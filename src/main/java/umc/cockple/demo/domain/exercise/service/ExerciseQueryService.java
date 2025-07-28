@@ -21,6 +21,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;

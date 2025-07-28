@@ -6,7 +6,7 @@ import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.global.enums.MemberStatus;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 
 import java.util.List;
 import java.util.Optional;
