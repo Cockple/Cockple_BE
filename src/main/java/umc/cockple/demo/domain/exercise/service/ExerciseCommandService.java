@@ -21,7 +21,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.PartyStatus;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
