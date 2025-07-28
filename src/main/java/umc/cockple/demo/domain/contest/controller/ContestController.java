@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.domain.image.service.ImageService;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 

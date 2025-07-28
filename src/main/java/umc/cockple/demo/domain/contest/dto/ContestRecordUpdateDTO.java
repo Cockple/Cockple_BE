@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
 
 import java.time.LocalDate;

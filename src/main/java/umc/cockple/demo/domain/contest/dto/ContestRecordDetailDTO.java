@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.contest.dto;
 
 import lombok.Builder;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
 
 import java.time.LocalDate;
