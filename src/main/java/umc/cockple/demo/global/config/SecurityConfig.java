@@ -34,19 +34,15 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-
-                        //TODO 로그인 로직 구현 전까지 모든 경로 허용
-//                        .requestMatchers(
-//                                "/api/member/**", "/",
-//                                "/api/terms", "/api/nickname"
-//                        ).permitAll()
-//                        .anyRequest().authenticated()
+                        .requestMatchers("/api/oauth/kakao").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .formLogin(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 //                .addFilterBefore() // 추후 jwt 개발시 사용
         ;
 
