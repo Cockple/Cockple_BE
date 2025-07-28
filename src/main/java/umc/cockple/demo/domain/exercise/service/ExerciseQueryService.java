@@ -551,10 +551,10 @@ public class ExerciseQueryService {
     }
 
     private MemberAddr findMainAddrOrThrow(Member member) {
-        member.getAddresses().stream()
+        return member.getAddresses().stream()
                 .filter(MemberAddr::getIsMain)
                 .findFirst()
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_ADDRESS_NOT_FOUND));
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MAIN_ADDRESS_NULL));
     }
 
     // ========== 조회 메서드 ==========
