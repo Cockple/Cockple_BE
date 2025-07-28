@@ -1,4 +1,4 @@
-package umc.cockple.demo.global.enums;
+package umc.cockple.demo.domain.notification.enums;
 
 public enum NotificationType {
     INVITE, // 초대 버튼 있는 알림인데 안 읽은 경우
