@@ -65,6 +65,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/my/parties/suggestions")
+    @Operation(summary = "추천 모임 목록 조회",
+            description = "사용자에게 추천되는 모임 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
+            @PageableDefault(size = 10) Pageable pageable,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        Slice<PartyDTO.Response> response = partyQueryService.getRecommendedParties(memberId, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @GetMapping("/parties/{partyId}")
     @Operation(summary = "모임 상세 정보 조회",
             description = "특정 모임의 상세 정보를 조회합니다.")
