@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
@@ -13,6 +14,8 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -31,7 +34,9 @@ import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.global.enums.*;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -232,6 +237,17 @@ public class ExerciseQueryService {
         log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
 
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+    }
+
+    public MyExerciseListDTO.Response getMyExercises(
+            Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
+
+        log.info("내 참여 운동 조회 시작 - memberId: {}, filterType: {}, orderType: {}",
+                memberId, filterType, orderType);
+
+        Member member = findMemberOrThrow(memberId);
+
+        Pageable sortedPageable = createSortedPageable(pageable, filterType, orderType);
     }
 
     // ========== 검증 메서드들 ==========
@@ -440,6 +456,20 @@ public class ExerciseQueryService {
                 .toList();
     }
 
+    private Pageable createSortedPageable(
+            Pageable pageable, MyExerciseFilterType filterType, MyExerciseOrderType orderType) {
+        Sort sort = createSortByFilterAndOrder(filterType, orderType);
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+    }
+
+    private Sort createSortByFilterAndOrder(MyExerciseFilterType filterType, MyExerciseOrderType orderType) {
+        return switch (filterType) {
+            case ALL -> createSortForAll(orderType);
+            case UPCOMING -> createSortForUpcoming(orderType);
+            case COMPLETED -> createSortForCompleted(orderType);
+        };
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -560,6 +590,45 @@ public class ExerciseQueryService {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MAIN_ADDRESS_NULL));
     }
 
+    private Sort createSortForAll(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+        };
+    }
+
+    private Sort createSortForUpcoming(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+        };
+    }
+
+    private Sort createSortForCompleted(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+        };
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -665,5 +734,6 @@ public class ExerciseQueryService {
     private record DateRange(LocalDate start, LocalDate end) {
     }
 
-    private record ExerciseWithDistance(Exercise exercise, double distance) {}
+    private record ExerciseWithDistance(Exercise exercise, double distance) {
+    }
 }
