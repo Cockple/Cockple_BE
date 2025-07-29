@@ -32,17 +32,13 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String memberName;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(nullable = false)
     private LocalDate birth;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Level level;
 
@@ -53,6 +49,9 @@ public class Member extends BaseEntity {
     private MemberStatus isActive;
 
     private String refreshToken;
+
+    @Column(nullable = false)
+    private Long socialId; // 카카오에서 받아온 고유id
 
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)

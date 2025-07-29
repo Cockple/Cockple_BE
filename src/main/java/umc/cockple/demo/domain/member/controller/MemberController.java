@@ -7,8 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.member.dto.*;
+import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
+import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
+import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
 
 @RestController
 @RequestMapping("/api")
@@ -26,6 +29,14 @@ public class MemberController {
 
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
+    private final KakaoOauthService kakaoOauthService;
+
+    @PostMapping("/oauth/login")
+    @Operation(summary = "카카오 소셜 로그인 API",
+            description = "카카오에서 인가코드를 발급받아 요청으로 넣어주세요. 기존 회원의 경우 로그인, 신규 회원의 경우 회원가입을 합니다.")
+    public BaseResponse<KakaoLoginResponseDTO> login(@RequestBody @Valid KakaoLoginRequestDTO requestDTO) {
+        return BaseResponse.success(CommonSuccessCode.ACCEPTED, kakaoOauthService.signup(requestDTO.code()));
+    }
 
 
     @PatchMapping(value = "/member")
