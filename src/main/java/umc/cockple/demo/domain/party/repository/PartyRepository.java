@@ -12,7 +12,7 @@ import umc.cockple.demo.global.enums.Level;
 import java.util.List;
 import java.util.Optional;
 
-public interface PartyRepository extends JpaRepository<Party, Long> {
+public interface PartyRepository extends JpaRepository<Party, Long>, PartyRepositoryCustom {
 
     @Query("""
             SELECT p FROM Party p JOIN p.memberParties mp
