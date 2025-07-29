@@ -5,10 +5,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
@@ -337,6 +342,32 @@ public class ExerciseController {
         Long memberId = 1L; // 임시값
 
         ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/my")
+    @Operation(summary = "내 참여 운동 조회",
+            description = """
+                내가 참여한 운동 목록을 조회합니다.
+                필터: 전체(ALL), 참여 예정(UPCOMING), 참여 완료(COMPLETED)
+                정렬: 최신순(LATEST), 오래된순(OLDEST)
+                페이징을 지원합니다.
+                """)
+    @ApiResponse(responseCode = "200", description = "내 참여 운동 조회 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 필터 타입 또는 정렬 타입")
+    public BaseResponse<MyExerciseListDTO.Response> getMyExercises(
+            @RequestParam(defaultValue = "ALL") MyExerciseFilterType filterType,
+            @RequestParam(defaultValue = "LATEST") MyExerciseOrderType orderType,
+            @PageableDefault(size = 15) Pageable pageable,
+            Authentication authentication
+    ) {
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                memberId, filterType, orderType, pageable);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }

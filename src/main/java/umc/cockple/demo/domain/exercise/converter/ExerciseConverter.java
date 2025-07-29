@@ -1,15 +1,16 @@
 package umc.cockple.demo.domain.exercise.converter;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -270,6 +271,31 @@ public class ExerciseConverter {
 
         return ExerciseRecommendationDTO.Response.builder()
                 .totalExercises(finalExercises.size())
+                .exercises(exercises)
+                .build();
+    }
+
+    public MyExerciseListDTO.Response toEmptyMyExerciseList() {
+        return MyExerciseListDTO.Response.builder()
+                .totalCount(0)
+                .hasNext(false)
+                .exercises(List.of())
+                .build();
+    }
+
+    public MyExerciseListDTO.Response toMyExerciseListResponse(
+            Slice<Exercise> exerciseSlice,
+            Map<Long, Integer> participantCountMap,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> isCompletedMap) {
+
+        List<MyExerciseListDTO.ExerciseItem> exercises = exerciseSlice.getContent().stream()
+                .map(exercise -> toMyExerciseItem(exercise, participantCountMap, bookmarkStatus, isCompletedMap))
+                .toList();
+
+        return MyExerciseListDTO.Response.builder()
+                .totalCount(exercises.size())
+                .hasNext(exerciseSlice.hasNext())
                 .exercises(exercises)
                 .build();
     }
@@ -681,6 +707,31 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .imageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+    }
+
+    private MyExerciseListDTO.ExerciseItem toMyExerciseItem(
+            Exercise exercise,
+            Map<Long, Integer> participantCountMap,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> isCompletedMap) {
+
+        Party party = exercise.getParty();
+
+        return MyExerciseListDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .currentParticipants(participantCountMap.getOrDefault(exercise.getId(), 0))
+                .maxCapacity(exercise.getMaxCapacity())
+                .isCompleted(isCompletedMap.getOrDefault(exercise.getId(), false))
+                .partyGuestInviteAccept(exercise.getPartyGuestAccept())
                 .build();
     }
 
