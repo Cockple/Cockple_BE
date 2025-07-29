@@ -18,6 +18,8 @@ import umc.cockple.demo.domain.party.service.PartyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -69,13 +71,24 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
+            @RequestParam(defaultValue = "false") boolean isCockpleRecommend,
+            @RequestParam(required = false) String addr1,
+            @RequestParam(required = false) String addr2,
+            @RequestParam(required = false) List<String> level,
+            @RequestParam(required = false) List<String> partyType,
+            @RequestParam(required = false) List<String> activityDay,
+            @RequestParam(required = false) List<String> activityTime,
+            @RequestParam(required = false) List<String> keyword,
+            @RequestParam(required = false, defaultValue = "최신순") String sort,
             @PageableDefault(size = 10) Pageable pageable,
             Authentication authentication
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        Slice<PartyDTO.Response> response = partyQueryService.getRecommendedParties(memberId, pageable);
+        PartyFilterDTO.Request filter = new PartyFilterDTO.Request(addr1, addr2, level, partyType, activityDay, activityTime, keyword);
+
+        Slice<PartyDTO.Response> response = partyQueryService.getRecommendedParties(memberId, isCockpleRecommend, filter, sort, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
