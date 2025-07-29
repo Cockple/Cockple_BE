@@ -234,6 +234,27 @@ public class ExerciseQueryService {
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
 
+    public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
+            String buildingName, String streetAddr, LocalDate date, Long memberId) {
+
+        log.info("건물 운동 상세 조회 시작 - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+
+        Member member = findMemberOrThrow(memberId);
+        List<Exercise> exercises = findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+
+        if (exercises.isEmpty()) {
+            log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName);
+        }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
+
+        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus);
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
@@ -586,6 +607,11 @@ public class ExerciseQueryService {
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
+    }
+
+    private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
+        return exerciseRepository
+                .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
     }
 
     private Member findMemberOrThrow(Long memberId) {
