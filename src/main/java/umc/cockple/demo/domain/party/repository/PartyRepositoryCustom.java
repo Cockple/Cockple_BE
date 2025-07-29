@@ -7,5 +7,5 @@ import umc.cockple.demo.domain.party.dto.PartyFilterDTO;
 
 public interface PartyRepositoryCustom {
     //필터 모드를 위한 동적 쿼리 메서드
-    Slice<Party> searchParties(Long memberId, PartyFilterDTO filter, Pageable pageable);
+    Slice<Party> searchParties(Long memberId, PartyFilterDTO.Request filter, Pageable pageable);
 }
