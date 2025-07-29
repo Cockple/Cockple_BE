@@ -1,9 +1,6 @@
 package umc.cockple.demo.domain.contest.service;
 
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
-
-import java.util.List;
 
 public interface ContestCommandService {
     ContestRecordCreateDTO.Response createContestRecord(
