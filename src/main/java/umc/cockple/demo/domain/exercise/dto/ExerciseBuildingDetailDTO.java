@@ -13,13 +13,14 @@ public class ExerciseBuildingDetailDTO {
             LocalDate date,
             String dayOfWeek,
             String buildingName,
-            List<ExerciseDetail> exercises
+            List<ExerciseItem> exercises
     ) {
     }
 
     @Builder
-    public record ExerciseDetail(
+    public record ExerciseItem(
             Long exerciseId,
+            Long partyId,
             String partyName,
             String partyImgUrl,
             Boolean isBookmarked,

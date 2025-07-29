@@ -286,11 +286,17 @@ public class ExerciseConverter {
     public ExerciseBuildingDetailDTO.Response toBuildingDetailResponse(
             List<Exercise> exercises, String buildingName, Map<Long, Boolean> bookmarkStatus, LocalDate date) {
 
-        List<ExerciseBuildingDetailDTO.ExerciseItem> exercises = finalExercises.stream()
-                .map(exercise -> toExerciseRecommendationItem(exercise, bookmarkStatus))
+        List<ExerciseBuildingDetailDTO.ExerciseItem> finalExercises = exercises.stream()
+                .map(exercise -> toBuildingDetailItem(exercise, bookmarkStatus))
                 .toList();
-    }
 
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(finalExercises)
+                .build();
+    }
 
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
@@ -699,6 +705,22 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .imageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+    }
+
+    private ExerciseBuildingDetailDTO.ExerciseItem toBuildingDetailItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseBuildingDetailDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
                 .build();
     }
 
