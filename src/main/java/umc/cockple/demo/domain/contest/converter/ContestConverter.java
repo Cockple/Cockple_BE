@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.contest.converter;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.domain.ContestImg;
 import umc.cockple.demo.domain.contest.domain.ContestVideo;
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 public class ContestConverter {
 
     // 대회 기록 등록
-    public ContestRecordCreateDTO.Command toCreateCommand(ContestRecordCreateDTO.Request request, Long memberId, List<MultipartFile> contestImgs) {
+    public ContestRecordCreateDTO.Command toCreateCommand(ContestRecordCreateDTO.Request request, Long memberId) {
         return ContestRecordCreateDTO.Command.builder()
                 .memberId(memberId)
                 .contestName(request.contestName())
@@ -29,7 +28,7 @@ public class ContestConverter {
                 .contentIsOpen(request.contentIsOpen())
                 .videoIsOpen(request.videoIsOpen())
                 .contestVideos(request.contestVideos())
-                .contestImgs(contestImgs)
+                .contestImgs(request.contestImgs())
                 .build();
     }
 

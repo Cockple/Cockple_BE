@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ContestCommandService {
     ContestRecordCreateDTO.Response createContestRecord(
-            Long memberId, List<MultipartFile> ContestImage, ContestRecordCreateDTO.Request request
+            Long memberId, ContestRecordCreateDTO.Request request
     );
 
     ContestRecordUpdateDTO.Response updateContestRecord(
