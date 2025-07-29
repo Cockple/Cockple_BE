@@ -71,7 +71,7 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
-            @RequestParam(defaultValue = "false") boolean isCockpleRecommend,
+            @RequestParam(defaultValue = "true") boolean isCockpleRecommend,
             @RequestParam(required = false) String addr1,
             @RequestParam(required = false) String addr2,
             @RequestParam(required = false) List<String> level,

@@ -85,18 +85,20 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     }
 
     @Override
-    public Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Pageable pageable) {
+    public Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Boolean isCockpleRecommend, PartyFilterDTO.Request filter, String sort, Pageable pageable) {
         log.info("모임 추천 조회 시작 - memberId: {}", memberId);
 
-        //추천의 기준이 되는 정보 조회
-        RecommendedPartiesInfo partiesInfo = getRecommendedPartiesInfo(memberId);
-        //지역, 나이대, 급수로 필터링 된 모임 목록 조회
-        List<Party> filteredParties = findFilteredParties(partiesInfo);
+        Slice<Party> partySlice;
 
-        //키워드 일치 개수로 정렬
-        List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
-        //수동으로 페이징
-        Slice<Party> partySlice = paginate(sortedParties, pageable);
+        if (isCockpleRecommend) {
+            //--- 콕플 추천 로직 실행 ---
+            partySlice = getCockpleRecommendedParties(memberId, pageable);
+        } else {
+            //--- 필터 조회 로직 실행 ---
+            Pageable sortedPageable = createSortedPageable(pageable, sort); //정렬 기준 문자 검증, Pageable 객체 생성
+            partySlice = partyRepository.searchParties(memberId, filter, sortedPageable);
+        }
+
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partySlice.getContent().stream().map(Party::getId).toList());
 
@@ -250,6 +252,21 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     }
 
     // ========== 비즈니스 로직 메서드 ==========
+    //콕플 추천 로직을 처리
+    private Slice<Party> getCockpleRecommendedParties(Long memberId, Pageable pageable) {
+        //추천의 기준이 되는 정보 조회
+        RecommendedPartiesInfo partiesInfo = getRecommendedPartiesInfo(memberId);
+        //지역, 나이대, 급수로 필터링 된 모임 목록 조회
+        List<Party> filteredParties = findFilteredParties(partiesInfo);
+
+        //키워드 일치 개수로 정렬
+        List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
+        //수동으로 페이징
+        Slice<Party> partySlice = paginate(sortedParties, pageable);
+
+        return partySlice;
+    }
+
     //정렬 로직 처리
     private Pageable createSortedPageable(Pageable pageable, String sort) {
         PartyOrderType sortType = PartyOrderType.fromKorean(sort);
