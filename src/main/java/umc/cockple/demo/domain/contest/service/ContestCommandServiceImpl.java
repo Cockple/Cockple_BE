@@ -20,7 +20,6 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.global.enums.ImgType;
 
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -46,7 +45,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     // 등록
     @Override
     public ContestRecordCreateDTO.Response createContestRecord(
-            Long memberId, List<MultipartFile> contestImgs, ContestRecordCreateDTO.Request request) {
+            Long memberId, ContestRecordCreateDTO.Request request) {
 
         log.info("[대회 기록 등록 시작] - memberId: {}, 대회명: {}", memberId, request.contestName());
 
@@ -54,22 +53,23 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         Member member = getMember(memberId);
 
         //2. DTO -> Command
-        ContestRecordCreateDTO.Command contestRecordCommand = contestConverter.toCreateCommand(request, memberId, contestImgs);
+        ContestRecordCreateDTO.Command command = contestConverter.toCreateCommand(request, memberId);
 
         // 3. Command → Contest Entity 생성
-        Contest contest = Contest.create(contestRecordCommand, member);
+        Contest contest = Contest.create(command, member);
 
-        // 4. 이미지 업로드 -> ContestImg로 변환
-        try {
-            extractedImg(contestRecordCommand, contest);
-        } catch (Exception e) {
-            log.error("이미지 업로드 중 예외 발생", e);
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_FAIL);
+        // 4. 이미지 → ContestImg로 매핑
+        if (command.contestImgs() != null) {
+            for (int i = 0; i < command.contestImgs().size(); i++) {
+                ImageUploadResponseDTO imgDTO = command.contestImgs().get(i);
+                ContestImg contestImg = ContestImg.of(contest, imgDTO.imgUrl(), imgDTO.imgKey(), i);
+                contest.addContestImg(contestImg);
+            }
         }
 
         // 5. 영상 URL -> ContestVideo로 변환
         try {
-            extractedVideo(contestRecordCommand, contest);
+            extractedVideo(command, contest);
         } catch (Exception e) {
             log.error("영상 URL 처리 중 예외 발생", e);
             throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
@@ -227,20 +227,6 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 ContestVideo contestVideo = ContestVideo.of(contest, videoUrl, i);
 
                 contest.getContestVideos().add(contestVideo);
-            }
-        }
-    }
-
-    private void extractedImg(ContestRecordCreateDTO.Command contestRecordCommand, Contest contest) {
-        if (contestRecordCommand.contestImgs() != null) {
-            List<ImageUploadResponseDTO> imageUrls = imageService.uploadImages(contestRecordCommand.contestImgs(), ImgType.CONTEST);
-
-            for (int i = 0; i < imageUrls.size(); i++) {
-                String imgUrl = imageUrls.get(i).imgUrl();
-                String uniqueKey = imageService.extractKeyFromUrl(imgUrl, ImgType.CONTEST); // 나중에 파일명 대체 가능
-
-                ContestImg contestImg = ContestImg.of(contest, imgUrl, uniqueKey, i);
-                contest.addContestImg(contestImg);
             }
         }
     }
