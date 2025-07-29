@@ -274,6 +274,24 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseBuildingDetailDTO.Response toEmptyBuildingDetailResponse(String buildingName, LocalDate date) {
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(List.of())
+                .build();
+    }
+
+    public ExerciseBuildingDetailDTO.Response toBuildingDetailResponse(
+            List<Exercise> exercises, String buildingName, Map<Long, Boolean> bookmarkStatus, LocalDate date) {
+
+        List<ExerciseBuildingDetailDTO.ExerciseItem> exercises = finalExercises.stream()
+                .map(exercise -> toExerciseRecommendationItem(exercise, bookmarkStatus))
+                .toList();
+    }
+
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
