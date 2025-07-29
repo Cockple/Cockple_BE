@@ -30,7 +30,8 @@ public interface PartyRepository extends JpaRepository<Party, Long>, PartyReposi
 
     @Query("""
         SELECT p FROM Party p
-        WHERE p.partyAddr.addr1 = :addr1
+        WHERE p.status = 'ACTIVE'
+        AND p.partyAddr.addr1 = :addr1
         AND p.minAge <= :birthYear AND p.maxAge >= :birthYear
         AND EXISTS (
             SELECT pl FROM p.levels pl

@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.party.dto.PartyFilterDTO;
 import umc.cockple.demo.domain.party.enums.ActiveDay;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 
@@ -40,6 +41,8 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
         List<Party> content = queryFactory
                 .selectFrom(party)
                 .where(
+                        //삭제된 모임은 제외
+                        party.status.eq(PartyStatus.ACTIVE),
                         //이미 가입한 모임은 제외
                         party.id.notIn(
                                 JPAExpressions.select(memberParty.party.id)
