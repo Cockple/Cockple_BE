@@ -11,7 +11,7 @@ public interface ContestCommandService {
     );
 
     ContestRecordUpdateDTO.Response updateContestRecord(
-            Long memberId, Long contestId, List<MultipartFile> ContestImage, ContestRecordUpdateDTO.Request request
+            Long memberId, Long contestId, ContestRecordUpdateDTO.Request request
     );
 
     ContestRecordDeleteDTO.Response deleteContestRecord(
