@@ -1,12 +1,16 @@
 package umc.cockple.demo.domain.party.repository;
 
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.dto.PartyFilterDTO;
@@ -16,6 +20,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static umc.cockple.demo.domain.member.domain.QMemberParty.memberParty;
@@ -52,7 +57,7 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize() + 1) //hasNext 확인을 위해 1개 더 조회
-                .orderBy(party.createdAt.desc()) //Pageable의 정렬 정보를 사용하려면 추가 로직 필요
+                .orderBy(getOrderSpecifiers(pageable.getSort()))
                 .fetch();
 
         boolean hasNext = false;
@@ -114,4 +119,23 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
                         .where(partyKeyword.keyword.in(enums))
         );
     }
+
+    //Pageable의 Sort 객체를 QueryDSL의 OrderSpecifier 배열로 변환하는 헬퍼 메서드
+    private OrderSpecifier<?>[] getOrderSpecifiers(Sort sort) {
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+        if (sort.isEmpty()) {
+            orders.add(new OrderSpecifier<>(Order.DESC, party.createdAt));
+        } else {
+            sort.forEach(order -> {
+                Order direction = order.isAscending() ? Order.ASC : Order.DESC;
+                String property = order.getProperty();
+
+                // PathBuilder를 사용하여 문자열로 된 속성 이름을 Q-Type 경로로 변환
+                PathBuilder<Party> pathBuilder = new PathBuilder<>(Party.class, "party");
+                orders.add(new OrderSpecifier(direction, pathBuilder.get(property)));
+            });
+        }
+        return orders.toArray(new OrderSpecifier[0]);
+    }
+
 }
