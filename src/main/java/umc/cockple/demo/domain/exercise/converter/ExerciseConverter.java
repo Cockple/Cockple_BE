@@ -274,6 +274,14 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public MyExerciseListDTO.Response toEmptyMyExerciseList() {
+        return MyExerciseListDTO.Response.builder()
+                .totalCount(0)
+                .hasNext(false)
+                .exercises(List.of())
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();

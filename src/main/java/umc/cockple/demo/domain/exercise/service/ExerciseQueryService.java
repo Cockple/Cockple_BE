@@ -251,6 +251,11 @@ public class ExerciseQueryService {
         Pageable sortedPageable = createSortedPageable(pageable, filterType, orderType);
 
         Slice<Exercise> exerciseSlice = findExercisesByFilterType(memberId, filterType, sortedPageable);
+
+        if (exerciseSlice.isEmpty()) {
+            log.info("조회된 운동이 없음 - memberId: {}, filterType: {}", memberId, filterType);
+            return exerciseConverter.toEmptyMyExerciseList();
+        }
     }
 
     // ========== 검증 메서드들 ==========
