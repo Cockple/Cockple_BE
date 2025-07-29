@@ -244,7 +244,7 @@ public class ExerciseQueryService {
 
         if (exercises.isEmpty()) {
             log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
-            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName);
+            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName, date);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -252,7 +252,7 @@ public class ExerciseQueryService {
 
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
-        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus);
+        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
     // ========== 검증 메서드들 ==========
