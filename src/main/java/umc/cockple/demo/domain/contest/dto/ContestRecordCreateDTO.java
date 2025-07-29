@@ -1,11 +1,10 @@
 package umc.cockple.demo.domain.contest.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.MedalType;
 import umc.cockple.demo.global.enums.ParticipationType;
@@ -16,13 +15,13 @@ import java.util.List;
 
 public class ContestRecordCreateDTO {
 
+    @Builder
     public record Request(
 
             @NotBlank(message = "대회 이름은 필수입니다.")
             @Size(max = 60, message = "대회 이름은 최대 60자 입니다")
             String contestName,
 
-            @JsonFormat(pattern = "yyyy.MM.dd")
             LocalDate date,
 
             MedalType medalType,
@@ -43,7 +42,7 @@ public class ContestRecordCreateDTO {
             List<String> contestVideos,
 
             @Size(max = 3, message = "이미지는 3개까지 업로드 가능합니다.")
-            List<MultipartFile> contestImgs
+            List<ImageUploadResponseDTO> contestImgs
 
     ) {
     }
@@ -60,7 +59,7 @@ public class ContestRecordCreateDTO {
             Boolean contentIsOpen,
             Boolean videoIsOpen,
             List<String> contestVideos,
-            List<MultipartFile> contestImgs
+            List<ImageUploadResponseDTO> contestImgs
     ) {
     }
 
