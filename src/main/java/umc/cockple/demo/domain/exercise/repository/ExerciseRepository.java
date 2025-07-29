@@ -198,4 +198,14 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             AND (e.date < CURRENT_DATE OR (e.date = CURRENT_DATE AND e.startTime <= CURRENT_TIME))
             """)
     Slice<Exercise> findMyCompletedExercisesWithPaging(@Param("memberId") Long memberId, Pageable pageable);
+
+    @Query(value = """
+            SELECT 
+                e.id as exerciseId,
+                (SELECT COUNT(*) FROM member_exercise me WHERE me.exercise_id = e.id) + 
+                (SELECT COUNT(*) FROM guest g WHERE g.exercise_id = e.id) as totalCount
+            FROM exercise e
+            WHERE e.id IN :exerciseIds
+            """, nativeQuery = true)
+    List<Object[]> findExerciseParticipantCountsByExerciseIds(@Param("exerciseIds") List<Long> exerciseIds);
 }

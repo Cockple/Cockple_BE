@@ -256,6 +256,17 @@ public class ExerciseQueryService {
             log.info("조회된 운동이 없음 - memberId: {}, filterType: {}", memberId, filterType);
             return exerciseConverter.toEmptyMyExerciseList();
         }
+
+        List<Exercise> exercises = exerciseSlice.getContent();
+        List<Long> exerciseIds = exercises.stream().map(Exercise::getId).toList();
+
+        Map<Long, Integer> participantCountMap = getParticipantCountsMap(exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> isCompletedMap = getExerciseCompletionStatus(exercises);
+
+        log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toMyExerciseListResponse(exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
     }
 
     // ========== 검증 메서드들 ==========
@@ -476,6 +487,14 @@ public class ExerciseQueryService {
             case UPCOMING -> createSortForUpcoming(orderType);
             case COMPLETED -> createSortForCompleted(orderType);
         };
+    }
+
+    private Map<Long, Boolean> getExerciseCompletionStatus(List<Exercise> exercises) {
+        return exercises.stream()
+                .collect(Collectors.toMap(
+                        Exercise::getId,
+                        Exercise::isAlreadyStarted
+                ));
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -718,6 +737,17 @@ public class ExerciseQueryService {
     private Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds, LocalDate start, LocalDate end) {
         List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
                 exerciseIds, start, end);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
+    private Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                exerciseIds);
 
         return countResults.stream()
                 .collect(Collectors.toMap(
