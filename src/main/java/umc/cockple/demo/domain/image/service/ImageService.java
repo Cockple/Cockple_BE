@@ -28,7 +28,6 @@ public class ImageService {
     private final AmazonS3 amazonS3;
 
 
-    //이미지 업로드 임시 코드
     public ImageUploadResponseDTO uploadImage(MultipartFile image, ImgType imgType) {
         if (image == null || image.isEmpty()) {
             return null;
@@ -102,10 +101,11 @@ public class ImageService {
             return "contest-images/" + uuid + "." + extension;
         } else if (imgType == ImgType.PROFILE) {
             return "profile-image/" + uuid + "." + extension;
+        } else if (imgType == ImgType.CHAT) {
+            return "chat-images/" + uuid + "." + extension;
         } else {
             return "party-images/" + uuid + "." + extension;
         }
-
 
     }
 
@@ -113,8 +113,10 @@ public class ImageService {
         int startIndex;
         if (imgType == ImgType.CONTEST) {
             startIndex = url.indexOf("contest-images/");
-        }  else if (imgType == ImgType.PROFILE) {
+        } else if (imgType == ImgType.PROFILE) {
             startIndex = url.indexOf("profile-image/");
+        } else if (imgType == ImgType.CHAT) {
+            startIndex = url.indexOf("chat-images/");
         } else {
             startIndex = url.indexOf("party-images/");
         }
