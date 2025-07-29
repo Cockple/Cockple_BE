@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -248,6 +249,8 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
 
         Pageable sortedPageable = createSortedPageable(pageable, filterType, orderType);
+
+        Slice<Exercise> exerciseSlice = findExercisesByFilterType(memberId, filterType, sortedPageable);
     }
 
     // ========== 검증 메서드들 ==========
@@ -655,6 +658,14 @@ public class ExerciseQueryService {
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
+    }
+
+    private Slice<Exercise> findExercisesByFilterType(Long memberId, MyExerciseFilterType filterType, Pageable pageable) {
+        return switch (filterType) {
+            case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
+            case UPCOMING -> exerciseRepository.findMyUpcomingExercisesWithPaging(memberId, pageable);
+            case COMPLETED -> exerciseRepository.findMyCompletedExercisesWithPaging(memberId, pageable);
+        };
     }
 
     private Member findMemberOrThrow(Long memberId) {

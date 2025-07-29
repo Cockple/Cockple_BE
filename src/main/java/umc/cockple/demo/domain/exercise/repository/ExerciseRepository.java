@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.exercise.repository;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -165,4 +166,36 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("gender") Gender gender,
             @Param("level") Level level,
             @Param("age") int age);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            WHERE me.member.id = :memberId
+            AND me.member.isActive = 'ACTIVE'
+            """)
+    Slice<Exercise> findMyExercisesWithPaging(@Param("memberId") Long memberId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            WHERE me.member.id = :memberId
+            AND me.member.isActive = 'ACTIVE'
+            AND (e.date > CURRENT_DATE OR (e.date = CURRENT_DATE AND e.startTime > CURRENT_TIME))
+            """)
+    Slice<Exercise> findMyUpcomingExercisesWithPaging(@Param("memberId") Long memberId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM Exercise e 
+            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            WHERE me.member.id = :memberId
+            AND me.member.isActive = 'ACTIVE'
+            AND (e.date < CURRENT_DATE OR (e.date = CURRENT_DATE AND e.startTime <= CURRENT_TIME))
+            """)
+    Slice<Exercise> findMyCompletedExercisesWithPaging(@Param("memberId") Long memberId, Pageable pageable);
 }
