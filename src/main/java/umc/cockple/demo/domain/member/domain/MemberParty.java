@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.global.enums.MemberPartyStatus;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDateTime;
 
-import static umc.cockple.demo.global.enums.MemberPartyStatus.ACTIVE;
+import static umc.cockple.demo.domain.member.enums.MemberPartyStatus.ACTIVE;
 
 @Entity
 @Builder

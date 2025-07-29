@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyLevel;
-import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 

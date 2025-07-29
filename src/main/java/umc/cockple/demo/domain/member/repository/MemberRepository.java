@@ -7,6 +7,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,4 +30,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             WHERE m.id IN :memberIds
             """)
     List<Map<String, Object>> findMemberNameMapsByIds(@Param("memberIds") Set<Long> memberIds);
+
+    @Query("""
+            SELECT m FROM Member m
+            LEFT JOIN FETCH m.addresses addr
+            WHERE m.id = :memberId
+            AND m.isActive = 'ACTIVE'
+            """)
+    Optional<Member> findMemberWithAddresses(Long memberId);
 }

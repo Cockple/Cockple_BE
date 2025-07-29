@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -314,6 +314,29 @@ public class ExerciseController {
 
         MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
                 memberId, orderType, startDate, endDate);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/recommendations")
+    @Operation(summary = "사용자 추천 운동 조회",
+            description = """
+                    사용자가 속하지 않은 모임의 운동을 추천합니다.
+                    조회되는 운동의 최대 개수는 10개입니다.
+                    시작하지 않은 운동만 조회됩니다.
+                    참여하지 않은 운동만 조회됩니다.
+                    운동의 급수와 나이 조건이 사용자와 맞는 운동만 조회됩니다.
+                    정렬 기준은 위치, 날짜, 시간 순입니다.
+                    """)
+    @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
+    public BaseResponse<ExerciseRecommendationDTO.Response> getRecommendedExercises(
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }

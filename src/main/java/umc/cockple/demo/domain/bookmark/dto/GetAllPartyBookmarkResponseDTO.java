@@ -1,11 +1,10 @@
 package umc.cockple.demo.domain.bookmark.dto;
 
 import lombok.Builder;
-import umc.cockple.demo.global.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 @Builder

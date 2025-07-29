@@ -15,7 +15,13 @@ public enum NotificationErrorCode implements BaseErrorCode {
      * 2xx: 서버에서 리소스를 찾을 수 없는 문제
      * 3xx: 권한/인증 문제
      * 4xx: 비즈니스 로직 위반
-     */;
+     */
+
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION201", "해당 알림이 존재하지 않습니다."),
+
+
+    NOTIFICATION_NOT_OWNED(HttpStatus.UNAUTHORIZED, "NOTIFICATION301", "해당 알림에 대한 권한이 없습니다."),
+    ;
 
 
 

@@ -7,14 +7,13 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.ParticipationType;
-import umc.cockple.demo.global.enums.RequestStatus;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.RequestStatus;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class PartyConverter {

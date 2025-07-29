@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MemberStatus;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;

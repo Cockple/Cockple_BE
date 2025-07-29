@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MedalType;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

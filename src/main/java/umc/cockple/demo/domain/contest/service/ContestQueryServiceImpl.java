@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 
 import java.util.List;
 
