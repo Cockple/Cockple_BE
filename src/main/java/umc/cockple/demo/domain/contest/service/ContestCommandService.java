@@ -1,9 +1,6 @@
 package umc.cockple.demo.domain.contest.service;
 
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
-
-import java.util.List;
 
 public interface ContestCommandService {
     ContestRecordCreateDTO.Response createContestRecord(
@@ -11,7 +8,7 @@ public interface ContestCommandService {
     );
 
     ContestRecordUpdateDTO.Response updateContestRecord(
-            Long memberId, Long contestId, List<MultipartFile> ContestImage, ContestRecordUpdateDTO.Request request
+            Long memberId, Long contestId, ContestRecordUpdateDTO.Request request
     );
 
     ContestRecordDeleteDTO.Response deleteContestRecord(
