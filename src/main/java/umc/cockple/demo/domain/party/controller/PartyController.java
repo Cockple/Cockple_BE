@@ -66,7 +66,7 @@ public class PartyController {
     }
 
     @GetMapping("/my/parties/suggestions")
-    @Operation(summary = "추천 모임 목록 조회",
+    @Operation(summary = "추천 모임 조회",
             description = "사용자에게 추천되는 모임 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
