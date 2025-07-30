@@ -33,6 +33,14 @@ public enum MemberErrorCode implements BaseErrorCode {
     MEMBER_ADDRESS_MINIMUM_REQUIRED(HttpStatus.BAD_REQUEST, "MEM_ADDR404", "주소가 적어도 1개 이상 필요합니다."),
     MAIN_ADDRESS_NULL(HttpStatus.BAD_REQUEST, "MEM_ADDR405", "대표 주소가 존재하지 않습니다."),
 
+
+    // jwt
+
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "MEM_AUTH_301", "리프레시토큰이 유효하지 않습니다. 다시 로그인을 진행해주세요."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "MEM_AUTH_302", "잘못된 토큰입니다. (session지원 실패)"),
+
+    NICKNAME_IS_NULL(HttpStatus.BAD_REQUEST, "MEM_AUTH_401", "토큰 생성 중 닉네임이 존재하지 않습니다."),
+
     ;
 
     private final HttpStatus httpStatus;

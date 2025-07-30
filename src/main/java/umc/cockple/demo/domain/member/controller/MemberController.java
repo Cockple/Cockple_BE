@@ -4,17 +4,22 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.member.dto.*;
 import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
+import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
@@ -34,8 +39,48 @@ public class MemberController {
     @PostMapping("/oauth/login")
     @Operation(summary = "카카오 소셜 로그인 API",
             description = "카카오에서 인가코드를 발급받아 요청으로 넣어주세요. 기존 회원의 경우 로그인, 신규 회원의 경우 회원가입을 합니다.")
-    public BaseResponse<KakaoLoginResponseDTO> login(@RequestBody @Valid KakaoLoginRequestDTO requestDTO) {
-        return BaseResponse.success(CommonSuccessCode.ACCEPTED, kakaoOauthService.signup(requestDTO.code()));
+    public ResponseEntity<KakaoLoginResponseDTO> login(@RequestBody @Valid KakaoLoginRequestDTO requestDTO) {
+
+        KakaoLoginResponseDTO response = kakaoOauthService.signup(requestDTO.code());
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", response.refreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("None")
+                .build()
+                ;
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new KakaoLoginResponseDTO(
+                        response.accessToken(),
+                        null,
+                        response.memberId(),
+                        response.nickname(),
+                        response.isNewMember()
+                ));
+    }
+
+    @PostMapping("/auth/refresh")
+    @Operation(summary = "리프레시 토큰 재발급 API",
+            description = "리프레시 토큰이 만료되었을 경우 (1주일) 재발급 해주는 api입니다. 리프레시토큰은 헤더에 쿠키로 들어갑니다.")
+    public ResponseEntity<TokenRefreshResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
+        // 리프레시 토큰 유효성 검사
+        TokenRefreshResponse response = kakaoOauthService.validateMember(refreshToken);
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", response.refreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("None")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new TokenRefreshResponse(response.accessToken(), null));
     }
 
 

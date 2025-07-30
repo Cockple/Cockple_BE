@@ -12,6 +12,7 @@ public class KakaoLoginDTO {
     @Builder
     public record KakaoLoginResponseDTO(
             String accessToken,
+            String refreshToken,
             Long memberId,
             String nickname,
             Boolean isNewMember

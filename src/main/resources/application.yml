@@ -49,7 +49,7 @@ kakao:
   token-uri: https://kauth.kakao.com/oauth/token
   user-info-uri: https://kapi.kakao.com/v2/user/me
 
-#jwt:
-#  secret: ${JWT_SECRET_KEY}
-#  access-token-validity: 3600000
-#  refresh-token-validity: 1209600000
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  access-token-validity: 3600000
+  refresh-token-validity: 1209600000
