@@ -226,12 +226,13 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             JOIN FETCH e.exerciseAddr addr
             WHERE e.date BETWEEN :startDate AND :endDate
             AND (
-                6371 * acos(
+                (6371 * acos(
                     LEAST(1.0, cos(radians(:latitude)) * cos(radians(addr.latitude)) *
                     cos(radians(addr.longitude) - radians(:longitude)) +
                     sin(radians(:latitude)) * sin(radians(addr.latitude)))
-                )
-            ) <= :radiusKm
+                )) <= :radiusKm
+                OR (addr.latitude = :latitude AND addr.longitude = :longitude)
+            )
             ORDER BY e.date ASC, e.startTime ASC
             """)
     List<Exercise> findExercisesByMonthAndRadius(

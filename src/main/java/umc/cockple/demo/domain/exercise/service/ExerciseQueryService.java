@@ -779,7 +779,7 @@ public class ExerciseQueryService {
                 dateRange.start(),
                 dateRange.end(),
                 searchLocation.latitude(),
-                searchLocation.latitude(),
+                searchLocation.longitude(),
                 searchLocation.radiusKm().intValue()
         );
     }
