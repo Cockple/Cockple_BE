@@ -1,0 +1,42 @@
+name: COCKPLE_CI
+
+on:
+  pull_request:
+    branches: [ "develop" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4   # 최신 버전 반영
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4 # v4 사용
+        with:
+          java-version: '17'
+          distribution: 'temurin'   # adopt 대신 공식적으로 권장되는 temurin
+          cache: gradle
+
+      - name: Make application.yml (test용)
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION }}" > src/main/resources/application.yml
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x gradlew
+
+      - name: Build & Run Tests
+        run: ./gradlew clean build --stacktrace
+
+      # 실패해도 리포트 확인 가능하도록 업로드 (v4 반영)
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test

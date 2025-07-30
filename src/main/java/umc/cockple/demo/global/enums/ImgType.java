@@ -4,5 +4,6 @@ public enum ImgType {
 
     CONTEST,
     PROFILE,
-    PARTY
+    PARTY,
+    CHAT
 }

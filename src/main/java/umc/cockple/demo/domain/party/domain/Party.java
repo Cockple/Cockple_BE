@@ -4,18 +4,22 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.enums.ActiveDay;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Builder
@@ -99,6 +103,10 @@ public class Party extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyBookmark> partyBookmarks = new ArrayList<>();
+
+    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRoom> chatRooms = new ArrayList<>();
+
 
     public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
         Party party = Party.builder()

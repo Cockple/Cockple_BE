@@ -31,7 +31,18 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             """)
     List<Map<String, Object>> findMemberNameMapsByIds(@Param("memberIds") Set<Long> memberIds);
 
+
     Optional<Member> findBySocialId(Long socialId);
 
     Optional<Member> findByRefreshToken(String refreshToken);
+
+           
+    @Query("""
+            SELECT m FROM Member m
+            LEFT JOIN FETCH m.addresses addr
+            WHERE m.id = :memberId
+            AND m.isActive = 'ACTIVE'
+            """)
+    Optional<Member> findMemberWithAddresses(Long memberId);
+
 }

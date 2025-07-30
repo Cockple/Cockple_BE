@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
@@ -13,24 +15,28 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.MemberStatus;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyStatus;
+import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -213,6 +219,77 @@ public class ExerciseQueryService {
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
+    public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
+
+        log.info("운동 추천 조회 시작 - memberId: {}", memberId);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        List<Exercise> candidateExercises = findRecommendedExercises(
+                memberId, member.getGender(), member.getLevel(), member.getAge());
+
+        List<ExerciseWithDistance> finalExercisesWithDistance = getFinalSortedExercises(candidateExercises, mainAddr);
+        List<Exercise> finalExercises = extractExercises(finalExercisesWithDistance);
+
+        List<Long> exerciseIds = getExerciseIds(finalExercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
+
+        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+    }
+    
+    public MyExerciseListDTO.Response getMyExercises(
+            Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
+
+        log.info("내 참여 운동 조회 시작 - memberId: {}, filterType: {}, orderType: {}",
+                memberId, filterType, orderType);
+
+        Member member = findMemberOrThrow(memberId);
+
+        Pageable sortedPageable = createSortedPageable(pageable, filterType, orderType);
+
+        Slice<Exercise> exerciseSlice = findExercisesByFilterType(memberId, filterType, sortedPageable);
+
+        if (exerciseSlice.isEmpty()) {
+            log.info("조회된 운동이 없음 - memberId: {}, filterType: {}", memberId, filterType);
+            return exerciseConverter.toEmptyMyExerciseList();
+        }
+
+        List<Exercise> exercises = exerciseSlice.getContent();
+        List<Long> exerciseIds = exercises.stream().map(Exercise::getId).toList();
+
+        Map<Long, Integer> participantCountMap = getParticipantCountsMap(exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> isCompletedMap = getExerciseCompletionStatus(exercises);
+
+        log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toMyExerciseListResponse(exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
+    }
+
+    public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
+            String buildingName, String streetAddr, LocalDate date, Long memberId) {
+
+        log.info("건물 운동 상세 조회 시작 - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+
+        Member member = findMemberOrThrow(memberId);
+        List<Exercise> exercises = findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+
+        if (exercises.isEmpty()) {
+            log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName, date);
+        }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
+
+        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
@@ -377,6 +454,70 @@ public class ExerciseQueryService {
         return new DateRange(defaultStart, defaultEnd);
     }
 
+    private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
+        return candidateExercises.stream()
+                .map(exercise -> {
+                    float distance = calculateDistance(
+                            mainAddr.getLatitude(),
+                            mainAddr.getLongitude(),
+                            exercise.getExerciseAddr().getLatitude(),
+                            exercise.getExerciseAddr().getLongitude()
+                    );
+                    return new ExerciseWithDistance(exercise, distance);
+                })
+                .sorted(Comparator
+                        .comparing(ExerciseWithDistance::distance)
+                        .thenComparing(ewd -> ewd.exercise().getDate())
+                        .thenComparing(ewd -> ewd.exercise().getStartTime())
+                )
+                .limit(10)
+                .toList();
+    }
+
+    // 하버사인 공식을 이용한 거리 계산
+    private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
+        final double R = 6371; // 지구 반지름 (km)
+
+        double latDistance = Math.toRadians(latitude1 - latitude);
+        double lonDistance = Math.toRadians(longitude1 - longitude);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return (float) (R * c);
+    }
+
+    private static List<Exercise> extractExercises(List<ExerciseWithDistance> finalExercisesWithDistance) {
+        return finalExercisesWithDistance.stream()
+                .map(ExerciseWithDistance::exercise)
+                .toList();
+    }
+
+    private Pageable createSortedPageable(
+            Pageable pageable, MyExerciseFilterType filterType, MyExerciseOrderType orderType) {
+        Sort sort = createSortByFilterAndOrder(filterType, orderType);
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+    }
+
+    private Sort createSortByFilterAndOrder(MyExerciseFilterType filterType, MyExerciseOrderType orderType) {
+        return switch (filterType) {
+            case ALL -> createSortForAll(orderType);
+            case UPCOMING -> createSortForUpcoming(orderType);
+            case COMPLETED -> createSortForCompleted(orderType);
+        };
+    }
+
+    private Map<Long, Boolean> getExerciseCompletionStatus(List<Exercise> exercises) {
+        return exercises.stream()
+                .collect(Collectors.toMap(
+                        Exercise::getId,
+                        Exercise::isAlreadyStarted
+                ));
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -490,6 +631,52 @@ public class ExerciseQueryService {
         return exercises.stream().map(Exercise::getId).toList();
     }
 
+    private MemberAddr findMainAddrOrThrow(Member member) {
+        return member.getAddresses().stream()
+                .filter(MemberAddr::getIsMain)
+                .findFirst()
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MAIN_ADDRESS_NULL));
+    }
+
+    private Sort createSortForAll(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+        };
+    }
+
+    private Sort createSortForUpcoming(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+        };
+    }
+
+    private Sort createSortForCompleted(MyExerciseOrderType orderType) {
+        return switch (orderType) {
+            case LATEST -> Sort.by(
+                    Sort.Order.desc("date"),
+                    Sort.Order.desc("startTime")
+            );
+            case OLDEST -> Sort.by(
+                    Sort.Order.asc("date"),
+                    Sort.Order.asc("startTime")
+            );
+        };
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -509,13 +696,35 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
+    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age) {
+        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age);
+    }
+
     private List<Exercise> findByPartyIdsAndDateRange(
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
+  
+    private Slice<Exercise> findExercisesByFilterType(Long memberId, MyExerciseFilterType filterType, Pageable pageable) {
+        return switch (filterType) {
+            case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
+            case UPCOMING -> exerciseRepository.findMyUpcomingExercisesWithPaging(memberId, pageable);
+            case COMPLETED -> exerciseRepository.findMyCompletedExercisesWithPaging(memberId, pageable);
+        };
+    }
+
+    private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
+        return exerciseRepository
+                .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+    }
 
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Member findMemberWithAddressesOrThrow(Long memberId) {
+        return memberRepository.findMemberWithAddresses(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 
@@ -562,6 +771,17 @@ public class ExerciseQueryService {
                 ));
     }
 
+    private Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds) {
+        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                exerciseIds);
+
+        return countResults.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
     private Map<Long, Boolean> getExerciseBookmarkStatus(Long memberId, List<Long> exerciseIds) {
         if (exerciseIds.isEmpty()) {
             return Collections.emptyMap();
@@ -584,5 +804,8 @@ public class ExerciseQueryService {
     }
 
     private record DateRange(LocalDate start, LocalDate end) {
+    }
+
+    private record ExerciseWithDistance(Exercise exercise, double distance) {
     }
 }

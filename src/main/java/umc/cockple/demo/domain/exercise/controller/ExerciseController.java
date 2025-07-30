@@ -5,13 +5,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -315,6 +321,73 @@ public class ExerciseController {
         MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
                 memberId, orderType, startDate, endDate);
 
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/recommendations")
+    @Operation(summary = "사용자 추천 운동 조회",
+            description = """
+                    사용자가 속하지 않은 모임의 운동을 추천합니다.
+                    조회되는 운동의 최대 개수는 10개입니다.
+                    시작하지 않은 운동만 조회됩니다.
+                    참여하지 않은 운동만 조회됩니다.
+                    운동의 급수와 나이 조건이 사용자와 맞는 운동만 조회됩니다.
+                    정렬 기준은 위치, 날짜, 시간 순입니다.
+                    """)
+    @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
+    public BaseResponse<ExerciseRecommendationDTO.Response> getRecommendedExercises(
+            Authentication authentication
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+    
+    @GetMapping("/exercises/my")
+    @Operation(summary = "내 참여 운동 조회",
+            description = """
+                내가 참여한 운동 목록을 조회합니다.
+                필터: 전체(ALL), 참여 예정(UPCOMING), 참여 완료(COMPLETED)
+                정렬: 최신순(LATEST), 오래된순(OLDEST)
+                페이징을 지원합니다.
+                """)
+    @ApiResponse(responseCode = "200", description = "내 참여 운동 조회 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 필터 타입 또는 정렬 타입")
+    public BaseResponse<MyExerciseListDTO.Response> getMyExercises(
+            @RequestParam(defaultValue = "ALL") MyExerciseFilterType filterType,
+            @RequestParam(defaultValue = "LATEST") MyExerciseOrderType orderType,
+            @PageableDefault(size = 15) Pageable pageable,
+            Authentication authentication
+    ) {
+        
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                memberId, filterType, orderType, pageable);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/building/daily/{date}")
+    @Operation(summary = "특정 건물의 운동 상세 조회",
+            description = "건물명과 주소를 기준으로 해당 건물의 운동 상세 정보를 조회합니다.")
+    public BaseResponse<ExerciseBuildingDetailDTO.Response> getBuildingExerciseDetails(
+            @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @RequestParam String buildingName,
+            @RequestParam String streetAddr,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L;
+
+        ExerciseBuildingDetailDTO.Response response = exerciseQueryService
+                .getBuildingExerciseDetails(buildingName, streetAddr, date, memberId);
+      
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }

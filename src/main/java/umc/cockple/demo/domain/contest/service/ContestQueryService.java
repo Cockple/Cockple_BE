@@ -1,7 +1,7 @@
 package umc.cockple.demo.domain.contest.service;
 
 import umc.cockple.demo.domain.contest.dto.*;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 
 import java.util.List;
 

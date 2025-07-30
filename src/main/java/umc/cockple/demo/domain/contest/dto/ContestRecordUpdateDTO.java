@@ -1,14 +1,13 @@
 package umc.cockple.demo.domain.contest.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MedalType;
-import umc.cockple.demo.global.enums.ParticipationType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +21,6 @@ public class ContestRecordUpdateDTO {
             @Size(max = 60, message = "대회 이름은 최대 60자 입니다")
             String contestName,
 
-            @JsonFormat(pattern = "yyyy.MM.dd")
             LocalDate date,
 
             MedalType medalType,
@@ -44,12 +42,12 @@ public class ContestRecordUpdateDTO {
             List<String> contestVideos,
 
             // 새로 추가할 이미지
-            List<MultipartFile> contestImgs,
+            List<ImageUploadResponseDTO> contestImgs,
 
             // 삭제할 이미지 imgKey (프론트에서 관리)
             List<String> contestImgsToDelete,
 
-            // 삭제할 영상의 videoOrder (URL 기반)
+            // 삭제할 영상의 비디오 아이디
             List<Long> contestVideoIdsToDelete
 
     ) {
