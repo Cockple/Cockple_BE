@@ -12,7 +12,7 @@ import umc.cockple.demo.global.enums.Level;
 import java.util.List;
 import java.util.Optional;
 
-public interface PartyRepository extends JpaRepository<Party, Long> {
+public interface PartyRepository extends JpaRepository<Party, Long>, PartyRepositoryCustom {
 
     @Query("""
             SELECT p FROM Party p JOIN p.memberParties mp
@@ -30,7 +30,8 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
 
     @Query("""
         SELECT p FROM Party p
-        WHERE p.partyAddr.addr1 = :addr1
+        WHERE p.status = 'ACTIVE'
+        AND p.partyAddr.addr1 = :addr1
         AND p.minAge <= :birthYear AND p.maxAge >= :birthYear
         AND EXISTS (
             SELECT pl FROM p.levels pl
