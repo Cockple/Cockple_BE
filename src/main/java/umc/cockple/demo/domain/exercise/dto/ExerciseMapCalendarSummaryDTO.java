@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class ExerciseMapCalendarSummaryDTO {
 
+    @Builder
     public record Response(
             Integer year,
             Integer month,

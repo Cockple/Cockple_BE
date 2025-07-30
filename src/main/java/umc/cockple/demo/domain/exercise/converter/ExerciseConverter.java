@@ -324,6 +324,24 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseMapCalendarSummaryDTO.Response toMapCalendarSummaryResponse(
+            Integer year,
+            Integer month,
+            Double latitude,
+            Double longitude,
+            Double radiusKm,
+            Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> buildings) {
+
+        return ExerciseMapCalendarSummaryDTO.Response.builder()
+                .year(year)
+                .month(month)
+                .centerLatitude(latitude)
+                .centerLongitude(longitude)
+                .radiusKm(radiusKm)
+                .buildings(buildings)
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
@@ -733,7 +751,7 @@ public class ExerciseConverter {
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
-  
+
     private MyExerciseListDTO.ExerciseItem toMyExerciseItem(
             Exercise exercise,
             Map<Long, Integer> participantCountMap,
@@ -772,6 +790,16 @@ public class ExerciseConverter {
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
+                .build();
+    }
+
+    public ExerciseMapCalendarSummaryDTO.BuildingSummary toBuildingSummary(
+            String name, String address, Double latitude, Double longitude) {
+        return ExerciseMapCalendarSummaryDTO.BuildingSummary.builder()
+                .buildingName(name)
+                .streetAddr(address)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 

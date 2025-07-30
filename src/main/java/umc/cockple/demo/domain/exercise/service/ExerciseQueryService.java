@@ -239,7 +239,7 @@ public class ExerciseQueryService {
 
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
-    
+
     public MyExerciseListDTO.Response getMyExercises(
             Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
 
@@ -302,9 +302,14 @@ public class ExerciseQueryService {
         SearchLocation searchLocation = SearchLocation.of(latitude, longitude, radiusKm);
 
         List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
-        
-    }
 
+        Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> dailyBuildings =
+                groupExercisesByDateAndBuilding(exercises);
+
+        log.info("월간 운동 캘린더 요약 조회 완료");
+
+        return exerciseConverter.toMapCalendarSummaryResponse(year, month, latitude, longitude, radiusKm, dailyBuildings);
+    }
 
     // ========== 검증 메서드들 ==========
 
@@ -534,6 +539,30 @@ public class ExerciseQueryService {
                 ));
     }
 
+    private Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> groupExercisesByDateAndBuilding(List<Exercise> exercises) {
+        Map<LocalDate, List<Exercise>> exercisesByDate = exercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        return exercisesByDate.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> createBuildingSummariesForDate(entry.getValue()),
+                        (existing, replacement) -> existing,
+                        TreeMap::new
+                ));
+    }
+
+    private List<ExerciseMapCalendarSummaryDTO.BuildingSummary> createBuildingSummariesForDate(List<Exercise> dayExercises) {
+        Map<BuildingKey, List<Exercise>> exercisesByBuilding = dayExercises.stream()
+                .collect(Collectors.groupingBy(this::createBuildingKey));
+
+        return exercisesByBuilding.keySet().stream()
+                .map(entry -> exerciseConverter.toBuildingSummary(
+                        entry.name(), entry.address(), entry.latitude(), entry.longitude())
+                )
+                .toList();
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -693,6 +722,17 @@ public class ExerciseQueryService {
         };
     }
 
+    private BuildingKey createBuildingKey(Exercise exercise) {
+        var addr = exercise.getExerciseAddr();
+
+        return new BuildingKey(
+                addr.getBuildingName(),
+                addr.getStreetAddr(),
+                addr.getLatitude().doubleValue(),
+                addr.getLongitude().doubleValue()
+        );
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -720,7 +760,7 @@ public class ExerciseQueryService {
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
-  
+
     private Slice<Exercise> findExercisesByFilterType(Long memberId, MyExerciseFilterType filterType, Pageable pageable) {
         return switch (filterType) {
             case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
@@ -843,6 +883,28 @@ public class ExerciseQueryService {
     private record SearchLocation(Double latitude, Double longitude, Double radiusKm) {
         private static SearchLocation of(Double lat, Double lng, Double radius) {
             return new SearchLocation(lat, lng, radius);
+        }
+    }
+
+    private record BuildingKey(
+            String name,
+            String address,
+            Double latitude,
+            Double longitude
+    ) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+
+            BuildingKey that = (BuildingKey) obj;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(address, that.address);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, address);
         }
     }
 }
