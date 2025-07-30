@@ -710,7 +710,8 @@ public class ExerciseQueryService {
             case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
             case UPCOMING -> exerciseRepository.findMyUpcomingExercisesWithPaging(memberId, pageable);
             case COMPLETED -> exerciseRepository.findMyCompletedExercisesWithPaging(memberId, pageable);
-    };
+        };
+    }
 
     private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
         return exerciseRepository
