@@ -390,4 +390,26 @@ public class ExerciseController {
       
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @GetMapping("/exercises/map/monthly/{year}/{month}/summary")
+    @Operation(summary = "월간 운동 캘린더 요약",
+            description = "특정 좌표 기준 반경 내 건물별 운동 존재 여부만 제공")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 년도/월 또는 좌표 정보")
+    public BaseResponse<ExerciseMapCalendarSummaryDTO.Response> getExerciseMapCalendarSummary(
+            @PathVariable Integer year,
+            @PathVariable Integer month,
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(defaultValue = "3.0") Double radiusKm,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseMapCalendarSummaryDTO.Response response = exerciseQueryService
+                .getExerciseMapCalendarSummary(year, month, latitude, longitude, radiusKm, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }
