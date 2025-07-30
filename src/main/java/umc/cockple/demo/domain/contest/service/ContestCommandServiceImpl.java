@@ -4,7 +4,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.converter.ContestConverter;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.domain.ContestImg;
@@ -17,8 +16,6 @@ import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
-import umc.cockple.demo.global.enums.ImgType;
-
 import java.util.List;
 
 @Slf4j
@@ -60,16 +57,12 @@ public class ContestCommandServiceImpl implements ContestCommandService {
 
         // 4. 이미지 → ContestImg로 매핑
         if (command.contestImgs() != null) {
-            for (int i = 0; i < command.contestImgs().size(); i++) {
-                ImageUploadResponseDTO imgDTO = command.contestImgs().get(i);
-                ContestImg contestImg = ContestImg.of(contest, imgDTO.imgUrl(), imgDTO.imgKey(), i);
-                contest.addContestImg(contestImg);
-            }
+            extractedImgs(command.contestImgs(), contest);
         }
 
         // 5. 영상 URL -> ContestVideo로 변환
         try {
-            extractedVideo(command, contest);
+            extractedVideo(command.contestVideos(), contest, 0);
         } catch (Exception e) {
             log.error("영상 URL 처리 중 예외 발생", e);
             throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
@@ -93,7 +86,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     // 수정
     @Override
     public ContestRecordUpdateDTO.Response updateContestRecord(
-            Long memberId, Long contestId, List<MultipartFile> contestImgs, ContestRecordUpdateDTO.Request request
+            Long memberId, Long contestId, ContestRecordUpdateDTO.Request request
     ) {
 
         log.info("[대회 기록 수정 시작] - memberId: {}, contestId: {}", memberId, contestId);
@@ -119,11 +112,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         }
 
         // 5. 이미지 추가
-        try {
-            extractedImg(contestImgs, contest);
-        } catch (Exception e) {
-            log.error("이미지 업로드 중 예외 발생", e);
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_FAIL);
+        if (request.contestImgs() != null) {
+            extractedImgs(request.contestImgs(), contest);
         }
 
         // 6. 영상 삭제
@@ -140,8 +130,11 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         }
 
         // 8. 영상 추가
+        int maxOrder = contest.getContestVideos().stream()
+                .mapToInt(ContestVideo::getVideoOrder)
+                .max().orElse(-1);
         try {
-            extractedVideo(request, contest);
+            extractedVideo(request.contestVideos(), contest, maxOrder + 1);
         } catch (Exception e) {
             log.error("영상 수정 중 오류 발생", e);
             throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
@@ -181,52 +174,26 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toDeleteResponseDTO(contest);
     }
 
-    private static void extractedVideo(ContestRecordUpdateDTO.Request request, Contest contest) {
-        if (request.contestVideos() != null) {
-            int maxOrder = contest.getContestVideos().stream()
-                    .mapToInt(ContestVideo::getVideoOrder)
-                    .max().orElse(-1);
+    private void extractedImgs(List<ImageUploadResponseDTO> imgs, Contest contest) {
+        int startIndex = contest.getContestImgs().size();
+        int total = startIndex + imgs.size();
+        if (total > 3) {
+            log.error("이미지 개수 초과: 기존 {}, 추가 {}", startIndex, imgs.size());
+            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
+        }
+        for (int i = 0; i < imgs.size(); i++) {
+            ImageUploadResponseDTO dto = imgs.get(i);
+            ContestImg contestImg = ContestImg.of(contest, dto.imgUrl(), dto.imgKey(), startIndex + i);
+            contest.addContestImg(contestImg);
+        }
+    }
 
-            for (int i = 0; i < request.contestVideos().size(); i++) {
-                String videoUrl = request.contestVideos().get(i);
-                ContestVideo video = ContestVideo.of(contest, videoUrl, maxOrder + i + 1);
+    private void extractedVideo(List<String> videoUrls, Contest contest, int startOrder) {
+        if (videoUrls != null && !videoUrls.isEmpty()) {
+            for (int i = 0; i < videoUrls.size(); i++) {
+                String url = videoUrls.get(i);
+                ContestVideo video = ContestVideo.of(contest, url, startOrder + i);
                 contest.getContestVideos().add(video);
-            }
-        }
-    }
-
-    private void extractedImg(List<MultipartFile> contestImgs, Contest contest) {
-        if (contestImgs != null && !contestImgs.isEmpty()) {
-            int baseOrder = contest.getContestImgs().size();
-
-            // 실제 업로드된 URL들 (null 아닌 값만 들어옴)
-            List<ImageUploadResponseDTO> imgUrls = imageService.uploadImages(contestImgs, ImgType.CONTEST);
-
-            int totalImages = contest.getContestImgs().size() + contestImgs.size();
-            if (totalImages > 3) {
-                log.error("이미지 최대 개수 초과 예외");
-                throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
-            }
-
-            for (int i = 0; i < imgUrls.size(); i++) {
-                String imgUrl = imgUrls.get(i).imgUrl();
-                String imgKey = imageService.extractKeyFromUrl(imgUrl, ImgType.CONTEST); // 나중에 실제 키로 대체하면 됨
-
-                ContestImg img = ContestImg.of(contest, imgUrl, imgKey, baseOrder + i);
-                contest.addContestImg(img);
-            }
-        }
-    }
-
-
-    private static void extractedVideo(ContestRecordCreateDTO.Command contestRecordCommand, Contest contest) {
-        if (contestRecordCommand.contestVideos() != null) {
-            for (int i = 0; i < contestRecordCommand.contestVideos().size(); i++) {
-                String videoUrl = contestRecordCommand.contestVideos().get(i);
-
-                ContestVideo contestVideo = ContestVideo.of(contest, videoUrl, i);
-
-                contest.getContestVideos().add(contestVideo);
             }
         }
     }

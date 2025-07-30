@@ -8,11 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.service.ContestCommandService;
 import umc.cockple.demo.domain.contest.service.ContestQueryService;
-import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -28,7 +26,6 @@ public class ContestController {
 
     private final ContestCommandService contestCommandService;
     private final ContestQueryService contestQueryService;
-    private final ImageService imageService;
 
     @PostMapping(value = "/contests/my")
     @Operation(summary = "대회 기록 등록", description = "회원이 자신의 대회 기록을 등록합니다.")
@@ -48,7 +45,7 @@ public class ContestController {
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
-    @PatchMapping(value = "/contests/my/{contestId}", consumes = {"multipart/form-data"})
+    @PatchMapping(value = "/contests/my/{contestId}")
     @Operation(summary = "대회 기록 수정", description = "회원이 자신의 대회 기록을 수정합니다.")
     @ApiResponse(responseCode = "201", description = "대회 기록 수정 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
@@ -56,14 +53,13 @@ public class ContestController {
     public BaseResponse<ContestRecordUpdateDTO.Response> updateContestRecord(
             //@AuthenticationPrincipal Long memberId
             @PathVariable Long contestId,
-            @RequestPart("updateRequest") @Valid ContestRecordUpdateDTO.Request request,
-            @RequestPart(value = "contestImg", required = false) List<MultipartFile> contestImgsToAdd
+            @RequestBody @Valid ContestRecordUpdateDTO.Request request
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
         //서비스 호출
-        ContestRecordUpdateDTO.Response response = contestCommandService.updateContestRecord(memberId, contestId, contestImgsToAdd, request);
+        ContestRecordUpdateDTO.Response response = contestCommandService.updateContestRecord(memberId, contestId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
