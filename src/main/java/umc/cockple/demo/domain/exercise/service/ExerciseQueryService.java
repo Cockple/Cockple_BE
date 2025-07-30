@@ -290,6 +290,21 @@ public class ExerciseQueryService {
         return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
+    public ExerciseMapCalendarSummaryDTO.Response getExerciseMapCalendarSummary(
+            Integer year, Integer month, Double latitude, Double longitude, Double radiusKm, Long memberId) {
+
+        log.info("월간 운동 캘린더 요약 조회 시작 - 년월: {}-{}, 중심: ({}, {}), 반경: {}km",
+                year, month, latitude, longitude, radiusKm);
+
+        Member member = findMemberOrThrow(memberId);
+
+        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(year, month);
+        SearchLocation searchLocation = SearchLocation.of(latitude, longitude, radiusKm);
+
+        
+    }
+
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
@@ -804,8 +819,19 @@ public class ExerciseQueryService {
     }
 
     private record DateRange(LocalDate start, LocalDate end) {
+        private static DateRange calculateMonthlyStartAndEnd(Integer year, Integer month) {
+            LocalDate start = LocalDate.of(year, month, 1);
+            LocalDate end = start.plusMonths(1).minusDays(1);
+            return new DateRange(start, end);
+        }
     }
 
     private record ExerciseWithDistance(Exercise exercise, double distance) {
+    }
+
+    private record SearchLocation(Double latitude, Double longitude, Double radiusKm) {
+        private static SearchLocation of(Double lat, Double lng, Double radius) {
+            return new SearchLocation(lat, lng, radius);
+        }
     }
 }
