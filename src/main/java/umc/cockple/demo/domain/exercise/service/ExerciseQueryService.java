@@ -310,7 +310,8 @@ public class ExerciseQueryService {
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
         return exerciseConverter.toMapCalendarSummaryResponse(
-                dateRange.start().getYear(), dateRange.start().getMonthValue(), latitude, longitude, radiusKm, dailyBuildings);
+                dateRange.start().getYear(), dateRange.start().getMonthValue(),
+                searchLocation.latitude(), searchLocation.longitude(), radiusKm, dailyBuildings);
     }
 
     // ========== 검증 메서드들 ==========
