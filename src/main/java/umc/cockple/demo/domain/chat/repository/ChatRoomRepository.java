@@ -27,5 +27,4 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoomMember,Long> {
             @Param("direction") String direction,
             Pageable pageable
     );
-
 }

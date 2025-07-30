@@ -11,12 +11,13 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,26 +33,40 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, Long cursor, int size, String direction) {
-        // 1. 해당 멤버가 속한 파티 채팅방 조회 (페이징 기반)
+        // 1. 커서 방향 검증 (asc 또는 desc만 허용)
+        if (!direction.equalsIgnoreCase("ASC") && !direction.equalsIgnoreCase("DESC")) {
+            throw new ChatException(ChatErrorCode.INVALID_CURSOR_DIRECTION);
+        }
+        // 2. 채팅방 조회 (내가 참여한 파티 채팅방)
         Pageable pageable = PageRequest.of(0, size);
         List<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomsByMemberId(memberId, cursor, direction, pageable);
-
-        // 2. 각 채팅방에 대해 ChatRoomInfo 생성
+        if (chatRooms.isEmpty()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
+        }
+        // 3. 각 채팅방에 대해 ChatRoomInfo 생성
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
-                    // 2-1. 채팅방 참여 인원 수
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    // 2-2. 해당 멤버의 읽음 정보 가져오기
-                    Optional<ChatRoomMember> roomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-                    Long lastReadMessageId = roomMember.map(ChatRoomMember::getLastReadMessageId).orElse(null);
-                    // 2-3. 안 읽은 메시지 수 계산
+                    ChatRoomMember chatRoomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
+                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+
+                    boolean isPartyMember = chatRoom.getParty().getMemberParties().stream()
+                            .anyMatch(mp -> mp.getMember().equals(chatRoomMember.getMember()));
+                    if (!isPartyMember) {
+                        throw new ChatException(ChatErrorCode.PARTY_MEMBER_NOT_FOUND);
+                    }
+
+
+                    ChatRoomMember roomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
+                            .orElseThrow(() -> new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER));
+                    Long lastReadMessageId = roomMember.getLastReadMessageId();
                     int unreadCount = (lastReadMessageId == null)
-                            ? 0 // 읽은 정보가 없으면 그냥 0개 처리
+                            ? 0
                             : chatMessageRepository.countUnreadMessages(chatRoomId, lastReadMessageId);
-                    // 2-4. 가장 최근 메시지 가져오기
+
                     ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
-                    // 2-5. DTO로 변환
+
                     return chatConverter.toChatRoomInfo(
                             chatRoom,
                             memberCount,
