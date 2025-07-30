@@ -166,7 +166,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("gender") Gender gender,
             @Param("level") Level level,
             @Param("age") int age);
-
+           
     @Query("""
             SELECT e FROM Exercise e 
             JOIN FETCH e.memberExercises me
@@ -208,4 +208,16 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             WHERE e.id IN :exerciseIds
             """, nativeQuery = true)
     List<Object[]> findExerciseParticipantCountsByExerciseIds(@Param("exerciseIds") List<Long> exerciseIds);
+
+    @Query("""
+            SELECT e FROM Exercise e
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            LEFT JOIN FETCH p.partyImg
+            WHERE e.date = :date
+            AND addr.buildingName = :buildingName
+            AND addr.streetAddr = :streetAddr
+            ORDER BY e.startTime ASC
+            """)
+    List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date);
 }

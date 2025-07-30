@@ -283,6 +283,15 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseBuildingDetailDTO.Response toEmptyBuildingDetailResponse(String buildingName, LocalDate date) {
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(List.of())
+                .build();
+    }
+
     public MyExerciseListDTO.Response toMyExerciseListResponse(
             Slice<Exercise> exerciseSlice,
             Map<Long, Integer> participantCountMap,
@@ -297,6 +306,21 @@ public class ExerciseConverter {
                 .totalCount(exercises.size())
                 .hasNext(exerciseSlice.hasNext())
                 .exercises(exercises)
+                .build();
+    }
+
+    public ExerciseBuildingDetailDTO.Response toBuildingDetailResponse(
+            List<Exercise> exercises, String buildingName, Map<Long, Boolean> bookmarkStatus, LocalDate date) {
+
+        List<ExerciseBuildingDetailDTO.ExerciseItem> finalExercises = exercises.stream()
+                .map(exercise -> toBuildingDetailItem(exercise, bookmarkStatus))
+                .toList();
+
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(finalExercises)
                 .build();
     }
 
@@ -709,7 +733,7 @@ public class ExerciseConverter {
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
-
+  
     private MyExerciseListDTO.ExerciseItem toMyExerciseItem(
             Exercise exercise,
             Map<Long, Integer> participantCountMap,
@@ -732,6 +756,22 @@ public class ExerciseConverter {
                 .maxCapacity(exercise.getMaxCapacity())
                 .isCompleted(isCompletedMap.getOrDefault(exercise.getId(), false))
                 .partyGuestInviteAccept(exercise.getPartyGuestAccept())
+                .build();
+    }
+
+    private ExerciseBuildingDetailDTO.ExerciseItem toBuildingDetailItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseBuildingDetailDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
                 .build();
     }
 

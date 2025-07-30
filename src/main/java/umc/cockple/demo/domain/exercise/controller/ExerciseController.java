@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -345,7 +346,7 @@ public class ExerciseController {
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
-
+    
     @GetMapping("/exercises/my")
     @Operation(summary = "내 참여 운동 조회",
             description = """
@@ -362,13 +363,31 @@ public class ExerciseController {
             @PageableDefault(size = 15) Pageable pageable,
             Authentication authentication
     ) {
-
+        
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
         MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
                 memberId, filterType, orderType, pageable);
 
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/building/daily/{date}")
+    @Operation(summary = "특정 건물의 운동 상세 조회",
+            description = "건물명과 주소를 기준으로 해당 건물의 운동 상세 정보를 조회합니다.")
+    public BaseResponse<ExerciseBuildingDetailDTO.Response> getBuildingExerciseDetails(
+            @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @RequestParam String buildingName,
+            @RequestParam String streetAddr,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L;
+
+        ExerciseBuildingDetailDTO.Response response = exerciseQueryService
+                .getBuildingExerciseDetails(buildingName, streetAddr, date, memberId);
+      
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }

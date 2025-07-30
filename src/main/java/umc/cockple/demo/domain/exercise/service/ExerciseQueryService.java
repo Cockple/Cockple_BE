@@ -239,7 +239,7 @@ public class ExerciseQueryService {
 
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
-
+    
     public MyExerciseListDTO.Response getMyExercises(
             Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
 
@@ -267,6 +267,27 @@ public class ExerciseQueryService {
         log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toMyExerciseListResponse(exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
+    }
+
+    public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
+            String buildingName, String streetAddr, LocalDate date, Long memberId) {
+
+        log.info("건물 운동 상세 조회 시작 - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+
+        Member member = findMemberOrThrow(memberId);
+        List<Exercise> exercises = findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+
+        if (exercises.isEmpty()) {
+            log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
+            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName, date);
+        }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+
+        log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
+
+        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
     // ========== 검증 메서드들 ==========
@@ -683,13 +704,17 @@ public class ExerciseQueryService {
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
-
+  
     private Slice<Exercise> findExercisesByFilterType(Long memberId, MyExerciseFilterType filterType, Pageable pageable) {
         return switch (filterType) {
             case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
             case UPCOMING -> exerciseRepository.findMyUpcomingExercisesWithPaging(memberId, pageable);
             case COMPLETED -> exerciseRepository.findMyCompletedExercisesWithPaging(memberId, pageable);
-        };
+    };
+
+    private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
+        return exerciseRepository
+                .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
     }
 
     private Member findMemberOrThrow(Long memberId) {
