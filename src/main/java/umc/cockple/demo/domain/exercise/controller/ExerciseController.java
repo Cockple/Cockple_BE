@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -395,7 +394,7 @@ public class ExerciseController {
     @Operation(summary = "월간 운동 건물 지도 데이터",
             description = "특정 날짜가 속한 월에 운동이 개최되는 반경 내 건물들의 위치 정보를 지도 표시용으로 반환")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ExerciseMapCalendarSummaryDTO.Response> getExerciseMapCalendarSummary(
+    public BaseResponse<ExerciseMapBuildingsDTO.Response> getMonthlyExerciseBuildings(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
@@ -405,7 +404,7 @@ public class ExerciseController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
 
-        ExerciseMapCalendarSummaryDTO.Response response = exerciseQueryService
+        ExerciseMapBuildingsDTO.Response response = exerciseQueryService
                 .getExerciseMapCalendarSummary(date, latitude, longitude, radiusKm, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

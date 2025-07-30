@@ -290,7 +290,7 @@ public class ExerciseQueryService {
         return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
-    public ExerciseMapCalendarSummaryDTO.Response getExerciseMapCalendarSummary(
+    public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
             LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
@@ -304,7 +304,7 @@ public class ExerciseQueryService {
 
         List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
 
-        Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> dailyBuildings =
+        Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> dailyBuildings =
                 groupExercisesByDateAndBuilding(exercises);
 
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
@@ -542,7 +542,7 @@ public class ExerciseQueryService {
                 ));
     }
 
-    private Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> groupExercisesByDateAndBuilding(List<Exercise> exercises) {
+    private Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> groupExercisesByDateAndBuilding(List<Exercise> exercises) {
         Map<LocalDate, List<Exercise>> exercisesByDate = exercises.stream()
                 .collect(Collectors.groupingBy(Exercise::getDate));
 
@@ -555,7 +555,7 @@ public class ExerciseQueryService {
                 ));
     }
 
-    private List<ExerciseMapCalendarSummaryDTO.BuildingSummary> createBuildingSummariesForDate(List<Exercise> dayExercises) {
+    private List<ExerciseMapBuildingsDTO.BuildingInfo> createBuildingSummariesForDate(List<Exercise> dayExercises) {
         Map<BuildingKey, List<Exercise>> exercisesByBuilding = dayExercises.stream()
                 .collect(Collectors.groupingBy(this::createBuildingKey));
 

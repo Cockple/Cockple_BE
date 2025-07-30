@@ -324,15 +324,15 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseMapCalendarSummaryDTO.Response toMapCalendarSummaryResponse(
+    public ExerciseMapBuildingsDTO.Response toMapCalendarSummaryResponse(
             Integer year,
             Integer month,
             Double latitude,
             Double longitude,
             Double radiusKm,
-            Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> buildings) {
+            Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> buildings) {
 
-        return ExerciseMapCalendarSummaryDTO.Response.builder()
+        return ExerciseMapBuildingsDTO.Response.builder()
                 .year(year)
                 .month(month)
                 .centerLatitude(latitude)
@@ -793,9 +793,9 @@ public class ExerciseConverter {
                 .build();
     }
 
-    public ExerciseMapCalendarSummaryDTO.BuildingSummary toBuildingSummary(
+    public ExerciseMapBuildingsDTO.BuildingInfo toBuildingSummary(
             String name, String address, Double latitude, Double longitude) {
-        return ExerciseMapCalendarSummaryDTO.BuildingSummary.builder()
+        return ExerciseMapBuildingsDTO.BuildingInfo.builder()
                 .buildingName(name)
                 .streetAddr(address)
                 .latitude(latitude)

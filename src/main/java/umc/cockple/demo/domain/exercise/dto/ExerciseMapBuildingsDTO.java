@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-public class ExerciseMapCalendarSummaryDTO {
+public class ExerciseMapBuildingsDTO {
 
     @Builder
     public record Response(
@@ -15,11 +15,11 @@ public class ExerciseMapCalendarSummaryDTO {
             Double centerLatitude,
             Double centerLongitude,
             Double radiusKm,
-            Map<LocalDate, List<BuildingSummary>> buildings) {
+            Map<LocalDate, List<BuildingInfo>> buildings) {
     }
 
     @Builder
-    public record BuildingSummary(
+    public record BuildingInfo(
             String buildingName,
             String streetAddr,
             Double latitude,
