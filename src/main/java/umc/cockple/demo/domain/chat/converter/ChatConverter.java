@@ -6,7 +6,6 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 public class ChatConverter {

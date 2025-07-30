@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.chat.dto;
 
 import lombok.Builder;
-import umc.cockple.demo.domain.chat.enums.MessageType;
 
 import java.time.LocalDateTime;
 import java.util.List;

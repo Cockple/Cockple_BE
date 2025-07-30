@@ -17,7 +17,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoomMember,Long> {
     AND (:cursor IS NULL OR
          (:direction = 'desc' AND cr.id < :cursor) OR
          (:direction = 'asc' AND cr.id > :cursor))
-    ORDER BY 
+    ORDER BY
         CASE WHEN :direction = 'asc' THEN cr.id END ASC,
         CASE WHEN :direction = 'desc' THEN cr.id END DESC
 """)
