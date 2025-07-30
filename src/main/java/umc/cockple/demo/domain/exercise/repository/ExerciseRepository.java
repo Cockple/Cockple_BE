@@ -224,9 +224,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     @Query("""
             SELECT e FROM Exercise e
             JOIN FETCH e.exerciseAddr addr
-            JOIN FETCH e.party p
             WHERE e.date BETWEEN :startDate AND :endDate
-            AND p.status = 'ACTIVE'
             AND (
                 6371 * acos(
                     cos(radians(:latitude)) * cos(radians(addr.latitude)) *
