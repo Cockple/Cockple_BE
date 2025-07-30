@@ -296,10 +296,11 @@ public class ExerciseQueryService {
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
                  date, latitude, longitude, radiusKm);
 
-        Member member = findMemberOrThrow(memberId);
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
 
         DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(date);
-        SearchLocation searchLocation = SearchLocation.of(latitude, longitude, radiusKm);
+        SearchLocation searchLocation = SearchLocation.createLocation(latitude, longitude, radiusKm, mainAddr);
 
         List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
 
@@ -886,8 +887,16 @@ public class ExerciseQueryService {
     }
 
     private record SearchLocation(Double latitude, Double longitude, Double radiusKm) {
-        private static SearchLocation of(Double lat, Double lng, Double radius) {
-            return new SearchLocation(lat, lng, radius);
+        private static SearchLocation createLocation(Double latitude, Double longitude, Double radius, MemberAddr addr) {
+            if (latitude == null && longitude == null) {
+                return new SearchLocation(addr.getLatitude(), addr.getLongitude(), radius);
+            }
+
+            if (latitude == null || longitude == null) {
+                throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO);
+            }
+
+            return new SearchLocation(latitude, longitude, radius);
         }
     }
 

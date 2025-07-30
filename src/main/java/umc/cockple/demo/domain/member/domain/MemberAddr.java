@@ -34,10 +34,10 @@ public class MemberAddr extends BaseEntity {
     private String buildingName; // 건물명
 
     @Column(nullable = false)
-    private Float latitude;
+    private Double latitude;
 
     @Column(nullable = false)
-    private Float longitude;
+    private Double longitude;
 
     @Column(nullable = false)
     private Boolean isMain;

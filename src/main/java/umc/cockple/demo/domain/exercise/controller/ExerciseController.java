@@ -397,8 +397,8 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ExerciseMapCalendarSummaryDTO.Response> getExerciseMapCalendarSummary(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
-            @RequestParam Double latitude,
-            @RequestParam Double longitude,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
             @RequestParam(defaultValue = "3.0") Double radiusKm,
             Authentication authentication
     ){
