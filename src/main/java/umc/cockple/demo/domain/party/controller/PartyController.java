@@ -84,9 +84,17 @@ public class PartyController {
             Authentication authentication
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = 10L; // 임시값
 
-        PartyFilterDTO.Request filter = new PartyFilterDTO.Request(addr1, addr2, level, partyType, activityDay, activityTime, keyword);
+        PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
+                .addr1(addr1)
+                .addr2(addr2)
+                .level(level)
+                .partyType(partyType)
+                .activityDay(activityDay)
+                .activityTime(activityTime)
+                .keyword(keyword)
+                .build();
 
         Slice<PartyDTO.Response> response = partyQueryService.getRecommendedParties(memberId, isCockpleRecommend, filter, sort, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
