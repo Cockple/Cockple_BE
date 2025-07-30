@@ -373,9 +373,9 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @GetMapping("/exercises/building/daily/{date}")
-    @Operation(summary = "특정 건물의 운동 상세 조회",
-            description = "건물명과 주소를 기준으로 해당 건물의 운동 상세 정보를 조회합니다.")
+    @GetMapping("/buildings/exercises/{date}")
+    @Operation(summary = "건물 운동 상세 조회",
+            description = "특정 날짜 및 건물의 운동 상세 정보를 조회합니다.")
     public BaseResponse<ExerciseBuildingDetailDTO.Response> getBuildingExerciseDetails(
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @RequestParam String buildingName,
@@ -391,9 +391,9 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @GetMapping("/exercises/map/monthly/summary")
-    @Operation(summary = "지도 반경 내 월간 운동 캘린더 요약",
-            description = "특정 좌표 기준 반경 내 건물별 운동 존재 여부만 제공")
+    @GetMapping("/buildings/map/monthly")
+    @Operation(summary = "월간 운동 건물 지도 데이터",
+            description = "특정 날짜가 속한 월에 운동이 개최되는 반경 내 건물들의 위치 정보를 지도 표시용으로 반환")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ExerciseMapCalendarSummaryDTO.Response> getExerciseMapCalendarSummary(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
