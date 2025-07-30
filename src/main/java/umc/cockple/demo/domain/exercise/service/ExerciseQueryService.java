@@ -239,7 +239,7 @@ public class ExerciseQueryService {
 
         return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
-    
+
     public MyExerciseListDTO.Response getMyExercises(
             Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
 
@@ -288,6 +288,30 @@ public class ExerciseQueryService {
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
         return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
+    }
+
+    public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
+            LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
+
+        log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
+                 date, latitude, longitude, radiusKm);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(date);
+        SearchLocation searchLocation = SearchLocation.createLocation(latitude, longitude, radiusKm, mainAddr);
+
+        List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
+
+        Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> dailyBuildings =
+                groupExercisesByDateAndBuilding(exercises);
+
+        log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
+
+        return exerciseConverter.toMapCalendarSummaryResponse(
+                dateRange.start().getYear(), dateRange.start().getMonthValue(),
+                searchLocation.latitude(), searchLocation.longitude(), radiusKm, dailyBuildings);
     }
 
     // ========== 검증 메서드들 ==========
@@ -457,7 +481,7 @@ public class ExerciseQueryService {
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
         return candidateExercises.stream()
                 .map(exercise -> {
-                    float distance = calculateDistance(
+                    double distance = calculateDistance(
                             mainAddr.getLatitude(),
                             mainAddr.getLongitude(),
                             exercise.getExerciseAddr().getLatitude(),
@@ -475,7 +499,7 @@ public class ExerciseQueryService {
     }
 
     // 하버사인 공식을 이용한 거리 계산
-    private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
+    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
         final double R = 6371; // 지구 반지름 (km)
 
         double latDistance = Math.toRadians(latitude1 - latitude);
@@ -516,6 +540,30 @@ public class ExerciseQueryService {
                         Exercise::getId,
                         Exercise::isAlreadyStarted
                 ));
+    }
+
+    private Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> groupExercisesByDateAndBuilding(List<Exercise> exercises) {
+        Map<LocalDate, List<Exercise>> exercisesByDate = exercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        return exercisesByDate.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> createBuildingSummariesForDate(entry.getValue()),
+                        (existing, replacement) -> existing,
+                        TreeMap::new
+                ));
+    }
+
+    private List<ExerciseMapBuildingsDTO.BuildingInfo> createBuildingSummariesForDate(List<Exercise> dayExercises) {
+        Map<BuildingKey, List<Exercise>> exercisesByBuilding = dayExercises.stream()
+                .collect(Collectors.groupingBy(this::createBuildingKey));
+
+        return exercisesByBuilding.keySet().stream()
+                .map(entry -> exerciseConverter.toBuildingSummary(
+                        entry.name(), entry.address(), entry.latitude(), entry.longitude())
+                )
+                .toList();
     }
 
     // ========== 세부 비즈니스 메서드 ==========
@@ -677,6 +725,17 @@ public class ExerciseQueryService {
         };
     }
 
+    private BuildingKey createBuildingKey(Exercise exercise) {
+        var addr = exercise.getExerciseAddr();
+
+        return new BuildingKey(
+                addr.getBuildingName(),
+                addr.getStreetAddr(),
+                addr.getLatitude().doubleValue(),
+                addr.getLongitude().doubleValue()
+        );
+    }
+
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
@@ -704,7 +763,7 @@ public class ExerciseQueryService {
             List<Long> myPartyIds, LocalDate startDate, LocalDate endDate) {
         return exerciseRepository.findByPartyIdsAndDateRange(myPartyIds, startDate, endDate);
     }
-  
+
     private Slice<Exercise> findExercisesByFilterType(Long memberId, MyExerciseFilterType filterType, Pageable pageable) {
         return switch (filterType) {
             case ALL -> exerciseRepository.findMyExercisesWithPaging(memberId, pageable);
@@ -716,6 +775,16 @@ public class ExerciseQueryService {
     private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
         return exerciseRepository
                 .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+    }
+
+    private List<Exercise> findExercisesByMonthAndRadius(DateRange dateRange, SearchLocation searchLocation) {
+        return exerciseRepository.findExercisesByMonthAndRadius(
+                dateRange.start(),
+                dateRange.end(),
+                searchLocation.latitude(),
+                searchLocation.longitude(),
+                searchLocation.radiusKm().intValue()
+        );
     }
 
     private Member findMemberOrThrow(Long memberId) {
@@ -804,8 +873,53 @@ public class ExerciseQueryService {
     }
 
     private record DateRange(LocalDate start, LocalDate end) {
+        private static DateRange calculateMonthlyStartAndEnd(LocalDate date) {
+            LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+            LocalDate start = targetDate.withDayOfMonth(1);
+            int lastDay = targetDate.lengthOfMonth();
+            LocalDate end = targetDate.withDayOfMonth(lastDay);
+
+            return new DateRange(start, end);
+        }
     }
 
     private record ExerciseWithDistance(Exercise exercise, double distance) {
+    }
+
+    private record SearchLocation(Double latitude, Double longitude, Double radiusKm) {
+        private static SearchLocation createLocation(Double latitude, Double longitude, Double radius, MemberAddr addr) {
+            if (latitude == null && longitude == null) {
+                return new SearchLocation(addr.getLatitude(), addr.getLongitude(), radius);
+            }
+
+            if (latitude == null || longitude == null) {
+                throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO);
+            }
+
+            return new SearchLocation(latitude, longitude, radius);
+        }
+    }
+
+    private record BuildingKey(
+            String name,
+            String address,
+            Double latitude,
+            Double longitude
+    ) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+
+            BuildingKey that = (BuildingKey) obj;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(address, that.address);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, address);
+        }
     }
 }
