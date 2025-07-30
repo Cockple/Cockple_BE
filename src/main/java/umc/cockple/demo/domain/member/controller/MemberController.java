@@ -89,8 +89,8 @@ public class MemberController {
     @Operation(summary = "회원 탈퇴 API",
             description = "사용자 회원 탈퇴")
     public BaseResponse<String> withdraw() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
@@ -112,8 +112,8 @@ public class MemberController {
     @Operation(summary = "내 프로필 조회 API",
             description = "사용자가 자신의 프로필을 조회")
     public BaseResponse<GetMyProfileResponseDTO> getMyProfile() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getMyProfile(memberId));
     }
@@ -123,7 +123,7 @@ public class MemberController {
     @Operation(summary = "프로필 수정 API",
             description = "사용자가 자신의 프로필 수정")
     public BaseResponse<Object> updateProfile(@RequestBody @Valid UpdateProfileRequestDTO requestDTO) throws IOException {
-        // 추후 시큐리티를 통해 id 가져옴
+
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         memberCommandService.updateProfile(requestDTO, memberId);
@@ -138,7 +138,7 @@ public class MemberController {
     @Operation(summary = "회원 주소 추가 API",
             description = "사용자가 자신의 주소 추가")
     public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody @Valid CreateMemberAddrRequestDTO requestDto) {
-        // 추후 시큐리티를 통해 id 가져옴
+
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.CREATED, memberCommandService.addMemberNewAddr(requestDto, memberId));
@@ -148,8 +148,8 @@ public class MemberController {
     @Operation(summary = "대표 주소 변경 API",
             description = "사용자가 자신의 대표주소 변경")
     public BaseResponse<String> updateMainAddr(@PathVariable Long memberAddrId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         memberCommandService.updateMainAddr(memberId, memberAddrId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -159,8 +159,8 @@ public class MemberController {
     @Operation(summary = "회원 주소 삭제 API",
             description = "사용자가 자신의 주소 중 원하는 주소를 삭제")
     public BaseResponse<String> deleteMemberAddr(@PathVariable Long memberAddrId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         memberCommandService.deleteMemberAddr(memberId, memberAddrId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -170,8 +170,8 @@ public class MemberController {
     @Operation(summary = "회원 현재 위치 조회 API",
             description = "사용자의 현재 위치를 조회 (홈 화면 상단에 해당 위치의 동을 띄울 때 사용)")
     public BaseResponse<GetNowAddressResponseDTO> getNowAddress() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getNowAddress(memberId));
 
@@ -181,8 +181,8 @@ public class MemberController {
     @Operation(summary = "회원 주소 전체 조회 API",
             description = "사용자가 등록한 모든 주소를 조회")
     public BaseResponse<List<GetAllAddressResponseDTO>> getAllAddress() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         List<GetAllAddressResponseDTO> addresses = memberQueryService.getAllAddress(memberId);
         return BaseResponse.success(CommonSuccessCode.OK, addresses);
