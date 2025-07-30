@@ -17,6 +17,7 @@ import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -123,7 +124,7 @@ public class MemberController {
             description = "사용자가 자신의 프로필 수정")
     public BaseResponse<Object> updateProfile(@RequestBody @Valid UpdateProfileRequestDTO requestDTO) throws IOException {
         // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         memberCommandService.updateProfile(requestDTO, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -138,7 +139,7 @@ public class MemberController {
             description = "사용자가 자신의 주소 추가")
     public BaseResponse<CreateMemberAddrResponseDTO> createMemberAddress(@RequestBody @Valid CreateMemberAddrRequestDTO requestDto) {
         // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.CREATED, memberCommandService.addMemberNewAddr(requestDto, memberId));
     }

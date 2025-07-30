@@ -2,6 +2,7 @@ package umc.cockple.demo.global.oauth2.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import umc.cockple.demo.global.oauth2.domain.info.KakaoClientInfo;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class KakaoClient {
 
@@ -35,7 +37,7 @@ public class KakaoClient {
 
     // 인가코드로 AccessToken 요청하기
     public String getAccessToken(String code) {
-        BodyInserters.FormInserter<String> formData = BodyInserters.fromFormData("grant-type", "authorization_code")
+        BodyInserters.FormInserter<String> formData = BodyInserters.fromFormData("grant_type", "authorization_code")
                 .with("client_id", clientId)
                 .with("redirect_uri", redirectUri)
                 .with("code", code);
@@ -44,6 +46,8 @@ public class KakaoClient {
             formData.with("client_secret", clientSecret);
         }
 
+        log.info("Redirect URI used: {}", redirectUri);
+        log.info("Auth Code: {}", code);
         JsonNode response = webClient.post()
                 .uri(tokenUri)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
