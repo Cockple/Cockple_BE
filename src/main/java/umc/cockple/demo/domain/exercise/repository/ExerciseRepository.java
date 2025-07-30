@@ -227,9 +227,9 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             WHERE e.date BETWEEN :startDate AND :endDate
             AND (
                 6371 * acos(
-                    cos(radians(:latitude)) * cos(radians(addr.latitude)) *
+                    LEAST(1.0, cos(radians(:latitude)) * cos(radians(addr.latitude)) *
                     cos(radians(addr.longitude) - radians(:longitude)) +
-                    sin(radians(:latitude)) * sin(radians(addr.latitude))
+                    sin(radians(:latitude)) * sin(radians(addr.latitude)))
                 )
             ) <= :radiusKm
             ORDER BY e.date ASC, e.startTime ASC

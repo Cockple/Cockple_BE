@@ -306,7 +306,7 @@ public class ExerciseQueryService {
         Map<LocalDate, List<ExerciseMapCalendarSummaryDTO.BuildingSummary>> dailyBuildings =
                 groupExercisesByDateAndBuilding(exercises);
 
-        log.info("월간 운동 캘린더 요약 조회 완료");
+        log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
         return exerciseConverter.toMapCalendarSummaryResponse(year, month, latitude, longitude, radiusKm, dailyBuildings);
     }
@@ -478,7 +478,7 @@ public class ExerciseQueryService {
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
         return candidateExercises.stream()
                 .map(exercise -> {
-                    float distance = calculateDistance(
+                    double distance = calculateDistance(
                             mainAddr.getLatitude(),
                             mainAddr.getLongitude(),
                             exercise.getExerciseAddr().getLatitude(),
@@ -496,7 +496,7 @@ public class ExerciseQueryService {
     }
 
     // 하버사인 공식을 이용한 거리 계산
-    private float calculateDistance(Float latitude, Float longitude, Float latitude1, Float longitude1) {
+    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
         final double R = 6371; // 지구 반지름 (km)
 
         double latDistance = Math.toRadians(latitude1 - latitude);
