@@ -1,4 +1,4 @@
-package umc.cockple.demo.global.enums;
+package umc.cockple.demo.domain.party.enums;
 
 public enum RequestStatus {
 

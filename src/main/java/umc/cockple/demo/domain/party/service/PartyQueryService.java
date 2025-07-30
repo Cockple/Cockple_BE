@@ -10,4 +10,5 @@ public interface PartyQueryService {
     Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable);
     Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable);
     PartyMemberDTO.Response getPartyMembers(Long partyId, Long currentMemberId);
+    Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Pageable pageable);
 }

@@ -9,8 +9,8 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
 import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.service.BookmarkCommandService;
 import umc.cockple.demo.domain.bookmark.service.BookmarkQueryService;
-import umc.cockple.demo.global.enums.ExerciseOrderType;
-import umc.cockple.demo.global.enums.PartyOrderType;
+import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -76,6 +76,7 @@ public class BookmarkController {
     public BaseResponse<List<GetAllExerciseBookmarksResponseDTO>> getAllExerciseBookmarks(@RequestParam ExerciseOrderType orderType) {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
+
 
         return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
     }

@@ -1,16 +1,16 @@
 package umc.cockple.demo.domain.exercise.converter;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -262,6 +262,68 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseRecommendationDTO.Response toExerciseRecommendationResponse(
+            List<Exercise> finalExercises, Map<Long, Boolean> bookmarkStatus) {
+
+        List<ExerciseRecommendationDTO.ExerciseItem> exercises = finalExercises.stream()
+                .map(exercise -> toExerciseRecommendationItem(exercise, bookmarkStatus))
+                .toList();
+
+        return ExerciseRecommendationDTO.Response.builder()
+                .totalExercises(finalExercises.size())
+                .exercises(exercises)
+                .build();
+    }
+
+    public MyExerciseListDTO.Response toEmptyMyExerciseList() {
+        return MyExerciseListDTO.Response.builder()
+                .totalCount(0)
+                .hasNext(false)
+                .exercises(List.of())
+                .build();
+    }
+
+    public ExerciseBuildingDetailDTO.Response toEmptyBuildingDetailResponse(String buildingName, LocalDate date) {
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(List.of())
+                .build();
+    }
+
+    public MyExerciseListDTO.Response toMyExerciseListResponse(
+            Slice<Exercise> exerciseSlice,
+            Map<Long, Integer> participantCountMap,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> isCompletedMap) {
+
+        List<MyExerciseListDTO.ExerciseItem> exercises = exerciseSlice.getContent().stream()
+                .map(exercise -> toMyExerciseItem(exercise, participantCountMap, bookmarkStatus, isCompletedMap))
+                .toList();
+
+        return MyExerciseListDTO.Response.builder()
+                .totalCount(exercises.size())
+                .hasNext(exerciseSlice.hasNext())
+                .exercises(exercises)
+                .build();
+    }
+
+    public ExerciseBuildingDetailDTO.Response toBuildingDetailResponse(
+            List<Exercise> exercises, String buildingName, Map<Long, Boolean> bookmarkStatus, LocalDate date) {
+
+        List<ExerciseBuildingDetailDTO.ExerciseItem> finalExercises = exercises.stream()
+                .map(exercise -> toBuildingDetailItem(exercise, bookmarkStatus))
+                .toList();
+
+        return ExerciseBuildingDetailDTO.Response.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .buildingName(buildingName)
+                .exercises(finalExercises)
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
@@ -447,8 +509,9 @@ public class ExerciseConverter {
         for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
             List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
 
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    toPartyExerciseItems(dayExercises, levelCache, participantCounts, bookmarkStatus);
+            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = dayExercises.stream()
+                    .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus))
+                    .toList();
 
             dailyExercisesList.add(createPartyDailyExercises(date, exerciseItems));
         }
@@ -469,8 +532,9 @@ public class ExerciseConverter {
         for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
             List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
 
-            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    toMyExerciseItems(dayExercises);
+            List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = dayExercises.stream()
+                    .map(this::toMyCalendarItem)
+                    .toList();
 
             dailyExercisesList.add(createMyDailyExercises(date, exerciseItems));
         }
@@ -500,8 +564,9 @@ public class ExerciseConverter {
                 dayExercises.sort(Comparator.comparingInt((Exercise e) -> participantCounts.getOrDefault(e.getId(), 0)).reversed());
             }
 
-            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems =
-                    toMyPartyExerciseItems(dayExercises, bookmarkStatus, participantCounts);
+            List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = dayExercises.stream()
+                    .map(exercise -> toMyPartyCalendarItem(exercise, bookmarkStatus, participantCounts))
+                    .toList();
 
             dailyExercisesList.add(createMyPartyDailyExercises(date, exerciseItems));
         }
@@ -550,7 +615,7 @@ public class ExerciseConverter {
     private PartyExerciseCalendarDTO.DailyExercises createPartyDailyExercises(
             LocalDate date,
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
-        
+
         return PartyExerciseCalendarDTO.DailyExercises.builder()
                 .date(date)
                 .dayOfWeek(date.getDayOfWeek().name())
@@ -580,31 +645,7 @@ public class ExerciseConverter {
                 .build();
     }
 
-    // 캘린더 아이템 변환
-    private List<PartyExerciseCalendarDTO.ExerciseCalendarItem> toPartyExerciseItems(
-            List<Exercise> exercises,
-            PartyLevelCache levelCache,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus) {
-
-        return exercises.stream()
-                .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus))
-                .toList();
-    }
-
-    private List<MyExerciseCalendarDTO.ExerciseCalendarItem> toMyExerciseItems(List<Exercise> exercises) {
-        return exercises.stream()
-                .map(this::toMyCalendarItem)
-                .toList();
-    }
-
-    private List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> toMyPartyExerciseItems(
-            List<Exercise> exercises, Map<Long, Boolean> bookmarkStatus, Map<Long, Integer> participantCounts) {
-        return exercises.stream()
-                .map(exercise -> toMyPartyCalendarItem(exercise, bookmarkStatus, participantCounts))
-                .toList();
-    }
-
+    // 운동 아이템 변환 메서드
     private PartyExerciseCalendarDTO.ExerciseCalendarItem toPartyCalendarItem(
             Exercise exercise,
             PartyLevelCache levelCache,
@@ -671,6 +712,66 @@ public class ExerciseConverter {
                 .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .nowCapacity(participantCounts.getOrDefault(exercise.getId(), 0))
+                .build();
+    }
+
+    private ExerciseRecommendationDTO.ExerciseItem toExerciseRecommendationItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .imageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+    }
+  
+    private MyExerciseListDTO.ExerciseItem toMyExerciseItem(
+            Exercise exercise,
+            Map<Long, Integer> participantCountMap,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> isCompletedMap) {
+
+        Party party = exercise.getParty();
+
+        return MyExerciseListDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .date(exercise.getDate())
+                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .currentParticipants(participantCountMap.getOrDefault(exercise.getId(), 0))
+                .maxCapacity(exercise.getMaxCapacity())
+                .isCompleted(isCompletedMap.getOrDefault(exercise.getId(), false))
+                .partyGuestInviteAccept(exercise.getPartyGuestAccept())
+                .build();
+    }
+
+    private ExerciseBuildingDetailDTO.ExerciseItem toBuildingDetailItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseBuildingDetailDTO.ExerciseItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
                 .build();
     }
 

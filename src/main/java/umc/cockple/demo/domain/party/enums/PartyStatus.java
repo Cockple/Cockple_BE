@@ -1,4 +1,4 @@
-package umc.cockple.demo.global.enums;
+package umc.cockple.demo.domain.party.enums;
 
 public enum PartyStatus {
     //모임 삭제 시 INACTIVE

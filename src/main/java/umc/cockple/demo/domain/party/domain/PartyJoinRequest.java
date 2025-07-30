@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
-import umc.cockple.demo.global.enums.RequestStatus;
+import umc.cockple.demo.domain.party.enums.RequestStatus;
 
 @Entity
 @Builder

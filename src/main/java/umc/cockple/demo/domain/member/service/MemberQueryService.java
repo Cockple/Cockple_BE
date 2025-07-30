@@ -15,7 +15,7 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.global.enums.MedalType;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 
 import java.util.List;
 import java.util.Map;

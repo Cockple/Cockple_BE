@@ -1,7 +1,7 @@
 package umc.cockple.demo.domain.notification.dto;
 
 import lombok.Builder;
-import umc.cockple.demo.global.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.NotificationType;
 
 @Builder
 public record AllNotificationsResponseDTO(

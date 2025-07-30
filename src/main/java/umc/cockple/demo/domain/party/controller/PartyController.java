@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
-import umc.cockple.demo.global.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -62,6 +60,22 @@ public class PartyController {
         // sort 파라미터에 따라 Pageable 객체를 새로 생성
 
         Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sort, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/my/parties/suggestions")
+    @Operation(summary = "추천 모임 목록 조회",
+            description = "사용자에게 추천되는 모임 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
+            @PageableDefault(size = 10) Pageable pageable,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        Slice<PartyDTO.Response> response = partyQueryService.getRecommendedParties(memberId, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 

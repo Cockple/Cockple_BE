@@ -5,12 +5,14 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
+import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.MemberStatus;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;
@@ -81,6 +83,13 @@ public class Member extends BaseEntity {
 
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
     private ProfileImg profileImg;
+
+    @OneToMany(mappedBy = "sender")
+    private List<ChatMessage> chatMessages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
+
 
     public void addParticipation(MemberExercise memberExercise) {
         this.memberExercises.add(memberExercise);
