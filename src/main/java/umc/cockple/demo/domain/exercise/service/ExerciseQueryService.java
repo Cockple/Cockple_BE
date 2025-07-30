@@ -291,14 +291,14 @@ public class ExerciseQueryService {
     }
 
     public ExerciseMapCalendarSummaryDTO.Response getExerciseMapCalendarSummary(
-            Integer year, Integer month, Double latitude, Double longitude, Double radiusKm, Long memberId) {
+            LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
 
-        log.info("월간 운동 캘린더 요약 조회 시작 - 년월: {}-{}, 중심: ({}, {}), 반경: {}km",
-                year, month, latitude, longitude, radiusKm);
+        log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
+                 date, latitude, longitude, radiusKm);
 
         Member member = findMemberOrThrow(memberId);
 
-        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(year, month);
+        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(date);
         SearchLocation searchLocation = SearchLocation.of(latitude, longitude, radiusKm);
 
         List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
@@ -308,7 +308,8 @@ public class ExerciseQueryService {
 
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
-        return exerciseConverter.toMapCalendarSummaryResponse(year, month, latitude, longitude, radiusKm, dailyBuildings);
+        return exerciseConverter.toMapCalendarSummaryResponse(
+                dateRange.start().getYear(), dateRange.start().getMonthValue(), latitude, longitude, radiusKm, dailyBuildings);
     }
 
     // ========== 검증 메서드들 ==========
@@ -870,9 +871,13 @@ public class ExerciseQueryService {
     }
 
     private record DateRange(LocalDate start, LocalDate end) {
-        private static DateRange calculateMonthlyStartAndEnd(Integer year, Integer month) {
-            LocalDate start = LocalDate.of(year, month, 1);
-            LocalDate end = start.plusMonths(1).minusDays(1);
+        private static DateRange calculateMonthlyStartAndEnd(LocalDate date) {
+            LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+            LocalDate start = targetDate.withDayOfMonth(1);
+            int lastDay = targetDate.lengthOfMonth();
+            LocalDate end = targetDate.withDayOfMonth(lastDay);
+
             return new DateRange(start, end);
         }
     }
