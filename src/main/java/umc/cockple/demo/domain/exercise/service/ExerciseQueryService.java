@@ -301,6 +301,7 @@ public class ExerciseQueryService {
         DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(year, month);
         SearchLocation searchLocation = SearchLocation.of(latitude, longitude, radiusKm);
 
+        List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
         
     }
 
@@ -731,6 +732,16 @@ public class ExerciseQueryService {
     private List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date) {
         return exerciseRepository
                 .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
+    }
+
+    private List<Exercise> findExercisesByMonthAndRadius(DateRange dateRange, SearchLocation searchLocation) {
+        return exerciseRepository.findExercisesByMonthAndRadius(
+                dateRange.start(),
+                dateRange.end(),
+                searchLocation.latitude(),
+                searchLocation.latitude(),
+                searchLocation.radiusKm().intValue()
+        );
     }
 
     private Member findMemberOrThrow(Long memberId) {

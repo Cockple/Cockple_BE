@@ -220,4 +220,26 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             ORDER BY e.startTime ASC
             """)
     List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date);
+
+    @Query("""
+            SELECT e FROM Exercise e
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            WHERE e.date BETWEEN :startDate AND :endDate
+            AND p.status = 'ACTIVE'
+            AND (
+                6371 * acos(
+                    cos(radians(:latitude)) * cos(radians(addr.latitude)) *
+                    cos(radians(addr.longitude) - radians(:longitude)) +
+                    sin(radians(:latitude)) * sin(radians(addr.latitude))
+                )
+            ) <= :radiusKm
+            ORDER BY e.date ASC, e.startTime ASC
+            """)
+    List<Exercise> findExercisesByMonthAndRadius(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate end,
+            @Param("latitude") Double latitude,
+            @Param("longitude") Double longitude,
+            @Param("radiusKm") Integer radiusKm);
 }
