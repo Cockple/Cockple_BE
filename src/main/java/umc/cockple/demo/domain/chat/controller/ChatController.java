@@ -24,7 +24,7 @@ public class ChatController {
     @GetMapping(value = "/chats/parties")
     @Operation(summary = "모임 채팅방 목록 조회", description = "회원이 자신의 모임 채팅방 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<PartyChatRoomDTO.Response> getParyChatRooms(
+    public BaseResponse<PartyChatRoomDTO.Response> getPartyChatRooms(
             //@AuthenticationPrincipal Long memberId,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size,
@@ -33,6 +33,22 @@ public class ChatController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
         PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, cursor, size, direction);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping(value = "/chats/parties/search")
+    @Operation(summary = "모임 채팅방 이름 검색", description = "회원이 자신의 모임 채팅방을 이름으로 검색합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<PartyChatRoomDTO.Response> searchPartyChatRooms(
+            //@AuthenticationPrincipal Long memberId,
+            @RequestParam String name,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "DESC") Direction direction
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, cursor, size, direction);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }
