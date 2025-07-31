@@ -330,7 +330,7 @@ public class ExerciseQueryService {
         List<Exercise> exercises;
 
         if (isCockpleRecommend) {
-            exercises = getCockpleRecommendedExercises(member, dateRange);
+            exercises = findCockpleRecommendedExercisesByDateRange(member, dateRange);
         } else {
             exercises = getFilteredRecommendedExercises(member, dateRange, filterSortType);
         }
@@ -573,12 +573,6 @@ public class ExerciseQueryService {
                         entry.name(), entry.address(), entry.latitude(), entry.longitude())
                 )
                 .toList();
-    }
-
-    private List<Exercise> getCockpleRecommendedExercises(Member member, DateRange dateRange) {
-        MemberAddr mainAddr = findMainAddrOrThrow(member);
-
-        List<Exercise> exercises = findCockpleRecommendedExercisesByDateRange(member, dateRange);
     }
 
     // ========== 세부 비즈니스 메서드 ==========
