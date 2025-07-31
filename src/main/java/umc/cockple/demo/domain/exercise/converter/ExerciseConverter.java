@@ -528,6 +528,31 @@ public class ExerciseConverter {
         return weeks;
     }
 
+    private List<ExerciseRecommendationCalendarDTO.WeeklyExercises> groupRecommendedExerciseByWeek(
+            List<Exercise> exercises,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            LocalDate start,
+            LocalDate end,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
+
+            List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList =
+                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, isCockpleRecommend, filterSortType);
+
+            weeks.add(createRecommendedWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
+        }
+
+        return weeks;
+    }
+
     // 날짜별 그룹화 메서드
     private List<PartyExerciseCalendarDTO.DailyExercises> groupPartyExerciseByDate(
             List<Exercise> weekExercises,
