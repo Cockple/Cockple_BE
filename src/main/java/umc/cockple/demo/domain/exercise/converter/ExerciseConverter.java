@@ -666,7 +666,10 @@ public class ExerciseConverter {
                                 .thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime))
                         .toList();
             }else{
-
+                exerciseItems = dayExercises.stream()
+                        .map(exercise -> toRecommendationCalendarItem(exercise, bookmarkStatus))
+                        .sorted(getFilterSortComparator(filterSortType, participantCountMap))
+                        .toList();
             }
         }
 
@@ -905,6 +908,24 @@ public class ExerciseConverter {
                 .build();
     }
 
+
+    private ExerciseRecommendationCalendarDTO.ExerciseCalendarItem toRecommendationCalendarItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+    }
+
     private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
         final double R = 6371; // 지구 반지름 (km)
 
@@ -918,6 +939,22 @@ public class ExerciseConverter {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return (float) (R * c);
+    }
+
+    private Comparator<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> getFilterSortComparator(
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Map<Long, Integer> participantCountMap) {
+
+        return switch (filterSortType.sortType()) {
+            case LATEST ->
+                    Comparator.comparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
+
+            case POPULARITY ->
+                    Comparator.comparing(
+                            (ExerciseRecommendationCalendarDTO.ExerciseCalendarItem item) ->
+                                    participantCountMap.getOrDefault(item.exerciseId(), 0)
+                    ).thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
+        };
     }
 
     private record PartyLevelCache(
