@@ -715,6 +715,18 @@ public class ExerciseConverter {
                 .build();
     }
 
+    private ExerciseRecommendationCalendarDTO.WeeklyExercises createRecommendedWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<ExerciseRecommendationCalendarDTO.DailyExercises> days) {
+
+        return ExerciseRecommendationCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .days(days)
+                .build();
+    }
+
     // 날짜별 운동 변환
     private PartyExerciseCalendarDTO.DailyExercises createPartyDailyExercises(
             LocalDate date,
