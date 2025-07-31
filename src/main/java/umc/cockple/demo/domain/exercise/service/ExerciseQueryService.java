@@ -343,7 +343,8 @@ public class ExerciseQueryService {
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toRecommendationCalendarResponse(
-                exercises, bookmarkStatus, participantCountMap, dateRange.start(), dateRange.end());
+                exercises, bookmarkStatus, participantCountMap, dateRange.start(), dateRange.end()
+                ,isCockpleRecommend, filterSortType);
     }
 
     // ========== 검증 메서드들 ==========

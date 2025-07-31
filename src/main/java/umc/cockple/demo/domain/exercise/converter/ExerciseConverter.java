@@ -347,10 +347,11 @@ public class ExerciseConverter {
             Map<Long, Boolean> bookmarkStatus,
             Map<Long, Integer> participantCountMap,
             LocalDate start,
-            LocalDate end) {
+            LocalDate end, Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
 
         List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks
-                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, start, end);
+                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, start, end, isCockpleRecommend, filterSortType);
 
         return ExerciseRecommendationCalendarDTO.Response.builder()
                 .startDate(start)
