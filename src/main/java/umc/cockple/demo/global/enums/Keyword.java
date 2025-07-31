@@ -1,6 +1,11 @@
 package umc.cockple.demo.global.enums;
 
 import lombok.Getter;
+import umc.cockple.demo.domain.party.enums.ActiveDay;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
+
+import java.util.Arrays;
 
 public enum Keyword {
 
@@ -15,5 +20,12 @@ public enum Keyword {
 
     Keyword(String koreanName) {
         this.koreanName = koreanName;
+    }
+
+    public static Keyword fromKorean(String korean){
+        return Arrays.stream(values())
+                .filter(keyword -> keyword.koreanName.equals(korean.trim()))
+                .findFirst()
+                .orElseThrow(() -> new PartyException(PartyErrorCode.INVALID_KEYWORD));
     }
 }
