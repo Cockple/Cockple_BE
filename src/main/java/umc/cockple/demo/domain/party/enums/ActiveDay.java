@@ -1,6 +1,10 @@
 package umc.cockple.demo.domain.party.enums;
 
 import lombok.Getter;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
+
+import java.util.Arrays;
 
 public enum ActiveDay {
 
@@ -19,4 +23,10 @@ public enum ActiveDay {
         this.koreanName = koreanName;
     }
 
+    public static ActiveDay fromKorean(String korean){
+        return Arrays.stream(values())
+                .filter(day -> day.koreanName.equals(korean.trim()))
+                .findFirst()
+                .orElseThrow(() -> new PartyException(PartyErrorCode.INVALID_ACTIVITY_DAY));
+    }
 }

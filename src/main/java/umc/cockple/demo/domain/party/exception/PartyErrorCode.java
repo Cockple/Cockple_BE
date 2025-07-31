@@ -17,7 +17,7 @@ public enum PartyErrorCode implements BaseErrorCode {
      * 4xx: 비즈니스 로직 위반
      */
     INVALID_PARTY_TYPE(HttpStatus.BAD_REQUEST, "PARTY101", "유효하지 않은 모임 유형입니다. (여복 또는 혼복을 입력해주세요.)"),
-    INVALID_ACTIVITY_DAY(HttpStatus.BAD_REQUEST, "PARTY102", "유효하지 않은 활동 요일입니다. (SUNDAY~SATURDAY를 리스트로 입력해주세요.)"),
+    INVALID_ACTIVITY_DAY(HttpStatus.BAD_REQUEST, "PARTY102", "유효하지 않은 활동 요일입니다. (일~토를 리스트로 입력해주세요.)"),
     INVALID_ACTIVITY_TIME(HttpStatus.BAD_REQUEST, "PARTY103", "유효하지 않은 활동 시간입니다. (오전 또는 오후 또는 상시를 입력해주세요.)"),
     INVALID_LEVEL_FORMAT(HttpStatus.BAD_REQUEST, "PARTY104", "유효하지 않은 급수 형식입니다."),
     MALE_LEVEL_REQUIRED(HttpStatus.BAD_REQUEST, "PARTY105", "혼복 모임은 남녀 급수 설정이 필수입니다."),

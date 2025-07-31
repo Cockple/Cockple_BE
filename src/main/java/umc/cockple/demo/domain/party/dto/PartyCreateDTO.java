@@ -108,7 +108,7 @@ public class PartyCreateDTO {
         public List<ActiveDay> toActiveDayEnumList() {
             try {
                 return activityDay.stream()
-                        .map(ActiveDay::valueOf)
+                        .map(ActiveDay::fromKorean)
                         .toList();
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_DAY);
