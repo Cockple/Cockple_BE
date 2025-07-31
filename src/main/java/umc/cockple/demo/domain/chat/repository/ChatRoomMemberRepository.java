@@ -26,22 +26,5 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             @Param("memberId") Long memberId
     );
 
-    @Query("""
-    SELECT cr FROM ChatRoom cr
-    JOIN cr.chatRoomMembers crm
-    WHERE crm.member.id = :memberId
-    AND (:cursor IS NULL OR
-         (:direction = 'desc' AND cr.id < :cursor) OR
-         (:direction = 'asc' AND cr.id > :cursor))
-    ORDER BY
-        CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-        CASE WHEN :direction = 'desc' THEN cr.id END DESC
-""")
-    List<ChatRoom> findPartyChatRoomsByMemberId(
-            @Param("memberId") Long memberId,
-            @Param("cursor") Long cursor,
-            @Param("direction") String direction,
-            Pageable pageable
-    );
 }
 

@@ -34,9 +34,24 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, Long cursor, int size, Direction direction) {
-        // 채팅방 조회 (내가 참여한 파티 채팅방)
         Pageable pageable = PageRequest.of(0, size);
-        List<ChatRoom> chatRooms = chatRoomMemberRepository.findPartyChatRoomsByMemberId(memberId, cursor, direction.name().toLowerCase(), pageable);
+        List<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomsByMemberId(
+                memberId, cursor, direction.name().toLowerCase(), pageable
+        );
+        return toPartyChatRoomInfos(chatRooms, memberId);
+    }
+
+    @Override
+    public PartyChatRoomDTO.Response searchPartyChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction) {
+        Pageable pageable = PageRequest.of(0, size);
+        List<ChatRoom> chatRooms = chatRoomRepository.searchPartyChatRoomsByName(memberId, name, cursor, direction.name().toLowerCase(), pageable);
+        return toPartyChatRoomInfos(chatRooms, memberId);
+    }
+
+    /**
+     * 공통 로직 메서드: 채팅방 리스트를 ChatRoomInfo 리스트로 변환
+     */
+    private PartyChatRoomDTO.Response toPartyChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
         }
