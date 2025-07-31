@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.member.domain.QMember;
 import umc.cockple.demo.domain.member.domain.QMemberExercise;
 import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
+import umc.cockple.demo.domain.party.domain.QPartyLevel;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +29,7 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
     private final QMember member = QMember.member;
     private final QMemberParty memberParty = QMemberParty.memberParty;
     private final QMemberExercise memberExercise = QMemberExercise.memberExercise;
+    private final QPartyLevel partyLevel = QPartyLevel.partyLevel;
 
     @Override
     public List<Exercise> findFilteredRecommendedExercisesForCalendar(
@@ -39,13 +41,13 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         BooleanBuilder whereClause = new BooleanBuilder();
 
         addBaseConditions(whereClause, memberId, memberAge, startDate, endDate);
+        addDynamicFilters(whereClause, filterSortType);
 
         return List.of();
     }
 
     private void addBaseConditions(BooleanBuilder whereClause, Long memberId, Integer memberAge,
                                    LocalDate startDate, LocalDate endDate) {
-
         whereClause.and(exercise.date.between(startDate, endDate));
 
         whereClause.and(
@@ -68,5 +70,26 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
                 .and(party.maxAge.goe(memberAge));
 
         whereClause.and(exercise.outsideGuestAccept.eq(true));
+    }
+
+    private void addDynamicFilters(BooleanBuilder whereClause, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+        if(filterSortType.addr1() != null){
+            whereClause.and(exercise.exerciseAddr.addr1.eq(filterSortType.addr1()));
+
+            if(filterSortType.addr2() != null)
+                whereClause.and(exercise.exerciseAddr.addr2.eq(filterSortType.addr2()));
+        }
+
+        if(filterSortType.levels() != null){
+            whereClause.and(partyLevel.level.in(filterSortType.levels()));
+        }
+
+        if(filterSortType.participationTypes() != null){
+            whereClause.and(party.partyType.in(filterSortType.participationTypes()));
+        }
+
+        if(filterSortType.activityTimes() != null){
+            whereClause.and(party.activityTime.in(filterSortType.activityTimes()));
+        }
     }
 }
