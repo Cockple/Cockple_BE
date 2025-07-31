@@ -27,6 +27,8 @@ public class KakaoOauthService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    private static final long EXPIRED = 3 * 24 * 60 * 60 * 1000L;
+
     @Transactional
     public KakaoLoginResponseDTO signup(String code) {
         // 1. accessToken 발급
@@ -65,8 +67,7 @@ public class KakaoOauthService {
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());
 
         // 리프레시 토큰 만료가 3일 이하로 남은 경우 갱신 (sliding session)
-        long expired = 3 * 24 * 60 * 60 * 1000L;
-        if (jwtTokenProvider.isTokenExpiringSoon(refreshToken, expired)) {
+        if (jwtTokenProvider.isTokenExpiringSoon(refreshToken, EXPIRED)) {
             String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
             member.setRefreshToken(newRefreshToken);
 
