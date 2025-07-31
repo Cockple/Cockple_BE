@@ -241,4 +241,35 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("latitude") Double latitude,
             @Param("longitude") Double longitude,
             @Param("radiusKm") Integer radiusKm);
+
+
+    @Query("""
+            SELECT e FROM Exercise e
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            JOIN FETCH p.levels pl
+            LEFT JOIN FETCH p.partyImg
+            WHERE e.date BETWEEN :startDate AND :endDate
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberParty mp
+                WHERE mp.party.id = p.id
+                AND mp.member.id = :memberId
+                AND mp.member.isActive = 'ACTIVE'
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberExercise me
+                WHERE me.exercise.id = e.id
+                AND me.member.id = :memberId
+            )
+            AND (pl.gender = :gender AND pl.level = :level)
+            AND (:age >= p.minAge AND :age <= p.maxAge)
+            AND e.outsideGuestAccept = true
+            """)
+    List<Exercise> findCockpleRecommendedExercisesByDateRange(
+            @Param("memberId") Long memberId,
+            @Param("gender") Gender gender,
+            @Param("level") Level level,
+            @Param("age") int age,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

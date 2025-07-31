@@ -326,6 +326,14 @@ public class ExerciseQueryService {
 
         Member member = findMemberWithAddressesOrThrow(memberId);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
+
+        List<Exercise> exercises;
+
+        if (isCockpleRecommend) {
+            exercises = getCockpleRecommendedExercises(member, dateRange);
+        } else {
+            exercises = getFilteredRecommendedExercises(member, dateRange, filterSortType);
+        }
     }
 
     // ========== 검증 메서드들 ==========
@@ -567,6 +575,12 @@ public class ExerciseQueryService {
                 .toList();
     }
 
+    private List<Exercise> getCockpleRecommendedExercises(Member member, DateRange dateRange) {
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        List<Exercise> exercises = findCockpleRecommendedExercisesByDateRange(member, dateRange);
+    }
+
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -786,6 +800,12 @@ public class ExerciseQueryService {
                 searchLocation.longitude(),
                 searchLocation.radiusKm().intValue()
         );
+    }
+
+    private List<Exercise> findCockpleRecommendedExercisesByDateRange(Member member, DateRange dateRange) {
+        return exerciseRepository.findCockpleRecommendedExercisesByDateRange(
+                member.getId(), member.getGender(), member.getLevel(), member.getAge(),
+                dateRange.start(), dateRange.end());
     }
 
     private Member findMemberOrThrow(Long memberId) {
