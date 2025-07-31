@@ -104,8 +104,8 @@ public class Party extends BaseEntity {
     @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyBookmark> partyBookmarks = new ArrayList<>();
 
-    @OneToMany(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatRoom> chatRooms = new ArrayList<>();
+    @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ChatRoom chatRoom;
 
 
     public static Party create(PartyCreateDTO.Command command, PartyAddr addr, Member owner) {
