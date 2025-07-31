@@ -51,7 +51,6 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
                 .selectFrom(exercise)
                 .join(exercise.exerciseAddr, addr).fetchJoin()
                 .join(exercise.party, party).fetchJoin()
-                .join(party.levels, partyLevel).fetchJoin()
                 .leftJoin(party.partyImg, partyImg).fetchJoin()
                 .where(whereClause)
                 .fetch();
@@ -95,8 +94,14 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
                 whereClause.and(exercise.exerciseAddr.addr2.eq(filterSortType.addr2()));
         }
 
-        if(filterSortType.levels() != null){
-            whereClause.and(partyLevel.level.in(filterSortType.levels()));
+        if(filterSortType.levels() != null && !filterSortType.levels().isEmpty()){
+            whereClause.and(
+                    JPAExpressions.selectOne()
+                            .from(partyLevel)
+                            .where(partyLevel.party.id.eq(party.id)
+                                    .and(partyLevel.level.in(filterSortType.levels())))
+                            .exists()
+            );
         }
 
         if(filterSortType.participationTypes() != null){
