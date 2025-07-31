@@ -4,6 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -43,6 +48,8 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final PartyConverter partyConverter;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     @Override
     public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
@@ -63,6 +70,18 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Party newParty = Party.create(partyCommand, partyAddr, owner);
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
+
+        log.info("[모임 채팅방 생성 시작] - partyId: {}", savedParty.getId());
+        ChatRoom newChatRoom = chatRoomRepository.save(ChatRoom.builder()
+                .party(savedParty)
+                .type(ChatRoomType.PARTY)
+                .name(savedParty.getPartyName())
+                .build());
+        chatRoomMemberRepository.save(ChatRoomMember.builder()
+                .chatRoom(newChatRoom)
+                .member(owner)
+                .build());
+        log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", newChatRoom.getId());
 
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
