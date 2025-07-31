@@ -8,11 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.QExercise;
+import umc.cockple.demo.domain.exercise.domain.QExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.member.domain.QMember;
 import umc.cockple.demo.domain.member.domain.QMemberExercise;
 import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
+import umc.cockple.demo.domain.party.domain.QPartyImg;
 import umc.cockple.demo.domain.party.domain.QPartyLevel;
 
 import java.time.LocalDate;
@@ -24,12 +26,14 @@ import java.util.List;
 public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
+
     private final QExercise exercise = QExercise.exercise;
+    private final QExerciseAddr addr = QExerciseAddr.exerciseAddr;
     private final QParty party = QParty.party;
-    private final QMember member = QMember.member;
+    private final QPartyLevel partyLevel = QPartyLevel.partyLevel;
     private final QMemberParty memberParty = QMemberParty.memberParty;
     private final QMemberExercise memberExercise = QMemberExercise.memberExercise;
-    private final QPartyLevel partyLevel = QPartyLevel.partyLevel;
+    private final QPartyImg partyImg = QPartyImg.partyImg;
 
     @Override
     public List<Exercise> findFilteredRecommendedExercisesForCalendar(
@@ -43,7 +47,18 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         addBaseConditions(whereClause, memberId, memberAge, startDate, endDate);
         addDynamicFilters(whereClause, filterSortType);
 
-        return List.of();
+        List<Exercise> exercises = queryFactory
+                .selectFrom(exercise)
+                .join(exercise.exerciseAddr, addr).fetchJoin()
+                .join(exercise.party, party).fetchJoin()
+                .join(party.levels, partyLevel).fetchJoin()
+                .leftJoin(party.partyImg, partyImg).fetchJoin()
+                .where(whereClause)
+                .fetch();
+
+        log.info("필터링된 추천 운동 조회 완료 - 조회된 운동 수: {}", exercises.size());
+
+        return exercises;
     }
 
     private void addBaseConditions(BooleanBuilder whereClause, Long memberId, Integer memberAge,
