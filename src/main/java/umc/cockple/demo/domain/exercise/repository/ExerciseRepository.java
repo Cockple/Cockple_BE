@@ -158,7 +158,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
                 AND me.member.id = :memberId
             )
             AND (pl.gender = :gender AND pl.level = :level)
-            AND (:age >= p.minAge AND :age <= p.maxAge)
+            AND (:age >= p.minBirthYear AND :age <= p.maxBirthYear)
             AND e.outsideGuestAccept = true
             """)
     List<Exercise> findExercisesByMemberIdAndLevelAndAge(

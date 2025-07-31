@@ -57,10 +57,10 @@ public class PartyCreateDTO {
             Integer price,
 
             @NotNull(message = "최저 나이 정보는 필수입니다.")
-            Integer minAge,
+            Integer minBirthYear,
 
             @NotNull(message = "최대 나이 정보는 필수입니다.")
-            Integer maxAge,
+            Integer maxBirthYear,
 
             @Size(max = 45, message = "모임 소개는 최대 45글자입니다.")
             String content,
@@ -124,8 +124,8 @@ public class PartyCreateDTO {
             List<Level> maleLevel,
             List<ActiveDay> activityDay,
             ActivityTime activityTime,
-            Integer minAge,
-            Integer maxAge,
+            Integer minBirthYear,
+            Integer maxBirthYear,
             Integer price,
             Integer joinPrice,
             String designatedCock,

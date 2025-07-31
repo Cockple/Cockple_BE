@@ -47,10 +47,10 @@ public class Party extends BaseEntity {
     private Long ownerId;
 
     @Column(nullable = false)
-    private Integer minAge;
+    private Integer minBirthYear;
 
     @Column(nullable = false)
-    private Integer maxAge;
+    private Integer maxBirthYear;
 
     @Column(nullable = false)
     private Integer price;
@@ -113,8 +113,8 @@ public class Party extends BaseEntity {
                 .partyName(command.partyName())
                 .partyType(command.partyType())
                 .ownerId(owner.getId())
-                .minAge(command.minAge())
-                .maxAge(command.maxAge())
+                .minBirthYear(command.minBirthYear())
+                .maxBirthYear(command.maxBirthYear())
                 .price(command.price())
                 .joinPrice(command.joinPrice())
                 .designatedCock(command.designatedCock())
@@ -149,9 +149,9 @@ public class Party extends BaseEntity {
     public boolean isAgeValid(Member member){
         int age = member.getAge();
 
-        if(minAge != null && age < minAge){
+        if(minBirthYear != null && age < minBirthYear){
             return false;
-        }if(maxAge != null && age > maxAge){
+        }if(maxBirthYear != null && age > maxBirthYear){
             return false;
         }
         return true;
