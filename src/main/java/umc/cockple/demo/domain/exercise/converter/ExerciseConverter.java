@@ -342,6 +342,23 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseRecommendationCalendarDTO.Response toRecommendationCalendarResponse(
+            List<Exercise> exercises,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            LocalDate start,
+            LocalDate end) {
+
+        List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks
+                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, start, end);
+
+        return ExerciseRecommendationCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(weeks)
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
