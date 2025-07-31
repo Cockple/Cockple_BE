@@ -671,6 +671,8 @@ public class ExerciseConverter {
                         .sorted(getFilterSortComparator(filterSortType, participantCountMap))
                         .toList();
             }
+
+            dailyExercisesList.add(createRecommendationDailyExercises(date, exerciseItems));
         }
 
         return dailyExercisesList;
@@ -741,6 +743,17 @@ public class ExerciseConverter {
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
 
         return MyPartyExerciseCalendarDTO.DailyExercises.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .exercises(exerciseItems)
+                .build();
+    }
+
+    private ExerciseRecommendationCalendarDTO.DailyExercises createRecommendationDailyExercises(
+            LocalDate date,
+            List<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return ExerciseRecommendationCalendarDTO.DailyExercises.builder()
                 .date(date)
                 .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
