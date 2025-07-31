@@ -34,17 +34,13 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String memberName;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(nullable = false)
     private LocalDate birth;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Level level;
 
@@ -54,7 +50,11 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberStatus isActive;
 
+    @Column(nullable = false)
     private String refreshToken;
+
+    @Column(nullable = false)
+    private Long socialId; // 카카오에서 받아온 고유id
 
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
@@ -151,5 +151,9 @@ public class Member extends BaseEntity {
 
     public int getAge(){
         return Period.between(birth, LocalDate.now()).getYears();
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }

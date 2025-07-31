@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.service.NotificationQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.util.List;
 
@@ -30,8 +31,8 @@ public class NotificationController {
     @Operation(summary = "내 알림 전체 조회",
             description = "사용자에게 온 알림 전체를 조회합니다. ")
     public BaseResponse<List<AllNotificationsResponseDTO>> getAllNotifications() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK, notificationQueryService.getAllNotifications(memberId));
     }
@@ -42,8 +43,8 @@ public class NotificationController {
     @Operation(summary = "안 읽은 알림 존재여부 조회",
             description = "사용자가 읽지 않은 알림이 있는지 확인합니다. 존재 시 알림 아이콘에 빨간 점이 표시됩니다 ")
     public BaseResponse<ExistNewNotificationResponseDTO> checkUnReadNotification() {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK,notificationQueryService.checkUnreadNotification(memberId));
     }
@@ -55,8 +56,7 @@ public class NotificationController {
             description = "특정 알림을 조회하고 읽음 처리를 진행합니다. ")
     public BaseResponse<Response> markAsReadNotification(@PathVariable Long notificationId,
                                                          Request type) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK, notificationCommandService.markAsReadNotification(memberId, notificationId, type.type()));
     }

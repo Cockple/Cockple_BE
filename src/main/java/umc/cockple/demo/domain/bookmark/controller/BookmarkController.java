@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
 import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.util.List;
 
@@ -30,8 +31,8 @@ public class BookmarkController {
     @Operation(summary = "모임 찜 API",
             description = "사용자가 원하는 모임을 찜해둘 수 있음")
     public BaseResponse<Long> partyBookmark(@PathVariable Long partyId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.CREATED, bookmarkCommandService.partyBookmark(memberId, partyId));
     }
@@ -40,8 +41,8 @@ public class BookmarkController {
     @Operation(summary = "모임 찜 해제 API",
             description = "사용자가 찜한 모임을 해제할 수 있음")
     public BaseResponse<Object> releasePartyBookmark(@PathVariable Long partyId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         bookmarkCommandService.releasePartyBookmark(memberId, partyId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
@@ -51,8 +52,8 @@ public class BookmarkController {
     @Operation(summary = "운동 찜 API",
             description = "사용자가 원하는 운동을 찜해둘 수 있음")
     public BaseResponse<Long> exerciseBookmark(@PathVariable Long exerciseId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.CREATED, bookmarkCommandService.exerciseBookmark(memberId, exerciseId));
     }
@@ -61,8 +62,8 @@ public class BookmarkController {
     @Operation(summary = "운동 찜 해제 API",
             description = "사용자가 찜한 운동 해제할 수 있음")
     public BaseResponse<Object> releaseExerciseBookmark(@PathVariable Long exerciseId) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         bookmarkCommandService.releaseExerciseBookmark(memberId, exerciseId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
@@ -73,8 +74,9 @@ public class BookmarkController {
     @Operation(summary = "찜한 운동 전체 조회 API",
             description = "사용자가 찜한 운동을 모두 조회")
     public BaseResponse<List<GetAllExerciseBookmarksResponseDTO>> getAllExerciseBookmarks(@RequestParam BookmarkedExerciseOrderType orderType) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
 
         return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllExerciseBookmarks(memberId, orderType));
     }
@@ -83,8 +85,8 @@ public class BookmarkController {
     @Operation(summary = "찜한 모임 전체 조회 API",
             description = "사용자가 찜한 모임을 모두 조회")
     public BaseResponse<List<GetAllPartyBookmarkResponseDTO>> getAllPartyBookmarks(@RequestParam PartyOrderType orderType) {
-        // 추후 시큐리티를 통해 id 가져옴
-        Long memberId = 1L;
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         return BaseResponse.success(CommonSuccessCode.OK, bookmarkQueryService.getAllPartyBookmarks(memberId, orderType));
     }

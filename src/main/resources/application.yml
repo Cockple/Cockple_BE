@@ -42,3 +42,15 @@ cloud:
       auto: false
     stack:
       auto: false
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  token-uri: https://kauth.kakao.com/oauth/token
+  user-info-uri: https://kapi.kakao.com/v2/user/me
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  access-token-validity: 3600000
+  refresh-token-validity: 1209600000
