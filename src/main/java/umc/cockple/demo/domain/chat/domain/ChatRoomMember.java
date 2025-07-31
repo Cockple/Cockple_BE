@@ -27,6 +27,8 @@ public class ChatRoomMember extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    private Long lastReadMessageId;
+
     @OneToMany(mappedBy = "chatRoomMember")
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
