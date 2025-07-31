@@ -314,6 +314,20 @@ public class ExerciseQueryService {
                 searchLocation.latitude(), searchLocation.longitude(), radiusKm, dailyBuildings);
     }
 
+    public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
+            Long memberId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터정렬: {}, 기간: {}~{}"
+                , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        DateRange dateRange = calculateDateRange(startDate, endDate);
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
