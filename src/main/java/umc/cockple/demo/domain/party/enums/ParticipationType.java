@@ -22,7 +22,7 @@ public enum ParticipationType {
 
     public static ParticipationType fromKorean(String korean) {
         return Arrays.stream(values())
-                .filter(sortType -> sortType.koreanName.equals(korean.trim()))
+                .filter(type -> type.koreanName.equals(korean.trim()))
                 .findFirst()
                 .orElseThrow(() -> new PartyException(PartyErrorCode.INVALID_PARTY_TYPE));
     }

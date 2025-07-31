@@ -99,7 +99,7 @@ public class PartyCreateDTO {
 
         public ActivityTime toActivityTimeEnum() {
             try {
-                return ActivityTime.valueOf(activityTime);
+                return ActivityTime.fromKorean(activityTime);
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_TIME);
             }
