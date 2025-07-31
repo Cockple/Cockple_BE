@@ -17,10 +17,14 @@ import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -406,6 +410,46 @@ public class ExerciseController {
 
         ExerciseMapBuildingsDTO.Response response = exerciseQueryService
                 .getExerciseMapCalendarSummary(date, latitude, longitude, radiusKm, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/exercises/recommendations/calendar")
+    @Operation(summary = "사용자 추천 운동 캘린더 조회",
+            description = """
+                    사용자가 속하지 않은 모임의 운동 중 참여하지 않은 운동을 캘린더 형식으로 조회합니다.
+                    - isCockpleRecommend=true: 콕플 추천 (급수 일치, 위치+시간순 정렬)
+                    - isCockpleRecommend=false: 필터 + 정렬 방식
+                    기본 기간: 과거 1주 ~ 미래 3주
+                    """)
+    @ApiResponse(responseCode = "200", description = "사용자 추천 운동 캘린더 조회 성공")
+    public BaseResponse<ExerciseRecommendationCalendarDTO.Response> getRecommendedExerciseCalendar(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+            @RequestParam(defaultValue = "true") Boolean isCockpleRecommend,
+            @RequestParam(required = false) String addr1,
+            @RequestParam(required = false) String addr2,
+            @RequestParam(required = false) List<Level> levels,
+            @RequestParam(required = false) List<ParticipationType> participationTypes,
+            @RequestParam(required = false) List<ActivityTime> activityTimes,
+            @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType sortType
+    ){
+
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseRecommendationCalendarDTO.FilterSortType filterSortType =
+                ExerciseRecommendationCalendarDTO.FilterSortType.builder()
+                        .addr1(addr1)
+                        .addr2(addr2)
+                        .levels(levels)
+                        .participationTypes(participationTypes)
+                        .activityTimes(activityTimes)
+                        .sortType(sortType)
+                        .build();
+
+        ExerciseRecommendationCalendarDTO.Response response = exerciseQueryService
+                .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterSortType);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
