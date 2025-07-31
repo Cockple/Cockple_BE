@@ -335,6 +335,15 @@ public class ExerciseQueryService {
         } else {
             exercises = findFilteredRecommendedExercises(member, dateRange, filterSortType);
         }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Integer> participantCountMap = getParticipantCountsMap(exerciseIds);
+
+        log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toRecommendationCalendarResponse(
+                exercises, bookmarkStatus, participantCountMap, dateRange.start(), dateRange.end());
     }
 
     // ========== 검증 메서드들 ==========
