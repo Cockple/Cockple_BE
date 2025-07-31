@@ -295,7 +295,7 @@ public class ExerciseQueryService {
             LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
-                 date, latitude, longitude, radiusKm);
+                date, latitude, longitude, radiusKm);
 
         Member member = findMemberWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = findMainAddrOrThrow(member);
@@ -339,12 +339,13 @@ public class ExerciseQueryService {
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
         Map<Long, Integer> participantCountMap = getParticipantCountsMap(exerciseIds);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
 
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toRecommendationCalendarResponse(
-                exercises, bookmarkStatus, participantCountMap, dateRange.start(), dateRange.end()
-                ,isCockpleRecommend, filterSortType);
+                exercises, bookmarkStatus, participantCountMap, mainAddr
+                , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
     }
 
     // ========== 검증 메서드들 ==========

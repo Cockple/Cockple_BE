@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
@@ -346,12 +347,15 @@ public class ExerciseConverter {
             List<Exercise> exercises,
             Map<Long, Boolean> bookmarkStatus,
             Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
             LocalDate start,
-            LocalDate end, Boolean isCockpleRecommend,
+            LocalDate end,
+            Boolean isCockpleRecommend,
             ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
 
         List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks
-                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, start, end, isCockpleRecommend, filterSortType);
+                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, mainAddr
+                , start, end, isCockpleRecommend, filterSortType);
 
         return ExerciseRecommendationCalendarDTO.Response.builder()
                 .startDate(start)
@@ -532,6 +536,7 @@ public class ExerciseConverter {
             List<Exercise> exercises,
             Map<Long, Boolean> bookmarkStatus,
             Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
             LocalDate start,
             LocalDate end,
             Boolean isCockpleRecommend,
@@ -545,7 +550,7 @@ public class ExerciseConverter {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList =
-                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, isCockpleRecommend, filterSortType);
+                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, mainAddr, isCockpleRecommend, filterSortType);
 
             weeks.add(createRecommendedWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
@@ -630,6 +635,39 @@ public class ExerciseConverter {
                     .toList();
 
             dailyExercisesList.add(createMyPartyDailyExercises(date, exerciseItems));
+        }
+
+        return dailyExercisesList;
+    }
+
+    private List<ExerciseRecommendationCalendarDTO.DailyExercises> groupRecommendedExercisesByDate(
+            List<Exercise> weekExercises,
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
+
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
+
+            List<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> exerciseItems;
+            if(isCockpleRecommend){
+                 exerciseItems = dayExercises.stream()
+                        .map(exercise -> toRecommendationCalendarItemWithDistance(exercise, bookmarkStatus, mainAddr))
+                        .sorted(Comparator.comparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::distance)
+                                .thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime))
+                        .toList();
+            }else{
+
+            }
         }
 
         return dailyExercisesList;
@@ -844,6 +882,42 @@ public class ExerciseConverter {
                 .latitude(latitude)
                 .longitude(longitude)
                 .build();
+    }
+
+    private ExerciseRecommendationCalendarDTO.ExerciseCalendarItem toRecommendationCalendarItemWithDistance(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus, MemberAddr mainAddr) {
+
+        Double distance = calculateDistance(mainAddr.getLatitude(), mainAddr.getLongitude(),
+                exercise.getExerciseAddr().getLatitude(), exercise.getExerciseAddr().getLongitude());
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .distance(distance)
+                .build();
+    }
+
+    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
+        final double R = 6371; // 지구 반지름 (km)
+
+        double latDistance = Math.toRadians(latitude1 - latitude);
+        double lonDistance = Math.toRadians(longitude1 - longitude);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return (float) (R * c);
     }
 
     private record PartyLevelCache(
