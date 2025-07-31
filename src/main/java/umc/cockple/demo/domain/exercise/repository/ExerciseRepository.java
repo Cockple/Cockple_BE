@@ -247,7 +247,6 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             SELECT e FROM Exercise e
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
-            JOIN FETCH p.levels pl
             LEFT JOIN FETCH p.partyImg
             WHERE e.date BETWEEN :startDate AND :endDate
             AND NOT EXISTS (
@@ -261,7 +260,12 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
                 WHERE me.exercise.id = e.id
                 AND me.member.id = :memberId
             )
-            AND (pl.gender = :gender AND pl.level = :level)
+            AND EXISTS (
+                SELECT 1 FROM PartyLevel pl
+                WHERE pl.party.id = p.id
+                AND pl.gender = :gender
+                AND pl.level = :level
+            )
             AND (:age >= p.minAge AND :age <= p.maxAge)
             AND e.outsideGuestAccept = true
             """)
