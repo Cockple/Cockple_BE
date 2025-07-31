@@ -117,7 +117,7 @@ public class ExerciseQueryService {
         validateGetPartyExerciseCalender(startDate, endDate, party);
 
         Boolean isMember = isPartyMember(party, member);
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
@@ -149,7 +149,7 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         validateGetMyExerciseCalendar(startDate, endDate);
 
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByMemberIdAndDateRange(memberId, dateRange.start(), dateRange.end());
 
@@ -193,7 +193,7 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
 
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
@@ -325,7 +325,7 @@ public class ExerciseQueryService {
                 , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
 
         Member member = findMemberWithAddressesOrThrow(memberId);
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
     }
 
     // ========== 검증 메서드들 ==========
@@ -477,19 +477,6 @@ public class ExerciseQueryService {
 
     private boolean isPartyMember(Party party, Member member) {
         return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
-
-    private DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null && endDate != null) {
-            return new DateRange(startDate, endDate);
-        }
-
-        LocalDate today = LocalDate.now();
-        LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
-        LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
-        LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
-
-        return new DateRange(defaultStart, defaultEnd);
     }
 
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
@@ -895,6 +882,19 @@ public class ExerciseQueryService {
             LocalDate end = targetDate.withDayOfMonth(lastDay);
 
             return new DateRange(start, end);
+        }
+
+        private static DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate != null && endDate != null) {
+                return new DateRange(startDate, endDate);
+            }
+
+            LocalDate today = LocalDate.now();
+            LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+            LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
+            LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
+
+            return new DateRange(defaultStart, defaultEnd);
         }
     }
 
