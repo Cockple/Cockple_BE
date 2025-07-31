@@ -10,8 +10,8 @@ public record GetAllAddressResponseDTO(
         String addr3,
         String streetAddr,
         String buildingName,
-        Float latitude,
-        Float longitude,
+        Double latitude,
+        Double longitude,
         Boolean isMainAddr
 ) {
 }
