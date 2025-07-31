@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -32,18 +33,14 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatConverter chatConverter;
 
     @Override
-    public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, Long cursor, int size, String direction) {
-        // 1. 커서 방향 검증 (asc 또는 desc만 허용)
-        if (!direction.equalsIgnoreCase("ASC") && !direction.equalsIgnoreCase("DESC")) {
-            throw new ChatException(ChatErrorCode.INVALID_CURSOR_DIRECTION);
-        }
-        // 2. 채팅방 조회 (내가 참여한 파티 채팅방)
+    public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, Long cursor, int size, Direction direction) {
+        // 채팅방 조회 (내가 참여한 파티 채팅방)
         Pageable pageable = PageRequest.of(0, size);
-        List<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomsByMemberId(memberId, cursor, direction, pageable);
+        List<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomsByMemberId(memberId, cursor, direction.name().toLowerCase(), pageable);
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
         }
-        // 3. 각 채팅방에 대해 ChatRoomInfo 생성
+        // 각 채팅방에 대해 ChatRoomInfo 생성
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();

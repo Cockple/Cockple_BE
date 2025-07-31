@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -27,7 +28,7 @@ public class ChatController {
             //@AuthenticationPrincipal Long memberId,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") String direction
+            @RequestParam(defaultValue = "DESC") Direction direction
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
