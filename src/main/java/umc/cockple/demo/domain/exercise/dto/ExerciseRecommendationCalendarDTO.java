@@ -56,7 +56,8 @@ public class ExerciseRecommendationCalendarDTO {
             LocalTime startTime,
             LocalTime endTime,
             String profileImageUrl,
-            Boolean isBookmarked
+            Boolean isBookmarked,
+            Double distance
     ) {
     }
 }
