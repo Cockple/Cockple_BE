@@ -30,10 +30,10 @@ public class ExerciseAddr extends BaseEntity {
     private String buildingName;
 
     @Column(nullable = false)
-    private Float latitude;
+    private Double latitude;
 
     @Column(nullable = false)
-    private Float longitude;
+    private Double longitude;
 
     public static ExerciseAddr create(ExerciseCreateDTO.AddrCommand command) {
         AddressParts addressParts = parseRoadAddress(command.roadAddress());
@@ -43,8 +43,8 @@ public class ExerciseAddr extends BaseEntity {
                 .addr2(addressParts.addr2())
                 .streetAddr(command.roadAddress())
                 .buildingName(command.buildingName())
-                .latitude(command.latitude().floatValue())
-                .longitude(command.longitude().floatValue())
+                .latitude(command.latitude())
+                .longitude(command.longitude())
                 .build();
     }
 
@@ -61,11 +61,11 @@ public class ExerciseAddr extends BaseEntity {
         }
 
         if (command.latitude() != null) {
-            this.latitude = command.latitude().floatValue();
+            this.latitude = command.latitude();
         }
 
         if (command.longitude() != null) {
-            this.longitude = command.longitude().floatValue();
+            this.longitude = command.longitude();
         }
     }
 

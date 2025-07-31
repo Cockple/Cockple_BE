@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -373,9 +372,9 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
-    @GetMapping("/exercises/building/daily/{date}")
-    @Operation(summary = "특정 건물의 운동 상세 조회",
-            description = "건물명과 주소를 기준으로 해당 건물의 운동 상세 정보를 조회합니다.")
+    @GetMapping("/buildings/exercises/{date}")
+    @Operation(summary = "건물 운동 상세 조회",
+            description = "특정 날짜 및 건물의 운동 상세 정보를 조회합니다.")
     public BaseResponse<ExerciseBuildingDetailDTO.Response> getBuildingExerciseDetails(
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @RequestParam String buildingName,
@@ -388,6 +387,26 @@ public class ExerciseController {
         ExerciseBuildingDetailDTO.Response response = exerciseQueryService
                 .getBuildingExerciseDetails(buildingName, streetAddr, date, memberId);
       
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/buildings/map/monthly")
+    @Operation(summary = "월간 운동 건물 지도 데이터 조회",
+            description = "특정 날짜가 속한 월에 운동이 개최되는 반경 내 건물들의 위치 정보를 지도 표시용으로 반환")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ExerciseMapBuildingsDTO.Response> getMonthlyExerciseBuildings(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(defaultValue = "3.0") Double radiusKm,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        ExerciseMapBuildingsDTO.Response response = exerciseQueryService
+                .getExerciseMapCalendarSummary(date, latitude, longitude, radiusKm, memberId);
+
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }
