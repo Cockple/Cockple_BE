@@ -21,6 +21,7 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepositoryCustomImpl;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -332,7 +333,7 @@ public class ExerciseQueryService {
         if (isCockpleRecommend) {
             exercises = findCockpleRecommendedExercisesByDateRange(member, dateRange);
         } else {
-            exercises = getFilteredRecommendedExercises(member, dateRange, filterSortType);
+            exercises = findFilteredRecommendedExercises(member, dateRange, filterSortType);
         }
     }
 
@@ -800,6 +801,12 @@ public class ExerciseQueryService {
         return exerciseRepository.findCockpleRecommendedExercisesByDateRange(
                 member.getId(), member.getGender(), member.getLevel(), member.getAge(),
                 dateRange.start(), dateRange.end());
+    }
+
+    private List<Exercise> findFilteredRecommendedExercises(
+            Member member, DateRange dateRange, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+        return exerciseRepository.findFilteredRecommendedExercisesForCalendar(
+                member.getId(), member.getAge(), filterSortType, dateRange.start(), dateRange.end());
     }
 
     private Member findMemberOrThrow(Long memberId) {
