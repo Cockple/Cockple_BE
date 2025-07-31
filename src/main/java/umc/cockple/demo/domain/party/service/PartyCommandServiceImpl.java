@@ -247,11 +247,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
 
         //생성하려는 모임의 나이 조건에 본인도 적합한지 확인
-        Integer minAge = command.minAge();
-        Integer maxAge = command.maxAge();
+        Integer minBirthYear = command.minBirthYear();
+        Integer maxBirthYear = command.maxBirthYear();
         Integer ownerBirthYear = owner.getBirth().getYear();
 
-        if(minAge > ownerBirthYear || ownerBirthYear > maxAge){
+        if(minBirthYear > ownerBirthYear || ownerBirthYear > maxBirthYear){
             throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
         }
 
@@ -321,11 +321,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     private void validateAgeRequirement(Member member, Party party) {
-        Integer minAge = party.getMinAge();
-        Integer maxAge = party.getMaxAge();
+        Integer minBirthYear = party.getMinBirthYear();
+        Integer maxBirthYear = party.getMaxBirthYear();
         Integer memberBirthYear = member.getBirth().getYear();
 
-        if(minAge > memberBirthYear || memberBirthYear > maxAge){
+        if(minBirthYear > memberBirthYear || memberBirthYear > maxBirthYear){
             throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
         }
     }
