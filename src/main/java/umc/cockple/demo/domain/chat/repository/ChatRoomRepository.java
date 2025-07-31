@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 
 import java.util.List;
 
-public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
-
+public interface ChatRoomRepository extends JpaRepository<ChatRoomMember,Long> {
     @Query("""
     SELECT cr FROM ChatRoom cr
     JOIN cr.chatRoomMembers crm
@@ -46,5 +46,4 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
             @Param("cursor") Long cursor,
             @Param("direction") String direction,
             Pageable pageable
-    );
-}
+    );}
