@@ -91,7 +91,7 @@ public class PartyCreateDTO {
 
         public ParticipationType toParticipationTypeEnum() {
             try {
-                return ParticipationType.valueOf(partyType);
+                return ParticipationType.fromKorean(partyType);
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_PARTY_TYPE);
             }
