@@ -40,19 +40,18 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
 
         addBaseConditions(whereClause, memberId, memberAge, startDate, endDate);
 
-
         return List.of();
     }
 
     private void addBaseConditions(BooleanBuilder whereClause, Long memberId, Integer memberAge,
                                    LocalDate startDate, LocalDate endDate) {
 
-        whereClause.and(exercise.date.between(startDate, endDate))
+        whereClause.and(exercise.date.between(startDate, endDate));
 
         whereClause.and(
                 JPAExpressions.selectOne()
                         .from(memberParty)
-                        .where(memberParty.party.id.eq(exercise.party.id)
+                        .where(memberParty.party.id.eq(party.id)
                                 .and(memberParty.member.id.eq(memberId)))
                         .notExists()
         );
@@ -65,8 +64,8 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
                         .notExists()
         );
 
-        whereClause.and(exercise.party.minAge.loe(memberAge))
-                .and(exercise.party.maxAge.goe(memberAge));
+        whereClause.and(party.minAge.loe(memberAge))
+                .and(party.maxAge.goe(memberAge));
 
         whereClause.and(exercise.outsideGuestAccept.eq(true));
     }
