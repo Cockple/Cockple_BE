@@ -5,7 +5,7 @@ import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 
 public class NotificationConverter {
 
-    public static AllNotificationsResponseDTO toAllNotificationResponseDTO(Notification notification) {
+    public static AllNotificationsResponseDTO toAllNotificationResponseDTO(Notification notification, String imgUrl) {
         return AllNotificationsResponseDTO.builder()
                 .notificationId(notification.getId())
                 .partyId(notification.getGroupId())
@@ -13,7 +13,7 @@ public class NotificationConverter {
                 .content(notification.getContent())
                 .type(notification.getType())
                 .isRead(notification.getIsRead())
-                .imgKey(notification.getImageKey())
+                .imgUrl(imgUrl)
                 .build();
     }
 }

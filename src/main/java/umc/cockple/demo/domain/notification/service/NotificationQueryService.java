@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -26,6 +27,7 @@ public class NotificationQueryService {
 
     private final NotificationRepository notificationRepository;
     private final MemberRepository memberRepository;
+    private final ImageService imageService;
 
 
     public List<AllNotificationsResponseDTO> getAllNotifications(Long memberId) {
@@ -40,7 +42,10 @@ public class NotificationQueryService {
         }
         // dto 매핑 및 반환
         return notifications.stream()
-                .map(NotificationConverter::toAllNotificationResponseDTO)
+                .map(notification -> {
+                    String url = imageService.getUrlFromKey(notification.getImageKey());
+                    return NotificationConverter.toAllNotificationResponseDTO(notification, url);
+                })
                 .toList();
     }
 

@@ -11,7 +11,7 @@ public record AllNotificationsResponseDTO(
         String content,
         NotificationType type,
         Boolean isRead,
-        String imgKey
+        String imgUrl
 
 ) {
 }
