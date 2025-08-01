@@ -90,7 +90,7 @@ public class PartyConverter {
                 .joinPrice(request.joinPrice())
                 .designatedCock(request.designatedCock())
                 .content(request.content())
-                .imgUrl(request.imgUrl())
+                .imgKey(request.imgKey())
                 .build();
     }
 

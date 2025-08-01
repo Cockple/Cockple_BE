@@ -125,7 +125,7 @@ public class Party extends BaseEntity {
 
         party.addMember(MemberParty.createOwner(owner, party));
 
-        String imageUrl = command.imgUrl();
+        String imageUrl = command.imgKey();
         if (imageUrl != null && !imageUrl.isBlank()) {
             party.setPartyImg(PartyImg.create(imageUrl, party));
         }
