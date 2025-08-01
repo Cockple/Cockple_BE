@@ -809,14 +809,14 @@ public class ExerciseQueryService {
 
     private List<Exercise> findCockpleRecommendedExercisesByDateRange(Member member, DateRange dateRange) {
         return exerciseRepository.findCockpleRecommendedExercisesByDateRange(
-                member.getId(), member.getGender(), member.getLevel(), member.getAge(),
+                member.getId(), member.getGender(), member.getLevel(), member.getBirth().getYear(),
                 dateRange.start(), dateRange.end());
     }
 
     private List<Exercise> findFilteredRecommendedExercises(
             Member member, DateRange dateRange, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
         return exerciseRepository.findFilteredRecommendedExercisesForCalendar(
-                member.getId(), member.getAge(), filterSortType, dateRange.start(), dateRange.end());
+                member.getId(), member.getBirth().getYear(), filterSortType, dateRange.start(), dateRange.end());
     }
 
     private Member findMemberOrThrow(Long memberId) {

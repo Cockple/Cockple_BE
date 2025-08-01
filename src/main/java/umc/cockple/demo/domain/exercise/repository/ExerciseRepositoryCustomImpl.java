@@ -36,14 +36,14 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
 
     @Override
     public List<Exercise> findFilteredRecommendedExercisesForCalendar(
-            Long memberId, Integer memberAge, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Long memberId, Integer memberBirthYear, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
             LocalDate startDate, LocalDate endDate) {
 
         log.info("필터링된 추천 운동 조회 시작 - memberId: {}, 기간: {} ~ {}", memberId, startDate, endDate);
 
         BooleanBuilder whereClause = new BooleanBuilder();
 
-        addBaseConditions(whereClause, memberId, memberAge, startDate, endDate);
+        addBaseConditions(whereClause, memberId, memberBirthYear, startDate, endDate);
         addDynamicFilters(whereClause, filterSortType);
 
         List<Exercise> exercises = queryFactory
@@ -59,7 +59,7 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         return exercises;
     }
 
-    private void addBaseConditions(BooleanBuilder whereClause, Long memberId, Integer memberAge,
+    private void addBaseConditions(BooleanBuilder whereClause, Long memberId, Integer memberBirthYear,
                                    LocalDate startDate, LocalDate endDate) {
         whereClause.and(exercise.date.between(startDate, endDate));
 
@@ -79,8 +79,8 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
                         .notExists()
         );
 
-        whereClause.and(party.minBirthYear.loe(memberAge))
-                .and(party.maxBirthYear.goe(memberAge));
+        whereClause.and(party.minBirthYear.loe(memberBirthYear))
+                .and(party.maxBirthYear.goe(memberBirthYear));
 
         whereClause.and(exercise.outsideGuestAccept.eq(true));
     }

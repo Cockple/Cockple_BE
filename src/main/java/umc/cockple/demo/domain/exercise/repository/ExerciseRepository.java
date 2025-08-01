@@ -266,14 +266,14 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
                 AND pl.gender = :gender
                 AND pl.level = :level
             )
-            AND (:age >= p.minAge AND :age <= p.maxAge)
+            AND (:birthYear >= p.minBirthYear AND :birthYear <= p.maxBirthYear)
             AND e.outsideGuestAccept = true
             """)
     List<Exercise> findCockpleRecommendedExercisesByDateRange(
             @Param("memberId") Long memberId,
             @Param("gender") Gender gender,
             @Param("level") Level level,
-            @Param("age") int age,
+            @Param("birthYear") int birthYear,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 }

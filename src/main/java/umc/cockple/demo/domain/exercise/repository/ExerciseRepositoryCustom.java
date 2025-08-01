@@ -9,6 +9,6 @@ import java.util.List;
 public interface ExerciseRepositoryCustom {
 
     List<Exercise> findFilteredRecommendedExercisesForCalendar(
-            Long memberId, Integer memberAge, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Long memberId, Integer memberBirthYear, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
             LocalDate startDate, LocalDate endDate);
 }
