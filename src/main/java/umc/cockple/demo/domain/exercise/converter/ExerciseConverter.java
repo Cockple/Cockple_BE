@@ -978,7 +978,8 @@ public class ExerciseConverter {
                     Comparator.comparing(
                             (ExerciseRecommendationCalendarDTO.ExerciseCalendarItem item) ->
                                     participantCountMap.getOrDefault(item.exerciseId(), 0)
-                    ).thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
+                    ).reversed()
+                    .thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
         };
     }
 
