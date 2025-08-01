@@ -45,4 +45,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
             @Param("cursor") Long cursor,
             @Param("direction") String direction,
             Pageable pageable
-    );}
+    );
+
+    ChatRoom findByPartyId(Long partyId);
+}
