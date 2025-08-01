@@ -35,6 +35,9 @@ public class NotificationQueryService {
         // 회원의 모든 알림 조회
         List<Notification> notifications = notificationRepository.findAllByMember(member);
 
+        if (notifications.isEmpty()) {
+            return List.of();
+        }
         // dto 매핑 및 반환
         return notifications.stream()
                 .map(NotificationConverter::toAllNotificationResponseDTO)

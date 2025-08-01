@@ -32,8 +32,8 @@ public class NotificationController {
             description = "사용자에게 온 알림 전체를 조회합니다. ")
     public BaseResponse<List<AllNotificationsResponseDTO>> getAllNotifications() {
 
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
+//        Long memberId = SecurityUtil.getCurrentMemberId();
+        Long memberId = 1L;
         return BaseResponse.success(CommonSuccessCode.OK, notificationQueryService.getAllNotifications(memberId));
     }
 
