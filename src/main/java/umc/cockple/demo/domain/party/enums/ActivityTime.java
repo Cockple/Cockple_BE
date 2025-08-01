@@ -1,6 +1,10 @@
 package umc.cockple.demo.domain.party.enums;
 
 import lombok.Getter;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
+
+import java.util.Arrays;
 
 public enum ActivityTime {
 
@@ -13,6 +17,13 @@ public enum ActivityTime {
 
     ActivityTime(String koreanName) {
         this.koreanName = koreanName;
+    }
+
+    public static ActivityTime fromKorean(String korean){
+        return Arrays.stream(values())
+                .filter(time -> time.koreanName.equals(korean.trim()))
+                .findFirst()
+                .orElseThrow(() -> new PartyException(PartyErrorCode.INVALID_ACTIVITY_TIME));
     }
 
 }

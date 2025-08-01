@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.exception.GeneralException;
+import umc.cockple.demo.global.response.code.status.CommonErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -74,7 +75,7 @@ public class PartyCreateDTO {
                         .map(Level::fromKorean)
                         .toList();
             } catch (GeneralException e) {
-                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+                throw new PartyException(CommonErrorCode.INVALID_LEVEL_FORMAT);
             }
         }
 
@@ -85,13 +86,13 @@ public class PartyCreateDTO {
                         .map(Level::fromKorean)
                         .toList();
             } catch (GeneralException e) {
-                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+                throw new PartyException(CommonErrorCode.INVALID_LEVEL_FORMAT);
             }
         }
 
         public ParticipationType toParticipationTypeEnum() {
             try {
-                return ParticipationType.valueOf(partyType);
+                return ParticipationType.fromKorean(partyType);
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_PARTY_TYPE);
             }
@@ -99,7 +100,7 @@ public class PartyCreateDTO {
 
         public ActivityTime toActivityTimeEnum() {
             try {
-                return ActivityTime.valueOf(activityTime);
+                return ActivityTime.fromKorean(activityTime);
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_TIME);
             }
@@ -108,7 +109,7 @@ public class PartyCreateDTO {
         public List<ActiveDay> toActiveDayEnumList() {
             try {
                 return activityDay.stream()
-                        .map(ActiveDay::valueOf)
+                        .map(ActiveDay::fromKorean)
                         .toList();
             } catch (IllegalArgumentException e) {
                 throw new PartyException(PartyErrorCode.INVALID_ACTIVITY_DAY);

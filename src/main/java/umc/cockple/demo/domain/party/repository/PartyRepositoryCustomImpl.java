@@ -82,13 +82,13 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
 
     private BooleanExpression partyTypeIn(List<String> partyTypes) {
         if (partyTypes == null || partyTypes.isEmpty()) return null;
-        List<ParticipationType> enums = partyTypes.stream().map(ParticipationType::valueOf).toList();
+        List<ParticipationType> enums = partyTypes.stream().map(ParticipationType::fromKorean).toList();
         return party.partyType.in(enums);
     }
 
     private BooleanExpression activityTimeIn(List<String> activityTimes) {
         if (activityTimes == null || activityTimes.isEmpty()) return null;
-        List<ActivityTime> enums = activityTimes.stream().map(ActivityTime::valueOf).toList();
+        List<ActivityTime> enums = activityTimes.stream().map(ActivityTime::fromKorean).toList();
         return party.activityTime.in(enums);
     }
 
@@ -105,7 +105,7 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
 
     private BooleanExpression activityDayIn(List<String> activityDays) {
         if (activityDays == null || activityDays.isEmpty()) return null;
-        List<ActiveDay> enums = activityDays.stream().map(ActiveDay::valueOf).toList();
+        List<ActiveDay> enums = activityDays.stream().map(ActiveDay::fromKorean).toList();
         return party.id.in(
                 JPAExpressions.select(partyActiveDay.party.id)
                         .from(partyActiveDay)
@@ -115,7 +115,7 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
 
     private BooleanExpression keywordIn(List<String> keywords) {
         if (keywords == null || keywords.isEmpty()) return null;
-        List<Keyword> enums = keywords.stream().map(Keyword::valueOf).toList();
+        List<Keyword> enums = keywords.stream().map(Keyword::fromKorean).toList();
         return party.id.in(
                 JPAExpressions.select(partyKeyword.party.id)
                         .from(partyKeyword)
