@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.exception.GeneralException;
+import umc.cockple.demo.global.response.code.status.CommonErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -74,7 +75,7 @@ public class PartyCreateDTO {
                         .map(Level::fromKorean)
                         .toList();
             } catch (GeneralException e) {
-                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+                throw new PartyException(CommonErrorCode.INVALID_LEVEL_FORMAT);
             }
         }
 
@@ -85,7 +86,7 @@ public class PartyCreateDTO {
                         .map(Level::fromKorean)
                         .toList();
             } catch (GeneralException e) {
-                throw new PartyException(PartyErrorCode.INVALID_LEVEL_FORMAT);
+                throw new PartyException(CommonErrorCode.INVALID_LEVEL_FORMAT);
             }
         }
 
