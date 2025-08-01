@@ -21,7 +21,6 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.ExerciseRepositoryCustomImpl;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
