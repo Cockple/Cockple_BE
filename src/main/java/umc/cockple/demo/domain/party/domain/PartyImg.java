@@ -18,8 +18,7 @@ public class PartyImg {
     @JoinColumn(name = "party_id")
     private Party party;
 
-    private String imgUrl;
-
+    @Column
     private String imgKey;
 
     public static PartyImg create(String imageKey, Party party) {
