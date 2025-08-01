@@ -11,7 +11,7 @@ import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
 public enum ChatErrorCode implements BaseErrorCode {
 
     // 2xx: 리소스 없음
-    CHAT_ROOM_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT201", "채팅방을 찾을 수 없습니다."),
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT201", "채팅방을 찾을 수 없습니다."),
     CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT202", "채팅방 멤버가 존재하지 않습니다."),
 
     // 3xx: 인증/인가 문제
