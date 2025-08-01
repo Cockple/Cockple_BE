@@ -147,11 +147,11 @@ public class Party extends BaseEntity {
     }
 
     public boolean isAgeValid(Member member){
-        int age = member.getAge();
+        int birthYear = member.getBirth().getYear();
 
-        if(minBirthYear != null && age < minBirthYear){
+        if(minBirthYear != null && birthYear < minBirthYear){
             return false;
-        }if(maxBirthYear != null && age > maxBirthYear){
+        }if(maxBirthYear != null && birthYear > maxBirthYear){
             return false;
         }
         return true;
