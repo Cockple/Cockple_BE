@@ -149,10 +149,6 @@ public class Member extends BaseEntity {
         this.isActive = MemberStatus.INACTIVE;
     }
 
-    public int getAge(){
-        return Period.between(birth, LocalDate.now()).getYears();
-    }
-
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }

@@ -227,7 +227,7 @@ public class ExerciseQueryService {
         MemberAddr mainAddr = findMainAddrOrThrow(member);
 
         List<Exercise> candidateExercises = findRecommendedExercises(
-                memberId, member.getGender(), member.getLevel(), member.getAge());
+                memberId, member.getGender(), member.getLevel(), member.getBirth().getYear());
 
         List<ExerciseWithDistance> finalExercisesWithDistance = getFinalSortedExercises(candidateExercises, mainAddr);
         List<Exercise> finalExercises = extractExercises(finalExercisesWithDistance);
@@ -755,8 +755,8 @@ public class ExerciseQueryService {
         return exerciseRepository.findRecentExercisesByPartyIds(myPartyIds, pageable);
     }
 
-    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int age) {
-        return exerciseRepository.findExercisesByMemberIdAndLevelAndAge(memberId, gender, level, age);
+    private List<Exercise> findRecommendedExercises(Long memberId, Gender gender, Level level, int birthYear) {
+        return exerciseRepository.findExercisesByMemberIdAndLevelAndBirthYear(memberId, gender, level, birthYear);
     }
 
     private List<Exercise> findByPartyIdsAndDateRange(
