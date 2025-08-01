@@ -125,6 +125,13 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //모임 탈퇴 로직 수행
         memberPartyRepository.delete(memberParty);
 
+        //채팅방 퇴장 로직 수행
+        log.info("모임 채팅방 퇴장 시작 - memberId: {}", memberId);
+        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+        chatRoomMemberRepository
+                .findByChatRoomIdAndMemberId(chatRoom.getId(), memberId)
+                        .ifPresent(chatRoomMemberRepository::delete);
+        log.info("모임 채팅방 퇴장 완료 - chatRoomId: {}", chatRoom.getId());
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
 
