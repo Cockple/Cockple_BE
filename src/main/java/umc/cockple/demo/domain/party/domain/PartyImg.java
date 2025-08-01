@@ -22,9 +22,9 @@ public class PartyImg {
 
     private String imgKey;
 
-    public static PartyImg create(String imageUrl, Party party) {
+    public static PartyImg create(String imageKey, Party party) {
         return PartyImg.builder()
-                .imgUrl(imageUrl)
+                .imgKey(imageKey)
                 .party(party)
                 .build();
     }

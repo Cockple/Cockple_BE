@@ -125,9 +125,9 @@ public class Party extends BaseEntity {
 
         party.addMember(MemberParty.createOwner(owner, party));
 
-        String imageUrl = command.imgKey();
-        if (imageUrl != null && !imageUrl.isBlank()) {
-            party.setPartyImg(PartyImg.create(imageUrl, party));
+        String imageKey = command.imgKey();
+        if (imageKey != null && !imageKey.isBlank()) {
+            party.setPartyImg(PartyImg.create(imageKey, party));
         }
 
         //다중 선택 정보를 추가하기 위한 메서드
