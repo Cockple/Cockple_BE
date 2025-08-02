@@ -1,6 +1,8 @@
 package umc.cockple.demo.domain.party.converter;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -16,7 +18,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class PartyConverter {
+
+    private final ImageService imageService;
 
     public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty) {
         Party party = memberParty.getParty();
@@ -25,7 +30,7 @@ public class PartyConverter {
                 .partyName(party.getPartyName())
                 .addr1(party.getPartyAddr().getAddr1())
                 .addr2(party.getPartyAddr().getAddr2())
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
                 .build();
     }
 
@@ -40,7 +45,7 @@ public class PartyConverter {
                 .maleLevel(getLevelList(party, Gender.MALE))
                 .nextExerciseInfo(nextExerciseInfo)
                 .totalExerciseCount(totalExerciseCount)
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
                 .build();
     }
 
@@ -71,7 +76,7 @@ public class PartyConverter {
                 .designatedCock(party.getDesignatedCock())
                 .content(party.getContent())
                 .keywords(party.getKeywords().stream().map(kw -> kw.getKeyword().getKoreanName()).toList())
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
                 .build();
     }
 
