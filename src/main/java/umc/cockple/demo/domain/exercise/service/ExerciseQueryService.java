@@ -117,7 +117,7 @@ public class ExerciseQueryService {
         validateGetPartyExerciseCalender(startDate, endDate, party);
 
         Boolean isMember = isPartyMember(party, member);
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
 
@@ -149,7 +149,7 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         validateGetMyExerciseCalendar(startDate, endDate);
 
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = findExercisesByMemberIdAndDateRange(memberId, dateRange.start(), dateRange.end());
 
@@ -193,7 +193,7 @@ public class ExerciseQueryService {
         Member member = findMemberOrThrow(memberId);
         List<Long> myPartyIds = findPartyIdsByMemberId(memberId);
 
-        DateRange dateRange = calculateDateRange(startDate, endDate);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
@@ -294,7 +294,7 @@ public class ExerciseQueryService {
             LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
-                 date, latitude, longitude, radiusKm);
+                date, latitude, longitude, radiusKm);
 
         Member member = findMemberWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = findMainAddrOrThrow(member);
@@ -312,6 +312,39 @@ public class ExerciseQueryService {
         return exerciseConverter.toMapCalendarSummaryResponse(
                 dateRange.start().getYear(), dateRange.start().getMonthValue(),
                 searchLocation.latitude(), searchLocation.longitude(), radiusKm, dailyBuildings);
+    }
+
+    public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
+            Long memberId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터정렬: {}, 기간: {}~{}"
+                , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
+
+        Member member = findMemberWithAddressesOrThrow(memberId);
+        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
+
+        List<Exercise> exercises;
+
+        if (isCockpleRecommend) {
+            exercises = findCockpleRecommendedExercisesByDateRange(member, dateRange);
+        } else {
+            exercises = findFilteredRecommendedExercises(member, dateRange, filterSortType);
+        }
+
+        List<Long> exerciseIds = getExerciseIds(exercises);
+        Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Integer> participantCountMap = getParticipantCountsMap(exerciseIds);
+        MemberAddr mainAddr = findMainAddrOrThrow(member);
+
+        log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
+
+        return exerciseConverter.toRecommendationCalendarResponse(
+                exercises, bookmarkStatus, participantCountMap, mainAddr
+                , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
     }
 
     // ========== 검증 메서드들 ==========
@@ -463,19 +496,6 @@ public class ExerciseQueryService {
 
     private boolean isPartyMember(Party party, Member member) {
         return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
-
-    private DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null && endDate != null) {
-            return new DateRange(startDate, endDate);
-        }
-
-        LocalDate today = LocalDate.now();
-        LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
-        LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
-        LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
-
-        return new DateRange(defaultStart, defaultEnd);
     }
 
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
@@ -787,6 +807,18 @@ public class ExerciseQueryService {
         );
     }
 
+    private List<Exercise> findCockpleRecommendedExercisesByDateRange(Member member, DateRange dateRange) {
+        return exerciseRepository.findCockpleRecommendedExercisesByDateRange(
+                member.getId(), member.getGender(), member.getLevel(), member.getBirth().getYear(),
+                dateRange.start(), dateRange.end());
+    }
+
+    private List<Exercise> findFilteredRecommendedExercises(
+            Member member, DateRange dateRange, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+        return exerciseRepository.findFilteredRecommendedExercisesForCalendar(
+                member.getId(), member.getBirth().getYear(), filterSortType, dateRange.start(), dateRange.end());
+    }
+
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
@@ -881,6 +913,19 @@ public class ExerciseQueryService {
             LocalDate end = targetDate.withDayOfMonth(lastDay);
 
             return new DateRange(start, end);
+        }
+
+        private static DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate != null && endDate != null) {
+                return new DateRange(startDate, endDate);
+            }
+
+            LocalDate today = LocalDate.now();
+            LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+            LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
+            LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
+
+            return new DateRange(defaultStart, defaultEnd);
         }
     }
 

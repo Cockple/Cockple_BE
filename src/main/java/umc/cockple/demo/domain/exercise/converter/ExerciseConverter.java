@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
@@ -345,6 +346,27 @@ public class ExerciseConverter {
                 .build();
     }
 
+    public ExerciseRecommendationCalendarDTO.Response toRecommendationCalendarResponse(
+            List<Exercise> exercises,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
+            LocalDate start,
+            LocalDate end,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks
+                = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, mainAddr
+                , start, end, isCockpleRecommend, filterSortType);
+
+        return ExerciseRecommendationCalendarDTO.Response.builder()
+                .startDate(start)
+                .endDate(end)
+                .weeks(weeks)
+                .build();
+    }
+
     // ========== 내부 객체 변환 메서드들 ==========
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
@@ -513,6 +535,32 @@ public class ExerciseConverter {
         return weeks;
     }
 
+    private List<ExerciseRecommendationCalendarDTO.WeeklyExercises> groupRecommendedExerciseByWeek(
+            List<Exercise> exercises,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
+            LocalDate start,
+            LocalDate end,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
+
+        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
+
+            List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList =
+                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, mainAddr, isCockpleRecommend, filterSortType);
+
+            weeks.add(createRecommendedWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
+        }
+
+        return weeks;
+    }
+
     // 날짜별 그룹화 메서드
     private List<PartyExerciseCalendarDTO.DailyExercises> groupPartyExerciseByDate(
             List<Exercise> weekExercises,
@@ -595,6 +643,44 @@ public class ExerciseConverter {
         return dailyExercisesList;
     }
 
+    private List<ExerciseRecommendationCalendarDTO.DailyExercises> groupRecommendedExercisesByDate(
+            List<Exercise> weekExercises,
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Integer> participantCountMap,
+            MemberAddr mainAddr,
+            Boolean isCockpleRecommend,
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+
+        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
+                .collect(Collectors.groupingBy(Exercise::getDate));
+
+        List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
+
+        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
+            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
+
+            List<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> exerciseItems;
+            if(isCockpleRecommend){
+                 exerciseItems = dayExercises.stream()
+                        .map(exercise -> toRecommendationCalendarItemWithDistance(exercise, bookmarkStatus, mainAddr))
+                        .sorted(Comparator.comparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::distance)
+                                .thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime))
+                        .toList();
+            }else{
+                exerciseItems = dayExercises.stream()
+                        .map(exercise -> toRecommendationCalendarItem(exercise, bookmarkStatus))
+                        .sorted(getFilterSortComparator(filterSortType, participantCountMap))
+                        .toList();
+            }
+
+            dailyExercisesList.add(createRecommendationDailyExercises(date, exerciseItems));
+        }
+
+        return dailyExercisesList;
+    }
+
     // 주별 운동 변환
     private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
             LocalDate weekStart,
@@ -632,6 +718,18 @@ public class ExerciseConverter {
                 .build();
     }
 
+    private ExerciseRecommendationCalendarDTO.WeeklyExercises createRecommendedWeeklyExercises(
+            LocalDate weekStart,
+            LocalDate weekEnd,
+            List<ExerciseRecommendationCalendarDTO.DailyExercises> days) {
+
+        return ExerciseRecommendationCalendarDTO.WeeklyExercises.builder()
+                .weekStartDate(weekStart)
+                .weekEndDate(weekEnd)
+                .days(days)
+                .build();
+    }
+
     // 날짜별 운동 변환
     private PartyExerciseCalendarDTO.DailyExercises createPartyDailyExercises(
             LocalDate date,
@@ -660,6 +758,17 @@ public class ExerciseConverter {
             List<MyPartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
 
         return MyPartyExerciseCalendarDTO.DailyExercises.builder()
+                .date(date)
+                .dayOfWeek(date.getDayOfWeek().name())
+                .exercises(exerciseItems)
+                .build();
+    }
+
+    private ExerciseRecommendationCalendarDTO.DailyExercises createRecommendationDailyExercises(
+            LocalDate date,
+            List<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> exerciseItems) {
+
+        return ExerciseRecommendationCalendarDTO.DailyExercises.builder()
                 .date(date)
                 .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
@@ -804,6 +913,77 @@ public class ExerciseConverter {
                 .latitude(latitude)
                 .longitude(longitude)
                 .build();
+    }
+
+    private ExerciseRecommendationCalendarDTO.ExerciseCalendarItem toRecommendationCalendarItemWithDistance(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus, MemberAddr mainAddr) {
+
+        Double distance = calculateDistance(mainAddr.getLatitude(), mainAddr.getLongitude(),
+                exercise.getExerciseAddr().getLatitude(), exercise.getExerciseAddr().getLongitude());
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .distance(distance)
+                .build();
+    }
+
+
+    private ExerciseRecommendationCalendarDTO.ExerciseCalendarItem toRecommendationCalendarItem(
+            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
+
+        Party party = exercise.getParty();
+
+        return ExerciseRecommendationCalendarDTO.ExerciseCalendarItem.builder()
+                .exerciseId(exercise.getId())
+                .partyId(party.getId())
+                .partyName(party.getPartyName())
+                .buildingName(exercise.getExerciseAddr().getBuildingName())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
+                .build();
+    }
+
+    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
+        final double R = 6371; // 지구 반지름 (km)
+
+        double latDistance = Math.toRadians(latitude1 - latitude);
+        double lonDistance = Math.toRadians(longitude1 - longitude);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return (float) (R * c);
+    }
+
+    private Comparator<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> getFilterSortComparator(
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Map<Long, Integer> participantCountMap) {
+
+        return switch (filterSortType.sortType()) {
+            case LATEST ->
+                    Comparator.comparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
+
+            case POPULARITY ->
+                    Comparator.comparing(
+                            (ExerciseRecommendationCalendarDTO.ExerciseCalendarItem item) ->
+                                    participantCountMap.getOrDefault(item.exerciseId(), 0)
+                    ).reversed()
+                    .thenComparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
+        };
     }
 
     private record PartyLevelCache(

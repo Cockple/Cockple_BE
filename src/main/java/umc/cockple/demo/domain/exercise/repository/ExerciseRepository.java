@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
+public interface ExerciseRepository extends JpaRepository<Exercise, Long>, ExerciseRepositoryCustom {
 
     @Query("""
             SELECT e FROM Exercise e 
@@ -241,4 +241,39 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
             @Param("latitude") Double latitude,
             @Param("longitude") Double longitude,
             @Param("radiusKm") Integer radiusKm);
+
+
+    @Query("""
+            SELECT e FROM Exercise e
+            JOIN FETCH e.exerciseAddr addr
+            JOIN FETCH e.party p
+            LEFT JOIN FETCH p.partyImg
+            WHERE e.date BETWEEN :startDate AND :endDate
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberParty mp
+                WHERE mp.party.id = p.id
+                AND mp.member.id = :memberId
+                AND mp.member.isActive = 'ACTIVE'
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM MemberExercise me
+                WHERE me.exercise.id = e.id
+                AND me.member.id = :memberId
+            )
+            AND EXISTS (
+                SELECT 1 FROM PartyLevel pl
+                WHERE pl.party.id = p.id
+                AND pl.gender = :gender
+                AND pl.level = :level
+            )
+            AND (:birthYear >= p.minBirthYear AND :birthYear <= p.maxBirthYear)
+            AND e.outsideGuestAccept = true
+            """)
+    List<Exercise> findCockpleRecommendedExercisesByDateRange(
+            @Param("memberId") Long memberId,
+            @Param("gender") Gender gender,
+            @Param("level") Level level,
+            @Param("birthYear") int birthYear,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }
