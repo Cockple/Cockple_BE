@@ -13,8 +13,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatConverter {
 
-    private final ImageService imageService;
-
     public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos) {
         return PartyChatRoomDTO.Response.builder()
                 .content(chatRoomInfos)
@@ -24,12 +22,13 @@ public class ChatConverter {
     public PartyChatRoomDTO.ChatRoomInfo toChatRoomInfo(ChatRoom chatRoom,
                                                         int memberCount,
                                                         int unreadCount,
-                                                        PartyChatRoomDTO.LastMessageInfo lastMessageInfo) {
+                                                        PartyChatRoomDTO.LastMessageInfo lastMessageInfo,
+                                                        String imgUrl) {
         return PartyChatRoomDTO.ChatRoomInfo.builder()
                 .chatRoomId(chatRoom.getId())
                 .partyId(chatRoom.getId())
                 .partyName(chatRoom.getName())
-                .partyImgUrl(getPartyImgUrl(chatRoom))
+                .partyImgUrl(imgUrl)
                 .memberCount(memberCount)
                 .unreadCount(unreadCount)
                 .lastMessage(lastMessageInfo)
@@ -46,13 +45,6 @@ public class ChatConverter {
                 .timestamp(message.getCreatedAt())
                 .messageType(message.getType().name())
                 .build();
-    }
-
-    private String getPartyImgUrl(ChatRoom chatRoom) {
-        if (chatRoom.getParty() != null && chatRoom.getParty().getPartyImg() != null) {
-            return imageService.getUrlFromKey(chatRoom.getParty().getPartyImg().getImgKey());
-        }
-        return null;
     }
 
 }
