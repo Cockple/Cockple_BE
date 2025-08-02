@@ -19,7 +19,7 @@ public class ProfileImg {
     private Member member;
 
     @Column(nullable = false)
-    private String imgUrl;
+    private String imgKey;
 
 
     public void setMember(Member member) {
@@ -27,8 +27,8 @@ public class ProfileImg {
     }
 
     // 프로필 사진 수정시 url만 변경
-    public void updateProfile(String imgUrl) {
-        this.imgUrl = imgUrl;
+    public void updateProfile(String imgKey) {
+        this.imgKey = imgKey;
     }
 
 }

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.*;
+import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -32,6 +33,41 @@ public class MemberCommandService {
 
 
     // ==================== 회원 관련 ===================
+
+    public void memberDetailInfo(Long memberId, MemberDetailInfoRequestDTO requestDTO) {
+        // 회원 찾기
+        Member member = findByMemberId(memberId);
+
+        // 키워드 저장
+        List<MemberKeyword> keywords = requestDTO.keywords().stream()
+                .map(keyword -> {
+                    MemberKeyword memberKeyword = MemberKeyword.builder()
+                            .member(member)
+                            .keyword(keyword)
+                            .build();
+
+                    member.getKeywords().add(memberKeyword);
+                    return memberKeyword;
+
+                })
+                .toList();
+
+        memberKeywordRepository.saveAll(keywords);
+
+        if (requestDTO.imgKey() != null) {
+            ProfileImg profile = ProfileImg.builder()
+                    .member(member)
+                    .imgKey(requestDTO.imgKey())
+                    .build();
+
+            member.updateMemberFirst(requestDTO, keywords, profile);
+
+        } else {
+            member.updateMemberFirst(requestDTO, keywords);
+        }
+
+    }
+
 
     public void withdrawMember(Long memberId) {
         // 회원 찾기
@@ -75,15 +111,15 @@ public class MemberCommandService {
         memberKeywordRepository.saveAll(keywords);
 
         // 이미지 -> 저장 후 url 받아오기
-        String imgUrl = requestDto.imgUrl();
+        String imgKey = requestDto.imgKey();
 
         // 기존 이미지 존재시 이미지 새로 업로드
         if (member.getProfileImg() != null) {
 
             // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
-            if (!member.getProfileImg().getImgUrl().equals(imgUrl)) {
-                imageService.delete(member.getProfileImg().getImgUrl());
-                member.getProfileImg().updateProfile(imgUrl);
+            if (!member.getProfileImg().getImgKey().equals(imgKey)) {
+                imageService.delete(member.getProfileImg().getImgKey());
+                member.getProfileImg().updateProfile(imgKey);
             }
 
             // 회원 정보 수정하기 (프로필 사진 제외)
@@ -93,7 +129,7 @@ public class MemberCommandService {
             // 받아온 이미지로 profile객체 생성
             ProfileImg img = ProfileImg.builder()
                     .member(member)
-                    .imgUrl(imgUrl)
+                    .imgKey(imgKey)
                     .build()
                     ;
 

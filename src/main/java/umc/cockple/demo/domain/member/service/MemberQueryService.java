@@ -58,7 +58,7 @@ public class MemberQueryService {
         // 프로필 사진 null-safety
         String imgUrl = null;
         if (member.getProfileImg() != null) {
-            imgUrl = member.getProfileImg().getImgUrl();
+            imgUrl = member.getProfileImg().getImgKey();
         }
 
         // 각 메달 개수 카운트
