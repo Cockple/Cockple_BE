@@ -5,7 +5,7 @@ import lombok.Builder;
 public class PartyMemberSuggestionDTO {
     @Builder
     public record Response(
-            Long memberId,
+            Long userId,
             String nickname,
             String profileImageUrl,
             String gender,
