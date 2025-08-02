@@ -70,7 +70,7 @@ public class MemberController {
             description = "로그인 후 추가적인 상세 정보를 받습니다.")
     public BaseResponse<String> memberDetailInfo(@RequestBody @Valid MemberDetailInfoRequestDTO requestDTO) {
 
-        Long memberId = SecurityUtil.getCurrentMemberId();
+        Long memberId = 2L;
 
         memberCommandService.memberDetailInfo(memberId, requestDTO);
 
