@@ -3,11 +3,8 @@ package umc.cockple.demo.domain.contest.converter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.contest.domain.ContestImg;
-import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.*;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,25 +52,7 @@ public class ContestConverter {
     }
 
     // 대회 기록 상세 조회
-    public ContestRecordDetailDTO.Response toDetailResponseDTO(Contest contest, Boolean isOwner) {
-        List<String> imgUrls = contest.getContestImgs().stream()
-                .sorted(Comparator.comparing(ContestImg::getImgOrder))
-                .map(ContestImg::getImgUrl)
-                .collect(Collectors.toList());
-
-        // video 링크 공개여부 처리
-        List<String> videoUrls = (contest.getVideoIsOpen() || isOwner)
-                ? contest.getContestVideos().stream()
-                .sorted(Comparator.comparingInt(ContestVideo::getVideoOrder))
-                .map(ContestVideo::getVideoUrl)
-                .collect(Collectors.toList())
-                : List.of();
-
-        // 기록 공개여부 처리
-        String content = (contest.getContentIsOpen() || isOwner)
-                ? contest.getContent()
-                : "";
-
+    public ContestRecordDetailDTO.Response toDetailResponseDTO(Contest contest, List<String> imgUrls, List<String> videoUrls, String content) {
         return ContestRecordDetailDTO.Response.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())

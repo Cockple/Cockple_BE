@@ -6,13 +6,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.contest.converter.ContestConverter;
 import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.contest.domain.ContestImg;
+import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.image.service.ImageService;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -22,6 +27,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
     private final ContestRepository contestRepository;
     private final ContestConverter contestConverter;
+    private final ImageService imageService;
 
     // 대회 기록 상세 조회
     @Override
@@ -34,9 +40,13 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
         boolean isOwner = loginMemberId.equals(memberId);
 
+        List<String> imgUrls = getImageUrls(contest);
+        List<String> videoUrls = getVideoUrls(contest, isOwner);
+        String content = getContent(contest, isOwner);
+
         log.info("대회 기록 상세조회 완료 - contestId: {}", contestId);
 
-        return contestConverter.toDetailResponseDTO(contest, isOwner);
+        return contestConverter.toDetailResponseDTO(contest, imgUrls, videoUrls, content);
     }
 
     // 대회 기록 리스트 조회 (전체, 미입상)
@@ -77,6 +87,32 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         log.info("[메달 조회 완료] - memberId: {}", memberId);
 
         return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
+    }
+
+    // 이미지 URL 리스트 반환
+    private List<String> getImageUrls(Contest contest) {
+        return contest.getContestImgs().stream()
+                .sorted(Comparator.comparing(ContestImg::getImgOrder))
+                .map(img -> imageService.getUrlFromKey(img.getImgKey()))
+                .collect(Collectors.toList());
+    }
+
+    // 영상 URL 리스트 (공개 여부에 따라)
+    private List<String> getVideoUrls(Contest contest, boolean isOwner) {
+        if (contest.getVideoIsOpen() || isOwner) {
+            return contest.getContestVideos().stream()
+                    .sorted(Comparator.comparingInt(ContestVideo::getVideoOrder))
+                    .map(ContestVideo::getVideoUrl)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
+    }
+
+    // 내용 (공개 여부에 따라)
+    private String getContent(Contest contest, boolean isOwner) {
+        return (contest.getContentIsOpen() || isOwner)
+                ? contest.getContent()
+                : "";
     }
 
 }

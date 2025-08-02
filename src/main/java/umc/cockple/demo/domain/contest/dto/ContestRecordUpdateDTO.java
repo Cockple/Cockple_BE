@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -42,7 +41,7 @@ public class ContestRecordUpdateDTO {
             List<String> contestVideos,
 
             // 새로 추가할 이미지
-            List<ImageUploadResponseDTO> contestImgs,
+            List<String> contestImgs,
 
             // 삭제할 이미지 imgKey (프론트에서 관리)
             List<String> contestImgsToDelete,
