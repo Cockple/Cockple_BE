@@ -1,10 +1,13 @@
 package umc.cockple.demo.domain.bookmark.converter;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
 import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyLevel;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
@@ -13,8 +16,13 @@ import umc.cockple.demo.global.enums.Level;
 
 import java.util.List;
 
+@Component
+@RequiredArgsConstructor
 public class BookmarkConverter {
-    public static GetAllExerciseBookmarksResponseDTO exerciseBookmarkToDTO(ExerciseBookmark bookmark,
+
+    private final ImageService imageService;
+
+    public GetAllExerciseBookmarksResponseDTO exerciseBookmarkToDTO(ExerciseBookmark bookmark,
                                                                            boolean includeParty, boolean includeExercise) {
         Exercise exercise = bookmark.getExercise();
 
@@ -35,9 +43,9 @@ public class BookmarkConverter {
                 .build();
     }
 
-    public static GetAllPartyBookmarkResponseDTO partyBookmarkToDTO(PartyBookmark partyBookmark, Exercise exercise, ActivityTime activityTime) {
+    public GetAllPartyBookmarkResponseDTO partyBookmarkToDTO(PartyBookmark partyBookmark, Exercise exercise, ActivityTime activityTime) {
         Party party = partyBookmark.getParty();
-        String profileImg = party.getPartyImg() == null ? null : party.getPartyImg().getImgUrl();
+        String profileImg = party.getPartyImg() == null ? null : imageService.getUrlFromKey(party.getPartyImg().getImgKey());
 
         return GetAllPartyBookmarkResponseDTO.builder()
                 .partyId(party.getId())
@@ -53,7 +61,7 @@ public class BookmarkConverter {
                 .build();
     }
 
-    private  static List<Level> getLevelList(Party party, Gender gender) {
+    private List<Level> getLevelList(Party party, Gender gender) {
         return party.getLevels().stream()
                 .filter(level -> level.getGender() == gender)
                 .map(PartyLevel::getLevel)

@@ -40,6 +40,7 @@ public class BookmarkQueryService {
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberRepository memberRepository;
+    private final BookmarkConverter bookmarkConverter;
 
     public List<GetAllExerciseBookmarksResponseDTO> getAllExerciseBookmarks(Long memberId, BookmarkedExerciseOrderType orderType) {
         // 회원 조회하기
@@ -65,7 +66,7 @@ public class BookmarkQueryService {
                 .map(bookmark -> {
                     boolean includeParty = myParties.contains(bookmark.getExercise().getParty().getId());
                     boolean includeExercise = myExercises.contains(bookmark.getExercise().getId());
-                    return BookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise);
+                    return bookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise);
                 })
                 .toList();
     }
@@ -95,7 +96,7 @@ public class BookmarkQueryService {
                      // 가장 가까운 시일에 진행하는 운동 찾기
                      Exercise exercise = latestExercise(bookmark.getParty()).orElse(null);
                      ActivityTime activityTime = makeActiveTime(exercise);
-                     return BookmarkConverter.partyBookmarkToDTO(bookmark, exercise, activityTime);
+                     return bookmarkConverter.partyBookmarkToDTO(bookmark, exercise, activityTime);
                  })
                 .toList();
     }
