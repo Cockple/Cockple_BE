@@ -126,12 +126,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         memberPartyRepository.delete(memberParty);
 
         //채팅방 퇴장 로직 수행
-        log.info("모임 채팅방 퇴장 시작 - memberId: {}", memberId);
-        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
-        chatRoomMemberRepository
-                .findByChatRoomIdAndMemberId(chatRoom.getId(), memberId)
-                        .ifPresent(chatRoomMemberRepository::delete);
-        log.info("모임 채팅방 퇴장 완료 - chatRoomId: {}", chatRoom.getId());
+        leavePartyChatRoom(partyId, memberId);
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
 
@@ -199,7 +194,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveJoinRequest(partyJoinRequest);
-            JoinChatRoom(partyId, requestId, partyJoinRequest);
+            JoinPartyChatRoom(partyId, requestId, partyJoinRequest);
         }else{
             rejectJoinRequest(partyJoinRequest);
         }
@@ -414,8 +409,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         party.addMember(newMemberParty);
     }
 
-
-    private void JoinChatRoom(Long partyId, Long requestId, PartyJoinRequest partyJoinRequest) {
+    private void JoinPartyChatRoom(Long partyId, Long requestId, PartyJoinRequest partyJoinRequest) {
         log.info("모임 채팅방 자동 참여 시작 - partyId: {}", partyId);
         ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
         ChatRoomMember chatRoomMember = ChatRoomMember.builder()
@@ -424,5 +418,14 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .build();
         chatRoomMemberRepository.save(chatRoomMember);
         log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", requestId, chatRoom.getId());
+    }
+
+    private void leavePartyChatRoom(Long partyId, Long memberId) {
+        log.info("모임 채팅방 퇴장 시작 - memberId: {}", memberId);
+        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+        chatRoomMemberRepository
+                .findByChatRoomIdAndMemberId(chatRoom.getId(), memberId)
+                .ifPresent(chatRoomMemberRepository::delete);
+        log.info("모임 채팅방 퇴장 완료 - chatRoomId: {}", chatRoom.getId());
     }
 }
