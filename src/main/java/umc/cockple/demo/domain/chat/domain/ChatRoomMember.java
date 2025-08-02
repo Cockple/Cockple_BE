@@ -5,9 +5,6 @@ import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,8 +25,4 @@ public class ChatRoomMember extends BaseEntity {
     private Member member;
 
     private Long lastReadMessageId;
-
-    @OneToMany(mappedBy = "chatRoomMember")
-    private List<ChatMessage> chatMessages = new ArrayList<>();
-
 }
