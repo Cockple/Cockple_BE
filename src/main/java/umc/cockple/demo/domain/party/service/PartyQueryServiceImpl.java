@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberKeyword;
@@ -18,6 +19,7 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.domain.PartyKeyword;
 import umc.cockple.demo.domain.party.dto.*;
@@ -48,6 +50,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final MemberPartyRepository memberPartyRepository;
     private final MemberAddrRepository memberAddrRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ImageService imageService;
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
@@ -58,7 +61,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         Slice<MemberParty> memberPartySlice = memberPartyRepository.findByMember(member, pageable);
 
         log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
-        return memberPartySlice.map(partyConverter::toPartySimpleDTO);
+        return memberPartySlice.map(memberParty ->
+                partyConverter.toPartySimpleDTO(memberParty, getImageUrl(memberParty.getParty().getPartyImg())));
     }
 
     @Override
@@ -80,7 +84,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
-            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
+            String imgUrl = getImageUrl(party.getPartyImg());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl);
         });
     }
 
@@ -107,7 +112,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return partySlice.map(party -> {
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
-            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount);
+            String imgUrl = getImageUrl(party.getPartyImg());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl);
         });
     }
 
@@ -140,7 +146,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //memberParty 조회 로직 수행
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
 
-        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty);
+        String imgUrl = getImageUrl(party.getPartyImg());
+        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl);
 
         log.info("모임 상세 정보 조회 완료 - partyId: {}", partyId);
         return response;
@@ -305,6 +312,14 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     }
 
     // ========== 데이터 변환 메서드 ==========
+    //이미지 키를 이미지 url로 변환
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
     //가입신청 상태 변환
     private RequestStatus parseRequestStatus(String status) {
         try {

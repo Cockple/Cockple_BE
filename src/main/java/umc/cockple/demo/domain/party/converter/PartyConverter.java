@@ -1,6 +1,8 @@
 package umc.cockple.demo.domain.party.converter;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -16,20 +18,21 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class PartyConverter {
 
-    public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty) {
+    public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty, String imgUrl) {
         Party party = memberParty.getParty();
         return PartySimpleDTO.Response.builder()
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
                 .addr1(party.getPartyAddr().getAddr1())
                 .addr2(party.getPartyAddr().getAddr2())
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imgUrl : null)
                 .build();
     }
 
-    public PartyDTO.Response toMyPartyDTO(Party party, String nextExerciseInfo, Integer totalExerciseCount) {
+    public PartyDTO.Response toMyPartyDTO(Party party, String nextExerciseInfo, Integer totalExerciseCount, String imgUrl) {
         //급수 조건 가공 필요
         return PartyDTO.Response.builder()
                 .partyId(party.getId())
@@ -40,11 +43,11 @@ public class PartyConverter {
                 .maleLevel(getLevelList(party, Gender.MALE))
                 .nextExerciseInfo(nextExerciseInfo)
                 .totalExerciseCount(totalExerciseCount)
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imgUrl : null)
                 .build();
     }
 
-    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt) {
+    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt, String imgUrl) {
         // 급수 정보 가공
         List<String> femaleLevel = getLevelList(party, Gender.FEMALE);
         List<String> maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
@@ -71,7 +74,7 @@ public class PartyConverter {
                 .designatedCock(party.getDesignatedCock())
                 .content(party.getContent())
                 .keywords(party.getKeywords().stream().map(kw -> kw.getKeyword().getKoreanName()).toList())
-                .partyImgUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .partyImgUrl(party.getPartyImg() != null ? imgUrl : null)
                 .build();
     }
 
@@ -90,7 +93,7 @@ public class PartyConverter {
                 .joinPrice(request.joinPrice())
                 .designatedCock(request.designatedCock())
                 .content(request.content())
-                .imgUrl(request.imgUrl())
+                .imgKey(request.imgKey())
                 .build();
     }
 

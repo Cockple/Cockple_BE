@@ -66,7 +66,7 @@ public class PartyCreateDTO {
             @Size(max = 45, message = "모임 소개는 최대 45글자입니다.")
             String content,
 
-            String imgUrl
+            String imgKey
     ){
         public List<Level> toFemaleLevelEnumList() {
             if (femaleLevel == null) return null;
@@ -131,7 +131,7 @@ public class PartyCreateDTO {
             Integer joinPrice,
             String designatedCock,
             String content,
-            String imgUrl
+            String imgKey
     ) {
     }
 

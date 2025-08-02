@@ -18,15 +18,12 @@ public class PartyImg {
     @JoinColumn(name = "party_id")
     private Party party;
 
-    @Column(nullable = false)
-    private String imgUrl;
-
-    @Column(nullable = false)
+    @Column
     private String imgKey;
 
-    public static PartyImg create(String imageUrl, Party party) {
+    public static PartyImg create(String imageKey, Party party) {
         return PartyImg.builder()
-                .imgUrl(imageUrl)
+                .imgKey(imageKey)
                 .party(party)
                 .build();
     }
