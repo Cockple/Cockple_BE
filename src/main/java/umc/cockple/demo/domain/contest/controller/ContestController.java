@@ -1,6 +1,8 @@
 package umc.cockple.demo.domain.contest.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -101,6 +103,11 @@ public class ContestController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<List<ContestRecordSimpleDTO.Response>> getMyContestRecord(
             //@AuthenticationPrincipal Long memberId
+            @Parameter(
+                    name = "medalType",
+                    description = "전체 or NONE",
+                    schema = @Schema(allowableValues = {"NONE"})
+            )
             @RequestParam(required = false) MedalType medalType
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
@@ -144,6 +151,11 @@ public class ContestController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<List<ContestRecordSimpleDTO.Response>> getOtherMemberContestRecord(
             @RequestParam Long memberId,
+            @Parameter(
+                    name = "medalType",
+                    description = "전체 or NONE",
+                    schema = @Schema(allowableValues = {"NONE"})
+            )
             @RequestParam(required = false) MedalType medalType
     ) {
         List<ContestRecordSimpleDTO.Response> response = contestQueryService.getMyContestRecordsByMedalType(memberId, medalType);
