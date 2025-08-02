@@ -28,9 +28,6 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "sender_id")
     private Member sender;
 
-    @Column(nullable = false)
-    private String senderName;
-
     @Column(columnDefinition = "TEXT")
     private String content;
 
