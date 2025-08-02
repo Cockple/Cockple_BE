@@ -1,14 +1,19 @@
 package umc.cockple.demo.domain.chat.converter;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.image.service.ImageService;
 
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class ChatConverter {
+
+    private final ImageService imageService;
 
     public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos) {
         return PartyChatRoomDTO.Response.builder()
@@ -45,7 +50,7 @@ public class ChatConverter {
 
     private String getPartyImgUrl(ChatRoom chatRoom) {
         if (chatRoom.getParty() != null && chatRoom.getParty().getPartyImg() != null) {
-            return chatRoom.getParty().getPartyImg().getImgUrl();
+            return imageService.getUrlFromKey(chatRoom.getParty().getPartyImg().getImgKey());
         }
         return null;
     }
