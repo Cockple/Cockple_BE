@@ -263,9 +263,6 @@ public class PartyController {
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
         Slice<PartyMemberSuggestionDTO.Response> response = partyQueryService.getRecommendedMembers(partyId, levelSearch, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }

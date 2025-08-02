@@ -11,5 +11,5 @@ public interface PartyQueryService {
     Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable);
     PartyMemberDTO.Response getPartyMembers(Long partyId, Long currentMemberId);
     Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Boolean isCockpleRecommend, PartyFilterDTO.Request filter, String sort, Pageable pageable);
-    Slice<PartyMemberSuggestionDTO.Response> getRecommendedMembers(Long memberId, String levelSearch, Pageable pageable);
+    Slice<PartyMemberSuggestionDTO.Response> getRecommendedMembers(Long partyId, String levelSearch, Pageable pageable);
 }
