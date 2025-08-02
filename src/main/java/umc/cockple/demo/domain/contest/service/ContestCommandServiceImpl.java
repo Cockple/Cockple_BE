@@ -12,7 +12,6 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.domain.image.dto.ImageUploadRequestDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
@@ -174,7 +173,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toDeleteResponseDTO(contest);
     }
 
-    private void extractedImgs(List<ImageUploadRequestDTO> imgs, Contest contest) {
+    private void extractedImgs(List<String> imgs, Contest contest) {
         int startIndex = contest.getContestImgs().size();
         int total = startIndex + imgs.size();
         if (total > 3) {
@@ -182,8 +181,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
             throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
         }
         for (int i = 0; i < imgs.size(); i++) {
-            ImageUploadRequestDTO dto = imgs.get(i);
-            ContestImg contestImg = ContestImg.of(contest, dto.imgKey(), startIndex + i);
+            String key = imgs.get(i);
+            ContestImg contestImg = ContestImg.of(contest, key, startIndex + i);
             contest.addContestImg(contestImg);
         }
     }

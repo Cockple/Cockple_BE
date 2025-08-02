@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import umc.cockple.demo.domain.image.dto.ImageUploadRequestDTO;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -42,7 +41,7 @@ public class ContestRecordCreateDTO {
             List<String> contestVideos,
 
             @Size(max = 3, message = "이미지는 3개까지 업로드 가능합니다.")
-            List<ImageUploadRequestDTO> contestImgs
+            List<String> contestImgs
 
     ) {
     }
@@ -59,7 +58,7 @@ public class ContestRecordCreateDTO {
             Boolean contentIsOpen,
             Boolean videoIsOpen,
             List<String> contestVideos,
-            List<ImageUploadRequestDTO> contestImgs
+            List<String> contestImgs
     ) {
     }
 
