@@ -123,4 +123,8 @@ public class ImageService {
 
         return url.substring(startIndex);
     }
+
+    public String getUrlFromKey(String key) {
+        return amazonS3.getUrl(bucket, key).toString();
+    }
 }

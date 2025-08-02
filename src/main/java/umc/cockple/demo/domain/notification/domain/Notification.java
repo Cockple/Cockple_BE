@@ -21,6 +21,9 @@ public class Notification extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
+    @Column(nullable = false)
+    private Long groupId;
+
     private String title;
 
     @Column(nullable = false)
@@ -32,6 +35,8 @@ public class Notification extends BaseEntity {
 
     @Column(nullable = false)
     private Boolean isRead;
+
+    private String imageKey;
 
     public void read() {
         this.isRead = true;

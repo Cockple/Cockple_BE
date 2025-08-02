@@ -123,7 +123,7 @@ public class PartyConverter {
         // status가 PENDING이 아닐 경우에만 updatedAt 값을 설정
         LocalDateTime updatedAt = (request.getStatus() != RequestStatus.PENDING) ? request.getUpdatedAt() : null;
         //이미지가 null인 경우 null을 전달
-        String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgUrl() : null;
+        String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgKey() : null;
         return PartyJoinDTO.Response.builder()
                 .joinRequestId(request.getId())
                 .userId(member.getId())
@@ -153,7 +153,7 @@ public class PartyConverter {
                     return PartyMemberDTO.MemberDetail.builder()
                             .memberId(member.getId())
                             .nickname(member.getNickname())
-                            .profileImageUrl(member.getProfileImg() != null ? member.getProfileImg().getImgUrl() : null)
+                            .profileImageUrl(member.getProfileImg() != null ? member.getProfileImg().getImgKey() : null)
                             .role(mp.getRole().name())
                             .gender(member.getGender().name())
                             .level(member.getLevel().getKoreanName())

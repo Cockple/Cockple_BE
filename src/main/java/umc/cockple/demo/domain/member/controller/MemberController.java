@@ -64,6 +64,20 @@ public class MemberController {
                 ));
     }
 
+
+    @PostMapping("/my/details")
+    @Operation(summary = "로그인 후 상세 정보 받기 API",
+            description = "로그인 후 추가적인 상세 정보를 받습니다.")
+    public BaseResponse<String> memberDetailInfo(@RequestBody @Valid MemberDetailInfoRequestDTO requestDTO) {
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        memberCommandService.memberDetailInfo(memberId, requestDTO);
+
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+
     @PostMapping("/auth/refresh")
     @Operation(summary = "리프레시 토큰 재발급 API",
             description = "리프레시 토큰이 만료되었을 경우 (1주일) 재발급 해주는 api입니다. 리프레시토큰은 헤더에 쿠키로 들어갑니다.")

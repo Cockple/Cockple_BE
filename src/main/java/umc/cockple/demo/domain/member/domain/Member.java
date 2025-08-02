@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.global.enums.Gender;
@@ -106,6 +107,23 @@ public class Member extends BaseEntity {
         if (newProfileImg != null) {
             newProfileImg.setMember(this);
         }
+    }
+
+    public void updateMemberFirst(MemberDetailInfoRequestDTO requestDto, List<MemberKeyword> keywords, ProfileImg img) {
+        this.memberName = requestDto.memberName();
+        this.gender = requestDto.gender();
+        this.birth = requestDto.birth();
+        this.level = requestDto.level();
+        this.keywords = keywords;
+        this.profileImg = img;
+    }
+
+    public void updateMemberFirst(MemberDetailInfoRequestDTO requestDto, List<MemberKeyword> keywords) {
+        this.memberName = requestDto.memberName();
+        this.gender = requestDto.gender();
+        this.birth = requestDto.birth();
+        this.level = requestDto.level();
+        this.keywords = keywords;
     }
 
 
