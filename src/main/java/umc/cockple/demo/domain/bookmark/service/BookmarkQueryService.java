@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -19,6 +20,7 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
 import umc.cockple.demo.domain.party.enums.PartyOrderType;
@@ -41,6 +43,7 @@ public class BookmarkQueryService {
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberRepository memberRepository;
     private final BookmarkConverter bookmarkConverter;
+    private final ImageService imageService;
 
     public List<GetAllExerciseBookmarksResponseDTO> getAllExerciseBookmarks(Long memberId, BookmarkedExerciseOrderType orderType) {
         // 회원 조회하기
@@ -96,7 +99,8 @@ public class BookmarkQueryService {
                      // 가장 가까운 시일에 진행하는 운동 찾기
                      Exercise exercise = latestExercise(bookmark.getParty()).orElse(null);
                      ActivityTime activityTime = makeActiveTime(exercise);
-                     return bookmarkConverter.partyBookmarkToDTO(bookmark, exercise, activityTime);
+                     String imgUrl = getImageUrl(bookmark.getParty().getPartyImg());
+                     return bookmarkConverter.partyBookmarkToDTO(bookmark, exercise, activityTime, imgUrl);
                  })
                 .toList();
     }
@@ -127,5 +131,11 @@ public class BookmarkQueryService {
         return ActivityTime.AFTERNOON;
     }
 
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
 
 }

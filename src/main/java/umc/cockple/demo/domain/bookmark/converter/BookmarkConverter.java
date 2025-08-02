@@ -20,8 +20,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookmarkConverter {
 
-    private final ImageService imageService;
-
     public GetAllExerciseBookmarksResponseDTO exerciseBookmarkToDTO(ExerciseBookmark bookmark,
                                                                            boolean includeParty, boolean includeExercise) {
         Exercise exercise = bookmark.getExercise();
@@ -43,9 +41,8 @@ public class BookmarkConverter {
                 .build();
     }
 
-    public GetAllPartyBookmarkResponseDTO partyBookmarkToDTO(PartyBookmark partyBookmark, Exercise exercise, ActivityTime activityTime) {
+    public GetAllPartyBookmarkResponseDTO partyBookmarkToDTO(PartyBookmark partyBookmark, Exercise exercise, ActivityTime activityTime, String imgUrl) {
         Party party = partyBookmark.getParty();
-        String profileImg = party.getPartyImg() == null ? null : imageService.getUrlFromKey(party.getPartyImg().getImgKey());
 
         return GetAllPartyBookmarkResponseDTO.builder()
                 .partyId(party.getId())
@@ -57,7 +54,7 @@ public class BookmarkConverter {
                 .latestExerciseDate(exercise == null ? null : exercise.getDate())
                 .latestExerciseTime(activityTime)
                 .exerciseCnt(party.getExerciseCount())
-                .profileImgUrl(profileImg)
+                .profileImgUrl(imgUrl)
                 .build();
     }
 
