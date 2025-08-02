@@ -12,7 +12,7 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
+import umc.cockple.demo.domain.image.dto.ImageUploadRequestDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
@@ -27,7 +27,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     private final ContestRepository contestRepository;
     private final MemberRepository memberRepository;
     private final ContestConverter contestConverter;
-    private final ImageService imageService; //이미지 업로드 담당
+    private final ImageService imageService;
 
             /*
         1.	memberId로 Member 조회
@@ -174,7 +174,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toDeleteResponseDTO(contest);
     }
 
-    private void extractedImgs(List<ImageUploadResponseDTO> imgs, Contest contest) {
+    private void extractedImgs(List<ImageUploadRequestDTO> imgs, Contest contest) {
         int startIndex = contest.getContestImgs().size();
         int total = startIndex + imgs.size();
         if (total > 3) {
@@ -182,8 +182,8 @@ public class ContestCommandServiceImpl implements ContestCommandService {
             throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
         }
         for (int i = 0; i < imgs.size(); i++) {
-            ImageUploadResponseDTO dto = imgs.get(i);
-            ContestImg contestImg = ContestImg.of(contest, dto.imgUrl(), dto.imgKey(), startIndex + i);
+            ImageUploadRequestDTO dto = imgs.get(i);
+            ContestImg contestImg = ContestImg.of(contest, dto.imgKey(), startIndex + i);
             contest.addContestImg(contestImg);
         }
     }
