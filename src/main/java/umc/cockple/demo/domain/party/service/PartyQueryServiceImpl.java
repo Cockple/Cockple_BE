@@ -175,6 +175,19 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         return requestSlice.map(partyConverter::toPartyJoinResponseDTO);
     }
 
+    @Override
+    public Slice<PartyMemberSuggestionDTO.Response> getRecommendedMembers(Long partyId, String levelSearch, Pageable pageable) {
+        log.info("신규 멤버 추천 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //멤버 추천 로직 수행
+        Slice<Member> recommendedMembersSlice = memberRepository.findRecommendedMembers(party, levelSearch, pageable);
+
+        log.info("신규 멤버 추천 완료. - 조회된 항목 수: {}", recommendedMembersSlice.getNumberOfElements());
+        return recommendedMembersSlice.map(partyConverter::toPartyMemberSuggestionDTO);
+    }
+
     // ========== 조회 메서드 ==========
     //사용자 조회
     private Party findPartyOrThrow(Long partyId) {
