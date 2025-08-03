@@ -867,7 +867,7 @@ public class ExerciseConverter {
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
-                .imageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .imageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
