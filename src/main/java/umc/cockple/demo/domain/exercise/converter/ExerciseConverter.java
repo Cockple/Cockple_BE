@@ -816,7 +816,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .build();
     }
 
