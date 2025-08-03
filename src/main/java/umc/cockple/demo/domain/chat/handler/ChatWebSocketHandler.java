@@ -76,7 +76,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-
+        Long memberId = (Long) session.getAttributes().get("memberId");
+        log.error("WebSocket 전송 오류 발생 - 세션 ID: {}, 사용자 ID: {}", session.getId(), memberId, exception);
     }
 
     // ========== 내부 메서드들 ==========
