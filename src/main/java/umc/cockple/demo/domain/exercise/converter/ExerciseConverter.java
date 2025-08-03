@@ -831,7 +831,7 @@ public class ExerciseConverter {
                 .date(exercise.getDate())
                 .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
-                .profileImageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .build();
     }
 
