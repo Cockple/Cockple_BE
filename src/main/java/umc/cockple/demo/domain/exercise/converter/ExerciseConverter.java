@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -471,6 +472,13 @@ public class ExerciseConverter {
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
+    private String getImageUrl(ProfileImg profileImg) {
+        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(profileImg.getImgKey());
         }
         return null;
     }
