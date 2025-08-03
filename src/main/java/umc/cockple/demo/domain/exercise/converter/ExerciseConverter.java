@@ -11,7 +11,9 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
@@ -375,7 +377,7 @@ public class ExerciseConverter {
         return ExerciseDetailDTO.ParticipantInfo.builder()
                 .participantId(memberParticipant.getId())
                 .participantNumber(0)
-                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgKey() : null)
+                .imgUrl(getImageUrl(member.getProfileImg()))
                 .name(member.getMemberName())
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
@@ -392,7 +394,7 @@ public class ExerciseConverter {
         return ExerciseDetailDTO.ParticipantInfo.builder()
                 .participantId(memberParticipant.getId())
                 .participantNumber(0)
-                .imgUrl(member.getProfileImg() != null ? member.getProfileImg().getImgKey() : null)
+                .imgUrl(getImageUrl(member.getProfileImg()))
                 .name(member.getMemberName())
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
@@ -465,6 +467,20 @@ public class ExerciseConverter {
                     return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
                 })
                 .toList();
+    }
+
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
+    private String getImageUrl(ProfileImg profileImg) {
+        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(profileImg.getImgKey());
+        }
+        return null;
     }
 
     // 주별 그룹화 메서드
@@ -808,7 +824,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .build();
     }
 
@@ -823,7 +839,7 @@ public class ExerciseConverter {
                 .date(exercise.getDate())
                 .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
-                .profileImageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .build();
     }
 
@@ -839,7 +855,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .nowCapacity(participantCounts.getOrDefault(exercise.getId(), 0))
                 .build();
@@ -859,7 +875,7 @@ public class ExerciseConverter {
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
-                .imageUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .imageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
@@ -898,7 +914,7 @@ public class ExerciseConverter {
                 .exerciseId(exercise.getId())
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
-                .partyImgUrl(party.getPartyImg() != null ? imageService.getUrlFromKey(party.getPartyImg().getImgKey()) : null)
+                .partyImgUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
@@ -930,7 +946,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .distance(distance)
                 .build();
@@ -949,7 +965,7 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(party.getPartyImg() != null ? party.getPartyImg().getImgUrl() : null)
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
