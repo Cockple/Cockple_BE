@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
@@ -23,5 +24,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             @Param("memberId") Long memberId
     );
 
+    List<ChatRoomMember> findByChatRoomId(Long id);
 }
 

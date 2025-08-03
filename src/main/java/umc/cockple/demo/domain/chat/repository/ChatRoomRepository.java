@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
     @Query("""
@@ -28,7 +29,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
     );
 
     @Query("""
-    SELECT cr FROM ChatRoom cr
+
+            SELECT cr FROM ChatRoom cr
     JOIN cr.chatRoomMembers crm
     WHERE crm.member.id = :memberId
     AND cr.party.partyName LIKE %:name%
@@ -48,4 +50,18 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
     );
 
     ChatRoom findByPartyId(Long partyId);
+
+    @Query("""
+    SELECT cr
+    FROM ChatRoom cr
+    JOIN cr.chatRoomMembers m
+    WHERE cr.type = 'DIRECT'
+      AND m.member.id IN (:memberId1, :memberId2)
+    GROUP BY cr.id
+    HAVING COUNT(DISTINCT m.member.id) = 2
+    """)
+    Optional<ChatRoom> findDirectChatRoomByMemberIds(
+            @Param("memberId1") Long memberId1,
+            @Param("memberId2") Long memberId2
+    );
 }
