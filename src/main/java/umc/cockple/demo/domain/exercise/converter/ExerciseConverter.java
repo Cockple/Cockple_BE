@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
@@ -465,6 +466,13 @@ public class ExerciseConverter {
                     return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
                 })
                 .toList();
+    }
+
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
     }
 
     // 주별 그룹화 메서드
