@@ -25,4 +25,8 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
         WHERE pb.member = :member
         """)
     List<PartyBookmark> findAllByMemberWithParty(@Param("member") Member member);
+
+    List<PartyBookmark> findAllByMember(Member member);
+
+    Optional<PartyBookmark> findFirstByMemberOrderByCreatedAtAsc(Member member);
 }

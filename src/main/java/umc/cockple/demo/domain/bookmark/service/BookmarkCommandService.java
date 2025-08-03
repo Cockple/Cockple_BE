@@ -25,6 +25,8 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -59,6 +61,15 @@ public class BookmarkCommandService {
                 .orderType(PartyOrderType.LATEST)
                 .build()
         ;
+
+        // 찜 개수 확인
+        List<PartyBookmark> bookmarks = partyBookmarkRepository.findAllByMember(member);
+        if (bookmarks.size() >= 15) {
+            // 가장 오래된 북마크 삭제
+            partyBookmarkRepository.findFirstByMemberOrderByCreatedAtAsc(member)
+                    .ifPresent(partyBookmarkRepository::delete);
+
+        }
 
         // 찜하기
         PartyBookmark saveBookmark = partyBookmarkRepository.save(bookmark);
@@ -102,6 +113,14 @@ public class BookmarkCommandService {
                 .exercise(exercise)
                 .build()
         ;
+
+        // 찜 개수 확인
+        List<ExerciseBookmark> bookmarks = exerciseBookmarkRepository.findAllByMember(member);
+        if (bookmarks.size() >= 50) {
+            // 가장 오래된 거 삭제
+            exerciseBookmarkRepository.findFirstByMemberOrderByCreatedAtAsc(member)
+                    .ifPresent(exerciseBookmarkRepository::delete);
+        }
 
         // 찜하기
         ExerciseBookmark saveBookmark = exerciseBookmarkRepository.save(bookmark);
