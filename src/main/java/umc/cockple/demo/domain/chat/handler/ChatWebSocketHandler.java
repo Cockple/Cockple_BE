@@ -21,6 +21,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper;
 
+    private final Map<Long, Map<Long, WebSocketSession>> chatRoomSessions = new ConcurrentHashMap<>();
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
     @Override
@@ -54,7 +55,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        Long memberId = (Long) session.getAttributes().get("memberId");
 
+        log.info("웹소켓 연결 종료");
+        log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
+
+        if (memberId != null) {
+            memberSessions.remove(memberId);
+
+            chatRoomSessions.forEach((chatRoomId, sessions) -> {
+                sessions.remove(memberId);
+                if (sessions.isEmpty()) {
+                    chatRoomSessions.remove(chatRoomId);
+                }
+            });
+
+            log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
+        }
     }
 
     @Override
