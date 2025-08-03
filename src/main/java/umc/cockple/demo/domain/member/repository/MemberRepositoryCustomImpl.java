@@ -80,19 +80,20 @@ public class MemberRepositoryCustomImpl implements MemberRepositoryCustom{
     }
 
     private BooleanExpression levelMatch(Party party, String levelSearch) {
+        //모임의 급수 조건에 맞는 사용자 필터링
+        List<Level> femaleLevels = party.getLevels().stream()
+                .filter(pl -> pl.getGender() == Gender.FEMALE)
+                .map(PartyLevel::getLevel).toList();
+        List<Level> maleLevels = party.getLevels().stream()
+                .filter(pl -> pl.getGender() == Gender.MALE)
+                .map(PartyLevel::getLevel).toList();
+        BooleanExpression baseRequirement = member.gender.eq(Gender.FEMALE).and(member.level.in(femaleLevels))
+                .or(member.gender.eq(Gender.MALE).and(member.level.in(maleLevels)));
+
+        //검색 조건이 있는 경우 필터링에 추가
         if (StringUtils.hasText(levelSearch)) {
-            //쿼리 파라미터로 받은 검색 급수만 필터링
-            return member.level.eq(Level.fromKorean(levelSearch));
-        } else {
-            //모임의 급수 조건에 맞는 사용자 필터링
-            List<Level> femaleLevels = party.getLevels().stream()
-                    .filter(pl -> pl.getGender() == Gender.FEMALE)
-                    .map(PartyLevel::getLevel).toList();
-            List<Level> maleLevels = party.getLevels().stream()
-                    .filter(pl -> pl.getGender() == Gender.MALE)
-                    .map(PartyLevel::getLevel).toList();
-            return member.gender.eq(Gender.FEMALE).and(member.level.in(femaleLevels))
-                    .or(member.gender.eq(Gender.MALE).and(member.level.in(maleLevels)));
+            return baseRequirement.and(member.level.eq(Level.fromKorean(levelSearch)));
         }
+        return baseRequirement;
     }
 }
