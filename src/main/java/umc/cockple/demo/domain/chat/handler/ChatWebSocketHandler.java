@@ -10,7 +10,6 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
@@ -195,7 +194,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
             return;
         }
-        
+
         String messageJson;
         try {
             messageJson = objectMapper.writeValueAsString(message);
