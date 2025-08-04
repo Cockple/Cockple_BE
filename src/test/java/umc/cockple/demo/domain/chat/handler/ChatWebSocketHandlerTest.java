@@ -173,4 +173,64 @@ class ChatWebSocketHandlerTest {
         // 실패한 세션이 정리되었는지 확인
         assertThat(handler.isMemberInChatRoomForTest(chatRoomId, 300L)).isFalse();
     }
+
+    @Test
+    @Order(5)
+    @DisplayName("완전한 메시지 전송 플로우 - 브로드캐스트까지")
+    void completeMessageSendFlow() throws Exception {
+        // Given
+        Long chatRoomId = 1L;
+        Long senderId = 123L;
+        sessionAttributes.put("memberId", senderId);
+
+        // 채팅방에 여러 참여자 추가
+        when(session1.isOpen()).thenReturn(true);
+        when(session2.isOpen()).thenReturn(true);
+        when(session1.getId()).thenReturn("session1");
+        when(session2.getId()).thenReturn("session2");
+
+        handler.addChatRoomSessionForTest(chatRoomId, 100L, session1);
+        handler.addChatRoomSessionForTest(chatRoomId, 200L, session2);
+
+        String messagePayload = """
+                {
+                    "type": "SEND",
+                    "chatRoomId": 1,
+                    "content": "안녕하세요 모두!"
+                }
+                """;
+        TextMessage textMessage = new TextMessage(messagePayload);
+
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SEND, chatRoomId, "안녕하세요 모두!"
+        );
+
+        WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(chatRoomId)
+                .senderId(senderId)
+                .senderName("발신자")
+                .content("안녕하세요 모두!")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Mock 설정
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+        when(objectMapper.readValue(messagePayload, WebSocketMessageDTO.Request.class))
+                .thenReturn(request);
+        when(chatWebSocketService.sendMessage(chatRoomId, "안녕하세요 모두!", senderId))
+                .thenReturn(response);
+        when(objectMapper.writeValueAsString(response)).thenReturn("{\"message\":\"broadcast\"}");
+
+        // When
+        handler.handleTextMessage(session, textMessage);
+
+        // Then
+        // 1. 서비스 호출 확인
+        verify(chatWebSocketService).sendMessage(chatRoomId, "안녕하세요 모두!", senderId);
+
+        // 2. 병렬 처리를 위해 timeout 후 로직 수행
+        verify(session1, timeout(2000)).sendMessage(any(TextMessage.class));
+        verify(session2, timeout(2000)).sendMessage(any(TextMessage.class));
+    }
 }
