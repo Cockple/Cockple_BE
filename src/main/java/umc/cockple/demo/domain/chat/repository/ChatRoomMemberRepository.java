@@ -3,7 +3,9 @@ package umc.cockple.demo.domain.chat.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,5 +29,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     List<ChatRoomMember> findByChatRoomId(Long id);
 
     List<ChatRoomMember> findAllByMemberId(Long id);
+
+    boolean existsByChatRoomAndMember(ChatRoom chatRoom, Member member);
 }
 
