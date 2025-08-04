@@ -25,16 +25,17 @@ public class ChatWebSocketService {
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
 
-    public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
-        log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
+    public WebSocketMessageDTO.Response sendMessage(WebSocketMessageDTO.Request request, Long senderId) {
 
-        ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
+        log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", request.chatRoomId(), senderId);
+
+        ChatRoom chatRoom = findChatRoomOrThrow(request.chatRoomId());
         Member sender = findMemberOrThrow(senderId);
 
         validateChatRoomMember(chatRoom, sender);
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
-        ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
+        ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, request.content(), MessageType.TEXT);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
