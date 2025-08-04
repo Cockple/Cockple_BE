@@ -15,6 +15,8 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -194,7 +196,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
             return;
         }
-
+        
         String messageJson;
         try {
             messageJson = objectMapper.writeValueAsString(message);
@@ -203,10 +205,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        Map<Long, WebSocketSession> sessionsCopy = chatRoomSessions.get(chatRoomId);
+        List<Long> failedSessions = new ArrayList<>();
         int successCount = 0;
-        int failCount = 0;
 
-        for (Map.Entry<Long, WebSocketSession> entry : sessions.entrySet()) {
+        for (Map.Entry<Long, WebSocketSession> entry : sessionsCopy.entrySet()) {
             Long memberId = entry.getKey();
             WebSocketSession session = entry.getValue();
 
@@ -216,26 +219,31 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     successCount++;
                     log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
                 } catch (Exception e) {
-                    failCount++;
                     log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
-
-                    // 전송 실패한 세션 제거
-                    sessions.remove(memberId);
+                    failedSessions.add(memberId);
                 }
             } else {
-                // 닫힌 세션 제거
-                sessions.remove(memberId);
-                failCount++;
-                log.warn("닫힌 세션 제거 - 사용자: {}, 세션: {}", memberId, session.getId());
+                log.warn("닫힌 세션 발견 - 사용자: {}, 세션: {}", memberId, session.getId());
+                failedSessions.add(memberId);
             }
         }
 
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failCount);
+        cleanupFailedSessions(chatRoomId, failedSessions);
 
-        // 세션이 모두 제거되었으면 채팅방 세션 맵에서 제거
-        if (sessions.isEmpty()) {
-            chatRoomSessions.remove(chatRoomId);
-            log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
+        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedSessions.size());
+    }
+
+    private void cleanupFailedSessions(Long chatRoomId, List<Long> failedSessionIds) {
+        if (failedSessionIds.isEmpty()) return;
+
+        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
+        if (sessions != null) {
+            failedSessionIds.forEach(sessions::remove);
+
+            if (sessions.isEmpty()) {
+                chatRoomSessions.remove(chatRoomId);
+                log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
+            }
         }
     }
 }
