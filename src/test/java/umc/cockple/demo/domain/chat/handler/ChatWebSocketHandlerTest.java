@@ -1,16 +1,14 @@
-package umc.cockple.demo.domain.chat;
+package umc.cockple.demo.domain.chat.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.handler.ChatWebSocketHandler;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.net.URI;
@@ -53,6 +51,11 @@ class ChatWebSocketHandlerTest {
     void setUp() {
         handler = new ChatWebSocketHandler(chatWebSocketService, objectMapper);
         sessionAttributes = new HashMap<>();
+    }
+
+    @AfterEach
+    void tearDown() {
+        handler.clearAllSessionsForTest();
     }
 
     @Test
