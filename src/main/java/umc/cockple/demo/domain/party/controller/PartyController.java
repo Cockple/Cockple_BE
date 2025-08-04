@@ -285,4 +285,23 @@ public class PartyController {
         PartyInviteCreateDTO.Response response = partyCommandService.createInvitation(partyId, request.userId(), memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
+
+    @PatchMapping("/parties/invitations/{invitationId}")
+    @Operation(summary = "모임 초대 처리",
+            description = "사용자가 모임 초대를 승인하거나 거절합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 초대 처리 성공")
+    @ApiResponse(responseCode = "403", description = "해당 사용자의 초대가 아님")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 초대")
+    @ApiResponse(responseCode = "409", description = "이미 처리된 모임 초대")
+    public BaseResponse<Void> actionInvitation(
+            @PathVariable Long invitationId,
+            @RequestBody @Valid PartyInviteActionDTO.Request request,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 2L; // 임시값
+
+        partyCommandService.actionInvitation(memberId, request, invitationId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
 }
