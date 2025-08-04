@@ -50,6 +50,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        log.info("메시지 수신");
+        log.info("메시지: {}", message.getPayload());
+
+        try {
+            WebSocketMessageDTO.Request request = objectMapper.readValue(
+                    message.getPayload(), WebSocketMessageDTO.Request.class
+            );
+
+            Long memberId = (Long) session.getAttributes().get("memberId");
+            log.info("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", memberId, session.getId(), memberId);
+
+            switch (request.type()) {
+                case SEND:
+                    handleSendMessage(session, request, memberId);
+                    break;
+            }
+
+        } catch (Exception e) {
+
+        }
 
     }
 
