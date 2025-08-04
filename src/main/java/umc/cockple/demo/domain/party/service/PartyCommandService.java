@@ -1,9 +1,6 @@
 package umc.cockple.demo.domain.party.service;
 
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
+import umc.cockple.demo.domain.party.dto.*;
 
 public interface PartyCommandService {
     PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request);
@@ -13,4 +10,5 @@ public interface PartyCommandService {
     void leaveParty(Long partyId, Long memberId);
     void removeMember(Long partyId, Long memberIdToRemove, Long currentMemberId);
     PartyInviteCreateDTO.Response createInvitation(Long partyId, Long memberIdToInvite, Long currentMemberId);
+    void actionInvitation(Long memberId, PartyInviteActionDTO.Request request, Long invitationId);
 }
