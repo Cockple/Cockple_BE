@@ -41,8 +41,6 @@ class ChatWebSocketHandlerTest {
     @BeforeEach
     void setUp() {
         sessionAttributes = new HashMap<>();
-        when(session.getAttributes()).thenReturn(sessionAttributes);
-        when(session.getId()).thenReturn("test-session-id");
     }
 
     @Test
@@ -52,6 +50,8 @@ class ChatWebSocketHandlerTest {
         // Given
         URI uri = URI.create("ws://localhost:8080/ws/chats?memberId=123");
         when(session.getUri()).thenReturn(uri);
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+        when(session.getId()).thenReturn("test-session-id");
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
         // When
@@ -60,5 +60,20 @@ class ChatWebSocketHandlerTest {
         // Then
         assertThat(sessionAttributes.get("memberId")).isEqualTo(123L); // 세션에 memberId 저장됨
         verify(session).sendMessage(any(TextMessage.class)); // 연결 성공 메시지 전송됨
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("WebSocket 연결 실패 - memberId 없음")
+    void afterConnectionEstablished_NoMemberId() throws Exception {
+        // Given
+        URI uri = URI.create("ws://localhost:8080/ws/chats");
+        when(session.getUri()).thenReturn(uri);
+
+        // When
+        handler.afterConnectionEstablished(session);
+
+        // Then
+        verify(session).close(); // 연결 실패 시 세션 닫는 로직
     }
 }
