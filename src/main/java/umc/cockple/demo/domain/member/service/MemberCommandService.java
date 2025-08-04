@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
@@ -28,6 +30,7 @@ public class MemberCommandService {
     private final MemberAddrRepository memberAddrRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ImageService imageService;
 
@@ -130,14 +133,17 @@ public class MemberCommandService {
             ProfileImg img = ProfileImg.builder()
                     .member(member)
                     .imgKey(imgKey)
-                    .build()
-                    ;
+                    .build();
 
             // 회원 정보 수정하기 (프로필 사진까지)
             member.updateMember(requestDto, keywords, img);
         }
-    }
 
+        //chatRoomMember의 displayName도 같이 업데이트
+        List<ChatRoomMember> chatRoomMembers = chatRoomMemberRepository.findAllByMemberId(member.getId());
+        chatRoomMembers.forEach(crm -> crm.updateDisplayName(requestDto.memberName()));
+
+    }
 
 
     // ==================== 주소 관련 ===================
@@ -176,8 +182,7 @@ public class MemberCommandService {
                 .longitude(requestDto.longitude())
                 .isMain(true)
                 .member(member)
-                .build()
-        ;
+                .build();
 
         // 주소 등록
         MemberAddr newAddr = memberAddrRepository.save(memberAddr);

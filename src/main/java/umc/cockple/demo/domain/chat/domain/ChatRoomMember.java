@@ -27,4 +27,8 @@ public class ChatRoomMember extends BaseEntity {
     private String displayName;
 
     private Long lastReadMessageId;
+
+    public void updateDisplayName(String newDisplayName) {
+        this.displayName = newDisplayName;
+    }
 }
