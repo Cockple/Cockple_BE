@@ -10,6 +10,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.time.LocalDateTime;
@@ -173,7 +175,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 request.chatRoomId(), memberId, request.content());
 
         try {
-            WebSocketMessageDTO.Response response = chatWebSocketService.sendMessage(request, memberId);
+            validateRequest(request);
+
+            WebSocketMessageDTO.Response response
+                    = chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
         } catch (Exception e) {
             log.error("메시지 전송 중 오류 발생", e);
 
@@ -198,6 +203,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
 
             sendErrorMessage(session, errorCode, errorMessage);
+        }
+    }
+
+    private void validateRequest(WebSocketMessageDTO.Request request) {
+        if(request.chatRoomId() == null) {
+            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
+        }
+
+        if(request.content() == null || request.content().trim().isEmpty()) {
+            throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
         }
     }
 }
