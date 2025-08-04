@@ -7,7 +7,6 @@ import umc.cockple.demo.domain.notification.enums.NotificationType;
 public record AllNotificationsResponseDTO(
         Long notificationId,
         Long partyId,
-        String title,
         String content,
         NotificationType type,
         Boolean isRead,

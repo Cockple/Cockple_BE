@@ -8,8 +8,7 @@ public class NotificationConverter {
     public static AllNotificationsResponseDTO toAllNotificationResponseDTO(Notification notification, String imgUrl) {
         return AllNotificationsResponseDTO.builder()
                 .notificationId(notification.getId())
-                .partyId(notification.getGroupId())
-                .title(notification.getTitle())
+                .partyId(notification.getPartyId())
                 .content(notification.getContent())
                 .type(notification.getType())
                 .isRead(notification.getIsRead())
