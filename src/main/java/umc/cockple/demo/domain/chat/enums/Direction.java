@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.chat.enums;
 import lombok.Getter;
 
 public enum Direction {
-    DECS("내림차순"),
+    DESC("내림차순"),
     ACS("오름차순");
 
     @Getter
