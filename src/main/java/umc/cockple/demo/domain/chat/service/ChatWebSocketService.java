@@ -54,7 +54,7 @@ public class ChatWebSocketService {
             throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
         }
 
-        if(content.length() > 1000){
+        if (content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
         }
     }
