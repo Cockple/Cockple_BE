@@ -267,4 +267,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @PostMapping("/parties/{partyId}/invitations")
+    @Operation(summary = "신규 멤버 초대 보내기",
+            description = "모임장이 특정 사용자에게 모임에 가입하도록 초대를 보냅니다.")
+    @ApiResponse(responseCode = "201", description = "신규 멤버 초대 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
+    @ApiResponse(responseCode = "409", description = "이미 멤버이거나 초대 대기 중인 상태")
+    public BaseResponse<PartyInviteCreateDTO.Response> createInvitation(
+            @PathVariable Long partyId,
+            @Valid @RequestBody PartyInviteCreateDTO.Request request,
+            Authentication authentication
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        PartyInviteCreateDTO.Response response = partyCommandService.createInvitation(partyId, request.userId(), memberId);
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
 }
