@@ -39,11 +39,11 @@ class ChatWebSocketHandlerTest {
     @Mock
     private WebSocketSession session;
 
-    private Map<String, Object> memberSessions;
+    private Map<String, Object> sessionAttributes;
 
     @BeforeEach
     void setUp() {
-        memberSessions = new HashMap<>();
+        sessionAttributes = new HashMap<>();
     }
 
     @Test
@@ -53,7 +53,7 @@ class ChatWebSocketHandlerTest {
         // Given
         URI uri = URI.create("ws://localhost:8080/ws/chats?memberId=123");
         when(session.getUri()).thenReturn(uri);
-        when(session.getAttributes()).thenReturn(memberSessions);
+        when(session.getAttributes()).thenReturn(sessionAttributes);
         when(session.getId()).thenReturn("test-session-id");
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
@@ -61,7 +61,7 @@ class ChatWebSocketHandlerTest {
         handler.afterConnectionEstablished(session);
 
         // Then
-        assertThat(memberSessions.get("memberId")).isEqualTo(123L); // 세션에 memberId 저장됨
+        assertThat(sessionAttributes.get("memberId")).isEqualTo(123L); // 세션에 memberId 저장됨
         verify(session).sendMessage(any(TextMessage.class)); // 연결 성공 메시지 전송됨
     }
 
@@ -101,8 +101,8 @@ class ChatWebSocketHandlerTest {
         when(objectMapper.readValue(messagePayload, WebSocketMessageDTO.Request.class))
                 .thenReturn(request);
 
-        memberSessions.put("memberId", 123L);
-        when(session.getAttributes()).thenReturn(memberSessions);
+        sessionAttributes.put("memberId", 123L);
+        when(session.getAttributes()).thenReturn(sessionAttributes);
         when(session.getId()).thenReturn("test-session-id");
 
         WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
