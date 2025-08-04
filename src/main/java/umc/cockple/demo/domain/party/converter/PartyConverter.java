@@ -6,6 +6,7 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.global.enums.Gender;
@@ -106,9 +107,16 @@ public class PartyConverter {
     }
 
     //모임 가입신청을 응답 DTO로 변환
-    public PartyJoinCreateDTO.Response toJoinResponseDTO(PartyJoinRequest request) {
+    public PartyJoinCreateDTO.Response toJoinResponseDTO(PartyJoinRequest joinRequest) {
         return PartyJoinCreateDTO.Response.builder()
-                .joinRequestId(request.getId())
+                .joinRequestId(joinRequest.getId())
+                .build();
+    }
+
+    //모임 멤버 추천을 응답 DTO로 변환
+    public PartyInviteCreateDTO.Response toInviteResponseDTO(PartyInvitation invitation){
+        return PartyInviteCreateDTO.Response.builder()
+                .invitationId(invitation.getId())
                 .build();
     }
 
