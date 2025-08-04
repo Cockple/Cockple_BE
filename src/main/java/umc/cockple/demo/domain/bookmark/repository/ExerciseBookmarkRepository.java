@@ -29,4 +29,8 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
             @Param("exerciseIds") List<Long> exerciseIds
     );
 
+
+    Optional<ExerciseBookmark> findFirstByMemberOrderByCreatedAtAsc(Member member);
+
+
 }

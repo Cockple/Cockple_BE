@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
@@ -15,13 +16,16 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     // 특정 채팅방에 참여한 특정 멤버 조회
     @Query("""
-        SELECT c FROM ChatRoomMember c
-        WHERE c.chatRoom.id = :chatRoomId AND c.member.id = :memberId
-    """)
+                SELECT c FROM ChatRoomMember c
+                WHERE c.chatRoom.id = :chatRoomId AND c.member.id = :memberId
+            """)
     Optional<ChatRoomMember> findByChatRoomIdAndMemberId(
             @Param("chatRoomId") Long chatRoomId,
             @Param("memberId") Long memberId
     );
 
+    List<ChatRoomMember> findByChatRoomId(Long id);
+
+    List<ChatRoomMember> findAllByMemberId(Long id);
 }
 

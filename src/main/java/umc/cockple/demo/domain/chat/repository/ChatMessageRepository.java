@@ -9,10 +9,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 안 읽은 메시지 수 세기
     @Query("""
-    SELECT COUNT(m) FROM ChatMessage m
-    WHERE m.chatRoom.id = :chatRoomId
-    AND m.id > :lastReadMessageId
-""")
+                SELECT COUNT(m) FROM ChatMessage m
+                WHERE m.chatRoom.id = :chatRoomId
+                AND m.id > :lastReadMessageId
+            """)
     int countUnreadMessages(
             @Param("chatRoomId") Long chatRoomId,
             @Param("lastReadMessageId") Long lastReadMessageId
