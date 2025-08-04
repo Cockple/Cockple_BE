@@ -39,7 +39,9 @@ public enum PartyErrorCode implements BaseErrorCode {
     GENDER_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY405", "모임 유형에 맞지 않는 성별입니다."),
     AGE_NOT_MATCH(HttpStatus.BAD_REQUEST, "PARTY406", "모임의 나이 조건에 맞지 않습니다."),
     PARTY_IS_DELETED(HttpStatus.BAD_REQUEST, "PARTY407", "이미 삭제된 모임입니다."),
-    CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "PARTY408", "자기 자신을 모임에서 삭제할 수 없습니다.");
+    CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "PARTY408", "자기 자신을 모임에서 삭제할 수 없습니다."),
+    INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY409", "처리 대기중인 초대가 존재합니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;
