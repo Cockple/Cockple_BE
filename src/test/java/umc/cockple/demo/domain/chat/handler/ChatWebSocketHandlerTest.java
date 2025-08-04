@@ -97,6 +97,8 @@ class ChatWebSocketHandlerTest {
     @DisplayName("메시지 전송 성공")
     void handleTextMessage_SendSuccess() throws Exception {
         // Given
+        sessionAttributes.put("memberId", 123L);
+
         String messagePayload = """
                 {
                     "type": "SEND",
@@ -110,13 +112,6 @@ class ChatWebSocketHandlerTest {
                 WebSocketMessageType.SEND, 1L, "안녕하세요!"
         );
 
-        when(objectMapper.readValue(messagePayload, WebSocketMessageDTO.Request.class))
-                .thenReturn(request);
-
-        sessionAttributes.put("memberId", 123L);
-        when(session.getAttributes()).thenReturn(sessionAttributes);
-        when(session.getId()).thenReturn("test-session-id");
-
         WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(1L)
@@ -126,6 +121,10 @@ class ChatWebSocketHandlerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        when(objectMapper.readValue(messagePayload, WebSocketMessageDTO.Request.class))
+                .thenReturn(request);
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+        when(session.getId()).thenReturn("test-session-id");
         when(chatWebSocketService.sendMessage(1L, "안녕하세요!", 123L))
                 .thenReturn(response);
 
