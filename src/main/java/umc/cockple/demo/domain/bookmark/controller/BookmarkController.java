@@ -32,8 +32,8 @@ public class BookmarkController {
             description = "사용자가 원하는 모임을 찜해둘 수 있음")
     public BaseResponse<Long> partyBookmark(@PathVariable Long partyId) {
 
-//        Long memberId = SecurityUtil.getCurrentMemberId();
-        Long memberId = 1L;
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
         return BaseResponse.success(CommonSuccessCode.CREATED, bookmarkCommandService.partyBookmark(memberId, partyId));
     }
 
