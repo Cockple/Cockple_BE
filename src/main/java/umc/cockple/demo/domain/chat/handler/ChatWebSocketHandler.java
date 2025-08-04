@@ -252,4 +252,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         memberSessions.clear();
         chatRoomSessions.clear();
     }
+
+    void addChatRoomSessionForTest(Long chatRoomId, Long memberId, WebSocketSession session) {
+        chatRoomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
+                .put(memberId, session);
+    }
+
+    void broadcastToChatRoomForTest(Long chatRoomId, WebSocketMessageDTO.Response message) {
+        broadcastToChatRoom(chatRoomId, message);
+    }
+
+    boolean isMemberInChatRoomForTest(Long chatRoomId, Long memberId) {
+        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
+        return sessions != null && sessions.containsKey(memberId);
+    }
 }
