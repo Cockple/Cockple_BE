@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
+import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
@@ -65,6 +66,21 @@ public class ChatController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
         PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, cursor, size, direction);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping(value = "/chats/direct")
+    @Operation(summary = "개인 채팅방 목록 조회", description = "회원이 자신의 개인 채팅방 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<DirectChatRoomDTO.Response> getDirectChatRooms(
+            //@AuthenticationPrincipal Long memberId,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "DESC") Direction direction
+    ) {
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+        DirectChatRoomDTO.Response response = chatQueryService.getDirectChatRooms(memberId, cursor, size, direction);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }
