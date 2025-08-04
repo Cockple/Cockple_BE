@@ -14,6 +14,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                 SELECT cr FROM ChatRoom cr
                 JOIN cr.chatRoomMembers crm
                 WHERE crm.member.id = :memberId
+                AND cr.type = 'PARTY'
                 AND (:cursor IS NULL OR
                      (:direction = 'desc' AND cr.id < :cursor) OR
                      (:direction = 'asc' AND cr.id > :cursor))
@@ -30,7 +31,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     @Query("""
             
-                    SELECT cr FROM ChatRoom cr
+            SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
             AND cr.party.partyName LIKE %:name%
@@ -64,4 +65,24 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             @Param("memberId1") Long memberId1,
             @Param("memberId2") Long memberId2
     );
+
+    @Query("""
+            SELECT cr FROM ChatRoom cr
+            JOIN cr.chatRoomMembers crm
+            WHERE crm.member.id = :memberId
+              AND cr.type = 'DIRECT'
+              AND (:cursor IS NULL OR
+                   (:direction = 'desc' AND cr.id < :cursor) OR
+                   (:direction = 'asc' AND cr.id > :cursor))
+            ORDER BY
+                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
+                CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            """)
+    List<ChatRoom> findDirectChatRoomByMemberId(
+            @Param("memberId") Long memberId,
+            @Param("cursor") Long cursor,
+            @Param("direction") String direction,
+            Pageable pageable
+    );
+
 }
