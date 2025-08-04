@@ -103,6 +103,18 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
+    public WebSocketMessageDTO.Response toSendMessageResponse(Long chatRoomId, String content, ChatMessage savedMessage, Member sender) {
+        return WebSocketMessageDTO.Response.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(chatRoomId)
+                .messageId(savedMessage.getId())
+                .content(content)
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .createdAt(savedMessage.getCreatedAt())
+                .build();
+    }
+
     public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(
             ChatRoom chatRoom,
             String displayName,
@@ -182,18 +194,6 @@ public class ChatConverter {
                 .messages(messages)
                 .hasNext(hasNext)
                 .nextCursor(nextCursor)
-                .build();
-    }
-
-    public WebSocketMessageDTO.Response toSendMessageResponse(WebSocketMessageDTO.Request request, ChatMessage savedMessage, Member sender) {
-        return WebSocketMessageDTO.Response.builder()
-                .type(WebSocketMessageType.SEND)
-                .chatRoomId(request.chatRoomId())
-                .messageId(savedMessage.getId())
-                .content(request.content())
-                .senderId(sender.getId())
-                .senderName(sender.getMemberName())
-                .createdAt(savedMessage.getCreatedAt())
                 .build();
     }
 }
