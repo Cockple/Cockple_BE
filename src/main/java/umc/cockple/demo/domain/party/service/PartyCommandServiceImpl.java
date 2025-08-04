@@ -191,7 +191,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveJoinRequest(partyJoinRequest);
-            JoinPartyChatRoom(partyId, requestId, partyJoinRequest);
+            JoinPartyChatRoom(partyId, partyJoinRequest.getMember());
         }else{
             rejectJoinRequest(partyJoinRequest);
         }
@@ -233,7 +233,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveInvitation(invitation);
-            //채팅방 참여 추가 필요
+            JoinPartyChatRoom(invitation.getParty().getId(), invitation.getInvitee());
         }else{
             rejectInvitation(invitation);
         }
@@ -500,15 +500,15 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         invitation.updateStatus(RequestStatus.REJECTED);
     }
 
-    private void JoinPartyChatRoom(Long partyId, Long requestId, PartyJoinRequest partyJoinRequest) {
+    private void JoinPartyChatRoom(Long partyId, Member member) {
         log.info("모임 채팅방 자동 참여 시작 - partyId: {}", partyId);
         ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
         ChatRoomMember chatRoomMember = ChatRoomMember.builder()
                 .chatRoom(chatRoom)
-                .member(partyJoinRequest.getMember())
+                .member(member)
                 .build();
         chatRoomMemberRepository.save(chatRoomMember);
-        log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", requestId, chatRoom.getId());
+        log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", chatRoom.getId());
     }
 
     private void leavePartyChatRoom(Long partyId, Long memberId) {
