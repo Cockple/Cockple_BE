@@ -16,11 +16,9 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
-import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.domain.PartyLevel;
+import umc.cockple.demo.domain.party.domain.*;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -30,6 +28,7 @@ import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
+import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.*;
@@ -50,6 +49,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final PartyConverter partyConverter;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final PartyInvitationRepository partyInvitationRepository;
 
     @Override
     public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
@@ -200,6 +200,27 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
 
         log.info("가입신청 처리 완료 - requestId: {}", requestId);
+    }
+
+    @Override
+    public PartyInviteCreateDTO.Response createInvitation(Long partyId, Long memberIdToInvite, Long currentMemberId) {
+        log.info("멤버 초대 시작 - partyId: {}, inviterId: {}, inviteeId: {}", partyId, currentMemberId, memberIdToInvite);
+
+        //모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member inviter = findMemberOrThrow(currentMemberId);
+        Member invitee = findMemberOrThrow(memberIdToInvite);
+
+        //모임장 권한 검증
+        validateInvitation(party, inviter, invitee);
+
+        PartyInvitation newInvitation = PartyInvitation.create(party, inviter, invitee);
+        PartyInvitation savedPartyInvitation = partyInvitationRepository.save(newInvitation);
+
+        //TODO: 초대받은 사용자에게 알림을 보내는 로직 추가
+        log.info("멤버 초대 완료 - PartyInvitation: {}", savedPartyInvitation.getId());
+
+        return partyConverter.toInviteResponseDTO(savedPartyInvitation);
     }
 
     // ========== 조회 메서드 ==========
@@ -386,6 +407,21 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //이미 처리된 가입신청인지 검증
         if(joinRequest.getStatus()!=RequestStatus.PENDING){
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
+        }
+    }
+
+    private void validateInvitation(Party party, Member inviter, Member invitee) {
+        //모임장 권한 검증
+        validateOwnerPermission(party, inviter.getId());
+
+        //이미 가입한 멤버인지 검증
+        if (memberPartyRepository.existsByPartyAndMember(party, invitee)) {
+            throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
+        }
+
+        // 이미 처리 대기중인 초대가 있는지 확인
+        if (partyInvitationRepository.existsByPartyAndInviteeAndStatus(party, invitee, RequestStatus.PENDING)) {
+            throw new PartyException(PartyErrorCode.INVITATION_ALREADY_EXISTS);
         }
     }
 
