@@ -11,16 +11,16 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("""
-                SELECT cr FROM ChatRoom cr
-                JOIN cr.chatRoomMembers crm
-                WHERE crm.member.id = :memberId
-                AND cr.type = 'PARTY'
-                AND (:cursor IS NULL OR
-                     (:direction = 'desc' AND cr.id < :cursor) OR
-                     (:direction = 'asc' AND cr.id > :cursor))
-                ORDER BY
-                    CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-                    CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            SELECT cr FROM ChatRoom cr
+            JOIN cr.chatRoomMembers crm
+            WHERE crm.member.id = :memberId
+            AND cr.type = 'PARTY'
+            AND (:cursor IS NULL OR
+                 (:direction = 'desc' AND cr.id < :cursor) OR
+                 (:direction = 'asc' AND cr.id > :cursor))
+            ORDER BY
+                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
+                CASE WHEN :direction = 'desc' THEN cr.id END DESC
             """)
     List<ChatRoom> findPartyChatRoomsByMemberId(
             @Param("memberId") Long memberId,
@@ -85,4 +85,23 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             Pageable pageable
     );
 
+    @Query("""            
+            SELECT cr FROM ChatRoom cr
+            JOIN cr.chatRoomMembers crm
+            WHERE crm.member.id = :memberId
+            AND crm.displayName LIKE %:name%
+            AND (:cursor IS NULL OR
+                 (:direction = 'desc' AND cr.id < :cursor) OR
+                 (:direction = 'asc' AND cr.id > :cursor))
+            ORDER BY
+                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
+                CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            """)
+    List<ChatRoom> searchDirectChatRoomsByName(
+            @Param("memberId") Long memberId,
+            @Param("name") String name,
+            @Param("cursor") Long cursor,
+            @Param("direction") String direction,
+            Pageable pageable
+    );
 }

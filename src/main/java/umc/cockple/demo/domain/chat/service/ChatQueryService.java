@@ -10,4 +10,6 @@ public interface ChatQueryService {
     PartyChatRoomDTO.Response searchPartyChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction);
 
     DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, Long cursor, int size, Direction direction);
+
+    DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction);
 }
