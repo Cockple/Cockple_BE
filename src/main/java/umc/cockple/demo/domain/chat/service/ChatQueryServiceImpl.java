@@ -64,9 +64,16 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return toDirectChatRoomInfos(chatRooms, memberId);
     }
 
-    /**
-     * 공통 로직 메서드: 채팅방 리스트를 ChatRoomInfo 리스트로 변환
-     */
+    @Override
+    public DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction) {
+        log.info("[개인 채팅방 이름 검색 시작]- 요청자: {}", memberId);
+        Pageable pageable = PageRequest.of(0, size);
+        List<ChatRoom> chatRooms = chatRoomRepository.searchDirectChatRoomsByName(memberId, name, cursor, direction.name().toLowerCase(), pageable);
+        log.info("[개인 채팅방 이름 검색 완료]");
+        return toDirectChatRoomInfos(chatRooms, memberId);
+    }
+
+    // ========== 비지니스 로직 ==========
     private PartyChatRoomDTO.Response toPartyChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
