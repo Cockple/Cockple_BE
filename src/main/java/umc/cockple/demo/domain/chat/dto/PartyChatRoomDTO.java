@@ -33,7 +33,6 @@ public class PartyChatRoomDTO {
     public record LastMessageInfo(
             Long messageId,
             String content,
-            String senderName,
             LocalDateTime timestamp,
             String messageType
     ) {

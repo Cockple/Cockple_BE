@@ -44,7 +44,6 @@ public class ChatConverter {
         return PartyChatRoomDTO.LastMessageInfo.builder()
                 .messageId(message.getId())
                 .content(message.getContent())
-                .senderName(message.getSender().getMemberName())
                 .timestamp(message.getCreatedAt())
                 .messageType(message.getType().name())
                 .build();
