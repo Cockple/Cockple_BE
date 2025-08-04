@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
@@ -25,6 +26,8 @@ public class ChatWebSocketService {
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
 
+    private final ChatConverter chatConverter;
+
     public WebSocketMessageDTO.Response sendMessage(WebSocketMessageDTO.Request request, Long senderId) {
 
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", request.chatRoomId(), senderId);
@@ -37,8 +40,10 @@ public class ChatWebSocketService {
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, request.content(), MessageType.TEXT);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
+
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
+        return chatConverter.toSendMessageResponse(request, savedMessage, sender);
     }
 
     private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
