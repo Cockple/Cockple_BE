@@ -13,7 +13,6 @@ public record UpdateProfileRequestDTO(
         @NotBlank(message = "회원명은 필수입니다.")
         String memberName,
         @NotNull(message = "생년월일은 필수입니다.")
-        @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식: YYYY-MM-DD")
         LocalDate birth,
         @NotNull(message = "급수는 필수입니다.")
         Level level,

@@ -179,6 +179,17 @@ public class PartyConverter {
         return new PartyMemberDTO.Response(summary, memberDetails);
     }
 
+    //추천 멤버 DTO로 변환
+    public PartyMemberSuggestionDTO.Response toPartyMemberSuggestionDTO(Member member, String imgUrl) {
+        return PartyMemberSuggestionDTO.Response.builder()
+                .userId(member.getId())
+                .nickname(member.getNickname())
+                .profileImageUrl(member.getProfileImg() != null ? imgUrl : null)
+                .gender(member.getGender().name())
+                .level(member.getLevel().getKoreanName())
+                .build();
+    }
+
     private int getRolePriority(String role) {
         return switch (role) {
             case "party_MANAGER" -> 0; // 모임장 역할

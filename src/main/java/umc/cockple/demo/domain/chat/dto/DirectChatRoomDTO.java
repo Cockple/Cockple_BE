@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class PartyChatRoomDTO {
+public class DirectChatRoomDTO {
 
     // 채팅방 목록 응답
     @Builder
@@ -19,10 +19,8 @@ public class PartyChatRoomDTO {
     @Builder
     public record ChatRoomInfo(
             Long chatRoomId,
-            Long partyId,
-            String partyName,
-            String partyImgUrl,
-            int memberCount,
+            String displayName,
+            String profileImgUrl,
             int unreadCount,
             LastMessageInfo lastMessage
     ) {

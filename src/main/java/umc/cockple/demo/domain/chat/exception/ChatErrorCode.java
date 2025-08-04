@@ -10,6 +10,9 @@ import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
 @RequiredArgsConstructor
 public enum ChatErrorCode implements BaseErrorCode {
 
+    //1xx: 클라이언트가 수정해야 할 입력값 문제
+    CANNOT_CHAT_WITH_SELF(HttpStatus.BAD_REQUEST, "CHAT101", "나와의 채팅방 생성은 불가합니다"),
+
     // 2xx: 리소스 없음
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT201", "채팅방을 찾을 수 없습니다."),
     CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT202", "채팅방 멤버가 존재하지 않습니다."),

@@ -84,7 +84,7 @@ public class PartyController {
             Authentication authentication
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 10L; // 임시값
+        Long memberId = 2L; // 임시값
 
         PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
                 .addr1(addr1)
@@ -174,7 +174,7 @@ public class PartyController {
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 8L; // 임시값
+        Long memberId = 2L; // 임시값
 
         partyCommandService.leaveParty(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -209,7 +209,7 @@ public class PartyController {
             Authentication authentication
     ){
         // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 8L; // 임시값
+        Long memberId = 2L; // 임시값
 
         PartyJoinCreateDTO.Response response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -252,6 +252,19 @@ public class PartyController {
 
         partyCommandService.actionJoinRequest(partyId, memberId, request, requestId);
         return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+    @GetMapping("/parties/{partyId}/members/suggestions")
+    @Operation(summary = "신규 멤버 추천받기",
+            description = "모임장이 자신의 모임에 초대할 만한 신규 멤버를 추천받습니다.")
+    public BaseResponse<Slice<PartyMemberSuggestionDTO.Response>> etRecommendedMembers(
+            @PathVariable Long partyId,
+            @RequestParam(required = false) String levelSearch,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication
+    ){
+        Slice<PartyMemberSuggestionDTO.Response> response = partyQueryService.getRecommendedMembers(partyId, levelSearch, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
 }
