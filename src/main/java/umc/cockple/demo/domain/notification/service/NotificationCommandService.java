@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -58,6 +60,15 @@ public class NotificationCommandService {
 
     public void createNotification(CreateNotificationRequestDTO dto) {
         try {
+
+            Member member = dto.member();
+            List<Notification> bookmarks = notificationRepository.findAllByMember(member);
+            if (bookmarks.size() >= 50) {
+                // INVITE타입이 아니면서 가장 오래된 거 삭제
+                notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)
+                        .ifPresent(notificationRepository::delete);
+            }
+
             Party party = partyRepository.findById(dto.partyId())
                     .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
 
