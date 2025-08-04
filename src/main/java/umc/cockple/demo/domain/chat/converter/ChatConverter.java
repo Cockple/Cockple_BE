@@ -5,8 +5,9 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.dto.*;
+import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.chat.dto.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -181,6 +182,18 @@ public class ChatConverter {
                 .messages(messages)
                 .hasNext(hasNext)
                 .nextCursor(nextCursor)
+                .build();
+    }
+
+    public WebSocketMessageDTO.Response toSendMessageResponse(WebSocketMessageDTO.Request request, ChatMessage savedMessage, Member sender) {
+        return WebSocketMessageDTO.Response.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(request.chatRoomId())
+                .messageId(savedMessage.getId())
+                .content(request.content())
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .createdAt(savedMessage.getCreatedAt())
                 .build();
     }
 }
