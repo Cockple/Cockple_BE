@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ChatWebSocketHandlerTest {
 
-    @InjectMocks
     private ChatWebSocketHandler handler;
 
     @Mock
@@ -39,10 +38,20 @@ class ChatWebSocketHandlerTest {
     @Mock
     private WebSocketSession session;
 
+    @Mock
+    private WebSocketSession session1;
+
+    @Mock
+    private WebSocketSession session2;
+
+    @Mock
+    private WebSocketSession session3;
+
     private Map<String, Object> sessionAttributes;
 
     @BeforeEach
     void setUp() {
+        handler = new ChatWebSocketHandler(chatWebSocketService, objectMapper);
         sessionAttributes = new HashMap<>();
     }
 
