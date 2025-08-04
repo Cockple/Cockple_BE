@@ -179,6 +179,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             WebSocketMessageDTO.Response response
                     = chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
+
+            broadcastToChatRoom(request.chatRoomId(), response);
         } catch (Exception e) {
             log.error("메시지 전송 중 오류 발생", e);
 
@@ -213,6 +215,57 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         if(request.content() == null || request.content().trim().isEmpty()) {
             throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
+        }
+    }
+
+    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
+        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
+        if (sessions == null || sessions.isEmpty()) {
+            log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
+            return;
+        }
+
+        String messageJson;
+        try {
+            messageJson = objectMapper.writeValueAsString(message);
+        } catch (Exception e) {
+            log.error("메시지를 JSON으로 변환하는데 실패했습니다", e);
+            return;
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Map.Entry<Long, WebSocketSession> entry : sessions.entrySet()) {
+            Long memberId = entry.getKey();
+            WebSocketSession session = entry.getValue();
+
+            if (session.isOpen()) {
+                try {
+                    session.sendMessage(new TextMessage(messageJson));
+                    successCount++;
+                    log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
+                } catch (Exception e) {
+                    failCount++;
+                    log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
+
+                    // 전송 실패한 세션 제거
+                    sessions.remove(memberId);
+                }
+            } else {
+                // 닫힌 세션 제거
+                sessions.remove(memberId);
+                failCount++;
+                log.warn("닫힌 세션 제거 - 사용자: {}, 세션: {}", memberId, session.getId());
+            }
+        }
+
+        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failCount);
+
+        // 세션이 모두 제거되었으면 채팅방 세션 맵에서 제거
+        if (sessions.isEmpty()) {
+            chatRoomSessions.remove(chatRoomId);
+            log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
         }
     }
 }
