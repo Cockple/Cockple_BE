@@ -63,7 +63,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             );
 
             Long memberId = (Long) session.getAttributes().get("memberId");
-            if(memberId == null){
+            if (memberId == null) {
                 sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
                 return;
             }
@@ -172,15 +172,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("메시지 전송 처리 - 채팅방 ID: {}, 사용자 ID: {}, 내용: {}",
                 request.chatRoomId(), memberId, request.content());
 
-        try{
+        try {
             WebSocketMessageDTO.Response response = chatWebSocketService.sendMessage(request, memberId);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("메시지 전송 중 오류 발생", e);
 
             String errorMessage = "";
             String errorCode = "";
 
-            if (e.getMessage().contains("채팅방을 찾을 수 없습니다.")) {
+            if (e.getMessage().contains("채팅방 ID가 필요합니다.")) {
+                errorCode = "CHATROOM_ID_NECESSARY";
+                errorMessage = "채팅방 ID가 필요합니다.";
+            } else if (e.getMessage().contains("메시지 내용이 필요합니다.")) {
+                errorCode = "CONTENT_NECESSARY";
+                errorMessage = "메시지 내용이 필요합니다.";
+            } else if (e.getMessage().contains("채팅방을 찾을 수 없습니다.")) {
                 errorCode = "CHAT_ROOM_NOT_FOUND";
                 errorMessage = "존재하지 않는 채팅방입니다.";
             } else if (e.getMessage().contains("사용자를 찾을 수 없습니다.")) {
@@ -189,12 +195,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             } else if (e.getMessage().contains("채팅방에 참여한 멤버가 아닙니다.")) {
                 errorCode = "NOT_CHAT_ROOM_MEMBER";
                 errorMessage = "채팅방에 참여한 멤버가 아닙니다.";
-            } else if(e.getMessage().contains("채팅방 ID가 필요합니다.")){
-                errorCode = "CHATROOM_ID_NECESSARY";
-                errorMessage = "채팅방 ID가 필요합니다.";
-            } else if (e.getMessage().contains("메시지 내용이 필요합니다.")) {
-                errorCode = "CONTENT_NECESSARY";
-                errorMessage = "메시지 내용이 필요합니다.";
             }
 
             sendErrorMessage(session, errorCode, errorMessage);
