@@ -24,5 +24,11 @@ public class ChatRoomMember extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    private String displayName;
+
     private Long lastReadMessageId;
+
+    public void updateDisplayName(String newDisplayName) {
+        this.displayName = newDisplayName;
+    }
 }

@@ -7,19 +7,20 @@ import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
+public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("""
-    SELECT cr FROM ChatRoom cr
-    JOIN cr.chatRoomMembers crm
-    WHERE crm.member.id = :memberId
-    AND (:cursor IS NULL OR
-         (:direction = 'desc' AND cr.id < :cursor) OR
-         (:direction = 'asc' AND cr.id > :cursor))
-    ORDER BY
-        CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-        CASE WHEN :direction = 'desc' THEN cr.id END DESC
-""")
+                SELECT cr FROM ChatRoom cr
+                JOIN cr.chatRoomMembers crm
+                WHERE crm.member.id = :memberId
+                AND (:cursor IS NULL OR
+                     (:direction = 'desc' AND cr.id < :cursor) OR
+                     (:direction = 'asc' AND cr.id > :cursor))
+                ORDER BY
+                    CASE WHEN :direction = 'asc' THEN cr.id END ASC,
+                    CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            """)
     List<ChatRoom> findPartyChatRoomsByMemberId(
             @Param("memberId") Long memberId,
             @Param("cursor") Long cursor,
@@ -28,17 +29,18 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
     );
 
     @Query("""
-    SELECT cr FROM ChatRoom cr
-    JOIN cr.chatRoomMembers crm
-    WHERE crm.member.id = :memberId
-    AND cr.party.partyName LIKE %:name%
-    AND (:cursor IS NULL OR
-         (:direction = 'desc' AND cr.id < :cursor) OR
-         (:direction = 'asc' AND cr.id > :cursor))
-    ORDER BY
-        CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-        CASE WHEN :direction = 'desc' THEN cr.id END DESC
-    """)
+            
+                    SELECT cr FROM ChatRoom cr
+            JOIN cr.chatRoomMembers crm
+            WHERE crm.member.id = :memberId
+            AND cr.party.partyName LIKE %:name%
+            AND (:cursor IS NULL OR
+                 (:direction = 'desc' AND cr.id < :cursor) OR
+                 (:direction = 'asc' AND cr.id > :cursor))
+            ORDER BY
+                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
+                CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            """)
     List<ChatRoom> searchPartyChatRoomsByName(
             @Param("memberId") Long memberId,
             @Param("name") String name,
@@ -48,4 +50,18 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
     );
 
     ChatRoom findByPartyId(Long partyId);
+
+    @Query("""
+            SELECT cr
+            FROM ChatRoom cr
+            JOIN cr.chatRoomMembers m
+            WHERE cr.type = 'DIRECT'
+              AND m.member.id IN (:memberId1, :memberId2)
+            GROUP BY cr.id
+            HAVING COUNT(DISTINCT m.member.id) = 2
+            """)
+    Optional<ChatRoom> findDirectChatRoomByMemberIds(
+            @Param("memberId1") Long memberId1,
+            @Param("memberId2") Long memberId2
+    );
 }

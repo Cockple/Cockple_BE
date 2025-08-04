@@ -91,7 +91,7 @@ public class ContestConverter {
     public static String getMedalImgUrl(Contest contest) {
         return switch (contest.getMedalType()) {
             case GOLD -> "/images/medal/gold.png";
-            case SILVER ->  "/images/medal/silver.png";
+            case SILVER -> "/images/medal/silver.png";
             case BRONZE -> "/images/medal/bronze.png";
             case NONE -> "/images/medal/none.png";
         };
