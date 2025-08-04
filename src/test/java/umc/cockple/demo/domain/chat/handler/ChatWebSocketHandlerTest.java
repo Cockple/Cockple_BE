@@ -18,8 +18,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -133,5 +132,45 @@ class ChatWebSocketHandlerTest {
 
         // Then
         verify(chatWebSocketService).sendMessage(1L, "안녕하세요!", 123L);
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("브로드캐스트 - 채팅방에 참여자들이 있는 경우")
+    void broadcastToChatRoom_WithParticipants() throws Exception {
+        // Given
+        Long chatRoomId = 1L;
+
+        // 세션들 Mock 설정
+        when(session1.isOpen()).thenReturn(true);
+        when(session2.isOpen()).thenReturn(true);
+        when(session3.isOpen()).thenReturn(false); // 닫힌 세션
+        when(session1.getId()).thenReturn("session1");
+        when(session2.getId()).thenReturn("session2");
+        when(session3.getId()).thenReturn("session3");
+
+        // 채팅방에 세션들 추가
+        handler.addChatRoomSessionForTest(chatRoomId, 100L, session1);
+        handler.addChatRoomSessionForTest(chatRoomId, 200L, session2);
+        handler.addChatRoomSessionForTest(chatRoomId, 300L, session3);
+
+        WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(chatRoomId)
+                .content("테스트 메시지")
+                .build();
+
+        when(objectMapper.writeValueAsString(response)).thenReturn("{}");
+
+        // When
+        handler.broadcastToChatRoomForTest(chatRoomId, response);
+
+        // Then
+        verify(session1).sendMessage(any(TextMessage.class)); // 열린 세션에 전송
+        verify(session2).sendMessage(any(TextMessage.class)); // 열린 세션에 전송
+        verify(session3, never()).sendMessage(any(TextMessage.class)); // 닫힌 세션에는 전송 안함
+
+        // 실패한 세션이 정리되었는지 확인
+        assertThat(handler.isMemberInChatRoomForTest(chatRoomId, 300L)).isFalse();
     }
 }
