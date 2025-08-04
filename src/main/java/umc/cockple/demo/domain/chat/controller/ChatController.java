@@ -43,13 +43,12 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<PartyChatRoomDTO.Response> getPartyChatRooms(
             //@AuthenticationPrincipal Long memberId,
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
-        PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, cursor, size, direction);
+        PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -59,13 +58,12 @@ public class ChatController {
     public BaseResponse<PartyChatRoomDTO.Response> searchPartyChatRooms(
             //@AuthenticationPrincipal Long memberId,
             @RequestParam String name,
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
-        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, cursor, size, direction);
+        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 

@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 public class ChatConverter {
 
     // ===모임 채팅방 목록===
-    public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos) {
+    public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos, boolean hasNext) {
         return PartyChatRoomDTO.Response.builder()
                 .content(chatRoomInfos)
-                .totalElements(chatRoomInfos.size())
+                .hasNext(hasNext)
                 .build();
     }
 
