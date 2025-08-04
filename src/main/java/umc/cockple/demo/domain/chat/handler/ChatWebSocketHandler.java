@@ -180,15 +180,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             String errorMessage = "";
             String errorCode = "";
 
-            if (e.getMessage().contains("채팅방을 찾을 수 없습니다")) {
+            if (e.getMessage().contains("채팅방을 찾을 수 없습니다.")) {
                 errorCode = "CHAT_ROOM_NOT_FOUND";
                 errorMessage = "존재하지 않는 채팅방입니다.";
-            } else if (e.getMessage().contains("사용자를 찾을 수 없습니다")) {
+            } else if (e.getMessage().contains("사용자를 찾을 수 없습니다.")) {
                 errorCode = "USER_NOT_FOUND";
                 errorMessage = "사용자 정보를 찾을 수 없습니다.";
-            } else if (e.getMessage().contains("채팅방에 참여한 멤버가 아닙니다")) {
+            } else if (e.getMessage().contains("채팅방에 참여한 멤버가 아닙니다.")) {
                 errorCode = "NOT_CHAT_ROOM_MEMBER";
                 errorMessage = "채팅방에 참여한 멤버가 아닙니다.";
+            } else if(e.getMessage().contains("채팅방 ID가 필요합니다.")){
+                errorCode = "CHATROOM_ID_NECESSARY";
+                errorMessage = "채팅방 ID가 필요합니다.";
+            } else if (e.getMessage().contains("메시지 내용이 필요합니다.")) {
+                errorCode = "CONTENT_NECESSARY";
+                errorMessage = "메시지 내용이 필요합니다.";
             }
 
             sendErrorMessage(session, errorCode, errorMessage);
