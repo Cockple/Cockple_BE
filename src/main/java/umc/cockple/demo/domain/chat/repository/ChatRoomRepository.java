@@ -43,6 +43,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     Slice<ChatRoom> searchPartyChatRoomsByName(
             @Param("memberId") Long memberId,
             @Param("name") String name,
+            @Param("cursor") Long cursor,
+            @Param("direction") String direction,
             Pageable pageable
     );
 
