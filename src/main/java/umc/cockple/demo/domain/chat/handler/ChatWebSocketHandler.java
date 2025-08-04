@@ -9,6 +9,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -59,18 +60,25 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             );
 
             Long memberId = (Long) session.getAttributes().get("memberId");
+            if(memberId == null){
+                sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
+                return;
+            }
+
             log.info("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", memberId, session.getId(), memberId);
 
             switch (request.type()) {
                 case SEND:
                     handleSendMessage(session, request, memberId);
                     break;
+                default:
+                    sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }
 
         } catch (Exception e) {
-
+            log.error("메시지 처리 중 에러 발생", e);
+            sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
         }
-
     }
 
     @Override
@@ -133,4 +141,25 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void sendErrorMessage(WebSocketSession session, String errorCode, String message) {
+        if (!session.isOpen()) {
+            log.warn("세션이 닫혀있어 에러 메시지를 전송할 수 없습니다.");
+            return;
+        }
+
+        try {
+            WebSocketMessageDTO.ErrorResponse errorResponse = WebSocketMessageDTO.ErrorResponse.builder()
+                    .type(WebSocketMessageType.ERROR)
+                    .errorCode(errorCode)
+                    .message(message)
+                    .build();
+
+            String errorJson = objectMapper.writeValueAsString(errorResponse);
+            session.sendMessage(new TextMessage(errorJson));
+
+            log.info("에러 메시지 전송 완료 - 코드: {}, 메시지: {}", errorCode, message);
+        } catch (Exception e) {
+            log.error("에러 메시지 전송 실패", e);
+        }
+    }
 }

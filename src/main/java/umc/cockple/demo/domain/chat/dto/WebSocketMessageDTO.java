@@ -22,4 +22,13 @@ public class WebSocketMessageDTO {
             String content
     ) {
     }
+
+    @Builder
+    public record ErrorResponse(
+            WebSocketMessageType type,
+            String errorCode,
+            String message,
+            Long chatRoomId
+    ) {
+    }
 }
