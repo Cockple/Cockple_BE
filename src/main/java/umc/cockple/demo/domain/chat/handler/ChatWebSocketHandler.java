@@ -10,6 +10,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -19,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
+
+    private final ChatWebSocketService chatWebSocketService;
 
     private final ObjectMapper objectMapper;
 
@@ -160,6 +163,35 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.info("에러 메시지 전송 완료 - 코드: {}, 메시지: {}", errorCode, message);
         } catch (Exception e) {
             log.error("에러 메시지 전송 실패", e);
+        }
+    }
+
+    // ========== 메시지 처리 메서드들 ==========
+
+    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        log.info("메시지 전송 처리 - 채팅방 ID: {}, 사용자 ID: {}, 내용: {}",
+                request.chatRoomId(), memberId, request.content());
+
+        try{
+            WebSocketMessageDTO.Response response = chatWebSocketService.sendMessage(request, memberId);
+        }catch (Exception e){
+            log.error("메시지 전송 중 오류 발생", e);
+
+            String errorMessage = "";
+            String errorCode = "";
+
+            if (e.getMessage().contains("채팅방을 찾을 수 없습니다")) {
+                errorCode = "CHAT_ROOM_NOT_FOUND";
+                errorMessage = "존재하지 않는 채팅방입니다.";
+            } else if (e.getMessage().contains("사용자를 찾을 수 없습니다")) {
+                errorCode = "USER_NOT_FOUND";
+                errorMessage = "사용자 정보를 찾을 수 없습니다.";
+            } else if (e.getMessage().contains("채팅방에 참여한 멤버가 아닙니다")) {
+                errorCode = "NOT_CHAT_ROOM_MEMBER";
+                errorMessage = "채팅방에 참여한 멤버가 아닙니다.";
+            }
+
+            sendErrorMessage(session, errorCode, errorMessage);
         }
     }
 }
