@@ -77,6 +77,7 @@ public class NotificationCommandService {
             context.put("exerciseDate", dto.exerciseDate());
 
             String content;
+            String title = party.getPartyName();
             if (dto.target() == NotificationTarget.EXERCISE_DELETE) {
                 String result = extractExerciseDateFormat(dto.exerciseDate());
                 content = notificationMessageGenerator.generateExerciseDeletedMessage(result);
@@ -91,6 +92,7 @@ public class NotificationCommandService {
                 content = notificationMessageGenerator.generatePartyInfoChangedMessage();
             } else if (dto.target() == NotificationTarget.PARTY_INVITE) {
                 content = notificationMessageGenerator.generateInviteMessage(party.getPartyName());
+                title = "새로운 모임";
             } else {
                 content = notificationMessageGenerator.generateInviteAcceptedMessage();
             }
@@ -100,6 +102,7 @@ public class NotificationCommandService {
             Notification notification = Notification.builder()
                     .member(dto.member())
                     .partyId(dto.partyId())
+                    .title(title)
                     .content(content)
                     .type(dto.target().getDefaultType())
                     .isRead(false)

@@ -24,6 +24,8 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private Long partyId;
 
+    private String title;
+
     @Column(nullable = false)
     private String content;
 

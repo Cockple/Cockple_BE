@@ -9,6 +9,7 @@ public class NotificationConverter {
         return AllNotificationsResponseDTO.builder()
                 .notificationId(notification.getId())
                 .partyId(notification.getPartyId())
+                .title(notification.getTitle())
                 .content(notification.getContent())
                 .type(notification.getType())
                 .isRead(notification.getIsRead())
