@@ -31,9 +31,9 @@ public class ChatWebSocketService {
     public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
+        validateInput(chatRoomId, content);
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberOrThrow(senderId);
-
         validateChatRoomMember(chatRoom, sender);
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
@@ -43,6 +43,20 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender);
+    }
+
+    private void validateInput(Long chatRoomId, String content) {
+        if (chatRoomId == null) {
+            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
+        }
+
+        if (content == null || content.trim().isEmpty()) {
+            throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
+        }
+
+        if(content.length() > 1000){
+            throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
+        }
     }
 
     private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
