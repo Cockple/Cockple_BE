@@ -31,8 +31,7 @@ public class WebSocketMessageDTO {
             String content,
             Long senderId,
             String senderName,
-            LocalDateTime createdAt,
-            int unreadCount
+            LocalDateTime createdAt
     ) {
     }
 
