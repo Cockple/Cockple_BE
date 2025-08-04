@@ -15,10 +15,9 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Slf4j
@@ -205,18 +204,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        Map<Long, WebSocketSession> sessionsCopy = chatRoomSessions.get(chatRoomId);
-        List<Long> failedSessions = new ArrayList<>();
-        int successCount = 0;
+        Map<Long, WebSocketSession> sessionsCopy = new HashMap<>(sessions);
+        List<Long> failedSessions = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger successCount = new AtomicInteger(0);
 
-        for (Map.Entry<Long, WebSocketSession> entry : sessionsCopy.entrySet()) {
+        sessionsCopy.entrySet().parallelStream().forEach(entry -> {
             Long memberId = entry.getKey();
             WebSocketSession session = entry.getValue();
 
             if (session.isOpen()) {
                 try {
-                    session.sendMessage(new TextMessage(messageJson));
-                    successCount++;
+                    synchronized (session) {
+                        session.sendMessage(new TextMessage(messageJson));
+                    }
+                    successCount.incrementAndGet();
                     log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
                 } catch (Exception e) {
                     log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
@@ -226,7 +227,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 log.warn("닫힌 세션 발견 - 사용자: {}, 세션: {}", memberId, session.getId());
                 failedSessions.add(memberId);
             }
-        }
+        });
 
         cleanupFailedSessions(chatRoomId, failedSessions);
 
