@@ -24,6 +24,19 @@ public class WebSocketMessageDTO {
     }
 
     @Builder
+    public record Response(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            Long messageId,
+            String contentId,
+            Long senderId,
+            String senderName,
+            LocalDateTime createdAt,
+            int unreadCount
+    ) {
+    }
+
+    @Builder
     public record ErrorResponse(
             WebSocketMessageType type,
             String errorCode,
@@ -31,4 +44,5 @@ public class WebSocketMessageDTO {
             Long chatRoomId
     ) {
     }
+
 }
