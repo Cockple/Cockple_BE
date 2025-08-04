@@ -40,4 +40,8 @@ public class PartyInvitation extends BaseEntity {
                 .status(RequestStatus.PENDING)
                 .build();
     }
+
+    public void updateStatus(RequestStatus requestStatus) {
+        this.status=requestStatus;
+    }
 }
