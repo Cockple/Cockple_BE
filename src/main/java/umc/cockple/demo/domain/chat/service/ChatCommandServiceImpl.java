@@ -61,7 +61,7 @@ public class ChatCommandServiceImpl implements ChatCommandService {
         return chatConverter.toDirectChatRoomCreateDTO(newRoom, List.of(member1, member2), target.getMemberName());
     }
 
-    private static ChatRoomMember getChatRoomMember(ChatRoom newRoom, Member member1,  Member member2) {
+    private static ChatRoomMember getChatRoomMember(ChatRoom newRoom, Member member1, Member member2) {
         return ChatRoomMember.builder()
                 .chatRoom(newRoom)
                 .member(member1)

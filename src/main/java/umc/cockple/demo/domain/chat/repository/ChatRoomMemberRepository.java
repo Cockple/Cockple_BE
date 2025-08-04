@@ -16,9 +16,9 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     // 특정 채팅방에 참여한 특정 멤버 조회
     @Query("""
-        SELECT c FROM ChatRoomMember c
-        WHERE c.chatRoom.id = :chatRoomId AND c.member.id = :memberId
-    """)
+                SELECT c FROM ChatRoomMember c
+                WHERE c.chatRoom.id = :chatRoomId AND c.member.id = :memberId
+            """)
     Optional<ChatRoomMember> findByChatRoomIdAndMemberId(
             @Param("chatRoomId") Long chatRoomId,
             @Param("memberId") Long memberId

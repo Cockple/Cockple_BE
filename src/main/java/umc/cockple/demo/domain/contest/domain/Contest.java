@@ -68,7 +68,7 @@ public class Contest extends BaseEntity {
     }
 
     public static Contest create(ContestRecordCreateDTO.Command command, Member member) {
-        Contest contest =  Contest.builder()
+        Contest contest = Contest.builder()
                 .member(member)
                 .contestName(command.contestName())
                 .date(command.date())
