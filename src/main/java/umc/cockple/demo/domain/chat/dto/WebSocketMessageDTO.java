@@ -28,7 +28,7 @@ public class WebSocketMessageDTO {
             WebSocketMessageType type,
             Long chatRoomId,
             Long messageId,
-            String contentId,
+            String content,
             Long senderId,
             String senderName,
             LocalDateTime createdAt,
