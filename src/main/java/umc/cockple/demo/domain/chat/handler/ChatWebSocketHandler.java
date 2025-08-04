@@ -246,4 +246,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
+
+    // ========== 테스트용 ==========
+    public void clearAllSessionsForTest() {
+        memberSessions.clear();
+        chatRoomSessions.clear();
+    }
 }
