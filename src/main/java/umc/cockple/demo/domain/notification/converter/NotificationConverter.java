@@ -14,6 +14,7 @@ public class NotificationConverter {
                 .type(notification.getType())
                 .isRead(notification.getIsRead())
                 .imgUrl(imgUrl)
+                .data(notification.getData())
                 .build();
     }
 }
