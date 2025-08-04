@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -25,6 +26,7 @@ public class ChatWebSocketService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ChatConverter chatConverter;
 
@@ -32,8 +34,10 @@ public class ChatWebSocketService {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
         validateInput(chatRoomId, content);
+
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberOrThrow(senderId);
+
         validateChatRoomMember(chatRoom, sender);
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
@@ -60,7 +64,7 @@ public class ChatWebSocketService {
     }
 
     private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
-        if (!chatRoomRepository.existsByChatRoomAndMember(chatRoom, member))
+        if (!chatRoomMemberRepository.existsByChatRoomAndMember(chatRoom, member))
             throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
     }
 
