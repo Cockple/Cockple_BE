@@ -14,7 +14,9 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
 @Service
@@ -36,7 +38,7 @@ public class ChatWebSocketService {
         validateInput(chatRoomId, content);
 
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
-        Member sender = findMemberOrThrow(senderId);
+        Member sender = findMemberWithProfileOrThrow(senderId);
 
         validateChatRoomMember(chatRoom, sender);
 
@@ -73,8 +75,8 @@ public class ChatWebSocketService {
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
-    private Member findMemberOrThrow(Long senderId) {
-        return memberRepository.findById(senderId)
+    private Member findMemberWithProfileOrThrow(Long senderId) {
+        return memberRepository.findMemberWithProfileById(senderId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
     }
 }
