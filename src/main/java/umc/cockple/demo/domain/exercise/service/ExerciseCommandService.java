@@ -186,7 +186,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
-        validateUpdateExercise(exercise, member, request);
+        exerciseValidator.validateUpdateExercise(exercise, member, request);
 
         ExerciseUpdateDTO.Command updateCommand = exerciseConverter.toUpdateCommand(request);
         ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
@@ -199,55 +199,6 @@ public class ExerciseCommandService {
         log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
 
         return exerciseConverter.toUpdateResponse(savedExercise);
-    }
-
-
-    // ========== 검증 메서드들 ==========
-
-    private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
-        validateMemberPermission(member.getId(), exercise.getParty());
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
-        validateUpdateTime(request, exercise);
-    }
-
-    // ========== 세부 검증 메서드들 ==========
-
-    private void validateMemberPermission(Long memberId, Party party) {
-        boolean isOwner = party.getOwnerId().equals(memberId);
-        boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), memberId, Role.party_MANAGER);
-
-        if (!isOwner && !isManager)
-            throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
-    }
-
-    private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
-        if (exercise.isAlreadyStarted()) {
-            throw new ExerciseException(errorCode);
-        }
-    }
-
-    private void validateUpdateTime(ExerciseUpdateDTO.Request request, Exercise exercise) {
-        LocalTime newStartTime = request.toParsedStartTime();
-        LocalTime newEndTime = request.toParsedEndTime();
-        LocalDate newDate = request.toParsedDate();
-
-        LocalTime currentStartTime = exercise.getStartTime();
-        LocalTime currentEndTime = exercise.getEndTime();
-        LocalDate currentDate = exercise.getDate();
-
-        LocalTime startTime = newStartTime != null ? newStartTime : currentStartTime;
-        LocalTime endTime = newEndTime != null ? newEndTime : currentEndTime;
-        LocalDate date = newDate != null ? newDate : currentDate;
-
-        if (endTime != null && !startTime.isBefore(endTime)) {
-            throw new ExerciseException(ExerciseErrorCode.INVALID_EXERCISE_TIME);
-        }
-
-        LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
-        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
-            throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
-        }
     }
 
     // ========== 비즈니스 로직 ==========

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -70,6 +71,12 @@ public class ExerciseValidator {
 
     public void validateDeleteExercise(Exercise exercise, Long memberId) {
         validateMemberPermission(memberId, exercise.getParty());
+    }
+
+    public void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
+        validateMemberPermission(member.getId(), exercise.getParty());
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
+        validateUpdateTime(request, exercise);
     }
 
     // ========== 세부 검증 메서드들 ==========
@@ -166,6 +173,29 @@ public class ExerciseValidator {
     private void validateGuestInvitedByMember(Guest guest, Member member) {
         if (!guest.getInviterId().equals(member.getId())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER);
+        }
+    }
+
+    private void validateUpdateTime(ExerciseUpdateDTO.Request request, Exercise exercise) {
+        LocalTime newStartTime = request.toParsedStartTime();
+        LocalTime newEndTime = request.toParsedEndTime();
+        LocalDate newDate = request.toParsedDate();
+
+        LocalTime currentStartTime = exercise.getStartTime();
+        LocalTime currentEndTime = exercise.getEndTime();
+        LocalDate currentDate = exercise.getDate();
+
+        LocalTime startTime = newStartTime != null ? newStartTime : currentStartTime;
+        LocalTime endTime = newEndTime != null ? newEndTime : currentEndTime;
+        LocalDate date = newDate != null ? newDate : currentDate;
+
+        if (endTime != null && !startTime.isBefore(endTime)) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_EXERCISE_TIME);
+        }
+
+        LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
+        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
+            throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
     }
 
