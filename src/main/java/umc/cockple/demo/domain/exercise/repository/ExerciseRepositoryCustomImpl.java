@@ -15,8 +15,11 @@ import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
 import umc.cockple.demo.domain.party.domain.QPartyImg;
 import umc.cockple.demo.domain.party.domain.QPartyLevel;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.utils.ActivityTimeUtils;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Repository
@@ -108,7 +111,14 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         }
 
         if (filterSortType.activityTimes() != null) {
-            whereClause.and(party.activityTime.in(filterSortType.activityTimes()));
+            List<ActivityTime> activityTimes = filterSortType.activityTimes().stream().toList();
+
+            List<ActivityTime> searchConditions = new ArrayList<>(activityTimes);
+            if(ActivityTimeUtils.shouldAddAlways(searchConditions)) {
+                searchConditions.add(ActivityTime.ALWAYS);
+            }
+
+            whereClause.and(party.activityTime.in(searchConditions));
         }
     }
 }
