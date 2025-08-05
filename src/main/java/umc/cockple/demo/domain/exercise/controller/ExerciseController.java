@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
+import umc.cockple.demo.domain.exercise.service.ExerciseLifecycleService;
 import umc.cockple.demo.domain.exercise.service.ExerciseGuestService;
 import umc.cockple.demo.domain.exercise.service.ExerciseParticipationService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
@@ -35,7 +35,7 @@ import java.util.List;
 @Tag(name = "Exercise", description = "운동 관리 API")
 public class ExerciseController {
 
-    private final ExerciseCommandService exerciseCommandService;
+    private final ExerciseLifecycleService exerciseLifecycleService;
     private final ExerciseGuestService exerciseGuestService;
     private final ExerciseParticipationService exerciseParticipationService;
     private final ExerciseQueryService exerciseQueryService;
@@ -52,8 +52,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        // 서비스 호출
-        ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
+        ExerciseCreateDTO.Response response = exerciseLifecycleService.createExercise(
                 partyId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -161,7 +160,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
+        ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -180,7 +179,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
+        ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(
                 exerciseId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
