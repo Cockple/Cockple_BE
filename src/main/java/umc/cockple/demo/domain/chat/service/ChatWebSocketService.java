@@ -30,6 +30,8 @@ public class ChatWebSocketService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
+    private final ImageService imageService;
+
     private final ChatConverter chatConverter;
 
     public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
@@ -39,6 +41,7 @@ public class ChatWebSocketService {
 
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberWithProfileOrThrow(senderId);
+        String profileImageUrl = getImageUrl(sender.getProfileImg());
 
         validateChatRoomMember(chatRoom, sender);
 
@@ -48,7 +51,7 @@ public class ChatWebSocketService {
 
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
-        return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender);
+        return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
     }
 
     private void validateInput(Long chatRoomId, String content) {
@@ -68,6 +71,13 @@ public class ChatWebSocketService {
     private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
         if (!chatRoomMemberRepository.existsByChatRoomAndMember(chatRoom, member))
             throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
+    }
+
+    private String getImageUrl(ProfileImg profileImg) {
+        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(profileImg.getImgKey());
+        }
+        return null;
     }
 
     private ChatRoom findChatRoomOrThrow(Long chatRoomId) {
