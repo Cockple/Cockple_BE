@@ -34,7 +34,6 @@ public class ExerciseCommandService {
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
-    private final GuestRepository guestRepository;
 
     private final ExerciseValidator exerciseValidator;
 
@@ -57,26 +56,6 @@ public class ExerciseCommandService {
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
         return exerciseConverter.toCreateResponse(savedExercise);
-    }
-
-    public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
-
-        log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-        Guest guest = findGuestOrThrow(guestId);
-        exerciseValidator.validateCancelGuestInvitation(exercise, guest, member);
-
-        exercise.removeGuest(guest);
-
-        guestRepository.delete(guest);
-
-        exerciseRepository.save(exercise);
-
-        log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
-
-        return exerciseConverter.toCancelResponse(exercise, guest);
     }
 
     public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
@@ -123,11 +102,6 @@ public class ExerciseCommandService {
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
-    private Guest findGuestOrThrow(Long guestId) {
-        return guestRepository.findById(guestId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
     }
 
     private Member findMemberOrThrow(Long memberId) {

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -50,6 +51,28 @@ public class ExerciseGuestService {
         return exerciseConverter.toGuestInviteResponse(savedGuest, exercise);
     }
 
+    public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
+
+        log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        Guest guest = findGuestOrThrow(guestId);
+        exerciseValidator.validateCancelGuestInvitation(exercise, guest, member);
+
+        exercise.removeGuest(guest);
+
+        guestRepository.delete(guest);
+
+        exerciseRepository.save(exercise);
+
+        log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+
+        return exerciseConverter.toCancelResponse(exercise, guest);
+    }
+
+    // ========== 조회 메서드 ==========
+
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
@@ -58,5 +81,10 @@ public class ExerciseGuestService {
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Guest findGuestOrThrow(Long guestId) {
+        return guestRepository.findById(guestId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
     }
 }
