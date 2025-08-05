@@ -58,97 +58,6 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
-    @PostMapping("/exercises/{exerciseId}/participants")
-    @Operation(summary = "운동 신청",
-            description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 신청 성공")
-    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    @ApiResponse(responseCode = "403", description = "권한 없음, 급수 위반")
-    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
-            @PathVariable Long exerciseId
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(
-                exerciseId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
-    @PostMapping("/exercises/{exerciseId}/guests")
-    @Operation(summary = "게스트 초대",
-            description = "파티 멤버가 게스트를 운동에 초대합니다. 운동의 게스트 허용 정책을 확인합니다.")
-    @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
-    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
-            @PathVariable Long exerciseId,
-            @Valid @RequestBody ExerciseGuestInviteDTO.Request request
-    ) {
-        Long inviterId = SecurityUtil.getCurrentMemberId();
-
-        ExerciseGuestInviteDTO.Response response = exerciseGuestService.inviteGuest(
-                exerciseId, inviterId, request);
-
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/participants/my")
-    @Operation(summary = "운동 참여 취소",
-            description = "사용자가 본인의 운동 참여를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
-            @PathVariable Long exerciseId
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        ExerciseCancelDTO.Response response = exerciseParticipationService.cancelParticipation(
-                exerciseId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/guests/{guestId}")
-    @Operation(summary = "게스트 초대 취소",
-            description = "사용자가 본인이 초대한 게스트를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "게스트 초대 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
-    @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelGuestInvitation(
-            @PathVariable Long exerciseId,
-            @PathVariable Long guestId
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        ExerciseCancelDTO.Response response = exerciseGuestService.cancelGuestInvitation(
-                exerciseId, guestId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
-    @Operation(summary = "특정 참여자 운동 취소",
-            description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
-    @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
-            @PathVariable Long exerciseId,
-            @PathVariable Long participantId,
-            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        ExerciseCancelDTO.Response response = exerciseParticipationService.cancelParticipationByManager(
-                exerciseId, participantId, memberId, request);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
     @DeleteMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 삭제",
             description = "모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
@@ -181,6 +90,97 @@ public class ExerciseController {
 
         ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(
                 exerciseId, memberId, request);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PostMapping("/exercises/{exerciseId}/participants")
+    @Operation(summary = "운동 신청",
+            description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 신청 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "403", description = "권한 없음, 급수 위반")
+    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
+            @PathVariable Long exerciseId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/participants/my")
+    @Operation(summary = "운동 참여 취소",
+            description = "사용자가 본인의 운동 참여를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
+            @PathVariable Long exerciseId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseParticipationService.cancelParticipation(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
+    @Operation(summary = "특정 참여자 운동 취소",
+            description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
+    @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
+            @PathVariable Long exerciseId,
+            @PathVariable Long participantId,
+            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseParticipationService.cancelParticipationByManager(
+                exerciseId, participantId, memberId, request);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PostMapping("/exercises/{exerciseId}/guests")
+    @Operation(summary = "게스트 초대",
+            description = "파티 멤버가 게스트를 운동에 초대합니다. 운동의 게스트 허용 정책을 확인합니다.")
+    @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
+    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
+            @PathVariable Long exerciseId,
+            @Valid @RequestBody ExerciseGuestInviteDTO.Request request
+    ) {
+        Long inviterId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseGuestInviteDTO.Response response = exerciseGuestService.inviteGuest(
+                exerciseId, inviterId, request);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/guests/{guestId}")
+    @Operation(summary = "게스트 초대 취소",
+            description = "사용자가 본인이 초대한 게스트를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "게스트 초대 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
+    @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelGuestInvitation(
+            @PathVariable Long exerciseId,
+            @PathVariable Long guestId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseGuestService.cancelGuestInvitation(
+                exerciseId, guestId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
