@@ -59,27 +59,6 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponse(savedExercise);
     }
 
-    public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
-
-        log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
-                , exerciseId, inviterId, request.guestName());
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member inviter = findMemberOrThrow(inviterId);
-        exerciseValidator.validateGuestInvitation(exercise, inviter);
-
-        ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
-
-        Guest guest = Guest.create(command);
-        exercise.addGuest(guest);
-
-        Guest savedGuest = guestRepository.save(guest);
-
-        log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
-
-        return exerciseConverter.toGuestInviteResponse(savedGuest, exercise);
-    }
-
     public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
 
         log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
