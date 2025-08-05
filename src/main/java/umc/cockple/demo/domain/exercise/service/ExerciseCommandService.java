@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -64,6 +61,15 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
 
         return exerciseParticipationService.joinExercise(exercise, member);
+    }
+
+    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
+        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+
+        return exerciseParticipationService.cancelParticipation(exercise, member);
     }
 
     // ========== 조회 메서드 ==========

@@ -53,12 +53,7 @@ public class ExerciseParticipationService {
         return exerciseConverter.toJoinResponse(savedMemberExercise, exercise);
     }
 
-    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
-
-        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
+    public ExerciseCancelDTO.Response cancelParticipation(Exercise exercise, Member member) {
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
 
@@ -70,7 +65,7 @@ public class ExerciseParticipationService {
         exerciseRepository.save(exercise);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
-                exerciseId, memberId, exercise.getNowCapacity());
+                exercise.getId(), member.getId(), exercise.getNowCapacity());
 
         return exerciseConverter.toCancelResponse(exercise, member);
     }
@@ -146,11 +141,6 @@ public class ExerciseParticipationService {
     private Guest findGuestOrThrow(Long guestId) {
         return guestRepository.findById(guestId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
-    }
-
-    private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
-        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
     private Member findMemberOrThrow(Long memberId) {
