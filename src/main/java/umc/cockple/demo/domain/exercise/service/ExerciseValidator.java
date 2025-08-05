@@ -3,9 +3,12 @@ package umc.cockple.demo.domain.exercise.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
@@ -23,11 +26,20 @@ import java.time.LocalTime;
 public class ExerciseValidator {
 
     private final MemberPartyRepository memberPartyRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
 
     public void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
         validatePartyIsActive(party);
         validateMemberPermission(memberId, party);
         validateExerciseTime(request);
+    }
+
+    public void validateJoinExercise(Exercise exercise, Member member) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
+        validateAlreadyJoined(exercise, member);
+        validateJoinPermission(exercise, member);
+        validateMemberLevel(exercise.getParty(), member);
+        validateMemberAge(exercise.getParty(), member);
     }
 
     // ========== 세부 검증 메서드들 ==========
@@ -60,6 +72,49 @@ public class ExerciseValidator {
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
         }
+    }
+
+    private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
+        if (exercise.isAlreadyStarted()) {
+            throw new ExerciseException(errorCode);
+        }
+    }
+
+    private void validateAlreadyJoined(Exercise exercise, Member member) {
+        if(memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
+            throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
+        }
+    }
+
+    private void validateJoinPermission(Exercise exercise, Member member) {
+        if(isPartyMember(exercise, member)) {
+            return;
+        }
+
+        if(Boolean.FALSE.equals(exercise.getOutsideGuestAccept())) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
+        }
+    }
+
+    private void validateMemberLevel(Party party, Member member) {
+        boolean isLevelAllowed = party.getLevels().stream()
+                .anyMatch(pl -> pl.getGender() == member.getGender() &&
+                        pl.getLevel() == member.getLevel());
+
+        if (!isLevelAllowed) {
+            throw new ExerciseException(ExerciseErrorCode.MEMBER_LEVEL_NOT_ALLOWED);
+        }
+    }
+
+    private void validateMemberAge(Party party, Member member) {
+        if(!party.isAgeValid(member)){
+            throw new ExerciseException(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED);
+        }
+    }
+
+    private boolean isPartyMember(Exercise exercise, Member member) {
+        Party party = exercise.getParty();
+        return memberPartyRepository.existsByPartyAndMember(party, member);
     }
 
 }

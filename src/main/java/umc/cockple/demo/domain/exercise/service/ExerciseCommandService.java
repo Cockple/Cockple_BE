@@ -70,7 +70,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
-        validateJoinExercise(exercise, member);
+        exerciseValidator.validateJoinExercise(exercise, member);
 
         boolean isPartyMember = isPartyMember(exercise, member);
         MemberExercise memberExercise = MemberExercise.create(isPartyMember);
@@ -207,14 +207,6 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateJoinExercise(Exercise exercise, Member member) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
-        validateAlreadyJoined(exercise, member);
-        validateJoinPermission(exercise, member);
-        validateMemberLevel(exercise.getParty(), member);
-        validateMemberAge(exercise.getParty(), member);
-    }
-
     private void validateGuestInvitation(Exercise exercise, Member inviter) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
         validateInviterIsPartyMember(exercise, inviter);
@@ -260,38 +252,6 @@ public class ExerciseCommandService {
     private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
         if (exercise.isAlreadyStarted()) {
             throw new ExerciseException(errorCode);
-        }
-    }
-
-    private void validateAlreadyJoined(Exercise exercise, Member member) {
-        if(memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
-            throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
-        }
-    }
-
-    private void validateJoinPermission(Exercise exercise, Member member) {
-        if(isPartyMember(exercise, member)) {
-            return;
-        }
-
-        if(Boolean.FALSE.equals(exercise.getOutsideGuestAccept())) {
-            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER);
-        }
-    }
-
-    private void validateMemberLevel(Party party, Member member) {
-        boolean isLevelAllowed = party.getLevels().stream()
-                .anyMatch(pl -> pl.getGender() == member.getGender() &&
-                        pl.getLevel() == member.getLevel());
-
-        if (!isLevelAllowed) {
-            throw new ExerciseException(ExerciseErrorCode.MEMBER_LEVEL_NOT_ALLOWED);
-        }
-    }
-
-    private void validateMemberAge(Party party, Member member) {
-        if(!party.isAgeValid(member)){
-            throw new ExerciseException(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED);
         }
     }
 
