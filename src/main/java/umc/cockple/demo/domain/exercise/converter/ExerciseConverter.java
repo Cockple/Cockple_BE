@@ -914,7 +914,7 @@ public class ExerciseConverter {
                 .exerciseId(exercise.getId())
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
-                .partyImgUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
