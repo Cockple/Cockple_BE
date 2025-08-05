@@ -92,7 +92,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member inviter = findMemberOrThrow(inviterId);
-        validateGuestInvitation(exercise, inviter);
+        exerciseValidator.validateGuestInvitation(exercise, inviter);
 
         ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
 
@@ -207,12 +207,6 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateGuestInvitation(Exercise exercise, Member inviter) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
-        validateInviterIsPartyMember(exercise, inviter);
-        validateGuestPolicy(exercise);
-    }
-
     private void validateCancelParticipation(Exercise exercise) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
     }
@@ -252,21 +246,6 @@ public class ExerciseCommandService {
     private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
         if (exercise.isAlreadyStarted()) {
             throw new ExerciseException(errorCode);
-        }
-    }
-
-    private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
-        Party party = exercise.getParty();
-        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
-
-        if (!isPartyMember) {
-            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
-        }
-    }
-
-    private void validateGuestPolicy(Exercise exercise) {
-        if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
-            throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
         }
     }
 

@@ -42,6 +42,12 @@ public class ExerciseValidator {
         validateMemberAge(exercise.getParty(), member);
     }
 
+    public void validateGuestInvitation(Exercise exercise, Member inviter) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION);
+        validateInviterIsPartyMember(exercise, inviter);
+        validateGuestPolicy(exercise);
+    }
+
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {
@@ -109,6 +115,21 @@ public class ExerciseValidator {
     private void validateMemberAge(Party party, Member member) {
         if(!party.isAgeValid(member)){
             throw new ExerciseException(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED);
+        }
+    }
+
+    private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
+        Party party = exercise.getParty();
+        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
+
+        if (!isPartyMember) {
+            throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
+        }
+    }
+
+    private void validateGuestPolicy(Exercise exercise) {
+        if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
         }
     }
 
