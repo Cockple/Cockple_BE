@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -50,6 +51,12 @@ public class ExerciseValidator {
 
     public void validateCancelParticipation(Exercise exercise) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+    }
+
+    public void validateCancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+        validateGuestBelongsToExercise(guest, exercise);
+        validateGuestInvitedByMember(guest, member);
     }
 
     // ========== 세부 검증 메서드들 ==========
@@ -134,6 +141,18 @@ public class ExerciseValidator {
     private void validateGuestPolicy(Exercise exercise) {
         if (Boolean.FALSE.equals(exercise.getPartyGuestAccept())) {
             throw new ExerciseException(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED);
+        }
+    }
+
+    private void validateGuestBelongsToExercise(Guest guest, Exercise exercise) {
+        if (!guest.getExercise().getId().equals(exercise.getId())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE);
+        }
+    }
+
+    private void validateGuestInvitedByMember(Guest guest, Member member) {
+        if (!guest.getInviterId().equals(member.getId())) {
+            throw new ExerciseException(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER);
         }
     }
 

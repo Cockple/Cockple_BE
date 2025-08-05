@@ -135,7 +135,7 @@ public class ExerciseCommandService {
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
         Guest guest = findGuestOrThrow(guestId);
-        validateCancelGuestInvitation(exercise, guest, member);
+        exerciseValidator.validateCancelGuestInvitation(exercise, guest, member);
 
         exercise.removeGuest(guest);
 
@@ -207,12 +207,6 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateCancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
-        validateGuestBelongsToExercise(guest, exercise);
-        validateGuestInvitedByMember(guest, member);
-    }
-
     private void validateCancelParticipationByManager(Exercise exercise, Member manager) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
         validateMemberPermission(manager.getId(), exercise.getParty());
@@ -242,18 +236,6 @@ public class ExerciseCommandService {
     private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
         if (exercise.isAlreadyStarted()) {
             throw new ExerciseException(errorCode);
-        }
-    }
-
-    private void validateGuestBelongsToExercise(Guest guest, Exercise exercise) {
-        if (!guest.getExercise().getId().equals(exercise.getId())) {
-            throw new ExerciseException(ExerciseErrorCode.GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE);
-        }
-    }
-
-    private void validateGuestInvitedByMember(Guest guest, Member member) {
-        if (!guest.getInviterId().equals(member.getId())) {
-            throw new ExerciseException(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER);
         }
     }
 
