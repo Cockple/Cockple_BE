@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service;
+package umc.cockple.demo.domain.exercise.service.command.internal;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,11 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.*;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
-import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 

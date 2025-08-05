@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service;
+package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +11,9 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
+import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseGuestService;
+import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseLifecycleService;
+import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseParticipationService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;

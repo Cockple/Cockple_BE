@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.*;
+import umc.cockple.demo.domain.exercise.service.command.ExerciseCommandService;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
