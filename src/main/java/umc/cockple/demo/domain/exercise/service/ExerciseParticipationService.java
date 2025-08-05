@@ -71,18 +71,13 @@ public class ExerciseParticipationService {
     }
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long memberId, ExerciseCancelDTO.ByManagerRequest request) {
-
-        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member manager = findMemberOrThrow(memberId);
+            Exercise exercise, Long participantId, Member manager, ExerciseCancelDTO.ByManagerRequest request) {
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
         ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
-                exerciseId, participantId, exercise.getNowCapacity());
+                exercise.getId(), participantId, exercise.getNowCapacity());
 
         return response;
     }
@@ -132,11 +127,6 @@ public class ExerciseParticipationService {
     }
 
     // ========== 조회 메서드 ============
-
-    private Exercise findExerciseOrThrow(Long exerciseId) {
-        return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
 
     private Guest findGuestOrThrow(Long guestId) {
         return guestRepository.findById(guestId)

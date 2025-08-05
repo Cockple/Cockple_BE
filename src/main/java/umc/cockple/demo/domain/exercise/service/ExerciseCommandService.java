@@ -72,6 +72,16 @@ public class ExerciseCommandService {
         return exerciseParticipationService.cancelParticipation(exercise, member);
     }
 
+    public ExerciseCancelDTO.Response cancelParticipationByManager(
+            Long exerciseId, Long participantId, Long managerId, ExerciseCancelDTO.ByManagerRequest request) {
+        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, managerId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member manager = findMemberOrThrow(managerId);
+
+        return exerciseParticipationService.cancelParticipationByManager(exercise, participantId, manager, request);
+    }
+
     // ========== 조회 메서드 ==========
 
     private Member findMemberOrThrow(Long memberId) {
