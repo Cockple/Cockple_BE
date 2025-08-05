@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
+import umc.cockple.demo.domain.exercise.service.ExerciseParticipationService;
 import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -34,6 +35,7 @@ import java.util.List;
 public class ExerciseController {
 
     private final ExerciseCommandService exerciseCommandService;
+    private final ExerciseParticipationService exerciseParticipationService;
     private final ExerciseQueryService exerciseQueryService;
 
     @PostMapping("/parties/{partyId}/exercises")
@@ -66,7 +68,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
+        ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

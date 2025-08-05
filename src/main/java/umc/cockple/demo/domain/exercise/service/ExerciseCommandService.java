@@ -61,27 +61,6 @@ public class ExerciseCommandService {
         return exerciseConverter.toCreateResponse(savedExercise);
     }
 
-    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
-
-        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-        exerciseValidator.validateJoinExercise(exercise, member);
-
-        boolean isPartyMember = isPartyMember(exercise, member);
-        MemberExercise memberExercise = MemberExercise.create(isPartyMember);
-        member.addParticipation(memberExercise);
-        exercise.addParticipation(memberExercise);
-
-        MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
-
-        log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
-                , savedMemberExercise.getId(), isPartyMember);
-
-        return exerciseConverter.toJoinResponse(savedMemberExercise, exercise);
-    }
-
     public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
 
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
@@ -203,11 +182,6 @@ public class ExerciseCommandService {
 
     // ========== 비즈니스 로직 ==========
 
-    private boolean isPartyMember(Exercise exercise, Member member) {
-        Party party = exercise.getParty();
-        return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
-
     private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         if(request.isGuest()){
             log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
@@ -249,11 +223,6 @@ public class ExerciseCommandService {
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
-    private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
-        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
