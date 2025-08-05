@@ -59,6 +59,15 @@ public class ExerciseValidator {
         validateGuestInvitedByMember(guest, member);
     }
 
+    public void validateCancelCommonParticipationByManager(Exercise exercise, Member manager) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+        validateMemberPermission(manager.getId(), exercise.getParty());
+    }
+
+    public void validateCancelGuestParticipationByManager(Guest guest, Exercise exercise){
+        validateGuestBelongsToExercise(guest, exercise);
+    }
+
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {

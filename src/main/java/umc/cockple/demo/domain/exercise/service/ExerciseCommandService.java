@@ -18,10 +18,7 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.exception.PartyErrorCode;
-import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
@@ -155,7 +152,7 @@ public class ExerciseCommandService {
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member manager = findMemberOrThrow(memberId);
-        validateCancelParticipationByManager(exercise, manager);
+        exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
         ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
 
@@ -206,11 +203,6 @@ public class ExerciseCommandService {
 
 
     // ========== 검증 메서드들 ==========
-
-    private void validateCancelParticipationByManager(Exercise exercise, Member manager) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
-        validateMemberPermission(manager.getId(), exercise.getParty());
-    }
 
     private void validateDeleteExercise(Exercise exercise, Long memberId) {
         validateMemberPermission(memberId, exercise.getParty());
@@ -281,7 +273,7 @@ public class ExerciseCommandService {
 
     private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = findGuestOrThrow(participantId);
-        validateGuestBelongsToExercise(guest, exercise);
+        exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
 
         exercise.removeGuest(guest);
 
