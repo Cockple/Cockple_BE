@@ -87,6 +87,22 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     @Override
+    public void updateParty(Long partyId, Long memberId, PartyUpdateDTO.Request request) {
+        log.info("모임 정보 수정 시작 - partyId: {}", partyId);
+
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임장 권한 검증
+        validateOwnerPermission(party, memberId);
+
+        //비즈니스 로직 수행
+        party.update(request);
+
+        log.info("모임 정보 수정 완료 - partyId: {}", partyId);
+    }
+
+    @Override
     public void deleteParty(Long partyId, Long memberId) {
         log.info("모임 삭제 시작 - partyId: {}", partyId);
 
