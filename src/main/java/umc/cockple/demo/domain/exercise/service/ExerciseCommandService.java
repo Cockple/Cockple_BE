@@ -40,13 +40,16 @@ public class ExerciseCommandService {
     private final MemberRepository memberRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
+
+    private final ExerciseValidator exerciseValidator;
+
     private final ExerciseConverter exerciseConverter;
 
     public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
 
         Party party = findPartyOrThrow(partyId);
-        validateCreateExercise(memberId, request, party);
+        exerciseValidator.validateCreateExercise(memberId, request, party);
 
         ExerciseCreateDTO.Command exerciseCommand = exerciseConverter.toCreateCommand(request);
         ExerciseCreateDTO.AddrCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
@@ -204,12 +207,6 @@ public class ExerciseCommandService {
 
     // ========== 검증 메서드들 ==========
 
-    private void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
-        validatePartyIsActive(party);
-        validateMemberPermission(memberId, party);
-        validateExerciseTime(request);
-    }
-
     private void validateJoinExercise(Exercise exercise, Member member) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
         validateAlreadyJoined(exercise, member);
@@ -258,21 +255,6 @@ public class ExerciseCommandService {
 
         if (!isOwner && !isManager)
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
-    }
-
-    private void validateExerciseTime(ExerciseCreateDTO.Request request) {
-        LocalDate date = request.toParsedDate();
-        LocalTime startTime = request.toParsedStartTime();
-        LocalTime endTime = request.toParsedEndTime();
-
-        if (!startTime.isBefore(endTime)) {
-            throw new ExerciseException(ExerciseErrorCode.INVALID_EXERCISE_TIME);
-        }
-
-        LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
-        if (exerciseDateTime.isBefore(LocalDateTime.now())) {
-            throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
-        }
     }
 
     private void validateAlreadyStarted(Exercise exercise, ExerciseErrorCode errorCode) {
@@ -360,12 +342,6 @@ public class ExerciseCommandService {
         LocalDateTime exerciseDateTime = LocalDateTime.of(date, startTime);
         if (exerciseDateTime.isBefore(LocalDateTime.now())) {
             throw new ExerciseException(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED);
-        }
-    }
-
-    private void validatePartyIsActive(Party party) {
-        if (party.getStatus() == PartyStatus.INACTIVE) {
-            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
     }
 
