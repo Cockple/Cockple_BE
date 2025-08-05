@@ -29,11 +29,8 @@ public class ExerciseLifecycleService {
 
     private final ExerciseConverter exerciseConverter;
 
-    public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
-        log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
-
-        Party party = findPartyOrThrow(partyId);
-        exerciseValidator.validateCreateExercise(memberId, request, party);
+    public ExerciseCreateDTO.Response createExercise(Party party, Member member, ExerciseCreateDTO.Request request) {
+        exerciseValidator.validateCreateExercise(member.getId(), request, party);
 
         ExerciseCreateDTO.Command exerciseCommand = exerciseConverter.toCreateCommand(request);
         ExerciseCreateDTO.AddrCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
