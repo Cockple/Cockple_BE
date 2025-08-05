@@ -34,7 +34,6 @@ public class ExerciseCommandService {
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
-    private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
 
     private final ExerciseValidator exerciseValidator;
@@ -101,23 +100,6 @@ public class ExerciseCommandService {
         return exerciseConverter.toCancelResponse(exercise, guest);
     }
 
-    public ExerciseCancelDTO.Response cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long memberId, ExerciseCancelDTO.ByManagerRequest request) {
-
-        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member manager = findMemberOrThrow(memberId);
-        exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
-
-        ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
-
-        log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
-                exerciseId, participantId, exercise.getNowCapacity());
-
-        return response;
-    }
-
     public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
 
         log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
@@ -157,45 +139,6 @@ public class ExerciseCommandService {
         return exerciseConverter.toUpdateResponse(savedExercise);
     }
 
-    // ========== 비즈니스 로직 ==========
-
-    private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
-        if(request.isGuest()){
-            log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
-            return cancelGuestParticipation(exercise, participantId);
-        }
-
-        log.info("멤버 참여 취소 실행 - participantId: {}", participantId);
-        return cancelMemberParticipation(exercise, participantId);
-    }
-
-    private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
-        Guest guest = findGuestOrThrow(participantId);
-        exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
-
-        exercise.removeGuest(guest);
-
-        guestRepository.delete(guest);
-
-        exerciseRepository.save(exercise);
-
-        return exerciseConverter.toCancelResponse(exercise, guest);
-    }
-
-    private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
-        Member participant = findMemberOrThrow(participantId);
-        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
-
-        exercise.removeParticipation(memberExercise);
-        participant.removeParticipation(memberExercise);
-
-        memberExerciseRepository.delete(memberExercise);
-
-        exerciseRepository.save(exercise);
-
-        return exerciseConverter.toCancelResponse(exercise, participant);
-    }
-
     // ========== 조회 메서드 ==========
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
@@ -211,11 +154,6 @@ public class ExerciseCommandService {
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
-    }
-
-    private MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
-        return memberExerciseRepository.findByExerciseAndMember(exercise, member)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 
     private Party findPartyOrThrow(Long partyId) {
