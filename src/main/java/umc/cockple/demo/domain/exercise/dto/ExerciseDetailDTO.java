@@ -47,7 +47,7 @@ public class ExerciseDetailDTO {
     public record ParticipantInfo(
             Long participantId,
             Integer participantNumber,
-            String imgUrl,
+            String profileImageUrl,
             String name,
             String gender,
             String level,
