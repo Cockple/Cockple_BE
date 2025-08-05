@@ -97,12 +97,12 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 신청 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음, 급수 위반")
-    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
+    public BaseResponse<ExerciseJoinDTO.Response> joinExercise(
             @PathVariable Long exerciseId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(
+        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

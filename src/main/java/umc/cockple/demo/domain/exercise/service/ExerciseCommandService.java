@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -23,6 +24,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 public class ExerciseCommandService {
 
     private final ExerciseLifecycleService exerciseLifecycleService;
+    private final ExerciseParticipationService exerciseParticipationService;
 
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
@@ -55,6 +57,15 @@ public class ExerciseCommandService {
         return exerciseLifecycleService.updateExercise(exercise, member, request);
     }
 
+    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
+        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+
+        return exerciseParticipationService.joinExercise(exercise, member);
+    }
+
     // ========== 조회 메서드 ==========
 
     private Member findMemberOrThrow(Long memberId) {
@@ -69,6 +80,11 @@ public class ExerciseCommandService {
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
+        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 }

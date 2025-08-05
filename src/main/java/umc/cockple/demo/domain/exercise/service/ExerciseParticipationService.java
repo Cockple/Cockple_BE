@@ -37,12 +37,7 @@ public class ExerciseParticipationService {
 
     private final ExerciseConverter exerciseConverter;
 
-    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
-
-        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
+    public ExerciseJoinDTO.Response joinExercise(Exercise exercise, Member member) {
         exerciseValidator.validateJoinExercise(exercise, member);
 
         boolean isPartyMember = isPartyMember(exercise, member);
