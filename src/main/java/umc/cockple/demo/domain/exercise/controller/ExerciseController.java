@@ -157,7 +157,7 @@ public class ExerciseController {
     ) {
         Long inviterId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseGuestInviteDTO.Response response = exerciseGuestService.inviteGuest(
+        ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
                 exerciseId, inviterId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);

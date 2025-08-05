@@ -22,6 +22,7 @@ public class ExerciseCommandService {
 
     private final ExerciseLifecycleService exerciseLifecycleService;
     private final ExerciseParticipationService exerciseParticipationService;
+    private final ExerciseGuestService exerciseGuestService;
 
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
@@ -74,12 +75,23 @@ public class ExerciseCommandService {
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
             Long exerciseId, Long participantId, Long managerId, ExerciseCancelDTO.ByManagerRequest request) {
-        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}", exerciseId, participantId, managerId);
+        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}"
+                , exerciseId, participantId, managerId);
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member manager = findMemberOrThrow(managerId);
 
         return exerciseParticipationService.cancelParticipationByManager(exercise, participantId, manager, request);
+    }
+
+    public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
+        log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
+                , exerciseId, inviterId, request.guestName());
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member inviter = findMemberOrThrow(inviterId);
+
+        return exerciseGuestService.inviteGuest(exercise, inviter, request);
     }
 
     // ========== 조회 메서드 ==========

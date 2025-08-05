@@ -30,16 +30,10 @@ public class ExerciseGuestService {
 
     private final ExerciseConverter exerciseConverter;
 
-    public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
-
-        log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
-                , exerciseId, inviterId, request.guestName());
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member inviter = findMemberOrThrow(inviterId);
+    public ExerciseGuestInviteDTO.Response inviteGuest(Exercise exercise, Member inviter, ExerciseGuestInviteDTO.Request request) {
         exerciseValidator.validateGuestInvitation(exercise, inviter);
 
-        ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviterId);
+        ExerciseGuestInviteDTO.Command command = exerciseConverter.toGuestInviteCommand(request, inviter.getId());
 
         Guest guest = Guest.create(command);
         exercise.addGuest(guest);
