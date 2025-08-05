@@ -68,6 +68,10 @@ public class ExerciseValidator {
         validateGuestBelongsToExercise(guest, exercise);
     }
 
+    public void validateDeleteExercise(Exercise exercise, Long memberId) {
+        validateMemberPermission(memberId, exercise.getParty());
+    }
+
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {

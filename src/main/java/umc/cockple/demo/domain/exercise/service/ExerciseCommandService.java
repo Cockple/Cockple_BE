@@ -167,7 +167,7 @@ public class ExerciseCommandService {
         log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
         Exercise exercise = findExerciseOrThrow(exerciseId);
-        validateDeleteExercise(exercise, memberId);
+        exerciseValidator.validateDeleteExercise(exercise, memberId);
 
         Party party = exercise.getParty();
         party.removeExercise(exercise);
@@ -203,10 +203,6 @@ public class ExerciseCommandService {
 
 
     // ========== 검증 메서드들 ==========
-
-    private void validateDeleteExercise(Exercise exercise, Long memberId) {
-        validateMemberPermission(memberId, exercise.getParty());
-    }
 
     private void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         validateMemberPermission(member.getId(), exercise.getParty());
