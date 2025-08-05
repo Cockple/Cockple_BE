@@ -48,6 +48,10 @@ public class ExerciseValidator {
         validateGuestPolicy(exercise);
     }
 
+    public void validateCancelParticipation(Exercise exercise) {
+        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
+    }
+
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {

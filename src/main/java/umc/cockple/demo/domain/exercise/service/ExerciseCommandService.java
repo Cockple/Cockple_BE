@@ -113,7 +113,7 @@ public class ExerciseCommandService {
         Exercise exercise = findExerciseOrThrow(exerciseId);
         Member member = findMemberOrThrow(memberId);
         MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
-        validateCancelParticipation(exercise);
+        exerciseValidator.validateCancelParticipation(exercise);
 
         exercise.removeParticipation(memberExercise);
         member.removeParticipation(memberExercise);
@@ -206,10 +206,6 @@ public class ExerciseCommandService {
 
 
     // ========== 검증 메서드들 ==========
-
-    private void validateCancelParticipation(Exercise exercise) {
-        validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
-    }
 
     private void validateCancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL);
