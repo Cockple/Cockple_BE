@@ -27,4 +27,12 @@ public class PartyImg {
                 .party(party)
                 .build();
     }
+
+    public void updateKey(String newImgKey) {
+        this.imgKey = newImgKey;
+    }
+
+    protected void setParty(Party party) {
+        this.party = party;
+    }
 }
