@@ -67,7 +67,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(
+        ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

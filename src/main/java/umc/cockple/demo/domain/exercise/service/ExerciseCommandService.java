@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -22,6 +25,7 @@ public class ExerciseCommandService {
 
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
+    private final ExerciseRepository exerciseRepository;
 
     public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
@@ -30,6 +34,15 @@ public class ExerciseCommandService {
         Member member = findMemberOrThrow(memberId);
 
         return exerciseLifecycleService.createExercise(party, member, request);
+    }
+
+    public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
+        log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+
+        return exerciseLifecycleService.deleteExercise(exercise, member);
     }
 
     // ========== 조회 메서드 ==========
@@ -42,5 +55,10 @@ public class ExerciseCommandService {
     private Party findPartyOrThrow(Long partyId) {
         return partyRepository.findById(partyId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+    }
+
+    private Exercise findExerciseOrThrow(Long exerciseId) {
+        return exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 }

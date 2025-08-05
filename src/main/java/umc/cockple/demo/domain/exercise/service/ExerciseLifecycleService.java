@@ -45,12 +45,8 @@ public class ExerciseLifecycleService {
         return exerciseConverter.toCreateResponse(savedExercise);
     }
 
-    public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
-
-        log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        exerciseValidator.validateDeleteExercise(exercise, memberId);
+    public ExerciseDeleteDTO.Response deleteExercise(Exercise exercise, Member member) {
+        exerciseValidator.validateDeleteExercise(exercise, member.getId());
 
         Party party = exercise.getParty();
         party.removeExercise(exercise);
@@ -58,7 +54,7 @@ public class ExerciseLifecycleService {
 
         partyRepository.save(party);
 
-        log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+        log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exercise.getId(), member.getId());
 
         return exerciseConverter.toDeleteResponse(exercise);
     }
@@ -95,10 +91,4 @@ public class ExerciseLifecycleService {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
-
-    private Party findPartyOrThrow(Long partyId) {
-        return partyRepository.findById(partyId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
-    }
-
 }
