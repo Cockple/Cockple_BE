@@ -23,7 +23,6 @@ public class ExerciseLifecycleService {
 
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
-    private final MemberRepository memberRepository;
 
     private final ExerciseValidator exerciseValidator;
 
@@ -59,12 +58,7 @@ public class ExerciseLifecycleService {
         return exerciseConverter.toDeleteResponse(exercise);
     }
 
-    public ExerciseUpdateDTO.Response updateExercise(Long exerciseId, Long memberId, ExerciseUpdateDTO.Request request) {
-
-        log.info("운동 업데이트 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
+    public ExerciseUpdateDTO.Response updateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         exerciseValidator.validateUpdateExercise(exercise, member, request);
 
         ExerciseUpdateDTO.Command updateCommand = exerciseConverter.toUpdateCommand(request);
@@ -78,17 +72,5 @@ public class ExerciseLifecycleService {
         log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
 
         return exerciseConverter.toUpdateResponse(savedExercise);
-    }
-
-    // ========== 조회 메서드 ==========
-
-    private Exercise findExerciseOrThrow(Long exerciseId) {
-        return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
-    private Member findMemberOrThrow(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
     }
 }

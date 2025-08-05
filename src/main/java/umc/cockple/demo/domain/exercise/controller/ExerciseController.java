@@ -33,7 +33,6 @@ import java.util.List;
 public class ExerciseController {
 
     private final ExerciseCommandService exerciseCommandService;
-    private final ExerciseLifecycleService exerciseLifecycleService;
     private final ExerciseGuestService exerciseGuestService;
     private final ExerciseParticipationService exerciseParticipationService;
     private final ExerciseQueryService exerciseQueryService;
@@ -86,7 +85,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(
+        ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
