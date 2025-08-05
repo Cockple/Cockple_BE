@@ -33,8 +33,6 @@ import java.util.List;
 public class ExerciseController {
 
     private final ExerciseCommandService exerciseCommandService;
-    private final ExerciseGuestService exerciseGuestService;
-    private final ExerciseParticipationService exerciseParticipationService;
     private final ExerciseQueryService exerciseQueryService;
 
     @PostMapping("/parties/{partyId}/exercises")
@@ -176,7 +174,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCancelDTO.Response response = exerciseGuestService.cancelGuestInvitation(
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
                 exerciseId, guestId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);

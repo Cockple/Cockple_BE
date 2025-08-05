@@ -5,10 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -27,6 +29,7 @@ public class ExerciseCommandService {
     private final PartyRepository partyRepository;
     private final MemberRepository memberRepository;
     private final ExerciseRepository exerciseRepository;
+    private final GuestRepository guestRepository;
 
     public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
         log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
@@ -94,6 +97,16 @@ public class ExerciseCommandService {
         return exerciseGuestService.inviteGuest(exercise, inviter, request);
     }
 
+    public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {
+        log.info("게스트 초대 취소 시작 - exerciseId: {}, guestId: {}, memberId: {}", exerciseId, guestId, memberId);
+
+        Exercise exercise = findExerciseOrThrow(exerciseId);
+        Member member = findMemberOrThrow(memberId);
+        Guest guest = findGuestOrThrow(guestId);
+
+        return exerciseGuestService.cancelGuestInvitation(exercise, guest, member);
+    }
+
     // ========== 조회 메서드 ==========
 
     private Member findMemberOrThrow(Long memberId) {
@@ -114,5 +127,10 @@ public class ExerciseCommandService {
     private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
         return exerciseRepository.findByIdWithPartyLevels(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
+    private Guest findGuestOrThrow(Long guestId) {
+        return guestRepository.findById(guestId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
     }
 }
