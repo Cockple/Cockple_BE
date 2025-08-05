@@ -17,10 +17,7 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.*;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinCreateDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
@@ -194,7 +191,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveJoinRequest(partyJoinRequest);
-            JoinPartyChatRoom(partyId, requestId, partyJoinRequest);
+            JoinPartyChatRoom(partyId, partyJoinRequest.getMember());
         }else{
             rejectJoinRequest(partyJoinRequest);
         }
@@ -211,7 +208,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Member inviter = findMemberOrThrow(currentMemberId);
         Member invitee = findMemberOrThrow(memberIdToInvite);
 
-        //모임장 권한 검증
+        //멤버 초대 보내기 검증
         validateInvitation(party, inviter, invitee);
 
         PartyInvitation newInvitation = PartyInvitation.create(party, inviter, invitee);
@@ -223,11 +220,37 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         return partyConverter.toInviteResponseDTO(savedPartyInvitation);
     }
 
+    @Override
+    public void actionInvitation(Long memberId, PartyInviteActionDTO.Request request, Long invitationId) {
+        log.info("모임 초대 처리 시작 - memberId: {}, invitationId: {}", memberId, invitationId);
+
+        //모임 초대 조회
+        PartyInvitation invitation = findInvitationOrThrow(invitationId);
+
+        //모임 초대 처리 검증
+        validateInvitationAction(invitation, memberId);
+
+        //비즈니스 로직 수행 (승인/거절에 따른 처리)
+        if(RequestAction.APPROVE.equals(request.action())){
+            approveInvitation(invitation);
+            JoinPartyChatRoom(invitation.getParty().getId(), invitation.getInvitee());
+        }else{
+            rejectInvitation(invitation);
+        }
+
+        log.info("모임 초대 처리 완료 - invitationId: {}", invitationId);
+    }
+
     // ========== 조회 메서드 ==========
     //가입신청 조회
     private PartyJoinRequest findJoinRequestOrThrow(Long requestId) {
         return partyJoinRequestRepository.findById(requestId)
                 .orElseThrow(() -> new PartyException(PartyErrorCode.JoinRequest_NOT_FOUND));
+    }
+
+    private PartyInvitation findInvitationOrThrow(Long invitationId) {
+        return partyInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.INVITATION_NOT_FOUND));
     }
 
     //사용자 조회
@@ -410,6 +433,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
     }
 
+    //모임 초대 보내기 검증
     private void validateInvitation(Party party, Member inviter, Member invitee) {
         //모임장 권한 검증
         validateOwnerPermission(party, inviter.getId());
@@ -419,11 +443,30 @@ public class PartyCommandServiceImpl implements PartyCommandService{
             throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
         }
 
-        // 이미 처리 대기중인 초대가 있는지 확인
+        //이미 처리 대기중인 초대가 있는지 검증
         if (partyInvitationRepository.existsByPartyAndInviteeAndStatus(party, invitee, RequestStatus.PENDING)) {
             throw new PartyException(PartyErrorCode.INVITATION_ALREADY_EXISTS);
         }
     }
+
+    //모임 초대 처리 검증
+    private void validateInvitationAction(PartyInvitation invitation, Long memberId) {
+        //초대받은 사용자와 현재 사용자가 일치하는지 검증
+        if (!memberId.equals(invitation.getInvitee().getId())){
+            throw new PartyException(PartyErrorCode.NOT_YOUR_INVITATION);
+        }
+
+        //이미 멤버인지 검증
+        if (memberPartyRepository.existsByPartyAndMember(invitation.getParty(), invitation.getInvitee())) {
+            throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
+        }
+
+        //이미 처리된 모임 초대인지 검증
+        if (invitation.getStatus() != RequestStatus.PENDING){
+            throw new PartyException(PartyErrorCode.INVITATION_ALREADY_ACTIONS);
+        }
+    }
+
 
     //모임 활성화 여부 검증
     private void validatePartyIsActive(Party party) {
@@ -433,10 +476,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     // ========== 비즈니스 로직 메서드 ==========
-    private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
-        partyJoinRequest.updateStatus(RequestStatus.REJECTED);
-    }
-
+    //가입 신청 승인, 승인
     private void approveJoinRequest(PartyJoinRequest partyJoinRequest) {
         partyJoinRequest.updateStatus(RequestStatus.APPROVED);
         Party party = partyJoinRequest.getParty();
@@ -444,16 +484,31 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
     }
+    private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
+        partyJoinRequest.updateStatus(RequestStatus.REJECTED);
+    }
 
-    private void JoinPartyChatRoom(Long partyId, Long requestId, PartyJoinRequest partyJoinRequest) {
+    //모임 초대 승인, 거절
+    private void approveInvitation(PartyInvitation invitation) {
+        invitation.updateStatus(RequestStatus.APPROVED);
+        Party party = invitation.getParty();
+        Member member = invitation.getInvitee();
+        MemberParty newMemberParty= MemberParty.create(party, member);
+        party.addMember(newMemberParty);
+    }
+    private void rejectInvitation(PartyInvitation invitation) {
+        invitation.updateStatus(RequestStatus.REJECTED);
+    }
+
+    private void JoinPartyChatRoom(Long partyId, Member member) {
         log.info("모임 채팅방 자동 참여 시작 - partyId: {}", partyId);
         ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
         ChatRoomMember chatRoomMember = ChatRoomMember.builder()
                 .chatRoom(chatRoom)
-                .member(partyJoinRequest.getMember())
+                .member(member)
                 .build();
         chatRoomMemberRepository.save(chatRoomMember);
-        log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", requestId, chatRoom.getId());
+        log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", chatRoom.getId());
     }
 
     private void leavePartyChatRoom(Long partyId, Long memberId) {
