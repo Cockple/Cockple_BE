@@ -33,7 +33,6 @@ public class ExerciseCommandService {
 
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
-    private final MemberPartyRepository memberPartyRepository;
     private final MemberRepository memberRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
@@ -80,28 +79,6 @@ public class ExerciseCommandService {
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
 
         return exerciseConverter.toGuestInviteResponse(savedGuest, exercise);
-    }
-
-    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
-
-        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
-        exerciseValidator.validateCancelParticipation(exercise);
-
-        exercise.removeParticipation(memberExercise);
-        member.removeParticipation(memberExercise);
-
-        memberExerciseRepository.delete(memberExercise);
-
-        exerciseRepository.save(exercise);
-
-        log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
-                exerciseId, memberId, exercise.getNowCapacity());
-
-        return exerciseConverter.toCancelResponse(exercise, member);
     }
 
     public ExerciseCancelDTO.Response cancelGuestInvitation(Long exerciseId, Long guestId, Long memberId) {

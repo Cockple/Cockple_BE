@@ -103,7 +103,7 @@ public class ExerciseController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
+        ExerciseCancelDTO.Response response = exerciseParticipationService.cancelParticipation(
                 exerciseId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
