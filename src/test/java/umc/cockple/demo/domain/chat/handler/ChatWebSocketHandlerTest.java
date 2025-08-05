@@ -116,6 +116,7 @@ class ChatWebSocketHandlerTest {
                 .chatRoomId(1L)
                 .senderId(123L)
                 .senderName("테스트유저")
+                .senderProfileImageUrl("테스트 이미지 url")
                 .content("안녕하세요!")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -210,6 +211,7 @@ class ChatWebSocketHandlerTest {
                 .chatRoomId(chatRoomId)
                 .senderId(senderId)
                 .senderName("발신자")
+                .senderProfileImageUrl("테스트 이미지 url")
                 .content("안녕하세요 모두!")
                 .createdAt(LocalDateTime.now())
                 .build();
