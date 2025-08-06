@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.chat.service.ChatCommandService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 @RestController
 @RequiredArgsConstructor
@@ -97,6 +98,19 @@ public class ChatController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
         DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, cursor, size, direction);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/rooms/{roomId}")
+    @Operation(summary = "초기 채팅방 조회", description = "채팅방의 정보와 회원이 참여한 채팅방의 메시지를 최근 50개만 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatRoomDetailDTO.Response> getChatRoom(
+            @PathVariable Long roomId
+    ){
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ChatRoomDetailDTO.Response response = chatQueryService.getChatRoom(roomId, memberId);
+
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }
