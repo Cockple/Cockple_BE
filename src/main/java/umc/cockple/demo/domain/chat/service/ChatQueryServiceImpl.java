@@ -186,7 +186,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         String profileImageUrl = null;
 
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
-            ChatRoomMember counterPart = findCounterPartWithMember(chatRoom, myMembership);
+            ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
             Member member = counterPart.getMember();
 
             displayName = member.getMemberName();
@@ -214,10 +214,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private ChatRoomMember findChatRoomMembershipOrThrow(Long roomId, Long memberId) {
         return chatRoomMemberRepository
                 .findByChatRoomIdAndMemberId(roomId, memberId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
     }
 
-    private ChatRoomMember findCounterPartWithMember(ChatRoom chatRoom, ChatRoomMember myMembership) {
+    private ChatRoomMember findCounterPartWithMemberOrThrow(ChatRoom chatRoom, ChatRoomMember myMembership) {
         return chatRoomMemberRepository
                 .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
