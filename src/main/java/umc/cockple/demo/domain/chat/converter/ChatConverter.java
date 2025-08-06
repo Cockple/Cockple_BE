@@ -174,4 +174,13 @@ public class ChatConverter {
                 .isMyMessage(isMyMessage)
                 .build();
     }
+
+    public ChatMessageDTO.Response toChatMessageResponse(
+            List<ChatMessageDTO.MessageInfo> messages, boolean hasNext, Long nextCursor) {
+        return ChatMessageDTO.Response.builder()
+                .messages(messages)
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
+                .build();
+    }
 }

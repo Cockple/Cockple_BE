@@ -130,6 +130,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 ? messages.get(0).getId() : null;
 
         log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", messages.size(), hasNext);
+
+        return chatConverter.toChatMessageResponse(messageInfos, hasNext, nextCursor);
     }
 
     // ========== 검증 로직 ==========
