@@ -120,14 +120,14 @@ public class ChatController {
     @GetMapping("/chats/rooms/{roomId}/messages/previous")
     @Operation(summary = "채팅방 과거 메시지 조회", description = "채팅방의 과거 메시지를 페이징하여 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<Slice<ChatMessageDTO.Response>> getChatMessages(
+    public BaseResponse<Slice<ChatMessageDTO.MessageInfo>> getChatMessages(
             @PathVariable Long roomId,
             @RequestParam Long cursor,
             @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        Slice<ChatMessageDTO.Response> response
+        Slice<ChatMessageDTO.MessageInfo> response
                 = chatQueryService.getChatMessages(roomId, memberId, cursor, pageable);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
