@@ -5,12 +5,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
@@ -96,7 +98,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
 
-        if(!recentMessages.isEmpty()){
+        if (!recentMessages.isEmpty()) {
             ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
             updateLastReadMessage(myMembership, lastMessage.getId());
         }
@@ -105,6 +107,21 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 messageInfos.size(), memberInfos.size());
 
         return chatConverter.toChatRoomDetailResponse(roomInfo, messageInfos, memberInfos);
+    }
+
+    @Override
+    public Slice<ChatMessageDTO.MessageInfo> getChatMessages(Long roomId, Long memberId, Long cursor, Pageable pageable) {
+        log.info("[채팅방 과거 메시지 조회 시작] - 채팅방 Id: {}, 멤버 Id: {}, 마지막으로 조회된 메시지 Id: {}, size: {}",
+                roomId, memberId, cursor, pageable.getPageSize());
+
+        validateChatRoomAccess(roomId, memberId);
+    }
+
+    // ========== 검증 로직 ==========
+
+    private void validateChatRoomAccess(Long roomId, Long memberId) {
+        if(!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
+            throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
     }
 
     // ========== 비즈니스 로직 ==========
