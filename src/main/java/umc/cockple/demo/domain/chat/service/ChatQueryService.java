@@ -1,7 +1,5 @@
 package umc.cockple.demo.domain.chat.service;
 
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
@@ -19,5 +17,5 @@ public interface ChatQueryService {
 
     ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId);
 
-    Slice<ChatMessageDTO.MessageInfo> getChatMessages(Long roomId, Long memberId, Long cursor, Pageable pageable);
+    ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size);
 }

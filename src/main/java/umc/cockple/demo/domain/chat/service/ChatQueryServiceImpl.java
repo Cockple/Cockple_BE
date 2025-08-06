@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -110,19 +109,19 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     @Override
-    public Slice<ChatMessageDTO.MessageInfo> getChatMessages(Long roomId, Long memberId, Long cursor, Pageable pageable) {
+    public ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size) {
         log.info("[채팅방 과거 메시지 조회 시작] - 채팅방 Id: {}, 멤버 Id: {}, 마지막으로 조회된 메시지 Id: {}, size: {}",
-                roomId, memberId, cursor, pageable.getPageSize());
+                roomId, memberId, cursor, size);
 
         validateChatRoomAccess(roomId, memberId);
 
-        Slice<ChatMessage> messageSlice = findMessagesWithCursor(roomId, cursor, pageable);
+        List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, size + 1);
     }
 
     // ========== 검증 로직 ==========
 
     private void validateChatRoomAccess(Long roomId, Long memberId) {
-        if(!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
             throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
     }
 
@@ -330,7 +329,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
     }
 
-    private Slice<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
-        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
+    private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, int size) {
+        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, size);
     }
 }

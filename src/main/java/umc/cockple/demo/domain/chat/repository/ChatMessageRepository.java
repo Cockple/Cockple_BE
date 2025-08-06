@@ -43,9 +43,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             WHERE m.chatRoom.id = :chatRoomId
             AND m.id < :cursor
             ORDER BY m.createdAt DESC
+            LIMIT :size
             """)
-    Slice<ChatMessage> findByRoomIdAndIdLessThanOrderByCreatedAtDesc(
+    List<ChatMessage> findByRoomIdAndIdLessThanOrderByCreatedAtDesc(
             @Param("chatRoomId") Long chatRoomId,
             @Param("cursor") Long cursor,
-            Pageable pageable);
+            @Param("size") int size);
 }

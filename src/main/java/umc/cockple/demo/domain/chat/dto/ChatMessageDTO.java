@@ -9,6 +9,15 @@ import java.util.List;
 public class ChatMessageDTO {
 
     @Builder
+    public record Response(
+            List<MessageInfo> messages,
+            Boolean hasNext,
+            Long nextCursor,
+            int totalElements
+    ) {
+    }
+
+    @Builder
     public record MessageInfo(
             Long messageId,
             Long senderId,
