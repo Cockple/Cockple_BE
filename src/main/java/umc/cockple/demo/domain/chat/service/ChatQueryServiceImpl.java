@@ -121,6 +121,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (hasNext) {
             messages = messages.subList(0, size);
         }
+
+        Collections.reverse(messages);
     }
 
     // ========== 검증 로직 ==========
