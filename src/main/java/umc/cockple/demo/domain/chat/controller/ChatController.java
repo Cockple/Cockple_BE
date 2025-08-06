@@ -105,12 +105,12 @@ public class ChatController {
     @GetMapping("/chats/rooms/{roomId}")
     @Operation(summary = "초기 채팅방 조회", description = "채팅방의 정보와 회원이 참여한 채팅방의 메시지를 최근 50개만 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
-    public BaseResponse<ChatRoomDetailDTO.Response> getChatRoom(
+    public BaseResponse<ChatRoomDetailDTO.Response> getChatRoomDetail(
             @PathVariable Long roomId
     ){
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ChatRoomDetailDTO.Response response = chatQueryService.getChatRoom(roomId, memberId);
+        ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
