@@ -133,6 +133,24 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
+    @PatchMapping(value = "/parties/{partyId}")
+    @Operation(summary = "모임 정보 수정",
+            description = "특정 모임의 정보를 부분적으로 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "모임 정보 수정 성공")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
+    public BaseResponse<Void> updateParty(
+            @PathVariable Long partyId,
+            @RequestBody @Valid PartyUpdateDTO.Request request,
+            Authentication authentication
+    ){
+        // TODO: JWT 인증 구현 후 교체 예정
+        Long memberId = 1L; // 임시값
+
+        partyCommandService.updateParty(partyId, memberId, request);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
     @PatchMapping("/parties/{partyId}/status")
     @Operation(summary ="모임 삭제(비활성화)",
             description = "모임장이 모임을 삭제(비활성화)합니다.")

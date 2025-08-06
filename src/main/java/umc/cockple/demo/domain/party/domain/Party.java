@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
 import umc.cockple.demo.domain.party.enums.ActiveDay;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -96,7 +97,6 @@ public class Party extends BaseEntity {
     @Builder.Default
     private List<Exercise> exercises = new ArrayList<>();
 
-    @Setter
     @OneToOne(mappedBy = "party", cascade = CascadeType.ALL, orphanRemoval = true)
     private PartyImg partyImg;
 
@@ -170,6 +170,14 @@ public class Party extends BaseEntity {
         this.activeDays.add(partyActiveDay);
     }
 
+    public void addKeyword(Keyword keyword) {
+        PartyKeyword partyKeyword = PartyKeyword.builder()
+                .keyword(keyword)
+                .party(this)
+                .build();
+        this.keywords.add(partyKeyword);
+    }
+
     public void addLevel(Gender gender, Level level) {
         PartyLevel partyLevel = PartyLevel.builder()
                 .gender(gender)
@@ -186,6 +194,11 @@ public class Party extends BaseEntity {
         this.exerciseCount = exercises.size();
     }
 
+    protected void setPartyImg(PartyImg partyImg) {
+        this.partyImg = partyImg;
+        partyImg.setParty(this);
+    }
+
     public void removeExercise(Exercise exercise) {
         this.exercises.remove(exercise);
 
@@ -199,5 +212,46 @@ public class Party extends BaseEntity {
         this.exercises.clear();
         this.memberParties.clear();
         this.partyBookmarks.clear();
+    }
+
+    public void update(PartyUpdateDTO.Request request) {
+        if (request.activityDay() != null) {
+            this.activeDays.clear(); //연결관계 끊기 (리스트이기에 clear로 전체 삭제)
+            request.activityDay().stream()
+                    .map(ActiveDay::fromKorean)
+                    .forEach(this::addActiveDay);
+        }
+        if (request.activityTime() != null) {
+            this.activityTime = ActivityTime.fromKorean(request.activityTime());
+        }
+        if (request.designatedCock() != null) {
+            this.designatedCock = request.designatedCock();
+        }
+        if (request.joinPrice() != null) {
+            this.joinPrice = request.joinPrice();
+        }
+        if (request.price() != null) {
+            this.price = request.price();
+        }
+        if (request.content() != null) {
+            this.content = request.content();
+        }
+        if (request.imgKey() != null) {
+            if (request.imgKey().isEmpty()) {
+                this.partyImg = null; //연결관계 끊기 (단일 객체기에 null)
+            } else {
+                if (this.partyImg != null) {
+                    this.partyImg.updateKey(request.imgKey());
+                } else {
+                    this.setPartyImg(PartyImg.create(request.imgKey(), this));
+                }
+            }
+        }
+        if (request.keyword() != null) {
+            this.keywords.clear();
+            request.keyword().stream()
+                    .map(Keyword::fromKorean)
+                    .forEach(this::addKeyword);
+        }
     }
 }
