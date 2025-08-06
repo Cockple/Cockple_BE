@@ -195,6 +195,16 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             displayName = chatRoom.getName();
             profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
         }
+
+        int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoom.getId());
+        Long lastReadMessageId = myMembership.getLastReadMessageId();
+
+        return chatConverter.toChatRoomInfo(
+                chatRoom,
+                displayName,
+                profileImageUrl,
+                memberCount,
+                lastReadMessageId);
     }
 
     private String getImageUrl(ProfileImg profileImg) {

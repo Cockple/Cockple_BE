@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
@@ -101,5 +102,21 @@ public class ChatConverter {
                         .memberName(m.getMember().getMemberName())
                         .build()
                 ).collect(Collectors.toList());
+    }
+
+    public ChatRoomDetailDTO.ChatRoomInfo toChatRoomInfo(
+            ChatRoom chatRoom,
+            String displayName,
+            String profileImageUrl,
+            int memberCount,
+            Long lastReadMessageId) {
+        return ChatRoomDetailDTO.ChatRoomInfo.builder()
+                .chatRoomId(chatRoom.getId())
+                .chatRoomType(chatRoom.getType())
+                .displayName(displayName)
+                .profileImageUrl(profileImageUrl)
+                .memberCount(memberCount)
+                .lastReadMessageId(lastReadMessageId)
+                .build();
     }
 }
