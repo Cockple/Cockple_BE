@@ -116,6 +116,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         validateChatRoomAccess(roomId, memberId);
 
         List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, size + 1);
+
+        boolean hasNext = messages.size() > size;
+        if (hasNext) {
+            messages = messages.subList(0, size);
+        }
     }
 
     // ========== 검증 로직 ==========
