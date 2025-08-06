@@ -147,4 +147,15 @@ public class ChatConverter {
                 .profileImgUrl(memberProfileImgUrl)
                 .build();
     }
+
+    public ChatRoomDetailDTO.Response toChatRoomDetailResponse(
+            ChatRoomDetailDTO.ChatRoomInfo roomInfo,
+            List<ChatRoomDetailDTO.MessageInfo> messageInfos,
+            List<ChatRoomDetailDTO.MemberInfo> memberInfos) {
+        return ChatRoomDetailDTO.Response.builder()
+                .chatRoomInfo(roomInfo)
+                .messages(messageInfos)
+                .participants(memberInfos)
+                .build();
+    }
 }

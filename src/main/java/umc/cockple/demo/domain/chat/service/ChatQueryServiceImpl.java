@@ -103,7 +103,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             updateLastReadMessage(myMembership, lastMessage.getId());
         }
 
-        return null;
+        log.info("[초기 채팅방 조회 완료] - 메시지 수: {}, 참여자 수: {}",
+                messageInfos.size(), memberInfos.size());
+
+        return chatConverter.toChatRoomDetailResponse(roomInfo, messageInfos, memberInfos);
     }
 
     // ========== 비즈니스 로직 ==========
