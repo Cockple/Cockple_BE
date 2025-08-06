@@ -93,14 +93,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         Collections.reverse(recentMessages);
 
-        List<ChatRoomDetailDTO.MessageInfo> messageInfos = recentMessages.stream()
-                .map(message -> buildMessageInfo(message, memberId))
-                .collect(Collectors.toList());
+        List<ChatRoomDetailDTO.MessageInfo> messageInfos = buildMessageInfos(memberId, recentMessages);
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
-        List<ChatRoomDetailDTO.MemberInfo> memberInfos = participants.stream()
-                .map(member -> buildMemberInfo(member))
-                .toList();
+        List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
+
+
 
         return null;
     }
@@ -217,6 +215,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 lastReadMessageId);
     }
 
+    private List<ChatRoomDetailDTO.MessageInfo> buildMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
+        return recentMessages.stream()
+                .map(message -> buildMessageInfo(message, memberId))
+                .collect(Collectors.toList());
+    }
+
     private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
         Member sender = message.getSender();
 
@@ -235,6 +239,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 senderProfileImageUrl,
                 imageUrls,
                 isMyMessage);
+    }
+
+    private List<ChatRoomDetailDTO.MemberInfo> buildMemberInfos(List<ChatRoomMember> participants) {
+        return participants.stream()
+                .map(this::buildMemberInfo)
+                .toList();
     }
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember member) {
