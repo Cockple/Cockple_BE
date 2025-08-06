@@ -139,4 +139,12 @@ public class ChatConverter {
                 .isMyMessage(isMyMessage)
                 .build();
     }
+
+    public ChatRoomDetailDTO.MemberInfo toChatRoomMemberInfo(Member member, String memberProfileImgUrl) {
+        return ChatRoomDetailDTO.MemberInfo.builder()
+                .memberId(member.getId())
+                .memberName(member.getMemberName())
+                .profileImgUrl(memberProfileImgUrl)
+                .build();
+    }
 }

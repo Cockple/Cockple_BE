@@ -247,8 +247,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .toList();
     }
 
-    private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember member) {
+    private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
+        Member member = chatRoomMember.getMember();
+        String memberProfileImgUrl = getImageUrl(member.getProfileImg());
 
+        return chatConverter.toChatRoomMemberInfo(member, memberProfileImgUrl);
     }
 
     private String getImageUrl(PartyImg partyImg) {
