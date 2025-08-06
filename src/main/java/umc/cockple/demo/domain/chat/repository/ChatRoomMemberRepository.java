@@ -38,5 +38,14 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     Optional<ChatRoomMember> findCounterPartWithMember(
             @Param("chatRoomId") Long chatRoomId,
             @Param("myId") Long myId);
+
+    @Query("""
+            SELECT crm FROM ChatRoomMember crm
+            JOIN FETCH crm.member m
+            LEFT JOIN FETCH m.profileImg
+            WHERE crm.chatRoom.id = :chatRoomId
+            ORDER BY m.memberName ASC
+            """)
+    List<ChatRoomMember> findChatRoomMembersWithMemberById(@Param("chatRoomId") Long chatRoomId);
 }
 

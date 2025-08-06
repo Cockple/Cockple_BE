@@ -97,6 +97,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .map(message -> buildMessageInfo(message, memberId))
                 .collect(Collectors.toList());
 
+        List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
+        List<ChatRoomDetailDTO.MemberInfo> memberInfos = participants.stream()
+                .map(member -> buildMemberInfo(member))
+                .toList();
+
         return null;
     }
 
@@ -232,6 +237,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 isMyMessage);
     }
 
+    private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember member) {
+
+    }
+
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(partyImg.getImgKey());
@@ -270,6 +279,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatRoomMemberRepository
                 .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+    }
+
+    private List<ChatRoomMember> findChatRoomMembersWithMemberOrThrow(Long roomId) {
+        return chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId);
     }
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
