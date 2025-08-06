@@ -125,6 +125,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         Collections.reverse(messages);
 
         List<ChatMessageDTO.MessageInfo> messageInfos = buildPreviousMessageInfos(memberId, messages);
+
+        Long nextCursor = hasNext && !messages.isEmpty()
+                ? messages.get(0).getId() : null;
+
+        log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", messages.size(), hasNext);
     }
 
     // ========== 검증 로직 ==========
