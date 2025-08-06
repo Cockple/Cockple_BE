@@ -90,9 +90,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         Pageable pageable = PageRequest.of(0, 50);
         List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
-
         Collections.reverse(recentMessages);
-
         List<ChatRoomDetailDTO.MessageInfo> messageInfos = buildMessageInfos(memberId, recentMessages);
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
