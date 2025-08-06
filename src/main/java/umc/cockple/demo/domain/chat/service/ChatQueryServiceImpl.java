@@ -187,10 +187,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             displayName = myMembership.getDisplayName();
 
-            ChatRoomMember counterPart = chatRoom.getChatRoomMembers().stream()
-                    .filter(chatMember -> !chatMember.getMember().getId()
-                            .equals(myMembership.getMember().getId()))
-                    .findFirst()
+            ChatRoomMember counterPart = chatRoomMemberRepository
+                    .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
                     .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
 
             profileImageUrl = getImageUrl(counterPart.getMember().getProfileImg());
