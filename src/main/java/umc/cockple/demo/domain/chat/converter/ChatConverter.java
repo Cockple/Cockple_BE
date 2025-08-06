@@ -5,10 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
@@ -156,6 +153,25 @@ public class ChatConverter {
                 .chatRoomInfo(roomInfo)
                 .messages(messageInfos)
                 .participants(memberInfos)
+                .build();
+    }
+
+    public ChatMessageDTO.MessageInfo toPreviousMessageInfo(
+            ChatMessage message,
+            Member sender,
+            String senderProfileImageUrl,
+            List<String> imageUrls,
+            boolean isMyMessage) {
+        return ChatMessageDTO.MessageInfo.builder()
+                .messageId(message.getId())
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .senderProfileImageUrl(senderProfileImageUrl)
+                .content(message.getContent())
+                .messageType(message.getType())
+                .imageUrls(imageUrls)
+                .timestamp(message.getCreatedAt())
+                .isMyMessage(isMyMessage)
                 .build();
     }
 }

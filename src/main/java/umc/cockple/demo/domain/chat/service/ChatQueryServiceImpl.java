@@ -123,6 +123,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         }
 
         Collections.reverse(messages);
+
+        List<ChatMessageDTO.MessageInfo> messageInfos = buildPreviousMessageInfos(memberId, messages);
     }
 
     // ========== 검증 로직 ==========
@@ -247,7 +249,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private List<ChatRoomDetailDTO.MessageInfo> buildMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
         return recentMessages.stream()
                 .map(message -> buildMessageInfo(message, memberId))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private List<ChatMessageDTO.MessageInfo> buildPreviousMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
+        return recentMessages.stream()
+                .map(message -> buildPreviousMessageInfo(message, memberId))
+                .toList();
     }
 
     private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
@@ -263,6 +271,26 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         boolean isMyMessage = sender.getId().equals(currentUserId);
 
         return chatConverter.toChatRoomDetailMessageInfo(
+                message,
+                sender,
+                senderProfileImageUrl,
+                imageUrls,
+                isMyMessage);
+    }
+
+    private ChatMessageDTO.MessageInfo buildPreviousMessageInfo(ChatMessage message, Long currentUserId) {
+        Member sender = message.getSender();
+
+        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
+
+        List<String> imageUrls = message.getChatMessageImgs().stream()
+                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
+                .map(this::getImageUrl)
+                .toList();
+
+        boolean isMyMessage = sender.getId().equals(currentUserId);
+
+        return chatConverter.toPreviousMessageInfo(
                 message,
                 sender,
                 senderProfileImageUrl,
