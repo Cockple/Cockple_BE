@@ -224,7 +224,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         boolean isMyMessage = sender.getId().equals(currentUserId);
 
-        return chatConverter.toMessageInfo(message, senderProfileImageUrl, imageUrls, isMyMessage);
+        return chatConverter.toMessageInfo(
+                message,
+                sender,
+                senderProfileImageUrl,
+                imageUrls,
+                isMyMessage);
     }
 
     private String getImageUrl(PartyImg partyImg) {

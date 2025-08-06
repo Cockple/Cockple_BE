@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -117,6 +118,25 @@ public class ChatConverter {
                 .profileImageUrl(profileImageUrl)
                 .memberCount(memberCount)
                 .lastReadMessageId(lastReadMessageId)
+                .build();
+    }
+
+    public ChatRoomDetailDTO.MessageInfo toMessageInfo(
+            ChatMessage message,
+            Member sender,
+            String senderProfileImageUrl,
+            List<String> imageUrls,
+            boolean isMyMessage) {
+        return ChatRoomDetailDTO.MessageInfo.builder()
+                .messageId(message.getId())
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .senderProfileImageUrl(senderProfileImageUrl)
+                .content(message.getContent())
+                .messageType(message.getType())
+                .imageUrls(imageUrls)
+                .timestamp(message.getCreatedAt())
+                .isMyMessage(isMyMessage)
                 .build();
     }
 }
