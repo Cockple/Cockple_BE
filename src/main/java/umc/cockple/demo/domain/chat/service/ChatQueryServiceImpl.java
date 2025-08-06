@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.Direction;
@@ -73,7 +74,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return toDirectChatRoomInfos(chatRooms, memberId);
     }
 
-    // ========== 비지니스 로직 ==========
+    @Override
+    public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
+
+        return null;
+    }
+
+    // ========== 비즈니스 로직 ==========
     private PartyChatRoomDTO.Response toPartyChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);

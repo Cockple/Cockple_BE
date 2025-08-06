@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.chat.service;
 
+import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.Direction;
@@ -12,4 +13,6 @@ public interface ChatQueryService {
     DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, Long cursor, int size, Direction direction);
 
     DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction);
+
+    ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId);
 }
