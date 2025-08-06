@@ -115,6 +115,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 roomId, memberId, cursor, pageable.getPageSize());
 
         validateChatRoomAccess(roomId, memberId);
+
+        Slice<ChatMessage> messageSlice = findMessagesWithCursor(roomId, cursor, pageable);
     }
 
     // ========== 검증 로직 ==========
@@ -326,5 +328,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
         return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
+    }
+
+    private Slice<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
+        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
     }
 }
