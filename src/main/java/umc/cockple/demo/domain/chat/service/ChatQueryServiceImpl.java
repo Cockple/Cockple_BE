@@ -80,7 +80,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
         log.info("[초기 채팅방 조회 시작] - roomId: {}, memberId: {}", roomId, memberId);
 
-        ChatRoom chatRoom = findChatRoomOrThrow(roomId);
+        ChatRoom chatRoom = findChatRoomWithPartyOrThrow(roomId);
         ChatRoomMember myMembership = findChatRoomMembershipOrThrow(roomId, memberId);
 
         ChatRoomDetailDTO.ChatRoomInfo roomInfo = buildChatRoomInfo(chatRoom, myMembership);
@@ -206,8 +206,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     // ========== 조회 메서드 ==========
 
-    private ChatRoom findChatRoomOrThrow(Long roomId) {
-        return chatRoomRepository.findById(roomId).orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    private ChatRoom findChatRoomWithPartyOrThrow(Long roomId) {
+        return chatRoomRepository.findChatRoomWithPartyById(roomId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
     private ChatRoomMember findChatRoomMembershipOrThrow(Long roomId, Long memberId) {
