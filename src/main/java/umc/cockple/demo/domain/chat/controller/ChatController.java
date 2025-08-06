@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
