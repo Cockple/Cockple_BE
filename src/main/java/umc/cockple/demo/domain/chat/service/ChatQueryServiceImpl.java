@@ -98,7 +98,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
 
-
+        if(!recentMessages.isEmpty()){
+            ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
+            updateLastReadMessage(myMembership, lastMessage.getId());
+        }
 
         return null;
     }
@@ -252,6 +255,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         String memberProfileImgUrl = getImageUrl(member.getProfileImg());
 
         return chatConverter.toChatRoomMemberInfo(member, memberProfileImgUrl);
+    }
+
+    private void updateLastReadMessage(ChatRoomMember myMembership, Long messageId) {
+        myMembership.updateLastReadMessageId(messageId);
+        chatRoomMemberRepository.save(myMembership);
     }
 
     private String getImageUrl(PartyImg partyImg) {
