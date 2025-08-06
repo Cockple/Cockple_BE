@@ -21,6 +21,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
@@ -185,13 +186,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         String profileImageUrl = null;
 
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
-            displayName = myMembership.getDisplayName();
+            ChatRoomMember counterPart = findCounterPartWithMember(chatRoom, myMembership);
+            Member member = counterPart.getMember();
 
-            ChatRoomMember counterPart = chatRoomMemberRepository
-                    .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
-                    .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
-
-            profileImageUrl = getImageUrl(counterPart.getMember().getProfileImg());
+            displayName = member.getMemberName();
+            profileImageUrl = getImageUrl(member.getProfileImg());
         } else {
             displayName = chatRoom.getName();
             profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -215,5 +214,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatRoomMemberRepository
                 .findByChatRoomIdAndMemberId(roomId, memberId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private ChatRoomMember findCounterPartWithMember(ChatRoom chatRoom, ChatRoomMember myMembership) {
+        return chatRoomMemberRepository
+                .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
     }
 }
