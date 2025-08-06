@@ -213,7 +213,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoom.getId());
         Long lastReadMessageId = myMembership.getLastReadMessageId();
 
-        return chatConverter.toChatRoomInfo(
+        return chatConverter.toChatRoomDetailChatRoomInfo(
                 chatRoom,
                 displayName,
                 profileImageUrl,
@@ -239,7 +239,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         boolean isMyMessage = sender.getId().equals(currentUserId);
 
-        return chatConverter.toMessageInfo(
+        return chatConverter.toChatRoomDetailMessageInfo(
                 message,
                 sender,
                 senderProfileImageUrl,
@@ -257,7 +257,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         Member member = chatRoomMember.getMember();
         String memberProfileImgUrl = getImageUrl(member.getProfileImg());
 
-        return chatConverter.toChatRoomMemberInfo(member, memberProfileImgUrl);
+        return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
     }
 
     private void updateLastReadMessage(ChatRoomMember myMembership, Long messageId) {

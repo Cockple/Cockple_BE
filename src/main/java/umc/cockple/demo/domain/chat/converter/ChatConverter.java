@@ -105,7 +105,7 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
-    public ChatRoomDetailDTO.ChatRoomInfo toChatRoomInfo(
+    public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(
             ChatRoom chatRoom,
             String displayName,
             String profileImageUrl,
@@ -121,7 +121,7 @@ public class ChatConverter {
                 .build();
     }
 
-    public ChatRoomDetailDTO.MessageInfo toMessageInfo(
+    public ChatRoomDetailDTO.MessageInfo toChatRoomDetailMessageInfo(
             ChatMessage message,
             Member sender,
             String senderProfileImageUrl,
@@ -140,7 +140,7 @@ public class ChatConverter {
                 .build();
     }
 
-    public ChatRoomDetailDTO.MemberInfo toChatRoomMemberInfo(Member member, String memberProfileImgUrl) {
+    public ChatRoomDetailDTO.MemberInfo toChatRoomDetailMemberInfo(Member member, String memberProfileImgUrl) {
         return ChatRoomDetailDTO.MemberInfo.builder()
                 .memberId(member.getId())
                 .memberName(member.getMemberName())
