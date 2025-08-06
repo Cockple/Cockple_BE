@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
@@ -81,6 +82,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         ChatRoom chatRoom = findChatRoomOrThrow(roomId);
         ChatRoomMember myMembership = findChatRoomMembershipOrThrow(roomId, memberId);
 
+        ChatRoomDetailDTO.ChatRoomInfo roomInfo = buildChatRoomInfo(chatRoom, myMembership);
+
         return null;
     }
 
@@ -135,7 +138,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return null;
     }
 
-
     private DirectChatRoomDTO.Response toDirectChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
@@ -176,6 +178,26 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .collect(Collectors.toList());
 
         return chatConverter.toDirectChatRoomListResponse(roomInfos);
+    }
+
+    private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {
+        String displayName;
+        String profileImageUrl = null;
+
+        if (chatRoom.getType() == ChatRoomType.DIRECT) {
+            displayName = myMembership.getDisplayName();
+
+            ChatRoomMember counterPart = chatRoom.getChatRoomMembers().stream()
+                    .filter(chatMember -> !chatMember.getMember().getId()
+                            .equals(myMembership.getMember().getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+
+            profileImageUrl = getImageUrl(counterPart.getMember().getProfileImg());
+        } else {
+            displayName = chatRoom.getName();
+            profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
+        }
     }
 
     private String getImageUrl(ProfileImg profileImg) {
