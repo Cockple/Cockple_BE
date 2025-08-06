@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.chat.repository;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,10 +42,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             WHERE m.chatRoom.id = :chatRoomId
             AND m.id < :cursor
             ORDER BY m.createdAt DESC
-            LIMIT :size
             """)
     List<ChatMessage> findByRoomIdAndIdLessThanOrderByCreatedAtDesc(
             @Param("chatRoomId") Long chatRoomId,
             @Param("cursor") Long cursor,
-            @Param("size") int size);
+            Pageable pageable);
 }

@@ -115,7 +115,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         validateChatRoomAccess(roomId, memberId);
 
-        List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, size + 1);
+        Pageable pageable = PageRequest.of(0, size+1);
+        List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, pageable);
 
         boolean hasNext = messages.size() > size;
         if (hasNext) {
@@ -371,7 +372,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
     }
 
-    private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, int size) {
-        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, size);
+    private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
+        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
     }
 }
