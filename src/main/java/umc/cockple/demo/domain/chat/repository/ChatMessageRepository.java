@@ -25,6 +25,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     @Query("""
             SELECT m FROM ChatMessage m 
+            JOIN FETCH m.sender
             LEFT JOIN FETCH m.chatMessageImgs
             WHERE m.chatRoom.id = :chatRoomId 
             AND m.isDeleted = false
