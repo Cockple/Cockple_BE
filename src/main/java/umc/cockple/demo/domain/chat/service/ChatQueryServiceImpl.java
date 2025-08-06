@@ -25,6 +25,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,6 +85,11 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         ChatRoomMember myMembership = findChatRoomMembershipOrThrow(roomId, memberId);
 
         ChatRoomDetailDTO.ChatRoomInfo roomInfo = buildChatRoomInfo(chatRoom, myMembership);
+
+        Pageable pageable = PageRequest.of(0, 50);
+        List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
+
+        Collections.reverse(recentMessages);
 
         return null;
     }
@@ -231,5 +237,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatRoomMemberRepository
                 .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+    }
+
+    private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
+        return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
     }
 }
