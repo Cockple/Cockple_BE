@@ -219,8 +219,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         List<String> imageUrls = message.getChatMessageImgs().stream()
                 .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
-                .map(img -> getImageUrl(img))
-                .collect(Collectors.toList());
+                .map(this::getImageUrl)
+                .toList();
 
         boolean isMyMessage = sender.getId().equals(currentUserId);
 
