@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
@@ -26,6 +27,7 @@ import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,6 +93,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         Collections.reverse(recentMessages);
 
+        List<ChatRoomDetailDTO.MessageInfo> messageInfos = recentMessages.stream()
+                .map(message -> buildMessageInfo(message, memberId))
+                .collect(Collectors.toList());
+
         return null;
     }
 
@@ -136,13 +142,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .collect(Collectors.toList());
 
         return chatConverter.toPartyChatRoomListResponse(roomInfos);
-    }
-
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
     }
 
     private DirectChatRoomDTO.Response toDirectChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
@@ -213,11 +212,40 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 lastReadMessageId);
     }
 
+    private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
+        Member sender = message.getSender();
+
+        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
+
+        List<String> imageUrls = message.getChatMessageImgs().stream()
+                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
+                .map(img -> getImageUrl(img))
+                .collect(Collectors.toList());
+
+        boolean isMyMessage = sender.getId().equals(currentUserId);
+
+        return chatConverter.toMessageInfo(message, senderProfileImageUrl, imageUrls, isMyMessage);
+    }
+
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
     private String getImageUrl(ProfileImg profileImg) {
         if (profileImg == null || profileImg.getImgKey() == null) {
             return null;
         }
         return imageService.getUrlFromKey(profileImg.getImgKey());
+    }
+
+    private String getImageUrl(ChatMessageImg chatMessageImg) {
+        if (chatMessageImg != null && chatMessageImg.getImgKey() != null && !chatMessageImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(chatMessageImg.getImgKey());
+        }
+        return null;
     }
 
     // ========== 조회 메서드 ==========
