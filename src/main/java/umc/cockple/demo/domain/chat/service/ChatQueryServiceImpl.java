@@ -76,6 +76,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
+        log.info("[초기 채팅방 조회 시작] - roomId: {}, memberId: {}", roomId, memberId);
+
+        ChatRoom chatRoom = findChatRoomOrThrow(roomId);
+        ChatRoomMember myMembership = findChatRoomMembershipOrThrow(roomId, memberId);
 
         return null;
     }
@@ -179,5 +183,17 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             return null;
         }
         return imageService.getUrlFromKey(profileImg.getImgKey());
+    }
+
+    // ========== 조회 메서드 ==========
+
+    private ChatRoom findChatRoomOrThrow(Long roomId) {
+        return chatRoomRepository.findById(roomId).orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private ChatRoomMember findChatRoomMembershipOrThrow(Long roomId, Long memberId) {
+        return chatRoomMemberRepository
+                .findByChatRoomIdAndMemberId(roomId, memberId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 }
