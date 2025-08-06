@@ -4,8 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
@@ -107,10 +111,26 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ChatRoomDetailDTO.Response> getChatRoomDetail(
             @PathVariable Long roomId
-    ){
+    ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/rooms/{roomId}/messages/previous")
+    @Operation(summary = "채팅방 과거 메시지 조회", description = "채팅방의 과거 메시지를 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<Slice<ChatMessageDTO.Resposne>> getChatMessages(
+            @PathVariable Long roomId,
+            @RequestParam Long cursor,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        Slice<ChatMessageDTO.Resposne> response
+                = chatQueryService.getChatMessages(roomId, memberId, cursor, pageable);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
