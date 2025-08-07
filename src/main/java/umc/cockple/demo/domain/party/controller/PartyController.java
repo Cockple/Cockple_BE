@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.util.List;
 
@@ -36,11 +37,9 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartySimpleDTO.Response>> getSimpleMyParties(
-            @PageableDefault(page = 0, size = 10, sort = {"createdAt", "party.partyName"}, direction = Sort.Direction.DESC) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(page = 0, size = 10, sort = {"createdAt", "party.partyName"}, direction = Sort.Direction.DESC) Pageable pageable
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         Slice<PartySimpleDTO.Response> response = partyQueryService.getSimpleMyParties(memberId, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -54,12 +53,9 @@ public class PartyController {
     public BaseResponse<Slice<PartyDTO.Response>> getMyParties(
             @RequestParam(required = false, defaultValue = "false") Boolean created,
             @RequestParam(required = false, defaultValue = "최신순") String sort,
-            @PageableDefault(size = 10) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(size = 10) Pageable pageable
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-        // sort 파라미터에 따라 Pageable 객체를 새로 생성
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sort, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -80,11 +76,9 @@ public class PartyController {
             @RequestParam(required = false) List<String> activityTime,
             @RequestParam(required = false) List<String> keyword,
             @RequestParam(required = false, defaultValue = "최신순") String sort,
-            @PageableDefault(size = 10) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(size = 10) Pageable pageable
     ) {
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
                 .addr1(addr1)
@@ -106,10 +100,10 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "모임 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     public BaseResponse<PartyDetailDTO.Response> getPartyDetails(
-            @PathVariable Long partyId,
-            Authentication authentication
+            @PathVariable Long partyId
     ){
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
         PartyDetailDTO.Response response = partyQueryService.getPartyDetails(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
@@ -121,11 +115,9 @@ public class PartyController {
     @ApiResponse(responseCode = "400", description = "입력값 유효성 검증 실패 또는 잘못된 요청 형식")
     @ApiResponse(responseCode = "403", description = "모임 생성 권한 없음")
     public BaseResponse<PartyCreateDTO.Response> createParty(
-            @RequestBody @Valid PartyCreateDTO.Request request,
-            Authentication authentication
+            @RequestBody @Valid PartyCreateDTO.Request request
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         //서비스 호출
         PartyCreateDTO.Response response = partyCommandService.createParty(memberId, request);
@@ -141,11 +133,9 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<Void> updateParty(
             @PathVariable Long partyId,
-            @RequestBody @Valid PartyUpdateDTO.Request request,
-            Authentication authentication
+            @RequestBody @Valid PartyUpdateDTO.Request request
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.updateParty(partyId, memberId, request);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -155,11 +145,9 @@ public class PartyController {
     @Operation(summary ="모임 삭제(비활성화)",
             description = "모임장이 모임을 삭제(비활성화)합니다.")
     public BaseResponse<Void> deleteParty(
-            @PathVariable Long partyId,
-            Authentication authentication
+            @PathVariable Long partyId
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.deleteParty(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -171,11 +159,9 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "모임 멤버 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
     public BaseResponse<PartyMemberDTO.Response> getPartyMembers(
-            @PathVariable Long partyId,
-            Authentication authentication
+            @PathVariable Long partyId
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyMemberDTO.Response response = partyQueryService.getPartyMembers(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -188,11 +174,9 @@ public class PartyController {
     @ApiResponse(responseCode = "403", description = "모임장 탈퇴 불가")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     public BaseResponse<Void> leaveParty(
-            @PathVariable Long partyId,
-            Authentication authentication
+            @PathVariable Long partyId
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.leaveParty(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -206,11 +190,9 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 멤버")
     public BaseResponse<Void> removeMember(
             @PathVariable Long partyId,
-            @PathVariable("memberId") Long memberIdToRemove,
-            Authentication authentication
+            @PathVariable("memberId") Long memberIdToRemove
     ) {
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long currentMemberId = 1L; //현재 사용자 ID
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.removeMember(partyId, memberIdToRemove, currentMemberId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -223,11 +205,9 @@ public class PartyController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 사용자")
     @ApiResponse(responseCode = "409", description = "이미 가입했거나 신청 대기 중인 상태")
     public BaseResponse<PartyJoinCreateDTO.Response> createJoinRequest(
-            @PathVariable Long partyId,
-            Authentication authentication
+            @PathVariable Long partyId
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyJoinCreateDTO.Response response = partyCommandService.createJoinRequest(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -242,11 +222,9 @@ public class PartyController {
     public BaseResponse<Slice<PartyJoinDTO.Response>> getJoinRequests(
             @PathVariable Long partyId,
             @RequestParam(name = "status", defaultValue = "PENDING") String status,
-            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         Slice<PartyJoinDTO.Response> response = partyQueryService.getJoinRequests(partyId, memberId, status, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -262,11 +240,9 @@ public class PartyController {
     public BaseResponse<Void> actionJoinRequests(
             @PathVariable Long partyId,
             @PathVariable Long requestId,
-            @RequestBody @Valid PartyJoinActionDTO.Request request,
-            Authentication authentication
+            @RequestBody @Valid PartyJoinActionDTO.Request request
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.actionJoinRequest(partyId, memberId, request, requestId);
         return BaseResponse.success(CommonSuccessCode.OK);
@@ -274,12 +250,11 @@ public class PartyController {
 
     @GetMapping("/parties/{partyId}/members/suggestions")
     @Operation(summary = "신규 멤버 추천받기",
-            description = "모임장이 자신의 모임에 초대할 만한 신규 멤버를 추천받습니다.")
+            description = "자신의 모임에 초대할 만한 신규 멤버를 추천받습니다.")
     public BaseResponse<Slice<PartyMemberSuggestionDTO.Response>> etRecommendedMembers(
             @PathVariable Long partyId,
             @RequestParam(required = false) String levelSearch,
-            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ){
         Slice<PartyMemberSuggestionDTO.Response> response = partyQueryService.getRecommendedMembers(partyId, levelSearch, pageable);
         return BaseResponse.success(CommonSuccessCode.OK, response);
@@ -294,11 +269,9 @@ public class PartyController {
     @ApiResponse(responseCode = "409", description = "이미 멤버이거나 초대 대기 중인 상태")
     public BaseResponse<PartyInviteCreateDTO.Response> createInvitation(
             @PathVariable Long partyId,
-            @Valid @RequestBody PartyInviteCreateDTO.Request request,
-            Authentication authentication
+            @Valid @RequestBody PartyInviteCreateDTO.Request request
     ) {
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyInviteCreateDTO.Response response = partyCommandService.createInvitation(partyId, request.userId(), memberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
@@ -313,11 +286,9 @@ public class PartyController {
     @ApiResponse(responseCode = "409", description = "이미 처리된 모임 초대")
     public BaseResponse<Void> actionInvitation(
             @PathVariable Long invitationId,
-            @RequestBody @Valid PartyInviteActionDTO.Request request,
-            Authentication authentication
+            @RequestBody @Valid PartyInviteActionDTO.Request request
     ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 2L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.actionInvitation(memberId, request, invitationId);
         return BaseResponse.success(CommonSuccessCode.OK);
