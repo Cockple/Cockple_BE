@@ -144,7 +144,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private void validateChatRoomAccess(Long roomId, Long memberId) {
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
-            throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
     }
 
     // ========== 비즈니스 로직 ==========
