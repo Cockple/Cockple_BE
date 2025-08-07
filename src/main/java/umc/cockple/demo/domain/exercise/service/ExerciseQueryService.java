@@ -678,7 +678,7 @@ public class ExerciseQueryService {
         return ExerciseDetailDTO.ParticipantInfo.builder()
                 .participantId(original.participantId())
                 .participantNumber(number)
-                .imgUrl(original.imgUrl())
+                .profileImageUrl(original.profileImageUrl())
                 .name(original.name())
                 .gender(original.gender())
                 .level(original.level())

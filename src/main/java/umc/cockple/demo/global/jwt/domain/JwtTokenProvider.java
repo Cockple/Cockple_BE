@@ -18,6 +18,7 @@ import umc.cockple.demo.global.jwt.properties.JwtProperties;
 import umc.cockple.demo.global.security.domain.CustomUserDetails;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
@@ -41,6 +42,10 @@ public class JwtTokenProvider {
 
     public String createRefreshToken(Long memberId, String nickname) {
         return createToken(memberId, nickname, jwtProperties.getRefreshTokenValidity());
+    }
+
+    public String createDevToken(Long memberId, String nickname) {
+        return createToken(memberId, nickname, 1209600000L * 2);
     }
 
     private String createToken(Long memberId, String nickname, long validity) {

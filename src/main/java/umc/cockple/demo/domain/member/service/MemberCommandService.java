@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
+import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
@@ -18,6 +19,7 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import java.util.List;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
+import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
 
 @Service
 @Transactional
@@ -258,5 +260,4 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
         }
     }
-
 }

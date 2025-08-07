@@ -6,14 +6,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,13 +42,12 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<PartyChatRoomDTO.Response> getPartyChatRooms(
             //@AuthenticationPrincipal Long memberId,
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
-        PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, cursor, size, direction);
+        PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -59,13 +57,12 @@ public class ChatController {
     public BaseResponse<PartyChatRoomDTO.Response> searchPartyChatRooms(
             //@AuthenticationPrincipal Long memberId,
             @RequestParam String name,
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
-        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, cursor, size, direction);
+        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -97,6 +94,32 @@ public class ChatController {
         // TODO: JWT 인증 구현 후 교체 예정
         Long memberId = 1L; // 임시값
         DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, cursor, size, direction);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/rooms/{roomId}")
+    @Operation(summary = "초기 채팅방 조회", description = "채팅방의 정보와 회원이 참여한 채팅방의 메시지를 최근 50개만 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatRoomDetailDTO.Response> getChatRoomDetail(
+            @PathVariable Long roomId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/rooms/{roomId}/messages/previous")
+    @Operation(summary = "채팅방 과거 메시지 조회", description = "채팅방의 과거 메시지를 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatMessageDTO.Response> getChatMessages(
+            @PathVariable Long roomId,
+            @RequestParam Long cursor,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatMessageDTO.Response response = chatQueryService.getChatMessages(roomId, memberId, cursor, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }

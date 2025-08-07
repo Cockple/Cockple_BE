@@ -59,6 +59,31 @@ public class KakaoOauthService {
         return new KakaoLoginResponseDTO(accessToken, refreshToken, member.getId(), member.getNickname(), newMember);
     }
 
+    public KakaoLoginResponseDTO createDevToken() {
+        // 특정 member 가져오기
+        Member member = memberRepository.findById(1L)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        // accessToken: 2주 만료
+        String accessToken = jwtTokenProvider.createDevToken(member.getId(), member.getNickname());
+
+        // refreshToken: 기본 만료
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
+
+        // refreshToken DB에 저장
+        member.setRefreshToken(refreshToken);
+
+        return KakaoLoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .memberId(member.getId())
+                .nickname(member.getNickname())
+                .isNewMember(false)
+                .build()
+                ;
+    }
+
+
     public TokenRefreshResponse validateMember(String refreshToken) {
         Member member = memberRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN));

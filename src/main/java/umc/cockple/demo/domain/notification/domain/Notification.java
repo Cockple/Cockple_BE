@@ -22,7 +22,7 @@ public class Notification extends BaseEntity {
     private Member member;
 
     @Column(nullable = false)
-    private Long groupId;
+    private Long partyId;
 
     private String title;
 
@@ -37,6 +37,9 @@ public class Notification extends BaseEntity {
     private Boolean isRead;
 
     private String imageKey;
+
+    @Column(columnDefinition = "TEXT")  // 경우마다 필요한 데이터를 저장 (JSON)
+    private String data;
 
     public void read() {
         this.isRead = true;

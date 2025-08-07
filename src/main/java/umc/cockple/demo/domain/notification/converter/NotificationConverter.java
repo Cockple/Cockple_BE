@@ -8,12 +8,13 @@ public class NotificationConverter {
     public static AllNotificationsResponseDTO toAllNotificationResponseDTO(Notification notification, String imgUrl) {
         return AllNotificationsResponseDTO.builder()
                 .notificationId(notification.getId())
-                .partyId(notification.getGroupId())
+                .partyId(notification.getPartyId())
                 .title(notification.getTitle())
                 .content(notification.getContent())
                 .type(notification.getType())
                 .isRead(notification.getIsRead())
                 .imgUrl(imgUrl)
+                .data(notification.getData())
                 .build();
     }
 }

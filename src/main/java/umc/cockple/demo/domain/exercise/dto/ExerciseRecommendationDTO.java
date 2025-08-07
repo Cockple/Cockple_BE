@@ -25,9 +25,8 @@ public class ExerciseRecommendationDTO {
             LocalTime startTime,
             LocalTime endTime,
             String buildingName,
-            String imageUrl,
+            String profileImageUrl,
             Boolean isBookmarked
-    ){
-
+    ) {
     }
 }

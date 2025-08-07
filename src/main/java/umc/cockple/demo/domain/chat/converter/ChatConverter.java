@@ -5,11 +5,8 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
@@ -20,10 +17,10 @@ import java.util.stream.Collectors;
 public class ChatConverter {
 
     // ===모임 채팅방 목록===
-    public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos) {
+    public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos, boolean hasNext) {
         return PartyChatRoomDTO.Response.builder()
                 .content(chatRoomInfos)
-                .totalElements(chatRoomInfos.size())
+                .hasNext(hasNext)
                 .build();
     }
 
@@ -34,8 +31,8 @@ public class ChatConverter {
                                                              String imgUrl) {
         return PartyChatRoomDTO.ChatRoomInfo.builder()
                 .chatRoomId(chatRoom.getId())
-                .partyId(chatRoom.getId())
-                .partyName(chatRoom.getName())
+                .partyId(chatRoom.getParty().getId())
+                .partyName(chatRoom.getParty().getPartyName())
                 .partyImgUrl(imgUrl)
                 .memberCount(memberCount)
                 .unreadCount(unreadCount)
@@ -106,6 +103,7 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
+
     public WebSocketMessageDTO.Response toSendMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage, Member sender, String senderProfileImageUrl) {
         return WebSocketMessageDTO.Response.builder()
@@ -117,6 +115,88 @@ public class ChatConverter {
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
                 .createdAt(savedMessage.getCreatedAt())
+                .build();
+    }
+  
+    public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(
+            ChatRoom chatRoom,
+            String displayName,
+            String profileImageUrl,
+            int memberCount,
+            Long lastReadMessageId) {
+        return ChatRoomDetailDTO.ChatRoomInfo.builder()
+                .chatRoomId(chatRoom.getId())
+                .chatRoomType(chatRoom.getType())
+                .displayName(displayName)
+                .profileImageUrl(profileImageUrl)
+                .memberCount(memberCount)
+                .lastReadMessageId(lastReadMessageId)
+                .build();
+    }
+
+    public ChatRoomDetailDTO.MessageInfo toChatRoomDetailMessageInfo(
+            ChatMessage message,
+            Member sender,
+            String senderProfileImageUrl,
+            List<String> imageUrls,
+            boolean isMyMessage) {
+        return ChatRoomDetailDTO.MessageInfo.builder()
+                .messageId(message.getId())
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .senderProfileImageUrl(senderProfileImageUrl)
+                .content(message.getContent())
+                .messageType(message.getType())
+                .imageUrls(imageUrls)
+                .timestamp(message.getCreatedAt())
+                .isMyMessage(isMyMessage)
+                .build();
+    }
+
+    public ChatRoomDetailDTO.MemberInfo toChatRoomDetailMemberInfo(Member member, String memberProfileImgUrl) {
+        return ChatRoomDetailDTO.MemberInfo.builder()
+                .memberId(member.getId())
+                .memberName(member.getMemberName())
+                .profileImgUrl(memberProfileImgUrl)
+                .build();
+    }
+
+    public ChatRoomDetailDTO.Response toChatRoomDetailResponse(
+            ChatRoomDetailDTO.ChatRoomInfo roomInfo,
+            List<ChatRoomDetailDTO.MessageInfo> messageInfos,
+            List<ChatRoomDetailDTO.MemberInfo> memberInfos) {
+        return ChatRoomDetailDTO.Response.builder()
+                .chatRoomInfo(roomInfo)
+                .messages(messageInfos)
+                .participants(memberInfos)
+                .build();
+    }
+
+    public ChatMessageDTO.MessageInfo toPreviousMessageInfo(
+            ChatMessage message,
+            Member sender,
+            String senderProfileImageUrl,
+            List<String> imageUrls,
+            boolean isMyMessage) {
+        return ChatMessageDTO.MessageInfo.builder()
+                .messageId(message.getId())
+                .senderId(sender.getId())
+                .senderName(sender.getMemberName())
+                .senderProfileImageUrl(senderProfileImageUrl)
+                .content(message.getContent())
+                .messageType(message.getType())
+                .imageUrls(imageUrls)
+                .timestamp(message.getCreatedAt())
+                .isMyMessage(isMyMessage)
+                .build();
+    }
+
+    public ChatMessageDTO.Response toChatMessageResponse(
+            List<ChatMessageDTO.MessageInfo> messages, boolean hasNext, Long nextCursor) {
+        return ChatMessageDTO.Response.builder()
+                .messages(messages)
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
                 .build();
     }
 }

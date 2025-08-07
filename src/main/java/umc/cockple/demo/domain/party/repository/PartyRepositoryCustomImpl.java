@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.party.enums.ActiveDay;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
+import umc.cockple.demo.domain.party.utils.ActivityTimeUtils;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 
@@ -89,7 +90,14 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
     private BooleanExpression activityTimeIn(List<String> activityTimes) {
         if (activityTimes == null || activityTimes.isEmpty()) return null;
         List<ActivityTime> enums = activityTimes.stream().map(ActivityTime::fromKorean).toList();
-        return party.activityTime.in(enums);
+
+        //오후 또는 오전으로 조회 시, 상시도 조회에 포함
+        List<ActivityTime> searchConditions = new ArrayList<>(enums); //toList는 수정 불가능한 리스트를 만들기에 새로 생성
+        if (ActivityTimeUtils.shouldAddAlways(searchConditions)){
+            searchConditions.add(ActivityTime.ALWAYS);
+        }
+
+        return party.activityTime.in(searchConditions);
     }
 
     private BooleanExpression levelIn(List<String> levels) {

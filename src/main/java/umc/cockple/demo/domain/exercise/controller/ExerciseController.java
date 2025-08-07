@@ -5,23 +5,23 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.service.ExerciseCommandService;
-import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.service.*;
+import umc.cockple.demo.domain.exercise.service.command.ExerciseCommandService;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -44,123 +44,14 @@ public class ExerciseController {
     @ApiResponse(responseCode = "403", description = "권한 없음")
     public BaseResponse<ExerciseCreateDTO.Response> createExercise(
             @PathVariable Long partyId,
-            @Valid @RequestBody ExerciseCreateDTO.Request request,
-            Authentication authentication
+            @Valid @RequestBody ExerciseCreateDTO.Request request
     ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
-        // 서비스 호출
         ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
                 partyId, memberId, request);
 
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
-    @PostMapping("/exercises/{exerciseId}/participants")
-    @Operation(summary = "운동 신청",
-            description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 신청 성공")
-    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    @ApiResponse(responseCode = "403", description = "권한 없음, 급수 위반")
-    public BaseResponse<ExerciseJoinDTO.Response> JoinExercise(
-            @PathVariable Long exerciseId,
-            Authentication authentication
-    ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
-        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
-                exerciseId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
-    @PostMapping("/exercises/{exerciseId}/guests")
-    @Operation(summary = "게스트 초대",
-            description = "파티 멤버가 게스트를 운동에 초대합니다. 운동의 게스트 허용 정책을 확인합니다.")
-    @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
-    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
-            @PathVariable Long exerciseId,
-            @Valid @RequestBody ExerciseGuestInviteDTO.Request request,
-            Authentication authentication
-    ) {
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long inviterId = 1L; // 임시값
-
-        ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
-                exerciseId, inviterId, request);
-
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/participants/my")
-    @Operation(summary = "운동 참여 취소",
-            description = "사용자가 본인의 운동 참여를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
-            @PathVariable Long exerciseId,
-            Authentication authentication
-    ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
-        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
-                exerciseId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/guests/{guestId}")
-    @Operation(summary = "게스트 초대 취소",
-            description = "사용자가 본인이 초대한 게스트를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "게스트 초대 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
-    @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelGuestInvitation(
-            @PathVariable Long exerciseId,
-            @PathVariable Long guestId,
-            Authentication authentication
-    ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
-        ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
-                exerciseId, guestId, memberId);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
-    @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
-    @Operation(summary = "특정 참여자 운동 취소",
-            description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
-    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
-    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
-    @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
-    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
-            @PathVariable Long exerciseId,
-            @PathVariable Long participantId,
-            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request,
-            Authentication authentication
-    ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
-
-        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(
-                exerciseId, participantId, memberId, request);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @DeleteMapping("/exercises/{exerciseId}")
@@ -170,12 +61,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
     public BaseResponse<ExerciseDeleteDTO.Response> deleteExercise(
-            @PathVariable Long exerciseId,
-            Authentication authentication
+            @PathVariable Long exerciseId
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
                 exerciseId, memberId);
@@ -192,15 +80,103 @@ public class ExerciseController {
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
     public BaseResponse<ExerciseUpdateDTO.Response> updateExercise(
             @PathVariable Long exerciseId,
-            @Valid @RequestBody ExerciseUpdateDTO.Request request,
-            Authentication authentication
+            @Valid @RequestBody ExerciseUpdateDTO.Request request
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PostMapping("/exercises/{exerciseId}/participants")
+    @Operation(summary = "운동 신청",
+            description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 신청 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "403", description = "권한 없음, 급수 위반")
+    public BaseResponse<ExerciseJoinDTO.Response> joinExercise(
+            @PathVariable Long exerciseId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/participants/my")
+    @Operation(summary = "운동 참여 취소",
+            description = "사용자가 본인의 운동 참여를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipation(
+            @PathVariable Long exerciseId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
+                exerciseId, memberId);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
+    @Operation(summary = "특정 참여자 운동 취소",
+            description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
+    @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
+            @PathVariable Long exerciseId,
+            @PathVariable Long participantId,
+            @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(
+                exerciseId, participantId, memberId, request);
+
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PostMapping("/exercises/{exerciseId}/guests")
+    @Operation(summary = "게스트 초대",
+            description = "파티 멤버가 게스트를 운동에 초대합니다. 운동의 게스트 허용 정책을 확인합니다.")
+    @ApiResponse(responseCode = "201", description = "게스트 초대 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
+    @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
+    public BaseResponse<ExerciseGuestInviteDTO.Response> inviteGuest(
+            @PathVariable Long exerciseId,
+            @Valid @RequestBody ExerciseGuestInviteDTO.Request request
+    ) {
+        Long inviterId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
+                exerciseId, inviterId, request);
+
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/guests/{guestId}")
+    @Operation(summary = "게스트 초대 취소",
+            description = "사용자가 본인이 초대한 게스트를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "게스트 초대 취소 성공")
+    @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨)")
+    @ApiResponse(responseCode = "403", description = "본인이 초대한 게스트가 아닌 경우 취소할 수 없음")
+    @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
+    public BaseResponse<ExerciseCancelDTO.Response> cancelGuestInvitation(
+            @PathVariable Long exerciseId,
+            @PathVariable Long guestId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
+                exerciseId, guestId, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
@@ -211,12 +187,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "운동 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
     public BaseResponse<ExerciseDetailDTO.Response> getExerciseDetail(
-            @PathVariable Long exerciseId,
-            Authentication authentication
+            @PathVariable Long exerciseId
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
                 exerciseId, memberId);
@@ -230,12 +203,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "200", description = "내가 초대한 운동 게스트 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
     public BaseResponse<ExerciseMyGuestListDTO.Response> getMyInvitedGuests(
-            @PathVariable Long exerciseId,
-            Authentication authentication
+            @PathVariable Long exerciseId
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
                 exerciseId, memberId);
@@ -253,12 +223,9 @@ public class ExerciseController {
     public BaseResponse<PartyExerciseCalendarDTO.Response> getPartyExerciseCalender(
             @PathVariable Long partyId,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate,
-            Authentication authentication
+            @RequestParam(required = false) LocalDate endDate
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
                 partyId, memberId, startDate, endDate);
@@ -273,12 +240,9 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     public BaseResponse<MyExerciseCalendarDTO.Response> getMyExerciseCalender(
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate,
-            Authentication authentication
+            @RequestParam(required = false) LocalDate endDate
     ) {
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
                 memberId, startDate, endDate);
@@ -290,18 +254,14 @@ public class ExerciseController {
     @Operation(summary = "내 모임 운동 조회",
             description = "내 모임의 운동 목록을 조회합니다. 시작하지 않은 운동만 표시되며, 최대 6개의 운동만 반환합니다.")
     @ApiResponse(responseCode = "200", description = "내 모임 운동 조회 성공")
-    public BaseResponse<MyPartyExerciseDTO.Response> getMyPartyExercise(
-            Authentication authentication
-    ){
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+    public BaseResponse<MyPartyExerciseDTO.Response> getMyPartyExercise() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
-    
+
     @GetMapping("/exercises/parties/my/calendar")
     @Operation(summary = "내 모임 운동 캘린더 조회",
             description = """
@@ -314,12 +274,9 @@ public class ExerciseController {
     public BaseResponse<MyPartyExerciseCalendarDTO.Response> getMyPartyExerciseCalendar(
             @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType orderType,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate,
-            Authentication authentication
-    ){
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
                 memberId, orderType, startDate, endDate);
@@ -338,37 +295,30 @@ public class ExerciseController {
                     정렬 기준은 위치, 날짜, 시간 순입니다.
                     """)
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
-    public BaseResponse<ExerciseRecommendationDTO.Response> getRecommendedExercises(
-            Authentication authentication
-    ){
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+    public BaseResponse<ExerciseRecommendationDTO.Response> getRecommendedExercises() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
-    
+
     @GetMapping("/exercises/my")
     @Operation(summary = "내 참여 운동 조회",
             description = """
-                내가 참여한 운동 목록을 조회합니다.
-                필터: 전체(ALL), 참여 예정(UPCOMING), 참여 완료(COMPLETED)
-                정렬: 최신순(LATEST), 오래된순(OLDEST)
-                페이징을 지원합니다.
-                """)
+                    내가 참여한 운동 목록을 조회합니다.
+                    필터: 전체(ALL), 참여 예정(UPCOMING), 참여 완료(COMPLETED)
+                    정렬: 최신순(LATEST), 오래된순(OLDEST)
+                    페이징을 지원합니다.
+                    """)
     @ApiResponse(responseCode = "200", description = "내 참여 운동 조회 성공")
     @ApiResponse(responseCode = "400", description = "잘못된 필터 타입 또는 정렬 타입")
     public BaseResponse<MyExerciseListDTO.Response> getMyExercises(
             @RequestParam(defaultValue = "ALL") MyExerciseFilterType filterType,
             @RequestParam(defaultValue = "LATEST") MyExerciseOrderType orderType,
-            @PageableDefault(size = 15) Pageable pageable,
-            Authentication authentication
+            @PageableDefault(size = 15) Pageable pageable
     ) {
-        
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
                 memberId, filterType, orderType, pageable);
@@ -382,15 +332,13 @@ public class ExerciseController {
     public BaseResponse<ExerciseBuildingDetailDTO.Response> getBuildingExerciseDetails(
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @RequestParam String buildingName,
-            @RequestParam String streetAddr,
-            Authentication authentication
+            @RequestParam String streetAddr
     ) {
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L;
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseBuildingDetailDTO.Response response = exerciseQueryService
                 .getBuildingExerciseDetails(buildingName, streetAddr, date, memberId);
-      
+
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -402,11 +350,9 @@ public class ExerciseController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
-            @RequestParam(defaultValue = "3.0") Double radiusKm,
-            Authentication authentication
-    ){
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+            @RequestParam(defaultValue = "3.0") Double radiusKm
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseMapBuildingsDTO.Response response = exerciseQueryService
                 .getExerciseMapCalendarSummary(date, latitude, longitude, radiusKm, memberId);
@@ -433,10 +379,8 @@ public class ExerciseController {
             @RequestParam(required = false) List<ParticipationType> participationTypes,
             @RequestParam(required = false) List<ActivityTime> activityTimes,
             @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType sortType
-    ){
-
-        // TODO: JWT 인증 구현 후 교체 예정
-        Long memberId = 1L; // 임시값
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseRecommendationCalendarDTO.FilterSortType filterSortType =
                 ExerciseRecommendationCalendarDTO.FilterSortType.builder()

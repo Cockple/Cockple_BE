@@ -22,7 +22,6 @@ public enum ChatErrorCode implements BaseErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT203", "사용자를 찾을 수 없습니다."),
 
     // 3xx: 인증/인가 문제
-    NOT_CHAT_ROOM_MEMBER(HttpStatus.BAD_REQUEST, "CHAT301", "채팅방에 참여한 멤버가 아닙니다."),
     PARTY_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT302", "모임에 참여한 회원이 아닙니다.");
 
     private final HttpStatus httpStatus;

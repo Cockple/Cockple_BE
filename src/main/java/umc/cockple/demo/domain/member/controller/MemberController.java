@@ -65,6 +65,16 @@ public class MemberController {
     }
 
 
+    @PostMapping("/auth/dev-token")
+    @Operation(summary = "🌟🌟 개발자용 토큰 발급 🌟🌟", description = "특정 사용자로 accessToken, refreshToken을 발급합니다.")
+    public BaseResponse<KakaoLoginResponseDTO> issueDevToken() {
+
+        KakaoLoginResponseDTO dto = kakaoOauthService.createDevToken();
+
+        return BaseResponse.success(CommonSuccessCode.OK, dto);
+    }
+
+
     @PostMapping("/my/details")
     @Operation(summary = "로그인 후 상세 정보 받기 API",
             description = "로그인 후 추가적인 상세 정보를 받습니다.")
