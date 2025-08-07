@@ -6,8 +6,8 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.chat.dto.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -103,7 +103,6 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
-
     public WebSocketMessageDTO.Response toSendMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage, Member sender, String senderProfileImageUrl) {
         return WebSocketMessageDTO.Response.builder()
@@ -117,7 +116,7 @@ public class ChatConverter {
                 .createdAt(savedMessage.getCreatedAt())
                 .build();
     }
-  
+
     public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(
             ChatRoom chatRoom,
             String displayName,

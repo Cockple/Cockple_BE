@@ -30,7 +30,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     List<ChatRoomMember> findAllByMemberId(Long id);
 
-
     boolean existsByChatRoomAndMember(ChatRoom chatRoom, Member member);
 
     @Query("""
@@ -54,6 +53,5 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     List<ChatRoomMember> findChatRoomMembersWithMemberById(@Param("chatRoomId") Long chatRoomId);
 
     Boolean existsByChatRoomIdAndMemberId(Long roomId, Long memberId);
-
 }
 
