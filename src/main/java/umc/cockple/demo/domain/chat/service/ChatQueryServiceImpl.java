@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -25,7 +24,6 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,8 +42,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
         log.info("[모임 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsSortedByLastMessageOrCreatedAt(memberId, pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Slice<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsByOrderByLastMsgIdDesc(memberId, pageable);
         PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
         log.info("[모임 채팅방 목록 조회 완료]");
         return response;
@@ -54,7 +52,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     @Override
     public PartyChatRoomDTO.Response searchPartyChatRoomsByName(Long memberId, String name, int page, int size) {
         log.info("[모임 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Pageable pageable = PageRequest.of(page, size);
         Slice<ChatRoom> chatRooms = chatRoomRepository.searchPartyChatRoomsByName(memberId, name, pageable);
         PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
         log.info("[모임 채팅방 이름 검색 완료]");
@@ -91,19 +89,15 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
-                    int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
                     ChatRoomMember chatRoomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
-                    boolean isPartyMember = chatRoom.getParty().getMemberParties().stream()
-                            .anyMatch(mp -> mp.getMember().equals(chatRoomMember.getMember()));
-                    if (!isPartyMember) {
-                        throw new ChatException(ChatErrorCode.PARTY_MEMBER_NOT_FOUND);
-                    }
 
+                    int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
                     Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
                     int unreadCount = (lastReadMessageId == null)
                             ? 0
                             : chatMessageRepository.countUnreadMessages(chatRoomId, lastReadMessageId);
+
                     ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
 

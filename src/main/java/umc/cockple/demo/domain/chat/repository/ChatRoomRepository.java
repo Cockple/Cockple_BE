@@ -15,30 +15,29 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("""
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
-            LEFT JOIN (
-                SELECT cm.chatRoom.id as roomId, MAX(cm.createdAt) as lastMsgTime
-                FROM ChatMessage cm
-                GROUP BY cm.chatRoom.id
-            ) AS msg ON msg.roomId = cr.id
             WHERE crm.member.id = :memberId
-            ORDER BY COALESCE(msg.lastMsgTime, cr.createdAt) DESC
+            ORDER BY (
+                SELECT MAX(cm.id)
+                FROM ChatMessage cm
+                WHERE cm.chatRoom.id = cr.id
+            ) DESC
             """)
-    Slice<ChatRoom> findChatRoomsSortedByLastMessageOrCreatedAt(
+    Slice<ChatRoom> findChatRoomsByOrderByLastMsgIdDesc(
             @Param("memberId") Long memberId,
             Pageable pageable
     );
 
+
     @Query("""
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
-            LEFT JOIN (
-                SELECT cm.chatRoom.id as roomId, MAX(cm.createdAt) as lastMsgTime
-                FROM ChatMessage cm
-                GROUP BY cm.chatRoom.id
-            ) msg ON msg.roomId = cr.id
             WHERE crm.member.id = :memberId
               AND cr.party.partyName LIKE %:name%
-            ORDER BY COALESCE(msg.lastMsgTime, cr.createdAt) DESC
+            ORDER BY (
+                SELECT MAX(cm.id)
+                FROM ChatMessage cm
+                WHERE cm.chatRoom.id = cr.id
+            ) DESC
             """)
     Slice<ChatRoom> searchPartyChatRoomsByName(
             @Param("memberId") Long memberId,

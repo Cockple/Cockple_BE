@@ -31,8 +31,8 @@ public class ChatConverter {
                                                              String imgUrl) {
         return PartyChatRoomDTO.ChatRoomInfo.builder()
                 .chatRoomId(chatRoom.getId())
-                .partyId(chatRoom.getId())
-                .partyName(chatRoom.getName())
+                .partyId(chatRoom.getParty().getId())
+                .partyName(chatRoom.getParty().getPartyName())
                 .partyImgUrl(imgUrl)
                 .memberCount(memberCount)
                 .unreadCount(unreadCount)
