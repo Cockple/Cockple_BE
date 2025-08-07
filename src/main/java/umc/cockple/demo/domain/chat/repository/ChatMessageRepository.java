@@ -34,4 +34,17 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findRecentMessagesWithImages(
             @Param("chatRoomId") Long chatRoomId,
             Pageable pageable);
+
+    @Query("""
+            SELECT m FROM ChatMessage m
+            JOIN FETCH m.sender
+            LEFT JOIN FETCH m.chatMessageImgs
+            WHERE m.chatRoom.id = :chatRoomId
+            AND m.id < :cursor
+            ORDER BY m.createdAt DESC
+            """)
+    List<ChatMessage> findByRoomIdAndIdLessThanOrderByCreatedAtDesc(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("cursor") Long cursor,
+            Pageable pageable);
 }

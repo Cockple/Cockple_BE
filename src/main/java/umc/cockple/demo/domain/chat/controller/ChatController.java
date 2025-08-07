@@ -6,10 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
@@ -107,11 +104,24 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ChatRoomDetailDTO.Response> getChatRoomDetail(
             @PathVariable Long roomId
-    ){
+    ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
 
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/rooms/{roomId}/messages/previous")
+    @Operation(summary = "채팅방 과거 메시지 조회", description = "채팅방의 과거 메시지를 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatMessageDTO.Response> getChatMessages(
+            @PathVariable Long roomId,
+            @RequestParam Long cursor,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatMessageDTO.Response response = chatQueryService.getChatMessages(roomId, memberId, cursor, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }

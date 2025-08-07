@@ -1,16 +1,17 @@
 package umc.cockple.demo.domain.chat.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class ChatQueryServiceImpl implements ChatQueryService {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -96,7 +97,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
 
-        if(!recentMessages.isEmpty()){
+        if (!recentMessages.isEmpty()) {
             ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
             updateLastReadMessage(myMembership, lastMessage.getId());
         }
@@ -105,6 +106,40 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 messageInfos.size(), memberInfos.size());
 
         return chatConverter.toChatRoomDetailResponse(roomInfo, messageInfos, memberInfos);
+    }
+
+    @Override
+    public ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size) {
+        log.info("[채팅방 과거 메시지 조회 시작] - 채팅방 Id: {}, 멤버 Id: {}, 마지막으로 조회된 메시지 Id: {}, size: {}",
+                roomId, memberId, cursor, size);
+
+        validateChatRoomAccess(roomId, memberId);
+
+        Pageable pageable = PageRequest.of(0, size+1);
+        List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, pageable);
+
+        boolean hasNext = messages.size() > size;
+        if (hasNext) {
+            messages = messages.subList(0, size);
+        }
+
+        Collections.reverse(messages);
+
+        List<ChatMessageDTO.MessageInfo> messageInfos = buildPreviousMessageInfos(memberId, messages);
+
+        Long nextCursor = hasNext && !messages.isEmpty()
+                ? messages.get(0).getId() : null;
+
+        log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", messages.size(), hasNext);
+
+        return chatConverter.toChatMessageResponse(messageInfos, hasNext, nextCursor);
+    }
+
+    // ========== 검증 로직 ==========
+
+    private void validateChatRoomAccess(Long roomId, Long memberId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
+            throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
     }
 
     // ========== 비즈니스 로직 ==========
@@ -222,7 +257,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private List<ChatRoomDetailDTO.MessageInfo> buildMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
         return recentMessages.stream()
                 .map(message -> buildMessageInfo(message, memberId))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private List<ChatMessageDTO.MessageInfo> buildPreviousMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
+        return recentMessages.stream()
+                .map(message -> buildPreviousMessageInfo(message, memberId))
+                .toList();
     }
 
     private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
@@ -238,6 +279,26 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         boolean isMyMessage = sender.getId().equals(currentUserId);
 
         return chatConverter.toChatRoomDetailMessageInfo(
+                message,
+                sender,
+                senderProfileImageUrl,
+                imageUrls,
+                isMyMessage);
+    }
+
+    private ChatMessageDTO.MessageInfo buildPreviousMessageInfo(ChatMessage message, Long currentUserId) {
+        Member sender = message.getSender();
+
+        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
+
+        List<String> imageUrls = message.getChatMessageImgs().stream()
+                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
+                .map(this::getImageUrl)
+                .toList();
+
+        boolean isMyMessage = sender.getId().equals(currentUserId);
+
+        return chatConverter.toPreviousMessageInfo(
                 message,
                 sender,
                 senderProfileImageUrl,
@@ -309,5 +370,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
         return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
+    }
+
+    private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
+        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
     }
 }
