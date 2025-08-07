@@ -241,7 +241,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         PartyInvitation newInvitation = PartyInvitation.create(party, inviter, invitee);
         PartyInvitation savedPartyInvitation = partyInvitationRepository.save(newInvitation);
 
-        createNotification(invitee, partyId, NotificationTarget.PARTY_INVITE);
+        createInviteNotification(invitee, partyId, NotificationTarget.PARTY_INVITE, savedPartyInvitation.getId());
 
         log.info("멤버 초대 완료 - PartyInvitation: {}", savedPartyInvitation.getId());
         return partyConverter.toInviteResponseDTO(savedPartyInvitation);
@@ -527,11 +527,23 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         invitation.updateStatus(RequestStatus.REJECTED);
     }
 
+    //알림 생성
     private void createNotification(Member member, Long partyId, NotificationTarget notificationTarget) {
         CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                 .member(member)
                 .partyId(partyId)
                 .target(notificationTarget)
+                .build();
+        notificationCommandService.createNotification(dto);
+    }
+
+    //알림 생성 (INVITE 타입)
+    private void createInviteNotification(Member member, Long partyId, NotificationTarget notificationTarget, Long inviteId) {
+        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                .member(member)
+                .partyId(partyId)
+                .target(notificationTarget)
+                .invitationId(inviteId)
                 .build();
         notificationCommandService.createNotification(dto);
     }
