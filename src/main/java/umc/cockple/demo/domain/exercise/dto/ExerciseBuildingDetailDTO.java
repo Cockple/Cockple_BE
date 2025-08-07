@@ -22,7 +22,7 @@ public class ExerciseBuildingDetailDTO {
             Long exerciseId,
             Long partyId,
             String partyName,
-            String partyImgUrl,
+            String profileImageUrl,
             Boolean isBookmarked,
             LocalTime startTime,
             LocalTime endTime

@@ -100,4 +100,12 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             @Param("direction") String direction,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT cr FROM ChatRoom cr
+            JOIN FETCH cr.party p
+            LEFT JOIN FETCH p.partyImg img
+            WHERE cr.id = :roomId
+            """)
+    Optional<ChatRoom> findChatRoomWithPartyById(@Param("roomId") Long roomId);
 }

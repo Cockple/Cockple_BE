@@ -9,8 +9,10 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -21,9 +23,12 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,7 +84,35 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return response;
     }
 
-    // ========== 비지니스 로직 ==========
+    @Override
+    public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
+        log.info("[초기 채팅방 조회 시작] - roomId: {}, memberId: {}", roomId, memberId);
+
+        ChatRoom chatRoom = findChatRoomWithPartyOrThrow(roomId);
+        ChatRoomMember myMembership = findChatRoomMembershipOrThrow(roomId, memberId);
+
+        ChatRoomDetailDTO.ChatRoomInfo roomInfo = buildChatRoomInfo(chatRoom, myMembership);
+
+        Pageable pageable = PageRequest.of(0, 50);
+        List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
+        Collections.reverse(recentMessages);
+        List<ChatRoomDetailDTO.MessageInfo> messageInfos = buildMessageInfos(memberId, recentMessages);
+
+        List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
+        List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
+
+        if(!recentMessages.isEmpty()){
+            ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
+            updateLastReadMessage(myMembership, lastMessage.getId());
+        }
+
+        log.info("[초기 채팅방 조회 완료] - 메시지 수: {}, 참여자 수: {}",
+                messageInfos.size(), memberInfos.size());
+
+        return chatConverter.toChatRoomDetailResponse(roomInfo, messageInfos, memberInfos);
+    }
+
+    // ========== 비즈니스 로직 ==========
     private PartyChatRoomDTO.Response toPartyChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
@@ -113,14 +146,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         return chatConverter.toPartyChatRoomListResponse(roomInfos, chatRooms.hasNext());
     }
-
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
-    }
-
 
     private DirectChatRoomDTO.Response toDirectChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
@@ -164,10 +189,121 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatConverter.toDirectChatRoomListResponse(roomInfos);
     }
 
+    private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {
+        String displayName;
+        String profileImageUrl = null;
+
+        if (chatRoom.getType() == ChatRoomType.DIRECT) {
+            ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
+            Member member = counterPart.getMember();
+
+            displayName = member.getMemberName();
+            profileImageUrl = getImageUrl(member.getProfileImg());
+        } else {
+            displayName = chatRoom.getName();
+            profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
+        }
+
+        int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoom.getId());
+        Long lastReadMessageId = myMembership.getLastReadMessageId();
+
+        return chatConverter.toChatRoomDetailChatRoomInfo(
+                chatRoom,
+                displayName,
+                profileImageUrl,
+                memberCount,
+                lastReadMessageId);
+    }
+
+    private List<ChatRoomDetailDTO.MessageInfo> buildMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
+        return recentMessages.stream()
+                .map(message -> buildMessageInfo(message, memberId))
+                .collect(Collectors.toList());
+    }
+
+    private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
+        Member sender = message.getSender();
+
+        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
+
+        List<String> imageUrls = message.getChatMessageImgs().stream()
+                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
+                .map(this::getImageUrl)
+                .toList();
+
+        boolean isMyMessage = sender.getId().equals(currentUserId);
+
+        return chatConverter.toChatRoomDetailMessageInfo(
+                message,
+                sender,
+                senderProfileImageUrl,
+                imageUrls,
+                isMyMessage);
+    }
+
+    private List<ChatRoomDetailDTO.MemberInfo> buildMemberInfos(List<ChatRoomMember> participants) {
+        return participants.stream()
+                .map(this::buildMemberInfo)
+                .toList();
+    }
+
+    private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
+        Member member = chatRoomMember.getMember();
+        String memberProfileImgUrl = getImageUrl(member.getProfileImg());
+
+        return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
+    }
+
+    private void updateLastReadMessage(ChatRoomMember myMembership, Long messageId) {
+        myMembership.updateLastReadMessageId(messageId);
+        chatRoomMemberRepository.save(myMembership);
+    }
+
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
     private String getImageUrl(ProfileImg profileImg) {
         if (profileImg == null || profileImg.getImgKey() == null) {
             return null;
         }
         return imageService.getUrlFromKey(profileImg.getImgKey());
+    }
+
+    private String getImageUrl(ChatMessageImg chatMessageImg) {
+        if (chatMessageImg != null && chatMessageImg.getImgKey() != null && !chatMessageImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(chatMessageImg.getImgKey());
+        }
+        return null;
+    }
+
+    // ========== 조회 메서드 ==========
+
+    private ChatRoom findChatRoomWithPartyOrThrow(Long roomId) {
+        return chatRoomRepository.findChatRoomWithPartyById(roomId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private ChatRoomMember findChatRoomMembershipOrThrow(Long roomId, Long memberId) {
+        return chatRoomMemberRepository
+                .findByChatRoomIdAndMemberId(roomId, memberId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+    }
+
+    private ChatRoomMember findCounterPartWithMemberOrThrow(ChatRoom chatRoom, ChatRoomMember myMembership) {
+        return chatRoomMemberRepository
+                .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+    }
+
+    private List<ChatRoomMember> findChatRoomMembersWithMemberOrThrow(Long roomId) {
+        return chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId);
+    }
+
+    private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
+        return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
     }
 }
