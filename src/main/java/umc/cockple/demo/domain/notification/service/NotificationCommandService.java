@@ -73,8 +73,9 @@ public class NotificationCommandService {
                     .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
 
             Map<String, Object> context = new HashMap<>();
-            context.put("exerciseId", dto.exerciseId());
-            context.put("exerciseDate", dto.exerciseDate());
+            if (dto.exerciseId() != null) context.put("exerciseId", dto.exerciseId());
+            if (dto.exerciseDate() != null) context.put("exerciseDate", dto.exerciseDate());
+            if (dto.invitationId() != null) context.put("invitationId", dto.invitationId());
 
             String content;
             String title = party.getPartyName();
