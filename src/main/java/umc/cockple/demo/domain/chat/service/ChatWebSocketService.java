@@ -70,7 +70,7 @@ public class ChatWebSocketService {
 
     private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
         if (!chatRoomMemberRepository.existsByChatRoomAndMember(chatRoom, member))
-            throw new ChatException(ChatErrorCode.NOT_CHAT_ROOM_MEMBER);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
     }
 
     private String getImageUrl(ProfileImg profileImg) {
