@@ -15,6 +15,9 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
+import umc.cockple.demo.domain.notification.enums.NotificationTarget;
+import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.*;
 import umc.cockple.demo.domain.party.dto.*;
@@ -30,6 +33,7 @@ import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.*;
 
+import java.awt.*;
 import java.util.List;
 
 @Service
@@ -47,6 +51,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
+    private final NotificationCommandService notificationCommandService;
 
     @Override
     public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
@@ -92,12 +97,15 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //모임 조회
         Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
 
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
 
         //비즈니스 로직 수행
         party.update(request);
+
+        createNotification(member, partyId, NotificationTarget.PARTY_MODIFY);
 
         log.info("모임 정보 수정 완료 - partyId: {}", partyId);
     }
@@ -108,6 +116,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //모임 조회
         Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
 
         //모임 활성화 검증
         validatePartyIsActive(party);
@@ -116,6 +125,8 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //Party 엔티티의 상태를 INACTIVE로 변경
         party.delete();
+
+        createNotification(member, partyId, NotificationTarget.PARTY_DELETE);
 
         log.info("모임 삭제 완료 - partyId: {}", partyId);
     }
@@ -230,9 +241,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         PartyInvitation newInvitation = PartyInvitation.create(party, inviter, invitee);
         PartyInvitation savedPartyInvitation = partyInvitationRepository.save(newInvitation);
 
-        //TODO: 초대받은 사용자에게 알림을 보내는 로직 추가
-        log.info("멤버 초대 완료 - PartyInvitation: {}", savedPartyInvitation.getId());
+        createInviteNotification(invitee, partyId, NotificationTarget.PARTY_INVITE, savedPartyInvitation.getId());
 
+        log.info("멤버 초대 완료 - PartyInvitation: {}", savedPartyInvitation.getId());
         return partyConverter.toInviteResponseDTO(savedPartyInvitation);
     }
 
@@ -514,6 +525,27 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
+    }
+
+    //알림 생성
+    private void createNotification(Member member, Long partyId, NotificationTarget notificationTarget) {
+        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                .member(member)
+                .partyId(partyId)
+                .target(notificationTarget)
+                .build();
+        notificationCommandService.createNotification(dto);
+    }
+
+    //알림 생성 (INVITE 타입)
+    private void createInviteNotification(Member member, Long partyId, NotificationTarget notificationTarget, Long inviteId) {
+        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                .member(member)
+                .partyId(partyId)
+                .target(notificationTarget)
+                .invitationId(inviteId)
+                .build();
+        notificationCommandService.createNotification(dto);
     }
 
     private void JoinPartyChatRoom(Long partyId, Member member) {
