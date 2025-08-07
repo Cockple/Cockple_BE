@@ -27,7 +27,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             Pageable pageable
     );
 
-
     @Query("""
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
@@ -44,7 +43,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             @Param("name") String name,
             Pageable pageable
     );
-
 
     ChatRoom findByPartyId(Long partyId);
 

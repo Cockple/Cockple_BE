@@ -45,4 +45,12 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
             """)
     Optional<Member> findMemberWithAddresses(Long memberId);
 
+    @Query("""
+            SELECT m FROM Member m
+            LEFT JOIN FETCH m.profileImg 
+            WHERE m.id = :memberId
+            AND m.isActive = 'ACTIVE'
+            """)
+    Optional<Member> findMemberWithProfileById(@Param("memberId") Long memberId);
+
 }
