@@ -77,7 +77,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         ChatRoom newChatRoom = chatRoomRepository.save(ChatRoom.builder()
                 .party(savedParty)
                 .type(ChatRoomType.PARTY)
-                .name(savedParty.getPartyName())
                 .build());
         chatRoomMemberRepository.save(ChatRoomMember.builder()
                 .chatRoom(newChatRoom)
