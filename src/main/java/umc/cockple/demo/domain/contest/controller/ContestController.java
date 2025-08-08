@@ -109,11 +109,11 @@ public class ContestController {
     @Operation(summary = "다른 사람의 대회 기록 상세 조회", description = "다른 사람의 대회 기록 하나를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ContestRecordDetailDTO.Response> getOtherMemberContestRecordDetail(
-            @PathVariable Long targetMemberId,
+            @PathVariable Long memberId,
             @PathVariable Long contestId
     ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-        ContestRecordDetailDTO.Response response = contestQueryService.getContestRecordDetail(memberId, targetMemberId, contestId);
+        Long loginMemberId = SecurityUtil.getCurrentMemberId();
+        ContestRecordDetailDTO.Response response = contestQueryService.getContestRecordDetail(loginMemberId, memberId, contestId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -137,9 +137,9 @@ public class ContestController {
     @Operation(summary = "다른 사람의 대회 메달 조회", description = "회원이 다른 사람의 메달 개수를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ContestMedalSummaryDTO.Response> getOtherMemberMedals(
-            @RequestParam Long targetMemberId
+            @RequestParam Long memberId
     ) {
-        ContestMedalSummaryDTO.Response response = contestQueryService.getMyMedalSummary(targetMemberId);
+        ContestMedalSummaryDTO.Response response = contestQueryService.getMyMedalSummary(memberId);
         return BaseResponse.success(CommonSuccessCode.OK,response);
     }
 }
