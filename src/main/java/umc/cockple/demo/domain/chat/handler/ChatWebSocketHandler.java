@@ -206,6 +206,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            chatRoomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
+                    .put(memberId, session);
+
+            log.info("채팅방 구독 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+
+            sendSubscribeSuccessMessage(session, chatRoomId, memberId);
         } catch (Exception e) {
             log.error("채팅방 구독 중 예상치 못한 오류 발생", e);
             sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
