@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.chat.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.TextMessage;
@@ -316,6 +317,107 @@ class ChatWebSocketHandlerTest {
         // Then
         assertThat(handler.isMemberInChatRoomForTest(chatRoomId, memberId)).isFalse();
         verify(session).sendMessage(any(TextMessage.class)); // 에러 메시지 전송됨
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("구독 후 메시지 수신 - 완전한 플로우")
+    void subscribeAndReceiveMessage_CompleteFlow() throws Exception {
+        // Given
+        Long chatRoomId = 1L;
+        Long senderId = 100L;
+        Long receiverId = 200L;
+
+        Map<String, Object> senderAttributes = new HashMap<>();
+        Map<String, Object> receiverAttributes = new HashMap<>();
+        senderAttributes.put("memberId", senderId);
+        receiverAttributes.put("memberId", receiverId);
+
+        // 두 사용자 모두 채팅방에 구독
+        handler.addChatRoomSessionForTest(chatRoomId, senderId, session1);
+        handler.addChatRoomSessionForTest(chatRoomId, receiverId, session2);
+
+        when(session1.getAttributes()).thenReturn(senderAttributes);
+        when(session1.isOpen()).thenReturn(true);
+        when(session1.getId()).thenReturn("sender-session");
+        when(session2.isOpen()).thenReturn(true);
+        when(session2.getId()).thenReturn("receiver-session");
+
+        // 메시지 전송 시뮬레이션
+        String messageContent = "구독 후 첫 메시지입니다!";
+        String sendMessagePayload = String.format("""
+            {
+                "type": "SEND",
+                "chatRoomId": %d,
+                "content": "%s"
+            }
+            """, chatRoomId, messageContent);
+
+        WebSocketMessageDTO.Request sendRequest = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SEND, chatRoomId, "구독 후 첫 메시지입니다!"
+        );
+
+        WebSocketMessageDTO.Response messageResponse = WebSocketMessageDTO.Response.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(chatRoomId)
+                .senderId(senderId)
+                .senderName("발신자")
+                .senderProfileImageUrl("http://test-profile.jpg")
+                .content(messageContent)
+                .messageId(999L)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // JSON 직렬화된 메시지 내용 설정
+        String expectedBroadcastJson = String.format("""
+            {
+                "type": "SEND",
+                "chatRoomId": %d,
+                "messageId": 999,
+                "senderId": %d,
+                "senderName": "발신자",
+                "senderProfileImageUrl": "http://test-profile.jpg",
+                "content": "%s",
+                "createdAt": "2024-01-01T12:00:00"
+            }
+            """, chatRoomId, senderId, messageContent);
+
+        when(objectMapper.readValue(sendMessagePayload, WebSocketMessageDTO.Request.class))
+                .thenReturn(sendRequest);
+        when(chatWebSocketService.sendMessage(chatRoomId, "구독 후 첫 메시지입니다!", senderId))
+                .thenReturn(messageResponse);
+        when(objectMapper.writeValueAsString(messageResponse))
+                .thenReturn(expectedBroadcastJson);
+
+        TextMessage sendMessage = new TextMessage(sendMessagePayload);
+
+        // When
+        handler.handleTextMessage(session1, sendMessage);
+
+        // Then
+        // 1. 서비스 호출 확인
+        verify(chatWebSocketService).sendMessage(chatRoomId, messageContent, senderId);
+
+        // 2. ArgumentCaptor로 receiver가 받은 메시지 내용 검증
+        ArgumentCaptor<TextMessage> senderMessageCaptor = ArgumentCaptor.forClass(TextMessage.class);
+        ArgumentCaptor<TextMessage> receiverMessageCaptor = ArgumentCaptor.forClass(TextMessage.class);
+
+        verify(session1, timeout(1000)).sendMessage(senderMessageCaptor.capture());
+        verify(session2, timeout(1000)).sendMessage(receiverMessageCaptor.capture());
+
+        // 3. 발신자가 받은 메시지 검증 (자신이 보낸 메시지도 받음)
+        TextMessage senderReceivedMessage = senderMessageCaptor.getValue();
+        assertThat(senderReceivedMessage.getPayload()).isEqualTo(expectedBroadcastJson);
+
+        // 4. 수신자가 받은 메시지 내용 정확히 검증
+        TextMessage receiverReceivedMessage = receiverMessageCaptor.getValue();
+        assertThat(receiverReceivedMessage.getPayload()).isEqualTo(expectedBroadcastJson);
+
+        // 5. JSON 파싱해서 세부 내용까지 검증
+        assertThat(receiverReceivedMessage.getPayload()).contains(messageContent);
+        assertThat(receiverReceivedMessage.getPayload()).contains("\"senderId\": " + senderId);
+        assertThat(receiverReceivedMessage.getPayload()).contains("\"chatRoomId\": " + chatRoomId);
+        assertThat(receiverReceivedMessage.getPayload()).contains("\"type\": \"SEND\"");
     }
 
 }
