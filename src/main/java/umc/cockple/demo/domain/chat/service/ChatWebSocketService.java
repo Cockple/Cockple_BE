@@ -54,10 +54,12 @@ public class ChatWebSocketService {
         return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
     }
 
+    public void validateSubscribe(Long chatRoomId, Long memberId) {
+        validateChatRoom(chatRoomId);
+    }
+
     private void validateInput(Long chatRoomId, String content) {
-        if (chatRoomId == null) {
-            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
-        }
+        validateChatRoom(chatRoomId);
 
         if (content == null || content.trim().isEmpty()) {
             throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
@@ -65,6 +67,12 @@ public class ChatWebSocketService {
 
         if (content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
+        }
+    }
+
+    private void validateChatRoom(Long chatRoomId){
+        if (chatRoomId == null) {
+            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
         }
     }
 

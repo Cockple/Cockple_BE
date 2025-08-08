@@ -196,6 +196,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("채팅방 ID: {}, 사용자 ID: {}", request.chatRoomId(), memberId);
 
         try {
+            Long chatRoomId = request.chatRoomId();
+            chatWebSocketService.validateSubscribe(chatRoomId, memberId);
+
+            Map<Long, WebSocketSession> roomSessions = chatRoomSessions.get(chatRoomId);
+            if (roomSessions != null && roomSessions.containsKey(memberId)) {
+                log.info("이미 구독 중인 채팅방 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+                sendSubscribeSuccessMessage(session, chatRoomId, memberId);
+                return;
+            }
 
         } catch (Exception e) {
             log.error("채팅방 구독 중 예상치 못한 오류 발생", e);
@@ -259,6 +268,28 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 chatRoomSessions.remove(chatRoomId);
                 log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
             }
+        }
+    }
+
+    private void sendSubscribeSuccessMessage(WebSocketSession session, Long chatRoomId, Long memberId) {
+        try {
+            WebSocketMessageDTO.Response subscribeResponse = WebSocketMessageDTO.Response.builder()
+                    .type(WebSocketMessageType.SUBSCRIBE)
+                    .chatRoomId(chatRoomId)
+                    .messageId(null)
+                    .content("채팅방 구독이 완료되었습니다.")
+                    .senderId(memberId)
+                    .senderName(null)
+                    .senderProfileImageUrl(null)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            String messageJson = objectMapper.writeValueAsString(subscribeResponse);
+            session.sendMessage(new TextMessage(messageJson));
+
+            log.info("구독 성공 메시지 전송 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+        } catch (Exception e) {
+            log.error("구독 성공 메시지 전송 실패", e);
         }
     }
 
