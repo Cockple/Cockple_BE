@@ -235,7 +235,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             displayName = member.getMemberName();
             profileImageUrl = getImageUrl(member.getProfileImg());
         } else {
-            displayName = chatRoom.getName();
+            displayName = chatRoom.getParty().getPartyName();
             profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
         }
 
