@@ -121,7 +121,7 @@ public class ContestController {
     @Operation(summary = "다른 사람의 대회 기록 리스트 조회", description = "회원이 다른 사람의 전체 또는 미입상(NONE) 대회 기록 리스트를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<List<ContestRecordSimpleDTO.Response>> getOtherMemberContestRecord(
-            @RequestParam Long targetMemberId,
+            @RequestParam Long memeberId,
             @Parameter(
                     name = "medalType",
                     description = "전체 or NONE",
@@ -129,7 +129,7 @@ public class ContestController {
             )
             @RequestParam(required = false) MedalType medalType
     ) {
-        List<ContestRecordSimpleDTO.Response> response = contestQueryService.getMyContestRecordsByMedalType(targetMemberId, medalType);
+        List<ContestRecordSimpleDTO.Response> response = contestQueryService.getMyContestRecordsByMedalType(memeberId, medalType);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
