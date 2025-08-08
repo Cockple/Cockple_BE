@@ -9,6 +9,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
 import java.net.URI;
@@ -273,6 +275,47 @@ class ChatWebSocketHandlerTest {
         verify(chatWebSocketService).validateSubscribe(chatRoomId, memberId); // 구독 검증 로직 작동 확인
         assertThat(handler.isMemberInChatRoomForTest(chatRoomId, memberId)).isTrue(); // 멤버가 채팅방에 들어갔는지 확인
         verify(session).sendMessage(any(TextMessage.class)); // 메시지가 정상적으로 전송됐는지 확인
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("채팅방 구독 실패 - 권한 없는 사용자")
+    void handleSubscribe_Unauthorized_Failure() throws Exception {
+        // Given
+        Long chatRoomId = 1L;
+        Long memberId = 123L;
+        sessionAttributes.put("memberId", memberId);
+
+        String subscribePayload = """
+            {
+                "type": "SUBSCRIBE",
+                "chatRoomId": 1,
+                "content": null
+            }
+            """;
+
+        TextMessage textMessage = new TextMessage(subscribePayload);
+
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE, chatRoomId, null
+        );
+
+        // 멤버와 채팅방으로 조회할 수 없음 에러 발생시키기
+        doThrow(new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND))
+                .when(chatWebSocketService).validateSubscribe(chatRoomId, memberId);
+
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+        when(session.isOpen()).thenReturn(true);
+        when(objectMapper.readValue(subscribePayload, WebSocketMessageDTO.Request.class))
+                .thenReturn(request);
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+
+        // When
+        handler.handleTextMessage(session, textMessage);
+
+        // Then
+        assertThat(handler.isMemberInChatRoomForTest(chatRoomId, memberId)).isFalse();
+        verify(session).sendMessage(any(TextMessage.class)); // 에러 메시지 전송됨
     }
 
 }
