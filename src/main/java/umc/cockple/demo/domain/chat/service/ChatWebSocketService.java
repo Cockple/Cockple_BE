@@ -37,13 +37,11 @@ public class ChatWebSocketService {
     public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
-        validateInput(chatRoomId, content);
+        validateSendMessage(chatRoomId, content, senderId);
 
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberWithProfileOrThrow(senderId);
         String profileImageUrl = getImageUrl(sender.getProfileImg());
-
-        validateChatRoomMember(chatRoom, sender);
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
@@ -56,11 +54,24 @@ public class ChatWebSocketService {
 
     public void validateSubscribe(Long chatRoomId, Long memberId) {
         validateChatRoom(chatRoomId);
+        validateChatRoomAccess(chatRoomId, memberId);
     }
 
-    private void validateInput(Long chatRoomId, String content) {
-        validateChatRoom(chatRoomId);
+    // ========== 내부 검증 메서드 ==========
 
+    private void validateSendMessage(Long chatRoomId, String content, Long senderId) {
+        validateChatRoom(chatRoomId);
+        validateMessageContent(content);
+        validateChatRoomAccess(chatRoomId, senderId);
+    }
+
+    private void validateChatRoom(Long chatRoomId){
+        if (chatRoomId == null) {
+            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
+        }
+    }
+
+    private void validateMessageContent(String content) {
         if (content == null || content.trim().isEmpty()) {
             throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
         }
@@ -70,14 +81,8 @@ public class ChatWebSocketService {
         }
     }
 
-    private void validateChatRoom(Long chatRoomId){
-        if (chatRoomId == null) {
-            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
-        }
-    }
-
-    private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
-        if (!chatRoomMemberRepository.existsByChatRoomAndMember(chatRoom, member))
+    private void validateChatRoomAccess(Long chatRoomId, Long memberId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
             throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
     }
 
@@ -87,6 +92,8 @@ public class ChatWebSocketService {
         }
         return null;
     }
+
+    // ========== 조회 메서드 ==========
 
     private ChatRoom findChatRoomOrThrow(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
