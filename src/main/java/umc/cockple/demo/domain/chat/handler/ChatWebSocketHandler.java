@@ -76,6 +76,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 case SEND:
                     handleSendMessage(session, request, memberId);
                     break;
+                case SUBSCRIBE:
+                    handleSubscribe(session, request, memberId);
+                    break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }
@@ -184,6 +187,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             sendErrorMessage(session, e.getCode().toString(), e.getMessage());
         } catch (Exception e) {
             log.error("메시지 전송 중 예상치 못한 오류 발생", e);
+            sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
+        }
+    }
+
+    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        log.info("채팅방 구독 처리 시작");
+        log.info("채팅방 ID: {}, 사용자 ID: {}", request.chatRoomId(), memberId);
+
+        try {
+
+        } catch (Exception e) {
+            log.error("채팅방 구독 중 예상치 못한 오류 발생", e);
             sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
         }
     }
