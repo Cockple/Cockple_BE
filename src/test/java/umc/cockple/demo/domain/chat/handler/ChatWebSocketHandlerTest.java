@@ -235,4 +235,44 @@ class ChatWebSocketHandlerTest {
         verify(session1, timeout(2000)).sendMessage(any(TextMessage.class));
         verify(session2, timeout(2000)).sendMessage(any(TextMessage.class));
     }
+
+    @Test
+    @Order(6)
+    @DisplayName("채팅방 구독 성공 - 새로운 사용자")
+    void handleSubscribe_NewUser_Success() throws Exception {
+        // Given
+        Long chatRoomId = 1L;
+        Long memberId = 123L;
+        sessionAttributes.put("memberId", memberId);
+
+        String subscribePayload = """
+            {
+                "type": "SUBSCRIBE",
+                "chatRoomId": 1,
+                "content": null
+            }
+            """;
+
+        TextMessage textMessage = new TextMessage(subscribePayload);
+
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE, chatRoomId, null
+        );
+
+        // Mock 설정
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+        when(session.getId()).thenReturn("test-session-id");
+        when(objectMapper.readValue(subscribePayload, WebSocketMessageDTO.Request.class))
+                .thenReturn(request);
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+
+        // When
+        handler.handleTextMessage(session, textMessage);
+
+        // Then
+        verify(chatWebSocketService).validateSubscribe(chatRoomId, memberId); // 구독 검증 로직 작동 확인
+        assertThat(handler.isMemberInChatRoomForTest(chatRoomId, memberId)).isTrue(); // 멤버가 채팅방에 들어갔는지 확인
+        verify(session).sendMessage(any(TextMessage.class)); // 메시지가 정상적으로 전송됐는지 확인
+    }
+
 }
