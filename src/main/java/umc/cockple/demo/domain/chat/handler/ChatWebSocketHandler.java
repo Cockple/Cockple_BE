@@ -134,7 +134,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void sendConnectionSuccessMessage(WebSocketSession session, Long memberId) {
         try {
             WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
-                    .type("CONNECTION")
+                    .type(WebSocketMessageType.CONNECT)
                     .memberId(memberId)
                     .connectedAt(LocalDateTime.now())
                     .message("WebSocket 연결이 성공했습니다.")

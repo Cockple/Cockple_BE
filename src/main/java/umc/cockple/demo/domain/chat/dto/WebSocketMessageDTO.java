@@ -16,7 +16,7 @@ public class WebSocketMessageDTO {
 
     @Builder
     public record ConnectionInfo(
-            String type,
+            WebSocketMessageType type,
             Long memberId,
             String memberName,
             LocalDateTime connectedAt,
