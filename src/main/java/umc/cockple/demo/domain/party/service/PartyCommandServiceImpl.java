@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.party.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -25,6 +26,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -51,7 +53,10 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
+
     private final NotificationCommandService notificationCommandService;
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
@@ -83,6 +88,10 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .member(owner)
                 .build());
         log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", newChatRoom.getId());
+
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(savedParty.getId(), owner)
+        );
 
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
