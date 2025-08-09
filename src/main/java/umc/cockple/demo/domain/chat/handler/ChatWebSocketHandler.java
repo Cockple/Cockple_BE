@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.chat.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -10,6 +11,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
@@ -24,6 +26,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ChatWebSocketService chatWebSocketService;
     private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -68,7 +71,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             switch (request.type()) {
                 case SEND:
-                    handleSendMessage(session, request, memberId);
+                    ChatMessageSendEvent sendEvent = ChatMessageSendEvent.create(
+                            request.chatRoomId(), request.content(), memberId);
+                    eventPublisher.publishEvent(sendEvent);
                     break;
                 case SUBSCRIBE:
                     handleSubscribe(session, request, memberId);
@@ -158,18 +163,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // ========== 메시지 처리 메서드들 ==========
-
-    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
-        log.info("메시지 전송 처리 - 채팅방 ID: {}, 사용자 ID: {}, 내용: {}",
-                request.chatRoomId(), memberId, request.content());
-
-        try {
-            chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
-        } catch (ChatException e) {
-            log.error("메시지 전송 중 오류 발생", e);
-            sendErrorMessage(session, e.getCode().toString(), e.getMessage());
-        }
-    }
 
     private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         log.info("채팅방 구독 처리 시작 - 채팅방 ID: {}, 사용자 ID: {}", request.chatRoomId(), memberId);

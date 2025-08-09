@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
@@ -17,6 +16,20 @@ import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 public class ChatEventListener {
 
     private final ChatWebSocketService chatWebSocketService;
+
+    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleChatMessageSend(ChatMessageSendEvent event) {
+        log.info("메시지 전송 이벤트 처리 - 채팅방: {}, 발신자: {}",
+                event.chatRoomId(), event.senderId());
+
+        try {
+            chatWebSocketService.sendMessage(event.chatRoomId(), event.content(), event.senderId());
+        } catch (Exception e) {
+            log.error("메시지 전송 이벤트 처리 중 오류 발생", e);
+        }
+    }
 
     @EventListener
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) //트랜잭션이 커밋된 후에 실행
@@ -29,5 +42,4 @@ public class ChatEventListener {
                     event.memberName() + "님이 모임을 떠나셨습니다.");
         }
     }
-
 }
