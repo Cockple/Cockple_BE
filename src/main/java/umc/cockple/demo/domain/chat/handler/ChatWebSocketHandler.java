@@ -3,6 +3,8 @@ package umc.cockple.demo.domain.chat.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -10,6 +12,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.events.ChatSystemMessageEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 
@@ -185,6 +188,29 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             log.error("메시지 전송 중 예상치 못한 오류 발생", e);
             sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
+        }
+    }
+
+    @EventListener
+    @Async
+    public void handleSystemMessage(ChatSystemMessageEvent event) {
+        log.info("시스템 메시지 브로드캐스트 시작 - 채팅방: {}", event.chatRoomId());
+
+        try {
+            WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
+                    .type(WebSocketMessageType.SEND)
+                    .chatRoomId(event.chatRoomId())
+                    .senderId(null)
+                    .senderName("시스템")
+                    .senderProfileImageUrl(null)
+                    .content(event.content())
+                    .createdAt(event.occurredAt())
+                    .build();
+
+            broadcastToChatRoom(event.chatRoomId(), response);
+
+        } catch (Exception e) {
+            log.error("시스템 메시지 브로드캐스트 실패 - 채팅방: {}", event.chatRoomId(), e);
         }
     }
 
