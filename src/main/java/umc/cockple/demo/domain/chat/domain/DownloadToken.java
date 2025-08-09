@@ -29,4 +29,13 @@ public class DownloadToken extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;
+
+    public static DownloadToken create(Long fileId, Long memberId, int validityInSeconds) {
+        return DownloadToken.builder()
+                .token("downloadToken_" + UUID.randomUUID().toString()) //랜덤 토큰 생성
+                .fileId(fileId)
+                .memberId(memberId)
+                .expiresAt(LocalDateTime.now().plusSeconds(validityInSeconds))
+                .build();
+    }
 }
