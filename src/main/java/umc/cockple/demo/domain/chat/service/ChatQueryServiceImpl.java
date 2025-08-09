@@ -17,7 +17,6 @@ import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
-import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -49,7 +48,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
         log.info("[모임 채팅방 목록 조회 시작]- 요청자: {}", memberId);
         Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsByOrderByLastMsgIdDesc(memberId, pageable);
+        Slice<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
         PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
         log.info("[모임 채팅방 목록 조회 완료]");
         return response;
@@ -66,20 +65,20 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     @Override
-    public DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, Long cursor, int size, Direction direction) {
+    public DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, int page, int size) {
         log.info("[개인 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(0, size);
-        List<ChatRoom> chatRooms = chatRoomRepository.findDirectChatRoomByMemberId(memberId, cursor, direction.name().toLowerCase(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Slice<ChatRoom> chatRooms = chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
         DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
         log.info("[개인 채팅방 목록 조회 완료]");
         return response;
     }
 
     @Override
-    public DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, Long cursor, int size, Direction direction) {
+    public DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, int page, int size) {
         log.info("[개인 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(0, size);
-        List<ChatRoom> chatRooms = chatRoomRepository.searchDirectChatRoomsByName(memberId, name, cursor, direction.name().toLowerCase(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Slice<ChatRoom> chatRooms = chatRoomRepository.searchDirectChatRoomsByName(memberId, name, pageable);
         DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
         log.info("[개인 채팅방 이름 검색 완료]");
         return response;
@@ -153,7 +152,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
         }
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
-                .filter(chatRoom -> chatRoom.getType() == ChatRoomType.PARTY)
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
@@ -182,7 +180,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatConverter.toPartyChatRoomListResponse(roomInfos, chatRooms.hasNext());
     }
 
-    private DirectChatRoomDTO.Response toDirectChatRoomInfos(List<ChatRoom> chatRooms, Long memberId) {
+    private DirectChatRoomDTO.Response toDirectChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
         }
@@ -210,7 +208,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
                     String displayProfileImgUrl = getImageUrl(displayMember.getMember().getProfileImg());
 
-
                     return chatConverter.toDirectChatRoomInfo(
                             chatRoom,
                             myMember,
@@ -221,7 +218,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 })
                 .collect(Collectors.toList());
 
-        return chatConverter.toDirectChatRoomListResponse(roomInfos);
+        return chatConverter.toDirectChatRoomListResponse(roomInfos, chatRooms.hasNext());
     }
 
     private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {

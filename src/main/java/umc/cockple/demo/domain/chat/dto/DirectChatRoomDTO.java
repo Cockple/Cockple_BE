@@ -11,7 +11,7 @@ public class DirectChatRoomDTO {
     @Builder
     public record Response(
             List<ChatRoomInfo> content,
-            int totalElements
+            boolean hasNext
     ) {
     }
 

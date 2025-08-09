@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
-import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -64,12 +63,11 @@ public class ChatController {
     @Operation(summary = "개인 채팅방 목록 조회", description = "회원이 자신의 개인 채팅방 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<DirectChatRoomDTO.Response> getDirectChatRooms(
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomDTO.Response response = chatQueryService.getDirectChatRooms(memberId, cursor, size, direction);
+        DirectChatRoomDTO.Response response = chatQueryService.getDirectChatRooms(memberId, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -78,12 +76,11 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<DirectChatRoomDTO.Response> searchDirectChatRooms(
             @RequestParam String name,
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "DESC") Direction direction
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, cursor, size, direction);
+        DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
