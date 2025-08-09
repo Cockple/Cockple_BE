@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
+import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -52,6 +53,35 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+    }
+
+    public void sendSystemMessage(Long chatRoomId, String content) {
+        log.info("시스템 메시지 전송 시작 - 채팅방: {}, 메시지: {}", chatRoomId, content);
+
+        try {
+            ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
+
+            ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
+            ChatMessage savedMessage = chatMessageRepository.save(systemMessage);
+
+            WebSocketMessageDTO.Response response = WebSocketMessageDTO.Response.builder()
+                    .type(WebSocketMessageType.SEND)
+                    .chatRoomId(chatRoomId)
+                    .senderId(null)
+                    .senderName("시스템")
+                    .senderProfileImageUrl(null)
+                    .content(content)
+                    .createdAt(savedMessage.getCreatedAt())
+                    .build();
+
+            // 4. 웹소켓 브로드캐스트
+            chatWebSocketHandler.broadcastToChatRoom(chatRoomId, response);
+
+            log.info("시스템 메시지 전송 완료 - 메시지 ID: {}", savedMessage.getId());
+
+        } catch (Exception e) {
+            log.error("시스템 메시지 전송 실패 - 채팅방: {}, 메시지: {}", chatRoomId, content, e);
+        }
     }
 
     private void validateInput(Long chatRoomId, String content) {

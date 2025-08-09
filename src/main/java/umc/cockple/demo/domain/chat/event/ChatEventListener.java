@@ -22,6 +22,8 @@ public class ChatEventListener {
             case JOINED -> event.memberName() + "님이 모임에 참여했습니다.";
             case LEFT -> event.memberName() + "님이 모임을 떠났습니다.";
         };
+
+        chatWebSocketService.sendSystemMessage(event.partyId(), message);
     }
 
 }
