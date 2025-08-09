@@ -46,6 +46,10 @@ public class SubscriptionService {
     }
 
     public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
+        broadcastToChatRoom(chatRoomId, message, null);
+    }
+
+    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long senderId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
@@ -64,6 +68,10 @@ public class SubscriptionService {
         int successCount = 0;
 
         for (Long memberId : subscribers) {
+            if(memberId.equals(senderId)) {
+                continue;
+            }
+
             WebSocketSession session = memberSessions.get(memberId);
 
             if (session != null && session.isOpen()) {
