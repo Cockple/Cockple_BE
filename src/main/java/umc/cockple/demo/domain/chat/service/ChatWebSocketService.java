@@ -31,6 +31,7 @@ public class ChatWebSocketService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ImageService imageService;
+    private final WebSocketBroadcastService broadcastService;
 
     private final ChatConverter chatConverter;
 
@@ -52,6 +53,19 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+    }
+
+    public void sendSystemMessage(Long partyId, String content) {
+        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+
+        ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
+        chatMessageRepository.save(systemMessage);
+
+        WebSocketMessageDTO.Response broadcastSystemMessage
+                = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
+
+        broadcastService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
+        log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
     private void validateInput(Long chatRoomId, String content) {
