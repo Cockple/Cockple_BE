@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
+import umc.cockple.demo.domain.chat.service.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
 @Component
@@ -16,6 +17,7 @@ import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 public class ChatEventListener {
 
     private final ChatWebSocketService chatWebSocketService;
+    private final SubscriptionService subscriptionService;
 
     @EventListener
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -40,6 +42,25 @@ public class ChatEventListener {
                     event.memberName() + "님이 모임에 참여하셨습니다.");
             case LEFT -> chatWebSocketService.sendSystemMessage(event.partyId(),
                     event.memberName() + "님이 모임을 떠나셨습니다.");
+        }
+    }
+
+    @EventListener
+    @Async
+    public void handleChatRoomSubscription(ChatRoomSubscriptionEvent event) {
+        log.info("채팅방 구독 이벤트 처리 - 채팅방: {}, 사용자: {}, 액션: {}",
+                event.chatRoomId(), event.memberId(), event.action());
+
+        try {
+            switch (event.action()) {
+                case "SUBSCRIBE" -> {
+                    subscriptionService.subscribeToChatRoom(event.chatRoomId(), event.memberId());
+                    log.info("사용자 {}가 채팅방 {}를 구독했습니다.", event.memberId(), event.chatRoomId());
+                }
+                default -> log.warn("알 수 없는 구독 액션: {}", event.action());
+            }
+        } catch (Exception e) {
+            log.error("채팅방 구독 이벤트 처리 중 오류 발생", e);
         }
     }
 }
