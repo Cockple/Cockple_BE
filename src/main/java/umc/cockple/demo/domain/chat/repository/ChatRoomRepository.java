@@ -16,13 +16,14 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
+              AND cr.type = 'PARTY'
             ORDER BY (
                 SELECT MAX(cm.id)
                 FROM ChatMessage cm
                 WHERE cm.chatRoom.id = cr.id
             ) DESC
             """)
-    Slice<ChatRoom> findChatRoomsByOrderByLastMsgIdDesc(
+    Slice<ChatRoom> findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(
             @Param("memberId") Long memberId,
             Pageable pageable
     );
@@ -65,37 +66,31 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
               AND cr.type = 'DIRECT'
-              AND (:cursor IS NULL OR
-                   (:direction = 'desc' AND cr.id < :cursor) OR
-                   (:direction = 'asc' AND cr.id > :cursor))
-            ORDER BY
-                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-                CASE WHEN :direction = 'desc' THEN cr.id END DESC
+            ORDER BY (
+                SELECT MAX(cm.id)
+                FROM ChatMessage cm
+                WHERE cm.chatRoom.id = cr.id
+            ) DESC
             """)
-    List<ChatRoom> findDirectChatRoomByMemberId(
+    Slice<ChatRoom> findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(
             @Param("memberId") Long memberId,
-            @Param("cursor") Long cursor,
-            @Param("direction") String direction,
             Pageable pageable
     );
 
-    @Query("""            
+    @Query("""
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
-            AND crm.displayName LIKE %:name%
-            AND (:cursor IS NULL OR
-                 (:direction = 'desc' AND cr.id < :cursor) OR
-                 (:direction = 'asc' AND cr.id > :cursor))
-            ORDER BY
-                CASE WHEN :direction = 'asc' THEN cr.id END ASC,
-                CASE WHEN :direction = 'desc' THEN cr.id END DESC
+              AND crm.displayName LIKE %:name%
+            ORDER BY (
+                SELECT MAX(cm.id)
+                FROM ChatMessage cm
+                WHERE cm.chatRoom.id = cr.id
+            ) DESC
             """)
-    List<ChatRoom> searchDirectChatRoomsByName(
+    Slice<ChatRoom> searchDirectChatRoomsByName(
             @Param("memberId") Long memberId,
             @Param("name") String name,
-            @Param("cursor") Long cursor,
-            @Param("direction") String direction,
             Pageable pageable
     );
 
