@@ -19,8 +19,10 @@ public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
 
-    private final Map<Long, Map<Long, WebSocketSession>> chatRoomSessions = new ConcurrentHashMap<>();
+    // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
+    // 구독 관리
+    private final Map<Long, Set<Long>> chatRoomSubscriptions = new ConcurrentHashMap<>();
 
     public void addSession(Long memberId, WebSocketSession session) {
         memberSessions.put(memberId, session);
@@ -29,10 +31,10 @@ public class SubscriptionService {
     public void removeSession(Long memberId) {
         memberSessions.remove(memberId);
 
-        chatRoomSessions.forEach((chatRoomId, sessions) -> {
-            sessions.remove(memberId);
-            if (sessions.isEmpty()) {
-                chatRoomSessions.remove(chatRoomId);
+        chatRoomSubscriptions.forEach((chatRoomId, subscribers) -> {
+            subscribers.remove(memberId);
+            if (subscribers.isEmpty()) {
+                chatRoomSubscriptions.remove(chatRoomId);
             }
         });
     }
