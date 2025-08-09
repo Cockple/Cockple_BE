@@ -20,9 +20,10 @@ public enum ChatErrorCode implements BaseErrorCode {
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT201", "채팅방을 찾을 수 없습니다."),
     CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT202", "채팅방 멤버가 존재하지 않습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT203", "사용자를 찾을 수 없습니다."),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT204", "존재하지 않는 파일입니다."),
 
     // 3xx: 인증/인가 문제
-    PARTY_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT302", "모임에 참여한 회원이 아닙니다.");
+    PARTY_MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "CHAT301", "모임에 참여한 회원이 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
