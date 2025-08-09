@@ -1,4 +1,7 @@
 package umc.cockple.demo.domain.chat.repository;
 
-public interface ChatFileRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
+
+public interface ChatFileRepository extends JpaRepository<ChatMessageFile, Long> {
 }
