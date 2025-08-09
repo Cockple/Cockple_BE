@@ -161,16 +161,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 request.chatRoomId(), memberId, request.content());
 
         try {
-            WebSocketMessageDTO.Response response
-                    = chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
-
-            broadcastService.broadcastToChatRoom(request.chatRoomId(), response);
+            chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
         } catch (ChatException e) {
             log.error("메시지 전송 중 오류 발생", e);
             sendErrorMessage(session, e.getCode().toString(), e.getMessage());
-        } catch (Exception e) {
-            log.error("메시지 전송 중 예상치 못한 오류 발생", e);
-            sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
         }
     }
 }
