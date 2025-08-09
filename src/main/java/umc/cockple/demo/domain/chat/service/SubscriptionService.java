@@ -40,9 +40,9 @@ public class SubscriptionService {
     }
 
     public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions == null || sessions.isEmpty()) {
-            log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
+        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        if (subscribers == null || subscribers.isEmpty()) {
+            log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
             return;
         }
 
@@ -54,30 +54,28 @@ public class SubscriptionService {
             return;
         }
 
-        Map<Long, WebSocketSession> sessionsCopy = new HashMap<>(sessions);
-        List<Long> failedSessions = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger successCount = new AtomicInteger(0);
+        List<Long> failedSessions = new ArrayList<>();
+        int successCount = 0;
 
-        sessionsCopy.entrySet().parallelStream().forEach(entry -> {
-            Long memberId = entry.getKey();
-            WebSocketSession session = entry.getValue();
+        for (Long memberId : subscribers) {
+            WebSocketSession session = memberSessions.get(memberId);
 
-            if (session.isOpen()) {
+            if (session != null && session.isOpen()) {
                 try {
                     synchronized (session) {
                         session.sendMessage(new TextMessage(messageJson));
                     }
-                    successCount.incrementAndGet();
-                    log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
+                    successCount++;
+                    log.debug("메시지 전송 성공 - 사용자: {}", memberId);
                 } catch (Exception e) {
-                    log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
+                    log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
                     failedSessions.add(memberId);
                 }
             } else {
-                log.warn("닫힌 세션 발견 - 사용자: {}, 세션: {}", memberId, session.getId());
+                log.warn("유효하지 않은 세션 - 사용자: {}", memberId);
                 failedSessions.add(memberId);
             }
-        });
+        }
 
         cleanupFailedSessions(chatRoomId, failedSessions);
 
