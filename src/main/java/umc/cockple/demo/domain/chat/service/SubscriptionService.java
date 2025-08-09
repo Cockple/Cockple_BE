@@ -10,7 +10,6 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +53,7 @@ public class SubscriptionService {
             return;
         }
 
-        List<Long> failedSessions = new ArrayList<>();
+        List<Long> failedMembers = new ArrayList<>();
         int successCount = 0;
 
         for (Long memberId : subscribers) {
@@ -69,30 +68,39 @@ public class SubscriptionService {
                     log.debug("메시지 전송 성공 - 사용자: {}", memberId);
                 } catch (Exception e) {
                     log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
-                    failedSessions.add(memberId);
+                    failedMembers.add(memberId);
                 }
             } else {
                 log.warn("유효하지 않은 세션 - 사용자: {}", memberId);
-                failedSessions.add(memberId);
+                failedMembers.add(memberId);
             }
         }
 
-        cleanupFailedSessions(chatRoomId, failedSessions);
+        cleanupFailedSubscriptions(chatRoomId, failedMembers);
 
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedSessions.size());
+        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedMembers.size());
     }
 
-    private void cleanupFailedSessions(Long chatRoomId, List<Long> failedSessionIds) {
-        if (failedSessionIds.isEmpty()) return;
+    private void cleanupFailedSubscriptions(Long chatRoomId, List<Long> failedMemberIds) {
+        if (failedMemberIds.isEmpty()) return;
 
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions != null) {
-            failedSessionIds.forEach(sessions::remove);
-
-            if (sessions.isEmpty()) {
-                chatRoomSessions.remove(chatRoomId);
-                log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
+        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        if (subscribers != null) {
+            int removedCount = 0;
+            for (Long failedMemberId : failedMemberIds) {
+                if (subscribers.remove(failedMemberId)) {
+                    removedCount++;
+                    log.info("구독에서 제거된 사용자: {} (채팅방: {})", failedMemberId, chatRoomId);
+                }
             }
+
+            if (subscribers.isEmpty()) {
+                chatRoomSubscriptions.remove(chatRoomId);
+                log.info("빈 채팅방 구독자 목록 제거 - 채팅방: {}", chatRoomId);
+            }
+
+            log.info("구독 세션 정리 완료 - 채팅방: {}, 제거된 구독: {}명, 남은 구독: {}명",
+                    chatRoomId, removedCount, subscribers.size());
         }
     }
 }
