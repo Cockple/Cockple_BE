@@ -9,7 +9,7 @@ public class ChatDownloadTokenDTO {
     public record Response(
             String downloadToken,
             String downloadUrl,
-            Long expiresIn,
+            int expiresIn,
             LocalDateTime expiresAt
     ) {}
 }
