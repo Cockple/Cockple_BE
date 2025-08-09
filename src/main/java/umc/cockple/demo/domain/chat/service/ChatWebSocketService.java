@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -34,6 +35,18 @@ public class ChatWebSocketService {
     private final SubscriptionService subscriptionService;
 
     private final ChatConverter chatConverter;
+
+    public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
+        log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
+
+        return MemberConnectionInfo.builder()
+                .memberId(memberId)
+                .memberName(member.getMemberName())
+                .build();
+    }
 
     public void sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);

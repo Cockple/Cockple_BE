@@ -9,10 +9,12 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
+import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ import java.time.LocalDateTime;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final SubscriptionService subscriptionService;
+    private final ChatWebSocketService chatWebSocketService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -34,11 +37,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long memberId = extractMemberIdFromURL(session);
 
             if (memberId != null) {
+                MemberConnectionInfo memberInfo = chatWebSocketService.getMemberConnectionInfo(memberId);
+
                 session.getAttributes().put("memberId", memberId);
+                session.getAttributes().put("memberName", memberInfo.memberName());
                 subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
-                sendConnectionSuccessMessage(session, memberId);
+                sendConnectionSuccessMessage(session, memberInfo);
             } else {
                 log.warn("memberId를 찾을 수 없습니다. 세션을 종료합니다.");
                 session.close();
@@ -123,11 +129,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return null;
     }
 
-    private void sendConnectionSuccessMessage(WebSocketSession session, Long memberId) {
+    private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         try {
             WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
                     .type(WebSocketMessageType.CONNECT)
-                    .memberId(memberId)
+                    .memberId(memberInfo.memberId())
+                    .memberName(memberInfo.memberName())
                     .connectedAt(LocalDateTime.now())
                     .message("WebSocket 연결이 성공했습니다.")
                     .build();
@@ -135,7 +142,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             String messageJson = objectMapper.writeValueAsString(connectionInfo);
             session.sendMessage(new TextMessage(messageJson));
 
-            log.info("연결 성공 메시지 전송 완료 - memberId: {}", memberId);
+            log.info("연결 성공 메시지 전송 완료 - memberId: {}", memberInfo.memberId());
         } catch (Exception e) {
             log.error("연결 성공 메시지 전송 실패", e);
         }
