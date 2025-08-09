@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -10,8 +9,6 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.events.ChatSystemMessageEvent;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -37,8 +34,6 @@ public class ChatWebSocketService {
 
     private final ChatConverter chatConverter;
 
-    private final ApplicationEventPublisher eventPublisher;
-
     public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
@@ -57,24 +52,6 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
-    }
-
-    public void sendSystemMessage(Long chatRoomId, String content) {
-        log.info("시스템 메시지 전송 시작 - 채팅방: {}, 메시지: {}", chatRoomId, content);
-
-        try {
-            ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
-
-            ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
-            ChatMessage savedMessage = chatMessageRepository.save(systemMessage);
-
-            eventPublisher.publishEvent(ChatSystemMessageEvent.create(chatRoomId, content));
-
-            log.info("시스템 메시지 전송 완료 - 메시지 ID: {}", savedMessage.getId());
-
-        } catch (Exception e) {
-            log.error("시스템 메시지 전송 실패 - 채팅방: {}, 메시지: {}", chatRoomId, content, e);
-        }
     }
 
     private void validateInput(Long chatRoomId, String content) {
