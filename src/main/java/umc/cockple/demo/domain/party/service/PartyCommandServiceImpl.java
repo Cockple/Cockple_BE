@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.party.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -9,6 +10,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -25,6 +27,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -51,7 +54,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
+
     private final NotificationCommandService notificationCommandService;
+    private final ChatRoomService chatRoomService;
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public PartyCreateDTO.Response createParty(Long memberId, PartyCreateDTO.Request request) {
@@ -148,8 +155,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //모임 탈퇴 로직 수행
         memberPartyRepository.delete(memberParty);
 
-        //채팅방 퇴장 로직 수행
-        leavePartyChatRoom(partyId, memberId);
+        //채팅방 퇴장
+        chatRoomService.leavePartyChatRoom(party.getId(), member.getId());
+
+        //채팅방 퇴장 이벤트 발행
+        applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, member));
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
 
@@ -171,6 +181,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //모임 멤버 삭제 로직 수행
         memberPartyRepository.delete(memberPartyToRemove);
 
+        //채팅방 퇴장
+        chatRoomService.leavePartyChatRoom(party.getId(), memberToRemove.getId());
+
+        //채팅방 퇴장 이벤트 발행
+        applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, memberToRemove));
         log.info("모임 멤버 삭제 완료 - partyId: {}, removed: {}", partyId, memberIdToRemove);
     }
 
@@ -217,7 +232,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveJoinRequest(partyJoinRequest);
-            JoinPartyChatRoom(partyId, partyJoinRequest.getMember());
         }else{
             rejectJoinRequest(partyJoinRequest);
         }
@@ -259,7 +273,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if(RequestAction.APPROVE.equals(request.action())){
             approveInvitation(invitation);
-            JoinPartyChatRoom(invitation.getParty().getId(), invitation.getInvitee());
         }else{
             rejectInvitation(invitation);
         }
@@ -509,6 +522,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Member member = partyJoinRequest.getMember();
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
+
+        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(party.getId(), member)
+        );
     }
     private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
         partyJoinRequest.updateStatus(RequestStatus.REJECTED);
@@ -521,6 +539,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Member member = invitation.getInvitee();
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
+
+        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(party.getId(), member)
+        );
     }
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
@@ -545,25 +568,5 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .invitationId(inviteId)
                 .build();
         notificationCommandService.createNotification(dto);
-    }
-
-    private void JoinPartyChatRoom(Long partyId, Member member) {
-        log.info("모임 채팅방 자동 참여 시작 - partyId: {}", partyId);
-        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
-        ChatRoomMember chatRoomMember = ChatRoomMember.builder()
-                .chatRoom(chatRoom)
-                .member(member)
-                .build();
-        chatRoomMemberRepository.save(chatRoomMember);
-        log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", chatRoom.getId());
-    }
-
-    private void leavePartyChatRoom(Long partyId, Long memberId) {
-        log.info("모임 채팅방 퇴장 시작 - memberId: {}", memberId);
-        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
-        chatRoomMemberRepository
-                .findByChatRoomIdAndMemberId(chatRoom.getId(), memberId)
-                .ifPresent(chatRoomMemberRepository::delete);
-        log.info("모임 채팅방 퇴장 완료 - chatRoomId: {}", chatRoom.getId());
     }
 }

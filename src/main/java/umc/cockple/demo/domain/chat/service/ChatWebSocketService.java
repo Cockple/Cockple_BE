@@ -31,12 +31,12 @@ public class ChatWebSocketService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ImageService imageService;
+    private final WebSocketBroadcastService broadcastService;
 
     private final ChatConverter chatConverter;
 
-    public WebSocketMessageDTO.Response sendMessage(Long chatRoomId, String content, Long senderId) {
+    public void sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
-
         validateInput(chatRoomId, content);
 
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
@@ -48,10 +48,26 @@ public class ChatWebSocketService {
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
-
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
-        return chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+        log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
+        WebSocketMessageDTO.Response response =
+                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+        broadcastService.broadcastToChatRoom(chatRoomId, response);
+        log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
+    }
+
+    public void sendSystemMessage(Long partyId, String content) {
+        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+
+        ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
+        chatMessageRepository.save(systemMessage);
+
+        WebSocketMessageDTO.Response broadcastSystemMessage
+                = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
+
+        broadcastService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
+        log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
     private void validateInput(Long chatRoomId, String content) {

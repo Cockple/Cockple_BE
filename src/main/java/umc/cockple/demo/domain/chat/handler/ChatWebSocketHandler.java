@@ -12,11 +12,9 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
+import umc.cockple.demo.domain.chat.service.WebSocketBroadcastService;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Slf4j
@@ -24,11 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatWebSocketService chatWebSocketService;
-
+    private final WebSocketBroadcastService broadcastService;
     private final ObjectMapper objectMapper;
-
-    private final Map<Long, Map<Long, WebSocketSession>> chatRoomSessions = new ConcurrentHashMap<>();
-    private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -39,8 +34,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             if (memberId != null) {
                 session.getAttributes().put("memberId", memberId);
-                memberSessions.put(memberId, session);
-
+                broadcastService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
                 sendConnectionSuccessMessage(session, memberId);
@@ -94,15 +88,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
 
         if (memberId != null) {
-            memberSessions.remove(memberId);
-
-            chatRoomSessions.forEach((chatRoomId, sessions) -> {
-                sessions.remove(memberId);
-                if (sessions.isEmpty()) {
-                    chatRoomSessions.remove(chatRoomId);
-                }
-            });
-
+            broadcastService.removeSession(memberId);
             log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
         }
     }
@@ -131,7 +117,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void sendConnectionSuccessMessage(WebSocketSession session, Long memberId) {
         try {
             WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
-                    .type("CONNECTION")
+                    .type(WebSocketMessageType.CONNECT)
                     .memberId(memberId)
                     .connectedAt(LocalDateTime.now())
                     .message("WebSocket 연결이 성공했습니다.")
@@ -175,95 +161,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 request.chatRoomId(), memberId, request.content());
 
         try {
-            WebSocketMessageDTO.Response response
-                    = chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
-
-            broadcastToChatRoom(request.chatRoomId(), response);
+            chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
         } catch (ChatException e) {
             log.error("메시지 전송 중 오류 발생", e);
             sendErrorMessage(session, e.getCode().toString(), e.getMessage());
-        } catch (Exception e) {
-            log.error("메시지 전송 중 예상치 못한 오류 발생", e);
-            sendErrorMessage(session, "INTERNAL_ERROR", "예상치 못한 에러가 발생했습니다.");
         }
-    }
-
-    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions == null || sessions.isEmpty()) {
-            log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
-            return;
-        }
-
-        String messageJson;
-        try {
-            messageJson = objectMapper.writeValueAsString(message);
-        } catch (Exception e) {
-            log.error("메시지를 JSON으로 변환하는데 실패했습니다", e);
-            return;
-        }
-
-        Map<Long, WebSocketSession> sessionsCopy = new HashMap<>(sessions);
-        List<Long> failedSessions = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger successCount = new AtomicInteger(0);
-
-        sessionsCopy.entrySet().parallelStream().forEach(entry -> {
-            Long memberId = entry.getKey();
-            WebSocketSession session = entry.getValue();
-
-            if (session.isOpen()) {
-                try {
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(messageJson));
-                    }
-                    successCount.incrementAndGet();
-                    log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
-                } catch (Exception e) {
-                    log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
-                    failedSessions.add(memberId);
-                }
-            } else {
-                log.warn("닫힌 세션 발견 - 사용자: {}, 세션: {}", memberId, session.getId());
-                failedSessions.add(memberId);
-            }
-        });
-
-        cleanupFailedSessions(chatRoomId, failedSessions);
-
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedSessions.size());
-    }
-
-    private void cleanupFailedSessions(Long chatRoomId, List<Long> failedSessionIds) {
-        if (failedSessionIds.isEmpty()) return;
-
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions != null) {
-            failedSessionIds.forEach(sessions::remove);
-
-            if (sessions.isEmpty()) {
-                chatRoomSessions.remove(chatRoomId);
-                log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
-            }
-        }
-    }
-
-    // ========== 테스트용 ==========
-    void clearAllSessionsForTest() {
-        memberSessions.clear();
-        chatRoomSessions.clear();
-    }
-
-    void addChatRoomSessionForTest(Long chatRoomId, Long memberId, WebSocketSession session) {
-        chatRoomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
-                .put(memberId, session);
-    }
-
-    void broadcastToChatRoomForTest(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        broadcastToChatRoom(chatRoomId, message);
-    }
-
-    boolean isMemberInChatRoomForTest(Long chatRoomId, Long memberId) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        return sessions != null && sessions.containsKey(memberId);
     }
 }
