@@ -12,8 +12,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
-import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
+import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
 import java.time.LocalDateTime;
@@ -23,7 +22,6 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final ChatWebSocketService chatWebSocketService;
     private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
@@ -71,12 +69,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             switch (request.type()) {
                 case SEND:
-                    ChatMessageSendEvent sendEvent = ChatMessageSendEvent.create(
-                            request.chatRoomId(), request.content(), memberId);
+                    ChatMessageSendEvent sendEvent =
+                            ChatMessageSendEvent.create(request.chatRoomId(), request.content(), memberId);
                     eventPublisher.publishEvent(sendEvent);
                     break;
                 case SUBSCRIBE:
-                    handleSubscribe(session, request, memberId);
+                    ChatRoomSubscriptionEvent subscribeEvent =
+                            ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
+                    eventPublisher.publishEvent(subscribeEvent);
+                    sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
                     break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
@@ -162,16 +163,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    // ========== 메시지 처리 메서드들 ==========
-
-    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
-        log.info("채팅방 구독 처리 시작 - 채팅방 ID: {}, 사용자 ID: {}", request.chatRoomId(), memberId);
+    private void sendSubscriptionMessage(WebSocketSession session, Long chatRoomId, String action) {
+        if (!session.isOpen()) {
+            log.warn("세션이 닫혀있어 구독 응답 메시지를 전송할 수 없습니다.");
+            return;
+        }
 
         try {
-            chatWebSocketService.subscribeChatRoom(request.chatRoomId(), memberId);
-        } catch (ChatException e) {
-            log.error("채팅방 구독 중 에러 발생", e);
-            sendErrorMessage(session, e.getCode().toString(), e.getMessage());
+            WebSocketMessageDTO.SubscriptionResponse subscriptionResponse = WebSocketMessageDTO.SubscriptionResponse.builder()
+                    .type(WebSocketMessageType.valueOf(action))
+                    .chatRoomId(chatRoomId)
+                    .message(action.equals("SUBSCRIBE") ? "채팅방 구독이 완료되었습니다." : "채팅방 구독이 해제되었습니다.")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            String responseJson = objectMapper.writeValueAsString(subscriptionResponse);
+            session.sendMessage(new TextMessage(responseJson));
+
+            log.info("구독 응답 메시지 전송 완료 - 액션: {}, 채팅방: {}", action, chatRoomId);
+        } catch (Exception e) {
+            log.error("구독 응답 메시지 전송 실패", e);
         }
     }
 }
