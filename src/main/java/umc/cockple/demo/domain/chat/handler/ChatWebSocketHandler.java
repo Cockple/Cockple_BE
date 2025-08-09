@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatSystemMessageEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
+import umc.cockple.demo.domain.chat.service.WebSocketBroadcastService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -27,11 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatWebSocketService chatWebSocketService;
-
+    private final WebSocketBroadcastService broadcastService;
     private final ObjectMapper objectMapper;
-
-    private final Map<Long, Map<Long, WebSocketSession>> chatRoomSessions = new ConcurrentHashMap<>();
-    private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -42,8 +40,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             if (memberId != null) {
                 session.getAttributes().put("memberId", memberId);
-                memberSessions.put(memberId, session);
-
+                broadcastService.addSessionToChatRoom(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
                 sendConnectionSuccessMessage(session, memberId);
