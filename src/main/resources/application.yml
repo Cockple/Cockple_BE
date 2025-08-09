@@ -35,6 +35,11 @@ spring:
       max-file-size: 30MB
       max-request-size: 30MB
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+
 cloud:
   aws:
     s3:
