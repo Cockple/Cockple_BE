@@ -53,10 +53,10 @@ public class ChatConverter {
     }
 
     // ===개인 채팅방 목록===
-    public DirectChatRoomDTO.Response toDirectChatRoomListResponse(List<DirectChatRoomDTO.ChatRoomInfo> chatRoomInfos) {
+    public DirectChatRoomDTO.Response toDirectChatRoomListResponse(List<DirectChatRoomDTO.ChatRoomInfo> chatRoomInfos, boolean hasNext) {
         return DirectChatRoomDTO.Response.builder()
                 .content(chatRoomInfos)
-                .totalElements(chatRoomInfos.size())
+                .hasNext(hasNext)
                 .build();
     }
 
