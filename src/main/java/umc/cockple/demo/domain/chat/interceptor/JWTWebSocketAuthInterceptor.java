@@ -18,11 +18,22 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-        return false;
+        log.info("JWT 기반 WebSocket 인증 시작");
+
+        try {
+
+            return true;
+        } catch (Exception e) {
+            log.error("JWT 인증 처리 중 오류 발생", e);
+            return false;
+        }
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
-
+    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                               WebSocketHandler wsHandler, Exception exception) {
+        if (exception != null) {
+            log.error("JWT HandshakeInterceptor 실행 중 오류", exception);
+        }
     }
 }
