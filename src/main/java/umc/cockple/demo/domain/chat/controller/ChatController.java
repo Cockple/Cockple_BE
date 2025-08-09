@@ -112,4 +112,17 @@ public class ChatController {
         ChatMessageDTO.Response response = chatQueryService.getChatMessages(roomId, memberId, cursor, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
+
+    @PostMapping("/chats/files/{fileId}/download-token")
+    @Operation(summary = "채팅 파일 다운로드 토큰 발급", description = "채팅방에 업로드된 특정 파일을 다운로드할 수 있는 일회용 토큰을 발급합니다.")
+    @ApiResponse(responseCode = "200", description = "토큰 발급 성공")
+    @ApiResponse(responseCode = "403", description = "파일 접근 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 파일")
+    public BaseResponse<ChatDownloadTokenDTO.Response> issueDownloadToken(
+            @PathVariable Long fileId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatDownloadTokenDTO.Response response = chatCommandService.issueDownloadToken(memberId, fileId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }
