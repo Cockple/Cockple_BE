@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
@@ -123,5 +125,17 @@ public class ChatController {
         Long memberId = SecurityUtil.getCurrentMemberId();
         ChatDownloadTokenDTO.Response response = chatFileService.issueDownloadToken(memberId, fileId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/chats/files/{fileId}/download")
+    @Operation(summary = "채팅 파일 다운로드", description = "발급받은 다운로드 토큰을 검증하고, 유효할 경우 실제 파일 데이터를 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "파일 다운로드 성공")
+    @ApiResponse(responseCode = "403", description = "유효하지 않거나 만료된 토큰")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 파일")
+    public ResponseEntity<Resource> downloadFile(
+            @PathVariable Long fileId,
+            @RequestParam String token
+    ) {
+        return chatFileService.downloadFile(fileId, token);
     }
 }
