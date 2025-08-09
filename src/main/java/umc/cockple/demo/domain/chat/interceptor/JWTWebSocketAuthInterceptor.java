@@ -21,12 +21,28 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
         log.info("JWT 기반 WebSocket 인증 시작");
 
         try {
+            String token = extractTokenFromRequest(request);
 
             return true;
         } catch (Exception e) {
             log.error("JWT 인증 처리 중 오류 발생", e);
             return false;
         }
+    }
+
+    private String extractTokenFromRequest(ServerHttpRequest request) {
+        String query = request.getURI().getQuery();
+
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("token=")) {
+                    return param.substring(6);
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override
