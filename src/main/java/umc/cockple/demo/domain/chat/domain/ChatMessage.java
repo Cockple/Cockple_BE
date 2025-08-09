@@ -41,6 +41,9 @@ public class ChatMessage extends BaseEntity {
     @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMessageImg> chatMessageImgs = new ArrayList<>();
 
+    @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessageFile> chatMessageFiles = new ArrayList<>();
+
     public static ChatMessage create(ChatRoom chatRoom, Member sender, String content, MessageType type) {
         return ChatMessage.builder()
                 .chatRoom(chatRoom)
