@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -55,6 +56,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final PartyInvitationRepository partyInvitationRepository;
 
     private final NotificationCommandService notificationCommandService;
+    private final ChatRoomService chatRoomService;
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -153,6 +155,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //모임 탈퇴 로직 수행
         memberPartyRepository.delete(memberParty);
 
+        //채팅방 퇴장
+        chatRoomService.leavePartyChatRoom(party.getId(), member.getId());
+
         //채팅방 퇴장 이벤트 발행
         applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, member));
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
@@ -175,6 +180,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
 
         //모임 멤버 삭제 로직 수행
         memberPartyRepository.delete(memberPartyToRemove);
+
+        //채팅방 퇴장
+        chatRoomService.leavePartyChatRoom(party.getId(), memberToRemove.getId());
 
         //채팅방 퇴장 이벤트 발행
         applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, memberToRemove));
@@ -515,7 +523,10 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.joined(party.getId(), member));
+        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(party.getId(), member)
+        );
     }
     private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
         partyJoinRequest.updateStatus(RequestStatus.REJECTED);
@@ -529,7 +540,10 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.joined(party.getId(), member));
+        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(party.getId(), member)
+        );
     }
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
