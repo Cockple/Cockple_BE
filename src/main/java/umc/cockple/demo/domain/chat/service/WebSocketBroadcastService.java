@@ -22,7 +22,7 @@ public class WebSocketBroadcastService {
     private final Map<Long, Map<Long, WebSocketSession>> chatRoomSessions = new ConcurrentHashMap<>();
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
-    public void addSessionToChatRoom(Long memberId, WebSocketSession session) {
+    public void addSession(Long memberId, WebSocketSession session) {
         memberSessions.put(memberId, session);
     }
 

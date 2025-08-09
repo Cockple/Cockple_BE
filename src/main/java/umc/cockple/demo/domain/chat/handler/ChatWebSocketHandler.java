@@ -34,7 +34,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             if (memberId != null) {
                 session.getAttributes().put("memberId", memberId);
-                broadcastService.addSessionToChatRoom(memberId, session);
+                broadcastService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
                 sendConnectionSuccessMessage(session, memberId);
