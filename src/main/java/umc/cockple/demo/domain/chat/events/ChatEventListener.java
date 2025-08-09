@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.event;
+package umc.cockple.demo.domain.chat.events;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,7 +6,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
-import umc.cockple.demo.domain.party.event.PartyMemberJoinedEvent;
+import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
 @Component
 @RequiredArgsConstructor

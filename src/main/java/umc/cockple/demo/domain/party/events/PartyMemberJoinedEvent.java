@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.party.event;
+package umc.cockple.demo.domain.party.events;
 
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.enums.PartyMemberAction;
