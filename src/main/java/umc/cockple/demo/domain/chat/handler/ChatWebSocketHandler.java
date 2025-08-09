@@ -70,6 +70,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 case SEND:
                     handleSendMessage(session, request, memberId);
                     break;
+                case SUBSCRIBE:
+                    handleSubscribe(session, request, memberId);
+                    break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }
@@ -164,6 +167,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
         } catch (ChatException e) {
             log.error("메시지 전송 중 오류 발생", e);
+            sendErrorMessage(session, e.getCode().toString(), e.getMessage());
+        }
+    }
+
+    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        log.info("채팅방 구독 처리 시작 - 채팅방 ID: {}, 사용자 ID: {}", request.chatRoomId(), memberId);
+
+        try {
+            chatWebSocketService.subscribeChatRoom(request.chatRoomId(), memberId);
+        } catch (ChatException e) {
+            log.error("채팅방 구독 중 에러 발생", e);
             sendErrorMessage(session, e.getCode().toString(), e.getMessage());
         }
     }
