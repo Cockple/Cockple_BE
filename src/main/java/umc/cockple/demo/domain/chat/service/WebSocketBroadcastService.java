@@ -22,4 +22,15 @@ public class WebSocketBroadcastService {
     public void addSessionToChatRoom(Long memberId, WebSocketSession session) {
         memberSessions.put(memberId, session);
     }
+
+    public void removeSession(Long memberId) {
+        memberSessions.remove(memberId);
+
+        chatRoomSessions.forEach((chatRoomId, sessions) -> {
+            sessions.remove(memberId);
+            if (sessions.isEmpty()) {
+                chatRoomSessions.remove(chatRoomId);
+            }
+        });
+    }
 }
