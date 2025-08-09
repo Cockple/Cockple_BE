@@ -38,6 +38,13 @@ public class SubscriptionService {
         });
     }
 
+    public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
+        chatRoomSubscriptions.computeIfAbsent(chatRoomId, k -> ConcurrentHashMap.newKeySet())
+                .add(memberId);
+
+        log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+    }
+
     public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {

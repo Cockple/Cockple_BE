@@ -69,12 +69,6 @@ public class ChatWebSocketService {
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
-    public void subscribeChatRoom(Long chatRoomId, Long memberId) {
-        validateChatRoom(chatRoomId);
-
-        subscriptionService.addToChatRoom(chatRoomId, memberId);
-    }
-
     // ========== 검증 메서드 ==========
 
     private void validateSendMessage(Long chatRoomId, String content, Long senderId) {
