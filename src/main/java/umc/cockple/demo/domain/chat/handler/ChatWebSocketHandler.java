@@ -12,7 +12,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
-import umc.cockple.demo.domain.chat.service.WebSocketBroadcastService;
+import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
 import java.time.LocalDateTime;
 
@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatWebSocketService chatWebSocketService;
-    private final WebSocketBroadcastService broadcastService;
+    private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -34,7 +34,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             if (memberId != null) {
                 session.getAttributes().put("memberId", memberId);
-                broadcastService.addSession(memberId, session);
+                subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
                 sendConnectionSuccessMessage(session, memberId);
@@ -91,7 +91,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
 
         if (memberId != null) {
-            broadcastService.removeSession(memberId);
+            subscriptionService.removeSession(memberId);
             log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
         }
     }

@@ -31,7 +31,7 @@ public class ChatWebSocketService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ImageService imageService;
-    private final WebSocketBroadcastService broadcastService;
+    private final SubscriptionService subscriptionService;
 
     private final ChatConverter chatConverter;
 
@@ -52,7 +52,7 @@ public class ChatWebSocketService {
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.Response response =
                 chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
-        broadcastService.broadcastToChatRoom(chatRoomId, response);
+        subscriptionService.broadcastToChatRoom(chatRoomId, response);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
 
@@ -65,12 +65,14 @@ public class ChatWebSocketService {
         WebSocketMessageDTO.Response broadcastSystemMessage
                 = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
 
-        broadcastService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
+        subscriptionService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
     public void subscribeChatRoom(Long chatRoomId, Long memberId) {
         validateChatRoom(chatRoomId);
+
+        subscriptionService.addToChatRoom(chatRoomId, memberId);
     }
 
     // ========== 검증 메서드 ==========
@@ -80,7 +82,6 @@ public class ChatWebSocketService {
         validateContent(content);
         validateChatRoomMember(chatRoomId, senderId);
     }
-
 
     // ========== 세부 검증 메서드 ==========
 

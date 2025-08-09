@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WebSocketBroadcastService {
+public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
 
@@ -94,25 +94,5 @@ public class WebSocketBroadcastService {
                 log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
             }
         }
-    }
-
-    // ========== 테스트용 ==========
-    void clearAllSessionsForTest() {
-        memberSessions.clear();
-        chatRoomSessions.clear();
-    }
-
-    void addChatRoomSessionForTest(Long chatRoomId, Long memberId, WebSocketSession session) {
-        chatRoomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
-                .put(memberId, session);
-    }
-
-    void broadcastToChatRoomForTest(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        broadcastToChatRoom(chatRoomId, message);
-    }
-
-    boolean isMemberInChatRoomForTest(Long chatRoomId, Long memberId) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        return sessions != null && sessions.containsKey(memberId);
     }
 }
