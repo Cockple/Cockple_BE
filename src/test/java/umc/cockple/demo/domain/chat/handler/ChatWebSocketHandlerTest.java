@@ -126,4 +126,19 @@ class ChatWebSocketHandlerTest {
         verify(chatWebSocketService).sendMessage(1L, "안녕하세요!", 123L);
         verify(broadcastService).broadcastToChatRoom(1L, response);
     }
+
+    @Test
+    @Order(4)
+    @DisplayName("연결 종료 시 세션 정리")
+    void afterConnectionClosed_Success() throws Exception {
+        // Given
+        sessionAttributes.put("memberId", 123L);
+        when(session.getAttributes()).thenReturn(sessionAttributes);
+
+        // When
+        handler.afterConnectionClosed(session, null);
+
+        // Then
+        verify(broadcastService).removeSession(123L); // 세션 제거 확인
+    }
 }
