@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.Direction;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
+import umc.cockple.demo.domain.chat.service.ChatFileService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -23,6 +24,7 @@ public class ChatController {
 
     private final ChatQueryService chatQueryService;
     private final ChatCommandService chatCommandService;
+    private final ChatFileService chatFileService;
 
     @PostMapping(value = "/chats/direct")
     @Operation(summary = "개인 채팅방 생성 및 참여", description = "개인 채팅방을 생성하고 상대방과 함께 참여합니다.")
@@ -122,7 +124,7 @@ public class ChatController {
             @PathVariable Long fileId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatDownloadTokenDTO.Response response = chatCommandService.issueDownloadToken(memberId, fileId);
+        ChatDownloadTokenDTO.Response response = chatFileService.issueDownloadToken(memberId, fileId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 }
