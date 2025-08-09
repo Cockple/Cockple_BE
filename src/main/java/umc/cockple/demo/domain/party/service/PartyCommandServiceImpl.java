@@ -89,10 +89,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .build());
         log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", newChatRoom.getId());
 
-        applicationEventPublisher.publishEvent(
-                PartyMemberJoinedEvent.joined(savedParty.getId(), owner)
-        );
-
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
         //ResponseDTO로 변환하여 반환
@@ -565,14 +561,23 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 .build();
         chatRoomMemberRepository.save(chatRoomMember);
         log.info("모임 채팅방 자동 참여 완료  - requestId: {}, chatRoomId: {}", chatRoom.getId());
+
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.joined(partyId, member)
+        );
     }
 
     private void leavePartyChatRoom(Long partyId, Long memberId) {
         log.info("모임 채팅방 퇴장 시작 - memberId: {}", memberId);
+        Member member = findMemberOrThrow(memberId);
         ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
         chatRoomMemberRepository
                 .findByChatRoomIdAndMemberId(chatRoom.getId(), memberId)
                 .ifPresent(chatRoomMemberRepository::delete);
         log.info("모임 채팅방 퇴장 완료 - chatRoomId: {}", chatRoom.getId());
+
+        applicationEventPublisher.publishEvent(
+                PartyMemberJoinedEvent.left(partyId, member)
+        );
     }
 }
