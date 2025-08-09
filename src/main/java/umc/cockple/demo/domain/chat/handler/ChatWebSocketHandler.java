@@ -202,24 +202,4 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.error("시스템 메시지 브로드캐스트 실패 - 채팅방: {}", event.chatRoomId(), e);
         }
     }
-
-    // ========== 테스트용 ==========
-    void clearAllSessionsForTest() {
-        memberSessions.clear();
-        chatRoomSessions.clear();
-    }
-
-    void addChatRoomSessionForTest(Long chatRoomId, Long memberId, WebSocketSession session) {
-        chatRoomSessions.computeIfAbsent(chatRoomId, k -> new ConcurrentHashMap<>())
-                .put(memberId, session);
-    }
-
-    void broadcastToChatRoomForTest(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        broadcastToChatRoom(chatRoomId, message);
-    }
-
-    boolean isMemberInChatRoomForTest(Long chatRoomId, Long memberId) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        return sessions != null && sessions.containsKey(memberId);
-    }
 }
