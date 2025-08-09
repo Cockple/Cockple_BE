@@ -170,7 +170,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             WebSocketMessageDTO.Response response
                     = chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
 
-            broadcastToChatRoom(request.chatRoomId(), response);
+            broadcastService.broadcastToChatRoom(request.chatRoomId(), response);
         } catch (ChatException e) {
             log.error("메시지 전송 중 오류 발생", e);
             sendErrorMessage(session, e.getCode().toString(), e.getMessage());
@@ -196,69 +196,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     .createdAt(event.occurredAt())
                     .build();
 
-            broadcastToChatRoom(event.chatRoomId(), response);
+            broadcastService.broadcastToChatRoom(event.chatRoomId(), response);
 
         } catch (Exception e) {
             log.error("시스템 메시지 브로드캐스트 실패 - 채팅방: {}", event.chatRoomId(), e);
-        }
-    }
-
-    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions == null || sessions.isEmpty()) {
-            log.info("채팅방 {}에 구독 중인 세션이 없습니다.", chatRoomId);
-            return;
-        }
-
-        String messageJson;
-        try {
-            messageJson = objectMapper.writeValueAsString(message);
-        } catch (Exception e) {
-            log.error("메시지를 JSON으로 변환하는데 실패했습니다", e);
-            return;
-        }
-
-        Map<Long, WebSocketSession> sessionsCopy = new HashMap<>(sessions);
-        List<Long> failedSessions = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger successCount = new AtomicInteger(0);
-
-        sessionsCopy.entrySet().parallelStream().forEach(entry -> {
-            Long memberId = entry.getKey();
-            WebSocketSession session = entry.getValue();
-
-            if (session.isOpen()) {
-                try {
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(messageJson));
-                    }
-                    successCount.incrementAndGet();
-                    log.debug("메시지 전송 성공 - 사용자: {}, 세션: {}", memberId, session.getId());
-                } catch (Exception e) {
-                    log.error("메시지 전송 실패 - 사용자: {}, 세션: {}", memberId, session.getId(), e);
-                    failedSessions.add(memberId);
-                }
-            } else {
-                log.warn("닫힌 세션 발견 - 사용자: {}, 세션: {}", memberId, session.getId());
-                failedSessions.add(memberId);
-            }
-        });
-
-        cleanupFailedSessions(chatRoomId, failedSessions);
-
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedSessions.size());
-    }
-
-    private void cleanupFailedSessions(Long chatRoomId, List<Long> failedSessionIds) {
-        if (failedSessionIds.isEmpty()) return;
-
-        Map<Long, WebSocketSession> sessions = chatRoomSessions.get(chatRoomId);
-        if (sessions != null) {
-            failedSessionIds.forEach(sessions::remove);
-
-            if (sessions.isEmpty()) {
-                chatRoomSessions.remove(chatRoomId);
-                log.info("빈 채팅방 세션 맵 제거 - 채팅방: {}", chatRoomId);
-            }
         }
     }
 
