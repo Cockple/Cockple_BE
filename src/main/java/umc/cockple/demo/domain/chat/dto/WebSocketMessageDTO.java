@@ -38,6 +38,15 @@ public class WebSocketMessageDTO {
     }
 
     @Builder
+    public record SubscriptionResponse(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            String message,
+            LocalDateTime timestamp
+    ) {
+    }
+
+    @Builder
     public record ErrorResponse(
             WebSocketMessageType type,
             String errorCode,
