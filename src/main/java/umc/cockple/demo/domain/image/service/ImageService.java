@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -134,19 +135,7 @@ public class ImageService {
         return amazonS3.getUrl(bucket, key).toString();
     }
 
-    public Resource downloadFile(String fileKey) throws MalformedURLException {
-        Date expiration = new Date();
-        long expTimeMillis = expiration.getTime();
-        expTimeMillis += 1000 * 60;
-        expiration.setTime(expTimeMillis);
-
-        //Pre-signed URL 생성
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucket, fileKey)
-                        .withMethod(HttpMethod.GET)
-                        .withExpiration(expiration);
-        URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
-        System.out.println("url테스트: " + url);
-        return new UrlResource(url);
+    public S3Object downloadFile(String fileKey) {
+        return amazonS3.getObject(bucket, fileKey);
     }
 }
