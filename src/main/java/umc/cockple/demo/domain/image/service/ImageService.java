@@ -5,6 +5,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +16,8 @@ import umc.cockple.demo.domain.image.exception.S3Exception;
 import umc.cockple.demo.global.enums.ImgType;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -126,5 +130,10 @@ public class ImageService {
 
     public String getUrlFromKey(String key) {
         return amazonS3.getUrl(bucket, key).toString();
+    }
+
+    public Resource downloadFile(String fileKey) throws MalformedURLException {
+        URL fileUrl = amazonS3.getUrl(bucket, fileKey);
+        return new UrlResource(fileUrl);
     }
 }
