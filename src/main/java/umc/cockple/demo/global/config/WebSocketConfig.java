@@ -6,6 +6,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import umc.cockple.demo.domain.chat.handler.ChatWebSocketHandler;
+import umc.cockple.demo.domain.chat.interceptor.JWTWebSocketAuthInterceptor;
 
 @Configuration
 @EnableWebSocket
@@ -13,12 +14,14 @@ import umc.cockple.demo.domain.chat.handler.ChatWebSocketHandler;
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final ChatWebSocketHandler chatWebSocketHandler;
+    private final JWTWebSocketAuthInterceptor jwtWebSocketAuthInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
                 .addHandler(chatWebSocketHandler, "/ws/chats")
-                .setAllowedOrigins("*") // TODO: 운영 환경에서는 변경 필요. CORS 방지
+                .addInterceptors(jwtWebSocketAuthInterceptor)
+                .setAllowedOrigins("http://localhost:5173", "https://cockple.store")
                 .withSockJS(); // 브라우저 호환성
     }
 }
