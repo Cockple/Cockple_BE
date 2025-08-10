@@ -55,7 +55,6 @@ public class WebSocketMessageDTO {
     public record ReadResponse(
             WebSocketMessageType type,
             Long chatRoomId,
-            Long lastReadMessageId,
             Long readerId,
             LocalDateTime timestamp
     ) implements Response {

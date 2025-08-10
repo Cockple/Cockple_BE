@@ -133,11 +133,10 @@ public class ChatConverter {
     }
 
     public WebSocketMessageDTO.ReadResponse toReadResponse(
-            Long chatRoomId, Long lastReadMessageId, Long readerId) {
+            Long chatRoomId, Long readerId) {
         return  WebSocketMessageDTO.ReadResponse.builder()
                 .type(WebSocketMessageType.READ)
                 .chatRoomId(chatRoomId)
-                .lastReadMessageId(lastReadMessageId)
                 .readerId(readerId)
                 .timestamp(LocalDateTime.now())
                 .build();
