@@ -31,6 +31,18 @@ public class ChatEventListener {
         }
     }
 
+    @EventListener
+    @Async
+    public void handleChatMessageRead(ChatMessageReadEvent event) {
+        log.info("메시지 읽음 이벤트 처리 - 채팅방: {}, 마지막으로 읽은 메시지 ID: {}, 읽은 사람: {}",
+                event.chatRoomId(), event.lastReadMessageId(), event.readerId());
+        try {
+            chatWebSocketService.readMessage(event.chatRoomId(), event.lastReadMessageId(), event.readerId());
+        } catch (Exception e) {
+            log.error("메시지 읽음 이벤트 처리 중 오류 발생", e);
+        }
+    }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) //트랜잭션이 커밋된 후에 실행
     @Async
     public void handlePartyMemberChanged(PartyMemberJoinedEvent event) {
