@@ -20,7 +20,7 @@ public class WebSocketMessageDTO {
             WebSocketMessageType type,
             Long memberId,
             String memberName,
-            LocalDateTime connectedAt,
+            LocalDateTime timestamp,
             String message
     ) {
     }
@@ -57,7 +57,7 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long lastReadMessageId,
             Long readerId,
-            LocalDateTime readTimestamp
+            LocalDateTime timestamp
     ) implements Response {
     }
 

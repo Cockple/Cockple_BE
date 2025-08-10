@@ -114,7 +114,7 @@ public class ChatConverter {
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
-                .createdAt(savedMessage.getCreatedAt())
+                .timestamp(savedMessage.getCreatedAt())
                 .build();
     }
 
@@ -128,7 +128,7 @@ public class ChatConverter {
                 .senderId(null)
                 .senderName("시스템")
                 .senderProfileImageUrl(null)
-                .createdAt(savedMessage.getCreatedAt())
+                .timestamp(savedMessage.getCreatedAt())
                 .build();
     }
 
@@ -139,7 +139,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoomId)
                 .lastReadMessageId(lastReadMessageId)
                 .readerId(readerId)
-                .readTimestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 

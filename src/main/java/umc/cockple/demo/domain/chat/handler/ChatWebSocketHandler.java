@@ -128,7 +128,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     .type(WebSocketMessageType.CONNECT)
                     .memberId(memberInfo.memberId())
                     .memberName(memberInfo.memberName())
-                    .connectedAt(LocalDateTime.now())
+                    .timestamp(LocalDateTime.now())
                     .message("WebSocket 연결이 성공했습니다.")
                     .build();
 
