@@ -82,6 +82,18 @@ public class ChatWebSocketService {
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
+    public void readMessage(Long chatRoomId, Long lastReadMessageId, Long readerId) {
+        validateChatRoomMember(chatRoomId, readerId);
+        updateLastReadMessage(chatRoomId, lastReadMessageId, readerId);
+
+    }
+
+    // ========= 비즈니스 메서드 ==========
+
+    private void updateLastReadMessage(Long chatRoomId, Long lastReadMessageId, Long readerId) {
+        chatRoomMemberRepository.updateLastReadMessageIfNewer(chatRoomId, lastReadMessageId, readerId);
+    }
+
     // ========== 검증 메서드 ==========
 
     private void validateSendMessage(Long chatRoomId, String content, Long senderId) {

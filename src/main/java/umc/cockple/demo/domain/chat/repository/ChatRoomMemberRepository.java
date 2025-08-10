@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -39,7 +40,8 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     Optional<ChatRoomMember> findCounterPartWithMember(
             @Param("chatRoomId") Long chatRoomId,
-            @Param("myId") Long myId);
+            @Param("myId") Long myId
+    );
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
@@ -51,5 +53,19 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     List<ChatRoomMember> findChatRoomMembersWithMemberById(@Param("chatRoomId") Long chatRoomId);
 
     Boolean existsByChatRoomIdAndMemberId(Long roomId, Long memberId);
+
+    @Modifying
+    @Query("""
+            UPDATE ChatRoomMember crm
+            SET crm.lastReadMessageId = :messageId
+            WHERE crm.chatRoom.id = :chatRoomId
+            AND crm.member.id = :memberId
+            AND (crm.lastReadMessageId IS NULL OR crm.lastReadMessageId < :messageId)
+            """)
+    void updateLastReadMessageIfNewer(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("messageId") Long lastReadMessageId,
+            @Param("readerId") Long readerId
+    );
 }
 
