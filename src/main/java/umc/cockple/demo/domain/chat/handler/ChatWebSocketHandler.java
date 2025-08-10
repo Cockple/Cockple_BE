@@ -12,6 +12,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.events.ChatMessageReadEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
@@ -87,7 +88,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     break;
                 case READ:
                     ChatMessageReadEvent readEvent
-                            = ChatMessageReadEvent.create(request.chatRoomId(), request.messageId(), memberId);
+                            = ChatMessageReadEvent.create(request.chatRoomId(), request.lastReadMessageId(), memberId);
                     eventPublisher.publishEvent(readEvent);
                     break;
                 default:

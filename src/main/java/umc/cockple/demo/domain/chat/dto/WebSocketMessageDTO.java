@@ -10,7 +10,8 @@ public class WebSocketMessageDTO {
     public record Request(
             WebSocketMessageType type,
             Long chatRoomId,
-            String content
+            String content,
+            Long lastReadMessageId
     ) {
     }
 
