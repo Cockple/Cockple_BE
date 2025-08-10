@@ -57,6 +57,10 @@ public class ChatEventListener {
                     subscriptionService.subscribeToChatRoom(event.chatRoomId(), event.memberId());
                     log.info("사용자 {}가 채팅방 {}를 구독했습니다.", event.memberId(), event.chatRoomId());
                 }
+                case "UNSUBSCRIBE" -> {
+                    subscriptionService.unsubscribeToChatRoom(event.chatRoomId(), event.memberId());
+                    log.info("사용자 {}가 채팅방 {}를 구독해제했습니다.", event.memberId(), event.chatRoomId());
+                }
                 default -> log.warn("알 수 없는 구독 액션: {}", event.action());
             }
         } catch (Exception e) {
