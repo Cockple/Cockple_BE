@@ -48,6 +48,16 @@ public class WebSocketMessageDTO {
     }
 
     @Builder
+    public record ReadResponse(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            Long lastReadMessageId,
+            Long readerId,
+            LocalDateTime readTimestamp
+    ) {
+    }
+
+    @Builder
     public record ErrorResponse(
             WebSocketMessageType type,
             String errorCode,
