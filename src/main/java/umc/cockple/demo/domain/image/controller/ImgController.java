@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.image.dto.FileUploadDTO;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.global.enums.DomainType;
@@ -39,5 +40,13 @@ public class ImgController {
                                                                 @RequestParam("domainType") DomainType domainType) {
 
         return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadImages(images, domainType));
+    }
+
+    @PostMapping(value = "/s3/upload/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "파일 업로드", description = "S3에 파일을 업로드하고 파일정보를 반환합니다.")
+    public BaseResponse<FileUploadDTO.Response> fileUpload(@RequestPart("file") MultipartFile file,
+                                                  @RequestParam("domainType") DomainType domainType) {
+
+        return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadFile(file, domainType));
     }
 }
