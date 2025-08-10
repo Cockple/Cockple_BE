@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.DownloadToken;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.chat.dto.*;
@@ -210,6 +211,16 @@ public class ChatConverter {
                 .messages(messages)
                 .hasNext(hasNext)
                 .nextCursor(nextCursor)
+                .build();
+    }
+
+    public ChatDownloadTokenDTO.Response toDownloadTokenResponse(DownloadToken token, int validityInSeconds) {
+        String downloadUrl = String.format("/api/chats/files/{fileId}/download?token=%s", token.getFileId(), token.getToken());
+        return ChatDownloadTokenDTO.Response.builder()
+                .downloadToken(token.getToken())
+                .downloadUrl(downloadUrl)
+                .expiresIn(validityInSeconds)
+                .expiresAt(token.getExpiresAt())
                 .build();
     }
 }
