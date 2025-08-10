@@ -20,12 +20,10 @@ public class ChatEventListener {
     private final SubscriptionService subscriptionService;
 
     @EventListener
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleChatMessageSend(ChatMessageSendEvent event) {
         log.info("메시지 전송 이벤트 처리 - 채팅방: {}, 발신자: {}",
                 event.chatRoomId(), event.senderId());
-
         try {
             chatWebSocketService.sendMessage(event.chatRoomId(), event.content(), event.senderId());
         } catch (Exception e) {
@@ -33,7 +31,6 @@ public class ChatEventListener {
         }
     }
 
-    @EventListener
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) //트랜잭션이 커밋된 후에 실행
     @Async
     public void handlePartyMemberChanged(PartyMemberJoinedEvent event) {
@@ -46,7 +43,6 @@ public class ChatEventListener {
     }
 
     @EventListener
-    @Async
     public void handleChatRoomSubscription(ChatRoomSubscriptionEvent event) {
         log.info("채팅방 구독 이벤트 처리 - 채팅방: {}, 사용자: {}, 액션: {}",
                 event.chatRoomId(), event.memberId(), event.action());
