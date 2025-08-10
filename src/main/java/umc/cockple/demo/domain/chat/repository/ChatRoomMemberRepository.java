@@ -59,7 +59,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             UPDATE ChatRoomMember crm
             SET crm.lastReadMessageId = :messageId
             WHERE crm.chatRoom.id = :chatRoomId
-            AND crm.member.id = :memberId
+            AND crm.member.id = :readerId
             AND (crm.lastReadMessageId IS NULL OR crm.lastReadMessageId < :messageId)
             """)
     void updateLastReadMessageIfNewer(
