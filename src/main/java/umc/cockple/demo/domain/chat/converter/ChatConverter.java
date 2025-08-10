@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.chat.dto.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,6 +129,17 @@ public class ChatConverter {
                 .senderName("시스템")
                 .senderProfileImageUrl(null)
                 .createdAt(savedMessage.getCreatedAt())
+                .build();
+    }
+
+    public WebSocketMessageDTO.ReadResponse toReadResponse(
+            Long chatRoomId, Long lastReadMessageId, Long readerId) {
+        return  WebSocketMessageDTO.ReadResponse.builder()
+                .type(WebSocketMessageType.READ)
+                .chatRoomId(chatRoomId)
+                .lastReadMessageId(lastReadMessageId)
+                .readerId(readerId)
+                .readTimestamp(LocalDateTime.now())
                 .build();
     }
 

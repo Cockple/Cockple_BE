@@ -86,6 +86,11 @@ public class ChatWebSocketService {
         validateChatRoomMember(chatRoomId, readerId);
         updateLastReadMessage(chatRoomId, lastReadMessageId, readerId);
 
+        WebSocketMessageDTO.ReadResponse broadcastReadMessage
+                = chatConverter.toReadResponse(chatRoomId, lastReadMessageId, readerId);
+
+        subscriptionService.broadcastToChatRoom(chatRoomId, broadcastReadMessage, readerId);
+        log.info("읽음 브로드캐스트 완료 - chatRoomId: {}, lastReadMessageId: {}", chatRoomId, lastReadMessageId);
     }
 
     // ========= 비즈니스 메서드 ==========
