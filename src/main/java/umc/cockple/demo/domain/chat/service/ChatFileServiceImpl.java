@@ -34,7 +34,7 @@ public class ChatFileServiceImpl implements ChatFileService{
     private final ChatConverter chatConverter;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ImageService imageService;
-    private static final int TOKEN_VALIDITY_SECONDS = 60;
+    private static final int TOKEN_VALIDITY_SECONDS = 180;
 
     @Override
     public ChatDownloadTokenDTO.Response issueDownloadToken(Long fileId, Long memberId) {
