@@ -45,11 +45,11 @@ public class SubscriptionService {
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
+    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
         broadcastToChatRoom(chatRoomId, message, null);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long senderId) {
+    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);

@@ -104,9 +104,9 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
-    public WebSocketMessageDTO.Response toSendMessageResponse(
+    public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage, Member sender, String senderProfileImageUrl) {
-        return WebSocketMessageDTO.Response.builder()
+        return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
@@ -118,9 +118,9 @@ public class ChatConverter {
                 .build();
     }
 
-    public WebSocketMessageDTO.Response toSystemMessageResponse(
+    public WebSocketMessageDTO.MessageResponse toSystemMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage){
-        return WebSocketMessageDTO.Response.builder()
+        return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())

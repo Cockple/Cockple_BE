@@ -26,7 +26,7 @@ public class WebSocketMessageDTO {
     }
 
     @Builder
-    public record Response(
+    public record MessageResponse(
             WebSocketMessageType type,
             Long chatRoomId,
             Long messageId,
