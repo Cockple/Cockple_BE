@@ -1,7 +1,9 @@
 package umc.cockple.demo.domain.image.service;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -133,7 +135,18 @@ public class ImageService {
     }
 
     public Resource downloadFile(String fileKey) throws MalformedURLException {
-        URL fileUrl = amazonS3.getUrl(bucket, fileKey);
-        return new UrlResource(fileUrl);
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += 1000 * 60;
+        expiration.setTime(expTimeMillis);
+
+        //Pre-signed URL 생성
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucket, fileKey)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(expiration);
+        URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+        System.out.println("url테스트: " + url);
+        return new UrlResource(url);
     }
 }
