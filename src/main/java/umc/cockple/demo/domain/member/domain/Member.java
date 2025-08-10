@@ -165,6 +165,7 @@ public class Member extends BaseEntity {
 
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
+        this.refreshToken = null;
     }
 
     public void setRefreshToken(String refreshToken) {

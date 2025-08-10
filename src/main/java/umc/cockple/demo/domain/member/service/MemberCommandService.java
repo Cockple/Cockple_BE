@@ -85,7 +85,7 @@ public class MemberCommandService {
         memberExerciseRepository.deleteAllByMember(member);
         memberPartyRepository.deleteAllByMember(member);
 
-        // 활성화 여부 해제
+        // 활성화 여부 해제, 리프레시 토큰 삭제
         member.withdraw();
     }
 
