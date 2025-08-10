@@ -123,7 +123,7 @@ public class ChatController {
             @PathVariable Long fileId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatDownloadTokenDTO.Response response = chatFileService.issueDownloadToken(memberId, fileId);
+        ChatDownloadTokenDTO.Response response = chatFileService.issueDownloadToken(fileId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
