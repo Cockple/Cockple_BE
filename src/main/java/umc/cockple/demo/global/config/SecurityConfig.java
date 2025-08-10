@@ -52,7 +52,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/api/oauth/login", "/api/auth/dev-token").permitAll()
+                        .requestMatchers("/api/oauth/login", "/api/auth/dev-token", "/api/auth/dev-token/other").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
