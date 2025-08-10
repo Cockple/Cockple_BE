@@ -3,16 +3,19 @@ package umc.cockple.demo.domain.chat.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.exception.ChatException;
+import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
+import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
-import umc.cockple.demo.domain.chat.service.WebSocketBroadcastService;
+import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
 import java.time.LocalDateTime;
 
@@ -21,9 +24,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
+    private final SubscriptionService subscriptionService;
     private final ChatWebSocketService chatWebSocketService;
-    private final WebSocketBroadcastService broadcastService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -33,11 +37,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long memberId = extractMemberIdFromURL(session);
 
             if (memberId != null) {
+                MemberConnectionInfo memberInfo = chatWebSocketService.getMemberConnectionInfo(memberId);
+
                 session.getAttributes().put("memberId", memberId);
-                broadcastService.addSession(memberId, session);
+                session.getAttributes().put("memberName", memberInfo.memberName());
+                subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
-                sendConnectionSuccessMessage(session, memberId);
+                sendConnectionSuccessMessage(session, memberInfo);
             } else {
                 log.warn("memberId를 찾을 수 없습니다. 세션을 종료합니다.");
                 session.close();
@@ -68,7 +75,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             switch (request.type()) {
                 case SEND:
-                    handleSendMessage(session, request, memberId);
+                    ChatMessageSendEvent sendEvent =
+                            ChatMessageSendEvent.create(request.chatRoomId(), request.content(), memberId);
+                    eventPublisher.publishEvent(sendEvent);
+                    break;
+                case SUBSCRIBE:
+                    ChatRoomSubscriptionEvent subscribeEvent =
+                            ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
+                    eventPublisher.publishEvent(subscribeEvent);
+                    sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
                     break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
@@ -88,7 +103,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
 
         if (memberId != null) {
-            broadcastService.removeSession(memberId);
+            subscriptionService.removeSession(memberId);
             log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
         }
     }
@@ -114,11 +129,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return null;
     }
 
-    private void sendConnectionSuccessMessage(WebSocketSession session, Long memberId) {
+    private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         try {
             WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
                     .type(WebSocketMessageType.CONNECT)
-                    .memberId(memberId)
+                    .memberId(memberInfo.memberId())
+                    .memberName(memberInfo.memberName())
                     .connectedAt(LocalDateTime.now())
                     .message("WebSocket 연결이 성공했습니다.")
                     .build();
@@ -126,7 +142,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             String messageJson = objectMapper.writeValueAsString(connectionInfo);
             session.sendMessage(new TextMessage(messageJson));
 
-            log.info("연결 성공 메시지 전송 완료 - memberId: {}", memberId);
+            log.info("연결 성공 메시지 전송 완료 - memberId: {}", memberInfo.memberId());
         } catch (Exception e) {
             log.error("연결 성공 메시지 전송 실패", e);
         }
@@ -154,17 +170,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    // ========== 메시지 처리 메서드들 ==========
-
-    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
-        log.info("메시지 전송 처리 - 채팅방 ID: {}, 사용자 ID: {}, 내용: {}",
-                request.chatRoomId(), memberId, request.content());
+    private void sendSubscriptionMessage(WebSocketSession session, Long chatRoomId, String action) {
+        if (!session.isOpen()) {
+            log.warn("세션이 닫혀있어 구독 응답 메시지를 전송할 수 없습니다.");
+            return;
+        }
 
         try {
-            chatWebSocketService.sendMessage(request.chatRoomId(), request.content(), memberId);
-        } catch (ChatException e) {
-            log.error("메시지 전송 중 오류 발생", e);
-            sendErrorMessage(session, e.getCode().toString(), e.getMessage());
+            WebSocketMessageDTO.SubscriptionResponse subscriptionResponse = WebSocketMessageDTO.SubscriptionResponse.builder()
+                    .type(WebSocketMessageType.valueOf(action))
+                    .chatRoomId(chatRoomId)
+                    .message(action.equals("SUBSCRIBE") ? "채팅방 구독이 완료되었습니다." : "채팅방 구독이 해제되었습니다.")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            String responseJson = objectMapper.writeValueAsString(subscriptionResponse);
+            session.sendMessage(new TextMessage(responseJson));
+
+            log.info("구독 응답 메시지 전송 완료 - 액션: {}, 채팅방: {}", action, chatRoomId);
+        } catch (Exception e) {
+            log.error("구독 응답 메시지 전송 실패", e);
         }
     }
 }

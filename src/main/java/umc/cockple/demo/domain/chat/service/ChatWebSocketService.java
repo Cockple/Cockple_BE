@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -31,19 +32,30 @@ public class ChatWebSocketService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ImageService imageService;
-    private final WebSocketBroadcastService broadcastService;
+    private final SubscriptionService subscriptionService;
 
     private final ChatConverter chatConverter;
 
+    public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
+        log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
+
+        return MemberConnectionInfo.builder()
+                .memberId(memberId)
+                .memberName(member.getMemberName())
+                .build();
+    }
+
     public void sendMessage(Long chatRoomId, String content, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
-        validateInput(chatRoomId, content);
 
+        validateSendMessage(chatRoomId, content, senderId);
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberWithProfileOrThrow(senderId);
-        String profileImageUrl = getImageUrl(sender.getProfileImg());
 
-        validateChatRoomMember(chatRoom, sender);
+        String profileImageUrl = getImageUrl(sender.getProfileImg());
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
@@ -53,7 +65,7 @@ public class ChatWebSocketService {
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.Response response =
                 chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
-        broadcastService.broadcastToChatRoom(chatRoomId, response);
+        subscriptionService.broadcastToChatRoom(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
 
@@ -66,15 +78,27 @@ public class ChatWebSocketService {
         WebSocketMessageDTO.Response broadcastSystemMessage
                 = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
 
-        broadcastService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
+        subscriptionService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
-    private void validateInput(Long chatRoomId, String content) {
+    // ========== 검증 메서드 ==========
+
+    private void validateSendMessage(Long chatRoomId, String content, Long senderId) {
+        validateChatRoom(chatRoomId);
+        validateContent(content);
+        validateChatRoomMember(chatRoomId, senderId);
+    }
+
+    // ========== 세부 검증 메서드 ==========
+
+    private void validateChatRoom(Long chatRoomId) {
         if (chatRoomId == null) {
             throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
         }
+    }
 
+    private void validateContent(String content) {
         if (content == null || content.trim().isEmpty()) {
             throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
         }
@@ -84,8 +108,8 @@ public class ChatWebSocketService {
         }
     }
 
-    private void validateChatRoomMember(ChatRoom chatRoom, Member member) {
-        if (!chatRoomMemberRepository.existsByChatRoomAndMember(chatRoom, member))
+    private void validateChatRoomMember(Long chatRoomId, Long memberId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
             throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
     }
 

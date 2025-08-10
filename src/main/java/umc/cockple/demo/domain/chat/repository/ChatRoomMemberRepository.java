@@ -30,8 +30,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     List<ChatRoomMember> findAllByMemberId(Long id);
 
-    boolean existsByChatRoomAndMember(ChatRoom chatRoom, Member member);
-
     @Query("""
             SELECT crm FROM ChatRoomMember crm
             JOIN FETCH crm.member m
