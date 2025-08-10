@@ -1,26 +1,20 @@
 package umc.cockple.demo.domain.image.service;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.exception.S3ErrorCode;
 import umc.cockple.demo.domain.image.exception.S3Exception;
-import umc.cockple.demo.global.enums.ImgType;
+import umc.cockple.demo.global.enums.DomainType;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,14 +29,14 @@ public class ImageService {
     private final AmazonS3 amazonS3;
 
 
-    public ImageUploadResponseDTO uploadImage(MultipartFile image, ImgType imgType) {
+    public ImageUploadResponseDTO uploadImage(MultipartFile image, DomainType domainType) {
         if (image == null || image.isEmpty()) {
             return null;
         }
 
         log.info("[이미지 업로드 시작]");
 
-        String key = getFileKey(image, imgType); // 예: contest-images/uuid.jpg
+        String key = getFileKey(image, domainType); // 예: contest-images/uuid.jpg
 
         try {
             amazonS3.putObject(
@@ -64,7 +58,7 @@ public class ImageService {
 
         // 업로드된 이미지의 전체 URL 반환
         String imgUrl = amazonS3.getUrl(bucket, key).toString();
-        return new ImageUploadResponseDTO(imgUrl, extractKeyFromUrl(imgUrl, imgType));
+        return new ImageUploadResponseDTO(imgUrl, extractKeyFromUrl(imgUrl, domainType));
     }
 
     /**
@@ -72,13 +66,13 @@ public class ImageService {
      * @param images MultipartFile 이미지 리스트
      * @return 업로드된 이미지 URL 리스트
      */
-    public List<ImageUploadResponseDTO> uploadImages(List<MultipartFile> images, ImgType imgType) {
+    public List<ImageUploadResponseDTO> uploadImages(List<MultipartFile> images, DomainType domainType) {
         if (images == null || images.isEmpty()) {
             return List.of(); // 빈 리스트 반환
         }
 
         return images.stream()
-                .map(img -> uploadImage(img, imgType))
+                .map(img -> uploadImage(img, domainType))
                 .collect(Collectors.toList());
     }
 
@@ -92,7 +86,7 @@ public class ImageService {
         }
     }
 
-    public String getFileKey(MultipartFile image, ImgType imgType) {
+    public String getFileKey(MultipartFile image, DomainType domainType) {
         if (image == null || image.isEmpty()) {
             return null;
         }
@@ -104,11 +98,11 @@ public class ImageService {
         // UUID 기반 유니크 키 생성
         String uuid = UUID.randomUUID().toString();
 
-        if (imgType == ImgType.CONTEST) {
+        if (domainType == DomainType.CONTEST) {
             return "contest-images/" + uuid + "." + extension;
-        } else if (imgType == ImgType.PROFILE) {
+        } else if (domainType == DomainType.PROFILE) {
             return "profile-image/" + uuid + "." + extension;
-        } else if (imgType == ImgType.CHAT) {
+        } else if (domainType == DomainType.CHAT) {
             return "chat-images/" + uuid + "." + extension;
         } else {
             return "party-images/" + uuid + "." + extension;
@@ -116,13 +110,13 @@ public class ImageService {
 
     }
 
-    public String extractKeyFromUrl(String url, ImgType imgType) {
+    public String extractKeyFromUrl(String url, DomainType domainType) {
         int startIndex;
-        if (imgType == ImgType.CONTEST) {
+        if (domainType == DomainType.CONTEST) {
             startIndex = url.indexOf("contest-images/");
-        } else if (imgType == ImgType.PROFILE) {
+        } else if (domainType == DomainType.PROFILE) {
             startIndex = url.indexOf("profile-image/");
-        } else if (imgType == ImgType.CHAT) {
+        } else if (domainType == DomainType.CHAT) {
             startIndex = url.indexOf("chat-images/");
         } else {
             startIndex = url.indexOf("party-images/");

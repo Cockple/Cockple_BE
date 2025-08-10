@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.service.ImageService;
-import umc.cockple.demo.global.enums.ImgType;
+import umc.cockple.demo.global.enums.DomainType;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
@@ -27,17 +27,17 @@ public class ImgController {
     @PostMapping(value = "/s3/upload/img", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "이미지 업로드", description = "S3에 이미지를 업로드하고 이미지 URL과 imgKey를 반환합니다.")
     public BaseResponse<ImageUploadResponseDTO> imgUpload(@RequestPart("image") MultipartFile image,
-                                                          @RequestParam("imageType") ImgType imgType) {
+                                                          @RequestParam("domainType") DomainType domainType) {
 
-        return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadImage(image, imgType));
+        return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadImage(image, domainType));
     }
 
 
     @PostMapping(value = "/s3/upload/imgs", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "이미지 여러장 업로드", description = "S3에 이미지 여러장을 업로드하고 이미지 URL과 imgKey를 반환합니다.")
     public BaseResponse<List<ImageUploadResponseDTO>> imgUpload(@RequestPart("image") List<MultipartFile> images,
-                                                                @RequestParam("imageType") ImgType imgType) {
+                                                                @RequestParam("domainType") DomainType domainType) {
 
-        return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadImages(images, imgType));
+        return BaseResponse.success(CommonSuccessCode.ACCEPTED, imageService.uploadImages(images, domainType));
     }
 }
