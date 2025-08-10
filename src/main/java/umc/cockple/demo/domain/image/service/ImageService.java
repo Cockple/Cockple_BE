@@ -2,6 +2,8 @@ package umc.cockple.demo.domain.image.service;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import umc.cockple.demo.domain.image.dto.FileUploadDTO;
 import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
 import umc.cockple.demo.domain.image.exception.S3ErrorCode;
 import umc.cockple.demo.domain.image.exception.S3Exception;
@@ -74,6 +77,42 @@ public class ImageService {
         return images.stream()
                 .map(img -> uploadImage(img, domainType))
                 .collect(Collectors.toList());
+    }
+
+    public FileUploadDTO.Response uploadFile(MultipartFile file, DomainType domainType) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        log.info("[파일 업로드 시작]");
+
+        String originalFileName = file.getOriginalFilename();
+        String fileKey = domainType.name().toLowerCase() + "-files/" + UUID.randomUUID() + "_" + originalFileName;
+
+        try {
+            //파일은 메타데이터 필요.
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(file.getSize());
+            metadata.setContentType(file.getContentType());
+            amazonS3.putObject(new PutObjectRequest(bucket, fileKey, file.getInputStream(), metadata));
+
+        } catch (AmazonServiceException e) {
+            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
+        } catch (IOException e) {
+            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_IO_EXCEPTION);
+        }
+
+        log.info("[파일 업로드 완료]");
+        String fileUrl = amazonS3.getUrl(bucket, fileKey).toString();
+        return FileUploadDTO.Response.builder()
+                .fileKey(fileKey)
+                .fileUrl(fileUrl)
+                .originalFileName(originalFileName)
+                .fileSize(file.getSize())
+                .fileType(file.getContentType())
+                .build();
     }
 
     public void delete(String imgKey) {
