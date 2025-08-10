@@ -34,13 +34,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("웹소켓 연결 성공");
 
         try {
-            Long memberId = extractMemberIdFromURL(session);
+            Long memberId = (Long) session.getAttributes().get("memberId");
+            Boolean authenticated = (Boolean) session.getAttributes().get("authenticated");
 
-            if (memberId != null) {
+            if (memberId != null && Boolean.TRUE.equals(authenticated)) {
                 MemberConnectionInfo memberInfo = chatWebSocketService.getMemberConnectionInfo(memberId);
-
-                session.getAttributes().put("memberId", memberId);
                 session.getAttributes().put("memberName", memberInfo.memberName());
+
                 subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
@@ -115,19 +115,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // ========== 내부 메서드들 ==========
-
-    private Long extractMemberIdFromURL(WebSocketSession session) {
-        String query = session.getUri().getQuery();
-        if (query != null && query.contains("memberId=")) {
-            try {
-                String memberIdStr = query.split("memberId=")[1].split("&")[0]; // Id값 뽑아내기.
-                return Long.parseLong(memberIdStr);
-            } catch (Exception e) {
-                log.error("memberId 추출 실패", e);
-            }
-        }
-        return null;
-    }
 
     private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         try {
