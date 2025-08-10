@@ -65,7 +65,7 @@ public class ChatWebSocketService {
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
                 chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
-        subscriptionService.broadcastToChatRoom(chatRoomId, response, senderId);
+        subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
 
@@ -78,7 +78,7 @@ public class ChatWebSocketService {
         WebSocketMessageDTO.MessageResponse broadcastSystemMessage
                 = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
 
-        subscriptionService.broadcastToChatRoom(chatRoom.getId(), broadcastSystemMessage);
+        subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
@@ -89,7 +89,7 @@ public class ChatWebSocketService {
         WebSocketMessageDTO.ReadResponse broadcastReadMessage
                 = chatConverter.toReadResponse(chatRoomId, lastReadMessageId, readerId);
 
-        subscriptionService.broadcastToChatRoom(chatRoomId, broadcastReadMessage, readerId);
+        subscriptionService.broadcastReadNotification(chatRoomId, broadcastReadMessage, readerId);
         log.info("읽음 브로드캐스트 완료 - chatRoomId: {}, lastReadMessageId: {}", chatRoomId, lastReadMessageId);
     }
 

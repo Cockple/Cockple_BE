@@ -45,15 +45,19 @@ public class SubscriptionService {
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
+    public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId){
+        broadcastToChatRoom(chatRoomId, message, senderId);
+    }
+
+    public void broadcastSystemMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
         broadcastToChatRoom(chatRoomId, message, null);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.ReadResponse message, Long readerId) {
+    public void broadcastReadNotification(Long chatRoomId, WebSocketMessageDTO.ReadResponse message, Long readerId) {
         broadcastToChatRoom(chatRoomId, message, readerId);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long senderId) {
+    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long excludedMemberId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
@@ -72,7 +76,7 @@ public class SubscriptionService {
         int successCount = 0;
 
         for (Long memberId : subscribers) {
-            if(memberId.equals(senderId)) {
+            if(memberId.equals(excludedMemberId)) {
                 continue;
             }
 
