@@ -170,4 +170,8 @@ public class Member extends BaseEntity {
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
+
+    public void rejoin() {
+        this.isActive = MemberStatus.ACTIVE;
+    }
 }

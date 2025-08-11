@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
@@ -252,9 +253,12 @@ public class MemberCommandService {
             throw new MemberException(MemberErrorCode.ALREADY_WITHDRAW);
         }
 
-        // 모임장인 경우 -> 탈퇴 불가
+        // 활성화 된 모임의 모임장인 경우 -> 탈퇴 불가
         boolean isLeader = member.getMemberParties().stream()
-                .anyMatch(MemberParty::isLeader);
+                .anyMatch(memberParty ->
+                        memberParty.isLeader()
+                                && memberParty.getStatus() == MemberPartyStatus.ACTIVE
+                );
 
         if (isLeader) {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
