@@ -12,13 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.image.dto.FileUploadDTO;
-import umc.cockple.demo.domain.image.dto.ImageUploadResponseDTO;
+import umc.cockple.demo.domain.image.dto.ImageUploadDTO;
 import umc.cockple.demo.domain.image.exception.S3ErrorCode;
 import umc.cockple.demo.domain.image.exception.S3Exception;
 import umc.cockple.demo.global.enums.DomainType;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +33,7 @@ public class ImageService {
     private final AmazonS3 amazonS3;
 
 
-    public ImageUploadResponseDTO uploadImage(MultipartFile image, DomainType domainType) {
+    public ImageUploadDTO.Response uploadImage(MultipartFile image, DomainType domainType) {
         if (image == null || image.isEmpty()) {
             return null;
         }
@@ -43,7 +44,10 @@ public class ImageService {
         String imgUrl = uploadToS3(image, key, false);
 
         log.info("[이미지 업로드 완료]");
-        return new ImageUploadResponseDTO(imgUrl, key);
+        return ImageUploadDTO.Response.builder()
+                .imgUrl(imgUrl)
+                .imgKey(key)
+                .build();
     }
 
     public FileUploadDTO.Response uploadFile(MultipartFile file, DomainType domainType) {
@@ -72,7 +76,7 @@ public class ImageService {
      * @param images MultipartFile 이미지 리스트
      * @return 업로드된 이미지 URL 리스트
      */
-    public List<ImageUploadResponseDTO> uploadImages(List<MultipartFile> images, DomainType domainType) {
+    public List<ImageUploadDTO.Response> uploadImages(List<MultipartFile> images, DomainType domainType) {
         if (images == null || images.isEmpty()) {
             return List.of(); // 빈 리스트 반환
         }
