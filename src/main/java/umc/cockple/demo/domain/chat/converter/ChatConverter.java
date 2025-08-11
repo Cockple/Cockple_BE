@@ -132,16 +132,6 @@ public class ChatConverter {
                 .build();
     }
 
-    public WebSocketMessageDTO.ReadResponse toReadResponse(
-            Long chatRoomId, Long readerId) {
-        return  WebSocketMessageDTO.ReadResponse.builder()
-                .type(WebSocketMessageType.READ)
-                .chatRoomId(chatRoomId)
-                .readerId(readerId)
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
-
     public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(
             ChatRoom chatRoom,
             String displayName,

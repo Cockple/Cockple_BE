@@ -53,11 +53,7 @@ public class SubscriptionService {
         broadcastToChatRoom(chatRoomId, message, null);
     }
 
-    public void broadcastReadNotification(Long chatRoomId, WebSocketMessageDTO.ReadResponse message, Long readerId) {
-        broadcastToChatRoom(chatRoomId, message, readerId);
-    }
-
-    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long excludedMemberId) {
+    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);

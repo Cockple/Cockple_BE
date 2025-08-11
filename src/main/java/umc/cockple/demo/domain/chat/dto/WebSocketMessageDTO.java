@@ -25,10 +25,6 @@ public class WebSocketMessageDTO {
     ) {
     }
 
-    public sealed interface Response
-            permits MessageResponse, ReadResponse, SubscriptionResponse, ErrorResponse {
-    }
-
     @Builder
     public record MessageResponse(
             WebSocketMessageType type,
@@ -39,7 +35,7 @@ public class WebSocketMessageDTO {
             String senderName,
             String senderProfileImageUrl,
             LocalDateTime timestamp
-    ) implements Response {
+    ) {
     }
 
     @Builder
@@ -48,16 +44,7 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             String message,
             LocalDateTime timestamp
-    ) implements Response {
-    }
-
-    @Builder
-    public record ReadResponse(
-            WebSocketMessageType type,
-            Long chatRoomId,
-            Long readerId,
-            LocalDateTime timestamp
-    ) implements Response {
+    ) {
     }
 
     @Builder
@@ -66,7 +53,7 @@ public class WebSocketMessageDTO {
             String errorCode,
             String message,
             Long chatRoomId
-    ) implements Response {
+    ) {
     }
 
 }

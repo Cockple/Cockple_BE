@@ -53,19 +53,5 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     List<ChatRoomMember> findChatRoomMembersWithMemberById(@Param("chatRoomId") Long chatRoomId);
 
     Boolean existsByChatRoomIdAndMemberId(Long roomId, Long memberId);
-
-    @Modifying
-    @Query("""
-            UPDATE ChatRoomMember crm
-            SET crm.lastReadMessageId = :messageId
-            WHERE crm.chatRoom.id = :chatRoomId
-            AND crm.member.id = :readerId
-            AND (crm.lastReadMessageId IS NULL OR crm.lastReadMessageId < :messageId)
-            """)
-    void updateLastReadMessageIfNewer(
-            @Param("chatRoomId") Long chatRoomId,
-            @Param("messageId") Long lastReadMessageId,
-            @Param("readerId") Long readerId
-    );
 }
 

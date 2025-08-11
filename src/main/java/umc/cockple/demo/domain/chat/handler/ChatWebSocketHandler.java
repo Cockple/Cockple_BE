@@ -12,7 +12,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.events.ChatMessageReadEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
@@ -85,11 +84,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                             ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
                     eventPublisher.publishEvent(subscribeEvent);
                     sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
-                    break;
-                case READ:
-                    ChatMessageReadEvent readEvent
-                            = ChatMessageReadEvent.create(request.chatRoomId(), request.lastReadMessageId(), memberId);
-                    eventPublisher.publishEvent(readEvent);
                     break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
