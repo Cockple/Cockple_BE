@@ -43,9 +43,7 @@ public class ImageService {
         String imgUrl = uploadToS3(image, key, false);
 
         log.info("[이미지 업로드 완료]");
-
-        // 업로드된 이미지의 전체 URL 반환
-        return new ImageUploadResponseDTO(imgUrl, extractKeyFromUrl(imgUrl, domainType));
+        return new ImageUploadResponseDTO(imgUrl, key);
     }
 
     public FileUploadDTO.Response uploadFile(MultipartFile file, DomainType domainType) {
@@ -126,21 +124,6 @@ public class ImageService {
         String uuid = UUID.randomUUID().toString();
 
         return domainType.getDirectory() + "/" + uuid + "." + extension;
-    }
-
-    public String extractKeyFromUrl(String url, DomainType domainType) {
-        int startIndex;
-        if (domainType == DomainType.CONTEST) {
-            startIndex = url.indexOf("contest-images/");
-        } else if (domainType == DomainType.PROFILE) {
-            startIndex = url.indexOf("profile-image/");
-        } else if (domainType == DomainType.CHAT) {
-            startIndex = url.indexOf("chat-images/");
-        } else {
-            startIndex = url.indexOf("party-images/");
-        }
-
-        return url.substring(startIndex);
     }
 
     public String getUrlFromKey(String key) {
