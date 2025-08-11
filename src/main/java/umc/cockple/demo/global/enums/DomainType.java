@@ -1,9 +1,15 @@
 package umc.cockple.demo.global.enums;
 
-public enum DomainType {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-    CONTEST,
-    PROFILE,
-    PARTY,
-    CHAT
+@Getter
+@RequiredArgsConstructor
+public enum DomainType {
+    CONTEST("contest"),
+    PROFILE("profile"),
+    CHAT("chat"),
+    PARTY("party");
+
+    private final String directory;
 }
