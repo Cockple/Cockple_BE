@@ -12,6 +12,12 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
+@Table(name = "party_addr", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_addr1_addr2",
+                columnNames = {"addr1", "addr2"}
+        )
+})
 public class PartyAddr extends BaseEntity {
 
     @Id
