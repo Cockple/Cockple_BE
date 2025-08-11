@@ -40,28 +40,33 @@ public class ImageService {
         log.info("[이미지 업로드 시작]");
 
         String key = getFileKey(image, domainType); // 예: contest-images/uuid.jpg
-
-        try {
-            amazonS3.putObject(
-                    bucket,
-                    key,
-                    image.getInputStream(),
-                    null // metadata 생략 가능
-            );
-
-        } catch (AmazonServiceException e) {
-            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.IMAGE_UPLOAD_AMAZON_EXCEPTION);
-        } catch (IOException e) {
-            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.IMAGE_UPLOAD_IO_EXCEPTION);
-        }
+        String imgUrl = uploadToS3(image, key, false);
 
         log.info("[이미지 업로드 완료]");
 
         // 업로드된 이미지의 전체 URL 반환
-        String imgUrl = amazonS3.getUrl(bucket, key).toString();
         return new ImageUploadResponseDTO(imgUrl, extractKeyFromUrl(imgUrl, domainType));
+    }
+
+    public FileUploadDTO.Response uploadFile(MultipartFile file, DomainType domainType) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        log.info("[파일 업로드 시작]");
+
+        String originalFileName = file.getOriginalFilename();
+        String key = getFileKey(file, domainType);
+        String fileUrl = uploadToS3(file, key, false);
+
+        log.info("[파일 업로드 완료]");
+        return FileUploadDTO.Response.builder()
+                .fileKey(key)
+                .fileUrl(fileUrl)
+                .originalFileName(originalFileName)
+                .fileSize(file.getSize())
+                .fileType(file.getContentType())
+                .build();
     }
 
     /**
@@ -79,42 +84,6 @@ public class ImageService {
                 .collect(Collectors.toList());
     }
 
-    public FileUploadDTO.Response uploadFile(MultipartFile file, DomainType domainType) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
-
-        log.info("[파일 업로드 시작]");
-
-        String originalFileName = file.getOriginalFilename();
-        String fileKey = domainType.name().toLowerCase() + "-files/" + UUID.randomUUID() + "_" + originalFileName;
-
-        try {
-            //파일은 메타데이터 필요.
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(file.getSize());
-            metadata.setContentType(file.getContentType());
-            amazonS3.putObject(new PutObjectRequest(bucket, fileKey, file.getInputStream(), metadata));
-
-        } catch (AmazonServiceException e) {
-            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
-        } catch (IOException e) {
-            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_IO_EXCEPTION);
-        }
-
-        log.info("[파일 업로드 완료]");
-        String fileUrl = amazonS3.getUrl(bucket, fileKey).toString();
-        return FileUploadDTO.Response.builder()
-                .fileKey(fileKey)
-                .fileUrl(fileUrl)
-                .originalFileName(originalFileName)
-                .fileSize(file.getSize())
-                .fileType(file.getContentType())
-                .build();
-    }
-
     public void delete(String imgKey) {
         try {
             amazonS3.deleteObject(bucket, imgKey);
@@ -125,28 +94,38 @@ public class ImageService {
         }
     }
 
-    public String getFileKey(MultipartFile image, DomainType domainType) {
-        if (image == null || image.isEmpty()) {
+    private String uploadToS3(MultipartFile file, String key, boolean useMetadata) {
+        try {
+            if (useMetadata) {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setContentLength(file.getSize());
+                metadata.setContentType(file.getContentType());
+                amazonS3.putObject(new PutObjectRequest(bucket, key, file.getInputStream(), metadata));
+            } else {
+                amazonS3.putObject(new PutObjectRequest(bucket, key, file.getInputStream(), null));
+            }
+            return amazonS3.getUrl(bucket, key).toString();
+        } catch (AmazonServiceException e) {
+            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
+        } catch (IOException e) {
+            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_IO_EXCEPTION);
+        }
+    }
+
+    public String getFileKey(MultipartFile file, DomainType domainType) {
+        if (file == null || file.isEmpty()) {
             return null;
         }
 
         // 원본 파일명에서 확장자 추출
-        String originalFilename = image.getOriginalFilename();
+        String originalFilename = file.getOriginalFilename();
         String extension = StringUtils.getFilenameExtension(originalFilename);
-
         // UUID 기반 유니크 키 생성
         String uuid = UUID.randomUUID().toString();
 
-        if (domainType == DomainType.CONTEST) {
-            return "contest-images/" + uuid + "." + extension;
-        } else if (domainType == DomainType.PROFILE) {
-            return "profile-image/" + uuid + "." + extension;
-        } else if (domainType == DomainType.CHAT) {
-            return "chat-images/" + uuid + "." + extension;
-        } else {
-            return "party-images/" + uuid + "." + extension;
-        }
-
+        return domainType.getDirectory() + "/" + uuid + "." + extension;
     }
 
     public String extractKeyFromUrl(String url, DomainType domainType) {
