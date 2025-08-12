@@ -15,4 +15,12 @@ public record ChatRoomSubscriptionEvent(
                 .action("SUBSCRIBE")
                 .build();
     }
+
+    public static ChatRoomSubscriptionEvent unsubscribe(Long chatRoomId, Long memberId) {
+        return ChatRoomSubscriptionEvent.builder()
+                .chatRoomId(chatRoomId)
+                .memberId(memberId)
+                .action("UNSUBSCRIBE")
+                .build();
+    }
 }
