@@ -31,6 +31,12 @@ public class ChatEventListener {
         }
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleMessageRead(ChatMessageReadEvent event) {
+        chatReadService.markAsRead(event.chatRoomId(), event.messageId(), event.memberIds());
+    }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) //트랜잭션이 커밋된 후에 실행
     @Async
     public void handlePartyMemberChanged(PartyMemberJoinedEvent event) {

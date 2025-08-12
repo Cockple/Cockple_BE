@@ -3,12 +3,22 @@ package umc.cockple.demo.domain.chat.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.events.ChatMessageReadEvent;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -17,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
@@ -45,7 +56,7 @@ public class SubscriptionService {
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
-    public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId){
+    public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId) {
         broadcastToChatRoom(chatRoomId, message, senderId);
     }
 
@@ -68,11 +79,12 @@ public class SubscriptionService {
             return;
         }
 
+        List<Long> successMembers = new ArrayList<>();
         List<Long> failedMembers = new ArrayList<>();
-        int successCount = 0;
 
+        // 메시지 브로드캐스트
         for (Long memberId : subscribers) {
-            if(memberId.equals(excludedMemberId)) {
+            if (memberId.equals(excludedMemberId)) {
                 continue;
             }
 
@@ -83,7 +95,8 @@ public class SubscriptionService {
                     synchronized (session) {
                         session.sendMessage(new TextMessage(messageJson));
                     }
-                    successCount++;
+
+                    successMembers.add(memberId);
                     log.debug("메시지 전송 성공 - 사용자: {}", memberId);
                 } catch (Exception e) {
                     log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
@@ -95,9 +108,19 @@ public class SubscriptionService {
             }
         }
 
+        // 읽음 처리 이벤트 발행
+        if (!successMembers.isEmpty()) {
+            ChatMessageReadEvent readEvent = ChatMessageReadEvent.builder()
+                    .chatRoomId(chatRoomId)
+                    .messageId(message.messageId())
+                    .memberIds(successMembers)
+                    .build();
+            applicationEventPublisher.publishEvent(readEvent);
+        }
+
         cleanupFailedSubscriptions(chatRoomId, failedMembers);
 
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedMembers.size());
+        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
     }
 
     private void cleanupFailedSubscriptions(Long chatRoomId, List<Long> failedMemberIds) {
@@ -120,6 +143,30 @@ public class SubscriptionService {
 
             log.info("구독 세션 정리 완료 - 채팅방: {}, 제거된 구독: {}명, 남은 구독: {}명",
                     chatRoomId, removedCount, subscribers.size());
+        }
+    }
+
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW) // 읽음 처리가 메시지 전송에 영향을 주지 않도록 분리
+    protected void markAsReadAsync(Long chatRoomId, Long messageId, Long memberId) {
+        try {
+            ChatRoomMember chatRoomMember = chatRoomMemberRepository
+                    .findByChatRoomIdAndMemberId(chatRoomId, memberId)
+                    .orElse(null);
+
+            if (chatRoomMember != null &&
+                    (chatRoomMember.getLastReadMessageId() == null ||
+                            messageId > chatRoomMember.getLastReadMessageId())) {
+
+                chatRoomMember.updateLastReadMessageId(messageId);
+                chatRoomMemberRepository.save(chatRoomMember);
+
+                log.debug("자동 읽음 처리 완료 - 채팅방: {}, 멤버: {}, 메시지: {}",
+                        chatRoomId, memberId, messageId);
+            }
+        } catch (Exception e) {
+            log.error("자동 읽음 처리 실패 - 채팅방: {}, 멤버: {}, 메시지: {}",
+                    chatRoomId, memberId, messageId, e);
         }
     }
 }
