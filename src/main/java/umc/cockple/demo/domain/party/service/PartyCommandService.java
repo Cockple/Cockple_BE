@@ -12,4 +12,5 @@ public interface PartyCommandService {
     PartyInviteCreateDTO.Response createInvitation(Long partyId, Long memberIdToInvite, Long currentMemberId);
     void actionInvitation(Long memberId, PartyInviteActionDTO.Request request, Long invitationId);
     void updateParty(Long partyId, Long memberId, PartyUpdateDTO.Request request);
+    void addKeyword(Long partyId, Long memberID, PartyKeywordDTO.Request request);
 }
