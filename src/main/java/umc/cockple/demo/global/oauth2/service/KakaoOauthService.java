@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -45,8 +46,13 @@ public class KakaoOauthService {
                 memberRepository.save(Member.builder()
                         .socialId(info.kakaoId())
                         .nickname(info.nickname())
+                        .isActive(MemberStatus.ACTIVE)
                         .build())
         );
+
+        if (member.getIsActive() == MemberStatus.INACTIVE) {
+            member.rejoin();
+        }
 
         // 4. jwt 발급
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());
@@ -83,6 +89,29 @@ public class KakaoOauthService {
                 ;
     }
 
+    public KakaoLoginResponseDTO createOtherDevToken() {
+        // 특정 member 가져오기
+        Member member = memberRepository.findById(2L)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        // accessToken: 2주 만료
+        String accessToken = jwtTokenProvider.createDevToken(member.getId(), member.getNickname());
+
+        // refreshToken: 기본 만료
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
+
+        // refreshToken DB에 저장
+        member.setRefreshToken(refreshToken);
+
+        return KakaoLoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .memberId(member.getId())
+                .nickname(member.getNickname())
+                .isNewMember(false)
+                .build()
+                ;
+    }
 
     public TokenRefreshResponse validateMember(String refreshToken) {
         Member member = memberRepository.findByRefreshToken(refreshToken)

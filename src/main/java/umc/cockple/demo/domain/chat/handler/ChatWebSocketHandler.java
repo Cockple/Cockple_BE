@@ -85,6 +85,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     eventPublisher.publishEvent(subscribeEvent);
                     sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
                     break;
+                case UNSUBSCRIBE:
+                    ChatRoomSubscriptionEvent unsubscribeEvent =
+                            ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
+                    eventPublisher.publishEvent(unsubscribeEvent);
+                    sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+                    break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }

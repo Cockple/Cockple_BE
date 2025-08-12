@@ -56,6 +56,21 @@ public class SubscriptionService {
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
+    public void unsubscribeToChatRoom(Long chatRoomId, Long memberId) {
+        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        if (subscribers == null || subscribers.isEmpty()) {
+            log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
+            return;
+        }
+
+        subscribers.remove(memberId);
+        if (subscribers.isEmpty()) {
+            chatRoomSubscriptions.remove(chatRoomId);
+        }
+
+        log.info("채팅방 구독 해제 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+    }
+
     public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId) {
         broadcastToChatRoom(chatRoomId, message, senderId);
     }

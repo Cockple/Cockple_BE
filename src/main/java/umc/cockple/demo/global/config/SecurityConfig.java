@@ -13,6 +13,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
 
@@ -23,8 +25,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final RestAuthenticationEntryPoint restEntryPoint;
 
 
     @Bean
@@ -46,16 +49,17 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(e -> e.authenticationEntryPoint(restEntryPoint))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/api/oauth/login", "/api/auth/dev-token").permitAll()
+                        .requestMatchers("/api/oauth/login", "/api/auth/dev-token", "/api/auth/dev-token/other").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class)
         ;
 
@@ -65,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cockple.store")); // 배포 시에는 도메인 지정 권장
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cockple.store", "https://cockple-fe.vercel.app/")); // 배포 시에는 도메인 지정 권장
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
