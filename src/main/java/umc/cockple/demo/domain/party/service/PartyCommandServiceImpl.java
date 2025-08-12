@@ -281,7 +281,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     @Override
     public void addKeyword(Long partyId, Long memberID, PartyKeywordDTO.Request request) {
         log.info("키워드 추가 시작 - partyId: {}", partyId);
-        //모임 조회
+        //모임 조회, 키워드 변환
         Party party = findPartyOrThrow(partyId);
         Keyword keyword = Keyword.fromKorean(request.keyword());
 
@@ -291,6 +291,23 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //키워드 추가
         party.addKeyword(keyword);
         log.info("키워드 추가 완료 - partyId: {}", partyId);
+    }
+
+    @Override
+    public void deleteKeyword(Long partyId, Long memberID, PartyKeywordDTO.Request request) {
+        log.info("키워드 삭제 시작 - partyId: {}", partyId);
+        //모임 조회, 키워드 변환
+        Party party = findPartyOrThrow(partyId);
+        Keyword keyword = Keyword.fromKorean(request.keyword());
+
+        //키워드 삭제 가능한지 검증
+        validateDeleteKeyword(party, memberID, keyword);
+        //키워드 조회
+        PartyKeyword partyKeyword = findPartyKeywordOrThrow(party, keyword);
+
+        //키워드 삭제
+        party.removeKeyword(partyKeyword);
+        log.info("키워드 삭제 완료 - partyId: {}", partyId);
     }
 
     // ========== 조회 메서드 ==========
@@ -321,6 +338,12 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private MemberParty findMemberPartyOrThrow(Party party, Member member) {
         return memberPartyRepository.findByPartyAndMember(party, member)
                 .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
+    }
+
+    //키워드 조회
+    private PartyKeyword findPartyKeywordOrThrow(Party party, Keyword keyword) {
+        return partyKeywordRepository.findByPartyAndKeyword(party, keyword)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.KEYWORD_NOT_FOUND));
     }
 
     //주소가 이미 존재하면 조회, 없으면 새로 생성하여 저장
@@ -526,6 +549,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
     }
 
+    //키워드 추가 검증
     private void validateAddKeyword(Party party, Long memberId, Keyword keyword){
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
@@ -533,6 +557,17 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //이미 포함된 키워드인지 검증
         if (partyKeywordRepository.existsByPartyAndKeyword(party, keyword)){
             throw new PartyException(PartyErrorCode.KEYWORD_ALREADY_EXISTS);
+        }
+    }
+
+    //키워드 삭제 검증
+    private void validateDeleteKeyword(Party party, Long memberId, Keyword keyword){
+        //모임장 권한 검증
+        validateOwnerPermission(party, memberId);
+
+        //존재하는 키워드인지 검증
+        if (!partyKeywordRepository.existsByPartyAndKeyword(party, keyword)){
+            throw new PartyException(PartyErrorCode.KEYWORD_NOT_FOUND);
         }
     }
 
