@@ -145,28 +145,4 @@ public class SubscriptionService {
                     chatRoomId, removedCount, subscribers.size());
         }
     }
-
-    @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW) // 읽음 처리가 메시지 전송에 영향을 주지 않도록 분리
-    protected void markAsReadAsync(Long chatRoomId, Long messageId, Long memberId) {
-        try {
-            ChatRoomMember chatRoomMember = chatRoomMemberRepository
-                    .findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                    .orElse(null);
-
-            if (chatRoomMember != null &&
-                    (chatRoomMember.getLastReadMessageId() == null ||
-                            messageId > chatRoomMember.getLastReadMessageId())) {
-
-                chatRoomMember.updateLastReadMessageId(messageId);
-                chatRoomMemberRepository.save(chatRoomMember);
-
-                log.debug("자동 읽음 처리 완료 - 채팅방: {}, 멤버: {}, 메시지: {}",
-                        chatRoomId, memberId, messageId);
-            }
-        } catch (Exception e) {
-            log.error("자동 읽음 처리 실패 - 채팅방: {}, 멤버: {}, 메시지: {}",
-                    chatRoomId, memberId, messageId, e);
-        }
-    }
 }
