@@ -205,6 +205,10 @@ public class Party extends BaseEntity {
         this.exerciseCount = exercises.size();
     }
 
+    public void removeKeyword(PartyKeyword partyKeyword) {
+        this.keywords.remove(partyKeyword);
+    }
+
     public void delete() {
         this.status = PartyStatus.INACTIVE;
 
