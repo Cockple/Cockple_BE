@@ -70,6 +70,20 @@ public class JwtTokenProvider {
 
     // 토큰 유효성 검사
     public boolean validateToken(String token) {
+        // 토큰 null 처리
+        if (token == null || token.isBlank()) {
+            log.warn("JWT validateToken: token is null or blank");
+            throw new MemberException(MemberErrorCode.JWT_IS_NULL);
+        }
+
+        // 접두어가 섞여 들어오는 경우 처리
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7).trim();
+            if (token.isEmpty()) {
+                log.warn("JWT validateToken: 'Bearer ' prefix present but no token");
+                throw new MemberException(MemberErrorCode.JWT_IS_NULL);
+            }
+        }
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key)
