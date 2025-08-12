@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import umc.cockple.demo.domain.chat.service.ChatReadService;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -18,6 +19,7 @@ public class ChatEventListener {
 
     private final ChatWebSocketService chatWebSocketService;
     private final SubscriptionService subscriptionService;
+    private final ChatReadService chatReadService;
 
     @EventListener
     @Async
