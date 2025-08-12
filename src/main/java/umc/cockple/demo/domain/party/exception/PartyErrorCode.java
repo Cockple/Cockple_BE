@@ -29,6 +29,7 @@ public enum PartyErrorCode implements BaseErrorCode {
     JOIN_REQUEST_PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY203", "해당 모임에서 존재하지 않는 가입신청입니다."),
     NOT_MEMBER(HttpStatus.BAD_REQUEST, "PARTY204", "해당 모임의 멤버가 아닙니다."),
     INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY205", "존재하지 않는 모임 초대입니다."),
+    KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY206", "존재하지 않는 키워드입니다."),
 
     INSUFFICIENT_PERMISSION(HttpStatus.FORBIDDEN, "PARTY301", "해당 작업을 수행할 권한이 없습니다."),
     INVALID_ACTION_FOR_OWNER(HttpStatus.FORBIDDEN, "PARTY302", "모임장은 수행할 수 없는 작업입니다."),
