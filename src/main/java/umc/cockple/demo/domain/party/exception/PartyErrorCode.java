@@ -43,7 +43,9 @@ public enum PartyErrorCode implements BaseErrorCode {
     PARTY_IS_DELETED(HttpStatus.BAD_REQUEST, "PARTY407", "이미 삭제된 모임입니다."),
     CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "PARTY408", "자기 자신을 모임에서 삭제할 수 없습니다."),
     INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY409", "처리 대기중인 초대가 존재합니다."),
-    INVITATION_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY410", "이미 처리된 모임 초대입니다.");
+    INVITATION_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY410", "이미 처리된 모임 초대입니다."),
+    KEYWORD_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY411", "이미 존재하는 키워드입니다.")
+    ;
 
     private final HttpStatus httpStatus;
     private final String code;

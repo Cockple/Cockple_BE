@@ -30,10 +30,7 @@ import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
-import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
-import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.domain.party.repository.*;
 import umc.cockple.demo.global.enums.*;
 
 import java.awt.*;
@@ -54,6 +51,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
+    private final PartyKeywordRepository partyKeywordRepository;
 
     private final NotificationCommandService notificationCommandService;
     private final ChatRoomService chatRoomService;
@@ -280,6 +278,21 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         log.info("모임 초대 처리 완료 - invitationId: {}", invitationId);
     }
 
+    @Override
+    public void addKeyword(Long partyId, Long memberID, PartyKeywordDTO.Request request) {
+        log.info("키워드 추가 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+        Keyword keyword = Keyword.fromKorean(request.keyword());
+
+        //키워드 추가 가능한지 검증
+        validateAddKeyword(party, memberID, keyword);
+
+        //키워드 추가
+        party.addKeyword(keyword);
+        log.info("키워드 추가 완료 - partyId: {}", partyId);
+    }
+
     // ========== 조회 메서드 ==========
     //가입신청 조회
     private PartyJoinRequest findJoinRequestOrThrow(Long requestId) {
@@ -327,7 +340,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
     }
 
-    //모임장 권한이 없음을 검증
+    //모임장은 권한이 없음을 검증
     private void validateIsNotOwner(Party party, Long memberId) {
         if (party.getOwnerId().equals(memberId)) {
             throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_OWNER);
@@ -506,11 +519,20 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
     }
 
-
     //모임 활성화 여부 검증
     private void validatePartyIsActive(Party party) {
         if (party.getStatus() == PartyStatus.INACTIVE) {
             throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
+        }
+    }
+
+    private void validateAddKeyword(Party party, Long memberId, Keyword keyword){
+        //모임장 권한 검증
+        validateOwnerPermission(party, memberId);
+
+        //이미 포함된 키워드인지 검증
+        if (partyKeywordRepository.existsByPartyAndKeyword(party, keyword)){
+            throw new PartyException(PartyErrorCode.KEYWORD_ALREADY_EXISTS);
         }
     }
 
