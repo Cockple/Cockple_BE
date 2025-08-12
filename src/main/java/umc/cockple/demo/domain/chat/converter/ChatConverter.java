@@ -215,7 +215,7 @@ public class ChatConverter {
     }
 
     public ChatDownloadTokenDTO.Response toDownloadTokenResponse(DownloadToken token, int validityInSeconds) {
-        String downloadUrl = String.format("/api/chats/files/{fileId}/download?token=%s", token.getFileId(), token.getToken());
+        String downloadUrl = String.format("/api/chats/files/%d/download?token=%s", token.getFileId(), token.getToken());
         return ChatDownloadTokenDTO.Response.builder()
                 .downloadToken(token.getToken())
                 .downloadUrl(downloadUrl)

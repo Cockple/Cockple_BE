@@ -20,7 +20,9 @@ public enum S3ErrorCode implements BaseErrorCode {
     IMAGE_UPLOAD_IO_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "IMG502", "이미지 업로드 중, IO 예외가 발생하였습니다. 서버 관리자에게 문의해주세요"),
     IMAGE_STILL_EXIST(HttpStatus.INTERNAL_SERVER_ERROR,"IMG503" ,"이미지가 삭제되지 않고 S3에 남아있습니다. 서버 관리자에게 문의해주세요" ),
     IMAGE_DELETE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR,"IMG504" ,"이미지 삭제에 실패하였습니다. 서버관리자에게 문의해주세요" ),
-    IMAGE_BUCKET_DIRECTORY_NULL(HttpStatus.BAD_REQUEST, "IMG401", "버킷 디렉토리 값이 유효하지 않습니다."),
+    IMAGE_BUCKET_DIRECTORY_NULL(HttpStatus.BAD_REQUEST, "IMG505", "버킷 디렉토리 값이 유효하지 않습니다."),
+    FILE_UPLOAD_AMAZON_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "IMG506", "파일 업로드 중, AWS 예외가 발생하였습니다. 서버 관리자에게 문의해주세요"),
+    FILE_UPLOAD_IO_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "IMG507", "파일 업로드 중, IO 예외가 발생하였습니다. 서버 관리자에게 문의해주세요"),
     ;
 
     private final HttpStatus httpStatus;

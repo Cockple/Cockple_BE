@@ -1,9 +1,14 @@
 package umc.cockple.demo.domain.chat.service;
 
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,9 +68,9 @@ public class ChatFileServiceImpl implements ChatFileService{
         //채팅 파일 조회
         ChatMessageFile chatFile = findChatFileOrThrow(fileId);
 
-        //S3에서 파일 리소스 가져오기
-        Resource resource = getResourceFromS3(chatFile.getFileKey());
-        ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatFile, resource);
+        //S3에서 파일 객체 직접 가져오기
+        S3Object s3Object = imageService.downloadFile(chatFile.getFileKey());
+        ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatFile, s3Object);
 
         log.info("파일 다운로드 완료 - fileName: {}", chatFile.getOriginalFileName());
         return responseEntity;
@@ -93,24 +98,23 @@ public class ChatFileServiceImpl implements ChatFileService{
         downloadTokenRepository.delete(token);
     }
 
-    private Resource getResourceFromS3(String fileKey) {
-        try {
-            return imageService.downloadFile(fileKey);
-        } catch (MalformedURLException e) {
-            throw new ChatException(ChatErrorCode.FILE_NOT_FOUND);
-        }
-    }
+    private ResponseEntity<Resource> createDownloadResponseEntity(ChatMessageFile chatFile, S3Object s3Object) {
+        //S3 객체에서 직접 메타데이터를 가져오기
+        long contentLength = s3Object.getObjectMetadata().getContentLength();
+        String contentType = s3Object.getObjectMetadata().getContentType();
+        S3ObjectInputStream inputStream = s3Object.getObjectContent();
+        Resource resource = new InputStreamResource(inputStream);
 
-    private ResponseEntity<Resource> createDownloadResponseEntity(ChatMessageFile chatFile, Resource resource) {
-        try {
-            String encodedFileName = URLEncoder.encode(chatFile.getOriginalFileName(), StandardCharsets.UTF_8);
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_TYPE, chatFile.getFileType());
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"");
-            headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(chatFile.getFileSize()));
-            return ResponseEntity.ok().headers(headers).body(resource);
-        } catch (Exception e) {
-            throw new ChatException(ChatErrorCode.RESPONSE_FAILED);
-        }
+        //헤더 생성
+        ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
+                .filename(chatFile.getOriginalFileName(), StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(contentDisposition);
+        headers.setContentType(MediaType.parseMediaType(contentType));
+        headers.setContentLength(contentLength);
+
+        return ResponseEntity.ok().headers(headers).body(resource);
     }
 }
