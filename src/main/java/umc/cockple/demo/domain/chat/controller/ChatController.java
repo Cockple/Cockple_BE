@@ -95,9 +95,7 @@ public class ChatController {
             @PathVariable Long roomId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-
         ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
-
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
