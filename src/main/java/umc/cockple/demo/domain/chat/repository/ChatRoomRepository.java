@@ -95,7 +95,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     @Query("""
             SELECT cr FROM ChatRoom cr
-            JOIN FETCH cr.party p
+            LEFT JOIN FETCH cr.party p
             LEFT JOIN FETCH p.partyImg img
             WHERE cr.id = :roomId
             """)
