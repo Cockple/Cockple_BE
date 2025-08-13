@@ -78,7 +78,7 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
     }
 
     private BooleanExpression addr2Eq(String addr2) {
-        return StringUtils.hasText(addr2) ? party.partyAddr.addr2.eq(addr2) : null;
+        return StringUtils.hasText(addr2) ? party.partyAddr.addr2.eq(addr2).or(party.partyAddr.addr2.eq("전체")) : null;
     }
 
     private BooleanExpression partyTypeIn(List<String> partyTypes) {
