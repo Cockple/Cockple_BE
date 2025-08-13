@@ -10,7 +10,8 @@ public class WebSocketMessageDTO {
     public record Request(
             WebSocketMessageType type,
             Long chatRoomId,
-            String content
+            String content,
+            Long lastReadMessageId
     ) {
     }
 
@@ -19,13 +20,13 @@ public class WebSocketMessageDTO {
             WebSocketMessageType type,
             Long memberId,
             String memberName,
-            LocalDateTime connectedAt,
+            LocalDateTime timestamp,
             String message
     ) {
     }
 
     @Builder
-    public record Response(
+    public record MessageResponse(
             WebSocketMessageType type,
             Long chatRoomId,
             Long messageId,
@@ -33,7 +34,7 @@ public class WebSocketMessageDTO {
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
-            LocalDateTime createdAt
+            LocalDateTime timestamp
     ) {
     }
 

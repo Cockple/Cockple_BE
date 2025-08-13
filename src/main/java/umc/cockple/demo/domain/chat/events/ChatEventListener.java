@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import umc.cockple.demo.domain.chat.service.ChatReadService;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -18,14 +19,13 @@ public class ChatEventListener {
 
     private final ChatWebSocketService chatWebSocketService;
     private final SubscriptionService subscriptionService;
+    private final ChatReadService chatReadService;
 
     @EventListener
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleChatMessageSend(ChatMessageSendEvent event) {
         log.info("메시지 전송 이벤트 처리 - 채팅방: {}, 발신자: {}",
                 event.chatRoomId(), event.senderId());
-
         try {
             chatWebSocketService.sendMessage(event.chatRoomId(), event.content(), event.senderId());
         } catch (Exception e) {
@@ -33,7 +33,12 @@ public class ChatEventListener {
         }
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleMessageRead(ChatMessageReadEvent event) {
+        chatReadService.markAsRead(event.chatRoomId(), event.messageId(), event.memberIds());
+    }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) //트랜잭션이 커밋된 후에 실행
     @Async
     public void handlePartyMemberChanged(PartyMemberJoinedEvent event) {
@@ -46,7 +51,6 @@ public class ChatEventListener {
     }
 
     @EventListener
-    @Async
     public void handleChatRoomSubscription(ChatRoomSubscriptionEvent event) {
         log.info("채팅방 구독 이벤트 처리 - 채팅방: {}, 사용자: {}, 액션: {}",
                 event.chatRoomId(), event.memberId(), event.action());

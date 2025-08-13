@@ -3,9 +3,7 @@ package umc.cockple.demo.domain.chat.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +37,8 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     Optional<ChatRoomMember> findCounterPartWithMember(
             @Param("chatRoomId") Long chatRoomId,
-            @Param("myId") Long myId);
+            @Param("myId") Long myId
+    );
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
@@ -51,5 +50,15 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     List<ChatRoomMember> findChatRoomMembersWithMemberById(@Param("chatRoomId") Long chatRoomId);
 
     Boolean existsByChatRoomIdAndMemberId(Long roomId, Long memberId);
+
+    @Query("""
+            SELECT crm FROM ChatRoomMember crm
+            JOIN FETCH crm.member m
+            WHERE crm.chatRoom.id = :chatRoomId
+            AND crm.member.id IN :memberIds
+            """)
+    List<ChatRoomMember> findChatRoomMembersInChatRoom(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberIds") List<Long> memberIds);
 }
 

@@ -3,12 +3,22 @@ package umc.cockple.demo.domain.chat.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.events.ChatMessageReadEvent;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -17,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
@@ -60,11 +71,15 @@ public class SubscriptionService {
         log.info("채팅방 구독 해제 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message) {
+    public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId) {
+        broadcastToChatRoom(chatRoomId, message, senderId);
+    }
+
+    public void broadcastSystemMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
         broadcastToChatRoom(chatRoomId, message, null);
     }
 
-    public void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.Response message, Long senderId) {
+    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
@@ -79,11 +94,12 @@ public class SubscriptionService {
             return;
         }
 
+        List<Long> successMembers = new ArrayList<>();
         List<Long> failedMembers = new ArrayList<>();
-        int successCount = 0;
 
+        // 메시지 브로드캐스트
         for (Long memberId : subscribers) {
-            if(memberId.equals(senderId)) {
+            if (memberId.equals(excludedMemberId)) {
                 continue;
             }
 
@@ -94,7 +110,8 @@ public class SubscriptionService {
                     synchronized (session) {
                         session.sendMessage(new TextMessage(messageJson));
                     }
-                    successCount++;
+
+                    successMembers.add(memberId);
                     log.debug("메시지 전송 성공 - 사용자: {}", memberId);
                 } catch (Exception e) {
                     log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
@@ -106,9 +123,19 @@ public class SubscriptionService {
             }
         }
 
+        // 읽음 처리 이벤트 발행
+        if (!successMembers.isEmpty()) {
+            ChatMessageReadEvent readEvent = ChatMessageReadEvent.builder()
+                    .chatRoomId(chatRoomId)
+                    .messageId(message.messageId())
+                    .memberIds(successMembers)
+                    .build();
+            applicationEventPublisher.publishEvent(readEvent);
+        }
+
         cleanupFailedSubscriptions(chatRoomId, failedMembers);
 
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successCount, failedMembers.size());
+        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
     }
 
     private void cleanupFailedSubscriptions(Long chatRoomId, List<Long> failedMemberIds) {

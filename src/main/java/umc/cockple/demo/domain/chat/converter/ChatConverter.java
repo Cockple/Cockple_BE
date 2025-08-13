@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.chat.dto.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -104,9 +105,9 @@ public class ChatConverter {
                 ).collect(Collectors.toList());
     }
 
-    public WebSocketMessageDTO.Response toSendMessageResponse(
+    public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage, Member sender, String senderProfileImageUrl) {
-        return WebSocketMessageDTO.Response.builder()
+        return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
@@ -114,13 +115,13 @@ public class ChatConverter {
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
-                .createdAt(savedMessage.getCreatedAt())
+                .timestamp(savedMessage.getCreatedAt())
                 .build();
     }
 
-    public WebSocketMessageDTO.Response toSystemMessageResponse(
+    public WebSocketMessageDTO.MessageResponse toSystemMessageResponse(
             Long chatRoomId, String content, ChatMessage savedMessage){
-        return WebSocketMessageDTO.Response.builder()
+        return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
@@ -128,7 +129,7 @@ public class ChatConverter {
                 .senderId(null)
                 .senderName("시스템")
                 .senderProfileImageUrl(null)
-                .createdAt(savedMessage.getCreatedAt())
+                .timestamp(savedMessage.getCreatedAt())
                 .build();
     }
 
