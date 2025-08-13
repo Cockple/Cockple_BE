@@ -381,6 +381,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
             }
         }
 
+        //여복인 경우, 남자 급수 설정 방지
+        if (partyType == ParticipationType.WOMEN_DOUBLES && command.maleLevel() != null && !command.maleLevel().isEmpty()) {
+            throw new PartyException(PartyErrorCode.MALE_LEVEL_NOT_NEEDED);
+        }
+
         //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
         Gender ownerGender = owner.getGender();
         if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
@@ -399,13 +404,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
         Level ownerLevel = owner.getLevel();
         List<Level> requiredLevels;
-
         if (ownerGender == Gender.FEMALE) {
             requiredLevels = command.femaleLevel();
         } else { // MALE
             requiredLevels = command.maleLevel();
         }
-
         if (!requiredLevels.contains(ownerLevel)) {
             throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
         }

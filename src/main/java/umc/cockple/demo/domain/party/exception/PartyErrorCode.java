@@ -23,6 +23,7 @@ public enum PartyErrorCode implements BaseErrorCode {
     INVALID_REQUEST_STATUS(HttpStatus.BAD_REQUEST, "PARTY105", "유효하지 않은 가입 신청 상태입니다. (PENDING 또는 APPROVED를 입력해주세요.)"),
     INVALID_ORDER_TYPE(HttpStatus.BAD_REQUEST, "PARTY106", "유효하지 않은 정렬 기준입니다. (최신순, 오래된 순, 운동 많은 순 중 하나여야 합니다.)"),
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "PARTY107", "유효하지 않은 키워드입니다."),
+    MALE_LEVEL_NOT_NEEDED(HttpStatus.BAD_REQUEST, "PARTY108", "여복 모임은 남자 급수를 설정할 수 없습니다."),
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
     JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
