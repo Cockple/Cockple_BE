@@ -106,11 +106,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
 
-        if (!recentMessages.isEmpty()) {
-            ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
-            updateLastReadMessage(myMembership, lastMessage.getId());
-        }
-
         log.info("[초기 채팅방 조회 완료] - 메시지 수: {}, 참여자 수: {}",
                 messageInfos.size(), memberInfos.size());
 
@@ -347,11 +342,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         String memberProfileImgUrl = getImageUrl(member.getProfileImg());
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
-    }
-
-    private void updateLastReadMessage(ChatRoomMember myMembership, Long messageId) {
-        myMembership.updateLastReadMessageId(messageId);
-        chatRoomMemberRepository.save(myMembership);
     }
 
     private String getImageUrl(PartyImg partyImg) {
