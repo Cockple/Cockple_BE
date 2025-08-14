@@ -70,6 +70,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     Optional<ChatRoomMember> findPendingMemberInDirect(Long chatRoomId, Long senderId);
 
+    @Query("SELECT crm.member.id FROM ChatRoomMember crm WHERE crm.chatRoom.id = :chatRoomId")
     List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
 }
 
