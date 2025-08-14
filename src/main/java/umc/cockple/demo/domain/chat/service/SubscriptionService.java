@@ -4,23 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.events.ChatMessageReadEvent;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +21,6 @@ import java.util.stream.Collectors;
 public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
@@ -136,16 +128,6 @@ public class SubscriptionService {
                 log.warn("유효하지 않은 세션 - 사용자: {}", memberId);
                 failedMembers.add(memberId);
             }
-        }
-
-        // 읽음 처리 이벤트 발행
-        if (!successMembers.isEmpty()) {
-            ChatMessageReadEvent readEvent = ChatMessageReadEvent.builder()
-                    .chatRoomId(chatRoomId)
-                    .messageId(message.messageId())
-                    .memberIds(successMembers)
-                    .build();
-            applicationEventPublisher.publishEvent(readEvent);
         }
 
         cleanupFailedSubscriptions(chatRoomId, failedMembers);

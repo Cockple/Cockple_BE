@@ -18,24 +18,11 @@ import java.util.Optional;
 @Slf4j
 public class ChatReadService {
 
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markAsRead(Long chatRoomId, Long messageId, List<Long> memberIds) {
-        log.info("읽음 처리 시작 - 채팅방: {}, 메시지: {}, 멤버 수: {}", chatRoomId, messageId, memberIds.size());
-
-        int updatedCount = messageReadStatusRepository.markAsReadInMembers(messageId, memberIds);
-
-        for (Long memberId : memberIds) {
-            updateLastReadMessageId(chatRoomId, memberId, messageId);
-        }
-
-        log.info("읽음 처리 완료 - 채팅방: {}, 업데이트된 상태: {}", messageId, updatedCount);
-    }
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     @Transactional
-    public int subscribersToReadStatus(Long messageId, List<Long> activeSubscribers, Long senderId) {
+    public int subscribersToReadStatus(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
         log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
                 messageId, activeSubscribers.size(), senderId);
 
@@ -46,6 +33,8 @@ public class ChatReadService {
         if (!readers.isEmpty()) {
             int updatedCount = messageReadStatusRepository.markAsReadInMembers(messageId, readers);
             log.info("초기 읽음 처리 완료 - 처리된 구독자: {}명", updatedCount);
+
+            updateLastReadMessageIds(chatRoomId, messageId, readers);
         }
 
         int finalUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
@@ -54,16 +43,22 @@ public class ChatReadService {
         return finalUnreadCount;
     }
 
-    private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
-        Optional<ChatRoomMember> chatRoomMemberOpt =
-                chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
+    private void updateLastReadMessageIds(Long chatRoomId, Long messageId, List<Long> memberIds) {
+        for (Long memberId : memberIds) {
+            try {
+                Optional<ChatRoomMember> chatRoomMemberOpt =
+                        chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
 
-        if (chatRoomMemberOpt.isPresent()) {
-            ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
+                if (chatRoomMemberOpt.isPresent()) {
+                    ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
 
-            if (chatRoomMember.getLastReadMessageId() == null ||
-                    messageId > chatRoomMember.getLastReadMessageId()) {
-                chatRoomMember.updateLastReadMessageId(messageId);
+                    if (chatRoomMember.getLastReadMessageId() == null ||
+                            messageId > chatRoomMember.getLastReadMessageId()) {
+                        chatRoomMember.updateLastReadMessageId(messageId);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
             }
         }
     }
