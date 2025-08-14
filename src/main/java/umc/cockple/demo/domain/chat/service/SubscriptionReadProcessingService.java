@@ -21,6 +21,14 @@ public class SubscriptionReadProcessingService {
 
         List<Long> unreadMessageIds = messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId);
 
+        if (unreadMessageIds.isEmpty()) {
+            log.debug("처리할 안읽은 메시지가 없음 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
+            return List.of();
+        }
+
+        log.debug("처리할 안읽은 메시지 수: {} - 채팅방: {}, 멤버: {}", unreadMessageIds.size(), chatRoomId, memberId);
+
+
     }
 
     public record MessageUnreadUpdate(
