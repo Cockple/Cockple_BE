@@ -189,11 +189,13 @@ public class ExerciseConverter {
             Boolean isMember,
             Party party,
             Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus) {
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> participatingStatus) {
 
         PartyLevelCache levelCache = createPartyLevelCache(party);
 
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = groupPartyExerciseByWeek(exercises, levelCache, participantCounts, bookmarkStatus, start, end);
+        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks
+                = groupPartyExerciseByWeek(exercises, levelCache, participantCounts, bookmarkStatus, start, end, participatingStatus);
 
         return PartyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -490,7 +492,8 @@ public class ExerciseConverter {
             Map<Long, Integer> participantCounts,
             Map<Long, Boolean> bookmarkStatus,
             LocalDate start,
-            LocalDate end) {
+            LocalDate end,
+            Map<Long, Boolean> participatingStatus) {
 
         List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -500,7 +503,7 @@ public class ExerciseConverter {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<PartyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
-                    groupPartyExerciseByDate(weekExercises, weekStart, weekEnd, levelCache, participantCounts, bookmarkStatus);
+                    groupPartyExerciseByDate(weekExercises, weekStart, weekEnd, levelCache, participantCounts, bookmarkStatus, participatingStatus);
 
             weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
@@ -584,7 +587,8 @@ public class ExerciseConverter {
             LocalDate weekEnd,
             PartyLevelCache levelCache,
             Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus) {
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> participatingStatus) {
 
         Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
                 .collect(Collectors.groupingBy(Exercise::getDate));
@@ -595,7 +599,7 @@ public class ExerciseConverter {
             List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
 
             List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = dayExercises.stream()
-                    .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus))
+                    .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus, participatingStatus))
                     .toList();
 
             dailyExercisesList.add(createPartyDailyExercises(date, exerciseItems));
@@ -796,7 +800,8 @@ public class ExerciseConverter {
             Exercise exercise,
             PartyLevelCache levelCache,
             Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus) {
+            Map<Long, Boolean> bookmarkStatus,
+            Map<Long, Boolean> participatingStatus) {
 
         Integer currentParticipants = participantCounts.getOrDefault(exercise.getId(), 0);
 
@@ -810,6 +815,7 @@ public class ExerciseConverter {
                 .maleLevel(levelCache.maleLevel())
                 .currentParticipants(currentParticipants)
                 .maxCapacity(exercise.getMaxCapacity())
+                .isParticipating((participatingStatus.getOrDefault(exercise.getId(), false)))
                 .build();
     }
 

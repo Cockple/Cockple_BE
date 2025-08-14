@@ -134,11 +134,12 @@ public class ExerciseQueryService {
 
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = getExerciseBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> participatingStatus = getExerciseParticipatingStatus(memberId, exerciseIds);
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
         return exerciseConverter.toPartyCalendarResponse(
-                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus);
+                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus, participatingStatus);
     }
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
@@ -895,6 +896,21 @@ public class ExerciseQueryService {
                 .collect(Collectors.toMap(
                         exerciseId -> exerciseId,
                         bookmarkedExerciseIds::contains
+                ));
+    }
+
+    private Map<Long, Boolean> getExerciseParticipatingStatus(Long memberId, List<Long> exerciseIds) {
+        if (exerciseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> participatingExerciseIds = memberExerciseRepository
+                .findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
+
+        return exerciseIds.stream()
+                .collect(Collectors.toMap(
+                        exerciseId -> exerciseId,
+                        participatingExerciseIds::contains
                 ));
     }
 
