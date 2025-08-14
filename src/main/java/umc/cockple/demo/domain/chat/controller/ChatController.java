@@ -27,17 +27,6 @@ public class ChatController {
     private final ChatCommandService chatCommandService;
     private final ChatFileService chatFileService;
 
-    @PostMapping(value = "/chats/direct")
-    @Operation(summary = "개인 채팅방 생성 및 참여", description = "개인 채팅방을 생성하고 참여합니다. 상대방은 대기 상태로 초대됩니다.")
-    @ApiResponse(responseCode = "201", description = "생성 성공")
-    public BaseResponse<DirectChatRoomCreateDTO.Response> createDirectChatRoom(
-            @RequestParam Long targetMemberId
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomCreateDTO.Response response = chatCommandService.createDirectChatRoom(memberId, targetMemberId);
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
-    }
-
     @GetMapping(value = "/chats/parties")
     @Operation(summary = "모임 채팅방 목록 조회", description = "회원이 자신의 모임 채팅방 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -61,6 +50,17 @@ public class ChatController {
         Long memberId = SecurityUtil.getCurrentMemberId();
         PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @PostMapping(value = "/chats/direct")
+    @Operation(summary = "개인 채팅방 생성 및 참여", description = "개인 채팅방을 생성하고 참여합니다. 상대방은 대기 상태로 초대됩니다.")
+    @ApiResponse(responseCode = "201", description = "생성 성공")
+    public BaseResponse<DirectChatRoomCreateDTO.Response> createDirectChatRoom(
+            @RequestParam Long targetMemberId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        DirectChatRoomCreateDTO.Response response = chatCommandService.createDirectChatRoom(memberId, targetMemberId);
+        return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
     @GetMapping(value = "/chats/direct")
