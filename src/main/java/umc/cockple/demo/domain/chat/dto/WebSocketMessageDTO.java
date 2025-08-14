@@ -57,4 +57,14 @@ public class WebSocketMessageDTO {
     ) {
     }
 
+    @Builder
+    public record UnreadCountUpdateMessage(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            Long messageId,
+            int newUnreadCount,
+            LocalDateTime timestamp
+    ) {
+    }
+
 }

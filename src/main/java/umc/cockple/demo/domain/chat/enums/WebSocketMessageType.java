@@ -6,5 +6,6 @@ public enum WebSocketMessageType {
     READ,
     SUBSCRIBE,
     UNSUBSCRIBE,
-    ERROR
+    ERROR,
+    UNREAD_COUNT_UPDATE
 }
