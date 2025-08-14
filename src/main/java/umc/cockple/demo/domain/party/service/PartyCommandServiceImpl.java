@@ -5,12 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
-import umc.cockple.demo.domain.chat.enums.ChatRoomType;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -32,16 +26,18 @@ import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.*;
-import umc.cockple.demo.global.enums.*;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Keyword;
+import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.global.enums.Role;
 
-import java.awt.*;
 import java.util.List;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class PartyCommandServiceImpl implements PartyCommandService{
+public class PartyCommandServiceImpl implements PartyCommandService {
 
     private final PartyRepository partyRepository;
     private final PartyAddrRepository partyAddrRepository;
@@ -49,8 +45,6 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final PartyConverter partyConverter;
-    private final ChatRoomRepository chatRoomRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
     private final PartyKeywordRepository partyKeywordRepository;
 
@@ -220,9 +214,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         validateJoinRequestAction(party, partyJoinRequest);
 
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
-        if(RequestAction.APPROVE.equals(request.action())){
+        if (RequestAction.APPROVE.equals(request.action())) {
             approveJoinRequest(partyJoinRequest);
-        }else{
+        } else {
             rejectJoinRequest(partyJoinRequest);
         }
 
@@ -261,9 +255,9 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         validateInvitationAction(invitation, memberId);
 
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
-        if(RequestAction.APPROVE.equals(request.action())){
+        if (RequestAction.APPROVE.equals(request.action())) {
             approveInvitation(invitation);
-        }else{
+        } else {
             rejectInvitation(invitation);
         }
 
@@ -350,7 +344,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     // ========== 검증 메서드 ==========
     //모임장 권한 검증
     private void validateOwnerPermission(Party party, Long memberId) {
-        if(!party.getOwnerId().equals(memberId)){
+        if (!party.getOwnerId().equals(memberId)) {
             throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
     }
@@ -389,7 +383,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Integer maxBirthYear = command.maxBirthYear();
         Integer ownerBirthYear = owner.getBirth().getYear();
 
-        if(minBirthYear > ownerBirthYear || ownerBirthYear > maxBirthYear){
+        if (minBirthYear > ownerBirthYear || ownerBirthYear > maxBirthYear) {
             throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
         }
 
@@ -461,7 +455,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         Integer maxBirthYear = party.getMaxBirthYear();
         Integer memberBirthYear = member.getBirth().getYear();
 
-        if(minBirthYear > memberBirthYear || memberBirthYear > maxBirthYear){
+        if (minBirthYear > memberBirthYear || memberBirthYear > maxBirthYear) {
             throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
         }
     }
@@ -494,11 +488,11 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     //모임 가입신청 처리 검증
     private void validateJoinRequestAction(Party party, PartyJoinRequest joinRequest) {
         //해당 모임의 가입신청인지 검증
-        if(!joinRequest.getParty().getId().equals(party.getId())){
+        if (!joinRequest.getParty().getId().equals(party.getId())) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_PARTY_NOT_FOUND);
         }
         //이미 처리된 가입신청인지 검증
-        if(joinRequest.getStatus()!=RequestStatus.PENDING){
+        if (joinRequest.getStatus() != RequestStatus.PENDING) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
         }
     }
@@ -522,7 +516,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     //모임 초대 처리 검증
     private void validateInvitationAction(PartyInvitation invitation, Long memberId) {
         //초대받은 사용자와 현재 사용자가 일치하는지 검증
-        if (!memberId.equals(invitation.getInvitee().getId())){
+        if (!memberId.equals(invitation.getInvitee().getId())) {
             throw new PartyException(PartyErrorCode.NOT_YOUR_INVITATION);
         }
 
@@ -532,7 +526,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         }
 
         //이미 처리된 모임 초대인지 검증
-        if (invitation.getStatus() != RequestStatus.PENDING){
+        if (invitation.getStatus() != RequestStatus.PENDING) {
             throw new PartyException(PartyErrorCode.INVITATION_ALREADY_ACTIONS);
         }
     }
@@ -545,23 +539,23 @@ public class PartyCommandServiceImpl implements PartyCommandService{
     }
 
     //키워드 추가 검증
-    private void validateAddKeyword(Party party, Long memberId, Keyword keyword){
+    private void validateAddKeyword(Party party, Long memberId, Keyword keyword) {
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
 
         //이미 포함된 키워드인지 검증
-        if (partyKeywordRepository.existsByPartyAndKeyword(party, keyword)){
+        if (partyKeywordRepository.existsByPartyAndKeyword(party, keyword)) {
             throw new PartyException(PartyErrorCode.KEYWORD_ALREADY_EXISTS);
         }
     }
 
     //키워드 삭제 검증
-    private void validateDeleteKeyword(Party party, Long memberId, Keyword keyword){
+    private void validateDeleteKeyword(Party party, Long memberId, Keyword keyword) {
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
 
         //존재하는 키워드인지 검증
-        if (!partyKeywordRepository.existsByPartyAndKeyword(party, keyword)){
+        if (!partyKeywordRepository.existsByPartyAndKeyword(party, keyword)) {
             throw new PartyException(PartyErrorCode.KEYWORD_NOT_FOUND);
         }
     }
@@ -572,7 +566,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         partyJoinRequest.updateStatus(RequestStatus.APPROVED);
         Party party = partyJoinRequest.getParty();
         Member member = partyJoinRequest.getMember();
-        MemberParty newMemberParty= MemberParty.create(party, member);
+        MemberParty newMemberParty = MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
         chatRoomService.joinPartyChatRoom(party.getId(), member);
@@ -580,6 +574,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );
     }
+
     private void rejectJoinRequest(PartyJoinRequest partyJoinRequest) {
         partyJoinRequest.updateStatus(RequestStatus.REJECTED);
     }
@@ -589,7 +584,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         invitation.updateStatus(RequestStatus.APPROVED);
         Party party = invitation.getParty();
         Member member = invitation.getInvitee();
-        MemberParty newMemberParty= MemberParty.create(party, member);
+        MemberParty newMemberParty = MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
         chatRoomService.joinPartyChatRoom(party.getId(), member);
@@ -597,6 +592,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );
     }
+
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
     }
