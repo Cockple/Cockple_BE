@@ -358,8 +358,11 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
     //모임 생성 검증
     private void validateCreateParty(Member owner, PartyCreateDTO.Command command) {
-        // 혼복인 경우, 남녀 급수 정보가 모두 있는지 검증
         ParticipationType partyType = command.partyType();
+        Gender ownerGender = owner.getGender();
+        Level ownerLevel = owner.getLevel();
+
+        // 혼복인 경우, 남녀 급수 정보가 모두 있는지 검증
         if (partyType == ParticipationType.MIX_DOUBLES) {
             //FEMALE은 DTO단에서 검증 완료
             if (command.maleLevel() == null || command.maleLevel().isEmpty()) {
@@ -373,22 +376,12 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         }
 
         //생성하려는 모임의 모임 유형의 성별에 본인도 적합한지 확인
-        Gender ownerGender = owner.getGender();
-        if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
-            throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
-        }
+        validateGenderRequirement(ownerGender, partyType);
 
         //생성하려는 모임의 나이 조건에 본인도 적합한지 확인
-        Integer minBirthYear = command.minBirthYear();
-        Integer maxBirthYear = command.maxBirthYear();
-        Integer ownerBirthYear = owner.getBirth().getYear();
-
-        if (minBirthYear > ownerBirthYear || ownerBirthYear > maxBirthYear) {
-            throw new PartyException(PartyErrorCode.AGE_NOT_MATCH);
-        }
+        validateAgeRequirement(owner, command.minBirthYear(), command.maxBirthYear());
 
         //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
-        Level ownerLevel = owner.getLevel();
         List<Level> requiredLevels;
         if (ownerGender == Gender.FEMALE) {
             requiredLevels = command.femaleLevel();
@@ -441,15 +434,14 @@ public class PartyCommandServiceImpl implements PartyCommandService {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS);
         }
         //해당 모임의 모임 유형에 맞는 성별인지 검증
-        validateGenderRequirement(member, party);
+        validateGenderRequirement(member.getGender(), party.getPartyType());
 
         //해당 모임의 나이 조건에 적합한지 검증
-        validateAgeRequirement(member, party);
+        validateAgeRequirement(member, party.getMinBirthYear(), party.getMaxBirthYear());
     }
 
-    private void validateAgeRequirement(Member member, Party party) {
-        Integer minBirthYear = party.getMinBirthYear();
-        Integer maxBirthYear = party.getMaxBirthYear();
+    //나이대 검증
+    private void validateAgeRequirement(Member member, Integer minBirthYear, Integer maxBirthYear) {
         Integer memberBirthYear = member.getBirth().getYear();
 
         if (minBirthYear > memberBirthYear || memberBirthYear > maxBirthYear) {
@@ -457,12 +449,9 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         }
     }
 
-    private void validateGenderRequirement(Member member, Party party) {
-        ParticipationType partyType = party.getPartyType();
-        Gender memberGender = member.getGender();
-
-        //현재 모임유형에 남복은 존재하지 않으므로, 여복만 확인
-        if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
+    //성별 검증
+    private void validateGenderRequirement(Gender ownerGender, ParticipationType partyType) {
+        if (partyType == ParticipationType.WOMEN_DOUBLES && ownerGender != Gender.FEMALE) {
             throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
         }
     }
