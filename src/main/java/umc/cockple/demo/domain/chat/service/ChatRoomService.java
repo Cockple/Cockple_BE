@@ -25,7 +25,7 @@ public class ChatRoomService {
 
     public void createPartyChatRoom(Party party, Member owner) {
         log.info("[모임 채팅방 생성 시작] - partyId: {}", party.getId());
-        ChatRoom chatRoom = ChatRoom.create(party, ChatRoomType.PARTY);
+        ChatRoom chatRoom = ChatRoom.createPartyChatRoom(party);
         ChatRoomMember chatRoomMember = ChatRoomMember.create(chatRoom, owner);
 
         chatRoom.addChatRoomMember(chatRoomMember);

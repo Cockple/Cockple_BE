@@ -38,8 +38,10 @@ public class ChatCommandServiceImpl implements ChatCommandService {
         if (memberId.equals(targetMemberId)) {
             throw new ChatException(ChatErrorCode.CANNOT_CHAT_WITH_SELF);
         }
+
         Member me = getMember(memberId);
         Member target = getMember(targetMemberId);
+
         // 이미 존재하는 1:1 채팅방 있는지 확인
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDirectChatRoomByMemberIds(memberId, targetMemberId);
         if (existingRoom.isPresent()) {
