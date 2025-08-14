@@ -21,4 +21,29 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
     int markAsReadInMembers(
             @Param("messageId") Long messageId,
             @Param("memberIds") List<Long> memberIds);
+
+    @Query("""
+            SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            WHERE mrs.chatRoomId = :chatRoomId
+            AND mrs.memberId = :memberId
+            AND mrs.chatMessageId > :lastReadMessageId
+            AND mrs.isRead = false
+            """)
+    int countUnreadMessagesAfter(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberId") Long memberId,
+            @Param("lastReadMessageId") Long lastReadMessageId
+    );
+
+
+    @Query("""
+            SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            WHERE mrs.chatRoomId = :chatRoomId
+            AND mrs.memberId = :memberId
+            AND mrs.isRead = false
+            """)
+    int countAllUnreadMessages(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberId") Long memberId
+    );
 }
