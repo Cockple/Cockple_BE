@@ -41,7 +41,6 @@ public class ChatCommandServiceImpl implements ChatCommandService {
 
         Member me = findMemberOrThrow(memberId);
         Member target = findMemberOrThrow(targetMemberId);
-
         // 이미 존재하는 1:1 채팅방 있는지 확인
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDirectChatRoomByMemberIds(memberId, targetMemberId);
         if (existingRoom.isPresent()) {
