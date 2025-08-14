@@ -28,7 +28,7 @@ public class ChatController {
     private final ChatFileService chatFileService;
 
     @PostMapping(value = "/chats/direct")
-    @Operation(summary = "개인 채팅방 생성 및 참여", description = "개인 채팅방을 생성하고 상대방과 함께 참여합니다.")
+    @Operation(summary = "개인 채팅방 생성 및 참여", description = "개인 채팅방을 생성하고 참여합니다. 상대방은 대기 상태로 초대됩니다.")
     @ApiResponse(responseCode = "201", description = "생성 성공")
     public BaseResponse<DirectChatRoomCreateDTO.Response> createDirectChatRoom(
             @RequestParam Long targetMemberId
