@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
+    private final SubscriptionReadProcessingService subscriptionReadProcessingService;
 
     // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
@@ -47,6 +48,9 @@ public class SubscriptionService {
                 .add(memberId);
 
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
+
+        List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates =
+                subscriptionReadProcessingService.processUnreadMessagesOnSubscribe(chatRoomId, memberId);
     }
 
     public void unsubscribeToChatRoom(Long chatRoomId, Long memberId) {
