@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -69,6 +70,8 @@ public class ChatWebSocketService {
 
         checkFirstMessageInDirect(chatRoomId, senderId, chatRoom);
         messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
+
+        List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =

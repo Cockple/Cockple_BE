@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +78,20 @@ public class SubscriptionService {
 
     public void broadcastSystemMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
         broadcastToChatRoom(chatRoomId, message, null);
+    }
+
+    public List<Long> getActiveSubscribers(Long chatRoomId) {
+        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        if (subscribers == null || subscribers.isEmpty()) {
+            return List.of();
+        }
+
+        return subscribers.stream()
+                .filter(memberId -> {
+                    WebSocketSession session = memberSessions.get(memberId);
+                    return session != null && session.isOpen();
+                })
+                .toList();
     }
 
     private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
