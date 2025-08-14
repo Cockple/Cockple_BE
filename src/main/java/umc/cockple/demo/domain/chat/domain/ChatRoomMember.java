@@ -58,6 +58,11 @@ public class ChatRoomMember extends BaseEntity {
                 .status(ChatRoomMemberStatus.PENDING)
                 .build();
     }
+
+    public void joinChatRoom(){
+        this.status = ChatRoomMemberStatus.JOINED;
+    }
+
     void setChatRoom(ChatRoom chatRoom) {
         this.chatRoom = chatRoom;
     }
