@@ -70,7 +70,7 @@ public class ChatWebSocketService {
     }
 
     public void sendSystemMessage(Long partyId, String content) {
-        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+        ChatRoom chatRoom = findChatRoomByPartyIdOrThrow(partyId);
 
         ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
         chatMessageRepository.save(systemMessage);
@@ -122,6 +122,11 @@ public class ChatWebSocketService {
 
     private ChatRoom findChatRoomOrThrow(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {
+        return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 

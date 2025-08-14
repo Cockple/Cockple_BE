@@ -575,7 +575,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        chatRoomService.joinPartyChatRoom(party.getId(), member);
         applicationEventPublisher.publishEvent(
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );
@@ -592,7 +592,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         MemberParty newMemberParty= MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        chatRoomService.joinPartyChatRoom(party.getId(), member.getId());
+        chatRoomService.joinPartyChatRoom(party.getId(), member);
         applicationEventPublisher.publishEvent(
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );
