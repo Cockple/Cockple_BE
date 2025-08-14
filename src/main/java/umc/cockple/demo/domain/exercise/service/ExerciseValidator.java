@@ -40,7 +40,7 @@ public class ExerciseValidator {
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION);
         validateAlreadyJoined(exercise, member);
         validateJoinPermission(exercise, member);
-        validateMemberLevel(exercise.getParty(), member);
+//        validateMemberLevel(exercise.getParty(), member);
         validateMemberAge(exercise.getParty(), member);
     }
 
