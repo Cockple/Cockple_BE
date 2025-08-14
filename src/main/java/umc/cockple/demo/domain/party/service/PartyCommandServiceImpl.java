@@ -443,9 +443,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //해당 모임의 모임 유형에 맞는 성별인지 검증
         validateGenderRequirement(member, party);
 
-        //해당 모임의 급수 조건에 적합한지 검증
-        validateLevelRequirement(member, party);
-
         //해당 모임의 나이 조건에 적합한지 검증
         validateAgeRequirement(member, party);
     }
@@ -467,21 +464,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //현재 모임유형에 남복은 존재하지 않으므로, 여복만 확인
         if (partyType == ParticipationType.WOMEN_DOUBLES && memberGender != Gender.FEMALE) {
             throw new PartyException(PartyErrorCode.GENDER_NOT_MATCH);
-        }
-    }
-
-    private void validateLevelRequirement(Member member, Party party) {
-        // 모임의 급수 조건 중, 신청자의 성별과 일치하는 조건 반환
-        List<Level> requiredLevels = party.getLevels().stream()
-                .filter(partyLevel -> partyLevel.getGender() == member.getGender())
-                .map(PartyLevel::getLevel)
-                .toList();
-
-        if (!requiredLevels.isEmpty()) {
-            // 신청자의 급수가 모임의 조건 목록에 포함되어 있는지 확인
-            if (!requiredLevels.contains(member.getLevel())) {
-                throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
-            }
         }
     }
 
