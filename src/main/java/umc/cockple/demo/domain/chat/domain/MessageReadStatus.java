@@ -36,4 +36,22 @@ public class MessageReadStatus {
 
     @Column(nullable = false)
     private Boolean isRead;
+
+    public static MessageReadStatus createUnread(Long chatMessageId, Long memberId, Long chatRoomId) {
+        return MessageReadStatus.builder()
+                .chatMessageId(chatMessageId)
+                .memberId(memberId)
+                .chatRoomId(chatRoomId)
+                .isRead(false)
+                .build();
+    }
+
+    public static MessageReadStatus createRead(Long chatMessageId, Long memberId, Long chatRoomId) {
+        return MessageReadStatus.builder()
+                .chatMessageId(chatMessageId)
+                .memberId(memberId)
+                .chatRoomId(chatRoomId)
+                .isRead(true)
+                .build();
+    }
 }

@@ -69,5 +69,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             AND crm.status = 'PENDING'
             """)
     Optional<ChatRoomMember> findPendingMemberInDirect(Long chatRoomId, Long senderId);
+
+    List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
 }
 

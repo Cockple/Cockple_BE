@@ -37,6 +37,7 @@ public class ChatWebSocketService {
 
     private final ImageService imageService;
     private final SubscriptionService subscriptionService;
+    private final MessageReadCreationService messageReadCreationService;
 
     private final ChatConverter chatConverter;
 
@@ -67,6 +68,7 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         checkFirstMessageInDirect(chatRoomId, senderId, chatRoom);
+        messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
