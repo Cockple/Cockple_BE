@@ -69,32 +69,15 @@ public class ContestConverter {
     }
 
     // 대회 기록 심플 조회
-    public static ContestRecordSimpleDTO.Response toSimpleResponseDTO(Contest contest) {
+    public static ContestRecordSimpleDTO.Response toSimpleResponseDTO(Contest contest, String medalUrl) {
         return ContestRecordSimpleDTO.Response.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())
                 .type(contest.getType())
                 .level(contest.getLevel())
                 .date(contest.getDate())
-                .medalImgUrl(getMedalImgUrl(contest))
+                .medalImgUrl(medalUrl)
                 .build();
-    }
-
-    // 대회 기록 리스트 변환
-    public List<ContestRecordSimpleDTO.Response> toSimpleDTOList(List<Contest> contests) {
-        return contests.stream()
-                .map(ContestConverter::toSimpleResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    // todo: 임시 Url
-    public static String getMedalImgUrl(Contest contest) {
-        return switch (contest.getMedalType()) {
-            case GOLD -> "/images/medal/gold.png";
-            case SILVER -> "/images/medal/silver.png";
-            case BRONZE -> "/images/medal/bronze.png";
-            case NONE -> "/images/medal/none.png";
-        };
     }
 
     // 대회 메달 개수 조회
