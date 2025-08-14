@@ -34,7 +34,8 @@ public class WebSocketMessageDTO {
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
-            LocalDateTime timestamp
+            LocalDateTime timestamp,
+            Integer unreadCount
     ) {
     }
 
