@@ -55,7 +55,7 @@ public class SubscriptionService {
                 subscriptionReadProcessingService.processUnreadMessagesOnSubscribe(chatRoomId, memberId);
 
         if (!updates.isEmpty()) {
-            broadcastUnreadCountUpdates(chatRoomId, updates);
+            broadcastUnreadCountUpdates(chatRoomId, updates, memberId);
             log.info("구독으로 인한 안읽은 수 업데이트 브로드캐스트 완료 - 업데이트된 메시지 수: {}", updates.size());
         }
     }
@@ -169,7 +169,8 @@ public class SubscriptionService {
         }
     }
 
-    private void broadcastUnreadCountUpdates(Long chatRoomId, List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates) {
+    private void broadcastUnreadCountUpdates(
+            Long chatRoomId, List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates, Long excludedMemberId) {
         Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.debug("브로드캐스트할 구독자가 없음 - 채팅방: {}", chatRoomId);
@@ -193,6 +194,10 @@ public class SubscriptionService {
 
                 int successCount = 0;
                 for (Long memberId : subscribers) {
+                    if (memberId.equals(excludedMemberId)) {
+                        continue;
+                    }
+
                     WebSocketSession session = memberSessions.get(memberId);
                     if (session != null && session.isOpen()) {
                         try {
