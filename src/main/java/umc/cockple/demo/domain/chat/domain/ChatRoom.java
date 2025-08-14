@@ -41,6 +41,12 @@ public class ChatRoom extends BaseEntity {
                 .build();
     }
 
+    public static ChatRoom createDirectChatRoom(){
+        return ChatRoom.builder()
+                .type(ChatRoomType.DIRECT)
+                .build();
+    }
+
     public void addChatRoomMember(ChatRoomMember chatRoomMember) {
         this.chatRoomMembers.add(chatRoomMember);
         chatRoomMember.setChatRoom(this);

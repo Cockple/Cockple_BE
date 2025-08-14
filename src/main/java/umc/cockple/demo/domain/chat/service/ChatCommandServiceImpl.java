@@ -50,25 +50,15 @@ public class ChatCommandServiceImpl implements ChatCommandService {
             return chatConverter.toDirectChatRoomCreateDTO(existingRoom.get(), members, target.getMemberName());
         }
 
-        ChatRoom newRoom = ChatRoom.builder()
-                .type(ChatRoomType.DIRECT)
-                .build();
+        ChatRoom newRoom = ChatRoom.createDirectChatRoom();
         chatRoomRepository.save(newRoom);
 
-        ChatRoomMember member1 = getChatRoomMember(newRoom, me, target);
-        ChatRoomMember member2 = getChatRoomMember(newRoom, target, me);
+        ChatRoomMember member1 = ChatRoomMember.createJoined(newRoom, me, target.getMemberName());
+        ChatRoomMember member2 = ChatRoomMember.createPending(newRoom, target, me.getMemberName());
         chatRoomMemberRepository.saveAll(List.of(member1, member2));
 
         log.info("[개인 채팅방 생성 완료] chatRoomId: {}, sender: {}, receiver: {}", newRoom.getId(), memberId, targetMemberId);
         return chatConverter.toDirectChatRoomCreateDTO(newRoom, List.of(member1, member2), target.getMemberName());
-    }
-
-    private static ChatRoomMember getChatRoomMember(ChatRoom newRoom, Member member1, Member member2) {
-        return ChatRoomMember.builder()
-                .chatRoom(newRoom)
-                .member(member1)
-                .displayName(member2.getMemberName())
-                .build();
     }
 
     private Member findMemberOrThrow(Long memberId) {

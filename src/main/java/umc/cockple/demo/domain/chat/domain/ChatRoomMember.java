@@ -41,6 +41,23 @@ public class ChatRoomMember extends BaseEntity {
                 .build();
     }
 
+    public static ChatRoomMember createJoined(ChatRoom chatRoom, Member member, String displayName) {
+        return ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .displayName(displayName)
+                .status(ChatRoomMemberStatus.JOINED)
+                .build();
+    }
+
+    public static ChatRoomMember createPending(ChatRoom chatRoom, Member member, String displayName) {
+        return ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .displayName(displayName)
+                .status(ChatRoomMemberStatus.PENDING)
+                .build();
+    }
     void setChatRoom(ChatRoom chatRoom) {
         this.chatRoom = chatRoom;
     }
