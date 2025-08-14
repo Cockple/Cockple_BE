@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.chat.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 
@@ -27,6 +28,10 @@ public class ChatRoomMember extends BaseEntity {
     private String displayName;
 
     private Long lastReadMessageId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChatRoomMemberStatus status = ChatRoomMemberStatus.PENDING;
 
     public void updateDisplayName(String newDisplayName) {
         this.displayName = newDisplayName;
