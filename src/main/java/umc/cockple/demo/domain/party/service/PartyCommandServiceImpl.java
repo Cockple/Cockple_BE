@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
@@ -86,6 +87,7 @@ public class PartyCommandServiceImpl implements PartyCommandService{
         chatRoomMemberRepository.save(ChatRoomMember.builder()
                 .chatRoom(newChatRoom)
                 .member(owner)
+                .status(ChatRoomMemberStatus.JOINED)
                 .build());
         log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", newChatRoom.getId());
 
