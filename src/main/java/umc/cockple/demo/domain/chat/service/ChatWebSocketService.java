@@ -77,7 +77,7 @@ public class ChatWebSocketService {
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
-                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
