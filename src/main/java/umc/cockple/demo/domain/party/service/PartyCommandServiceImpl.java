@@ -73,7 +73,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
 
-        chatRoomService.createChatRoom(savedParty, owner);
+        chatRoomService.createPartyChatRoom(savedParty, owner);
 
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
