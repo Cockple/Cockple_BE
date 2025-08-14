@@ -41,6 +41,7 @@ public class ChatWebSocketService {
     private final MessageReadCreationService messageReadCreationService;
 
     private final ChatConverter chatConverter;
+    private final ChatReadService chatReadService;
 
     public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
         log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
@@ -72,6 +73,7 @@ public class ChatWebSocketService {
         messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
 
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
+        int unreadCount = chatReadService.subscribersToReadStatus(savedMessage.getId(), activeSubscribers, senderId);
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =

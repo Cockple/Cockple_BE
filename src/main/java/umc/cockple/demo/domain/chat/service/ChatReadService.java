@@ -34,6 +34,26 @@ public class ChatReadService {
         log.info("읽음 처리 완료 - 채팅방: {}, 업데이트된 상태: {}", messageId, updatedCount);
     }
 
+    @Transactional
+    public int subscribersToReadStatus(Long messageId, List<Long> activeSubscribers, Long senderId) {
+        log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
+                messageId, activeSubscribers.size(), senderId);
+
+        List<Long> readers = activeSubscribers.stream()
+                .filter(memberId -> !memberId.equals(senderId))
+                .toList();
+
+        if (!readers.isEmpty()) {
+            int updatedCount = messageReadStatusRepository.markAsReadInMembers(messageId, readers);
+            log.info("초기 읽음 처리 완료 - 처리된 구독자: {}명", updatedCount);
+        }
+
+        int finalUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
+        log.info("초기 처리 후 최종 안읽은 수: {}", finalUnreadCount);
+
+        return finalUnreadCount;
+    }
+
     private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
         Optional<ChatRoomMember> chatRoomMemberOpt =
                 chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
@@ -47,6 +67,4 @@ public class ChatReadService {
             }
         }
     }
-
-
 }
