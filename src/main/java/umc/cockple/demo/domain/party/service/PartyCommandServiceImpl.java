@@ -5,6 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -26,10 +32,7 @@ import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.*;
-import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.Keyword;
-import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.enums.*;
 
 import java.util.List;
 
@@ -45,6 +48,8 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final PartyConverter partyConverter;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final PartyInvitationRepository partyInvitationRepository;
     private final PartyKeywordRepository partyKeywordRepository;
 
