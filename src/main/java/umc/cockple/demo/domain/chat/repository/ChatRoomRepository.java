@@ -44,7 +44,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             Pageable pageable
     );
 
-    ChatRoom findByPartyId(Long partyId);
+    Optional<ChatRoom> findByPartyId(Long partyId);
 
     @Query("""
             SELECT cr
@@ -64,7 +64,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
-              AND cr.type = 'DIRECT'
+            AND cr.type = 'DIRECT'
+            AND crm.status = 'JOINED' 
             ORDER BY (
                 SELECT MAX(cm.id)
                 FROM ChatMessage cm
@@ -80,7 +81,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             SELECT cr FROM ChatRoom cr
             JOIN cr.chatRoomMembers crm
             WHERE crm.member.id = :memberId
-              AND crm.displayName LIKE %:name%
+            AND cr.type = 'DIRECT'
+            AND crm.status = 'JOINED' 
+            AND crm.displayName LIKE %:name%
             ORDER BY (
                 SELECT MAX(cm.id)
                 FROM ChatMessage cm

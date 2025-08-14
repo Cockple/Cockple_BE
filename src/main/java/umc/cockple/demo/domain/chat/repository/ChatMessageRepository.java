@@ -47,4 +47,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("chatRoomId") Long chatRoomId,
             @Param("cursor") Long cursor,
             Pageable pageable);
+
+    int countByChatRoomId(Long chatRoomId);
 }

@@ -7,8 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
@@ -19,6 +21,8 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -62,6 +66,8 @@ public class ChatWebSocketService {
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
+        checkFirstMessageInDirect(chatRoomId, senderId, chatRoom);
+
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
                 chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
@@ -70,7 +76,7 @@ public class ChatWebSocketService {
     }
 
     public void sendSystemMessage(Long partyId, String content) {
-        ChatRoom chatRoom = chatRoomRepository.findByPartyId(partyId);
+        ChatRoom chatRoom = findChatRoomByPartyIdOrThrow(partyId);
 
         ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
         chatMessageRepository.save(systemMessage);
@@ -80,6 +86,31 @@ public class ChatWebSocketService {
 
         subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
+    }
+
+    // ========== 비즈니스 메서드 ==========
+    private void checkFirstMessageInDirect(Long chatRoomId, Long senderId, ChatRoom chatRoom) {
+        if(chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
+            handleFirstDirectMessage(chatRoomId, senderId);
+        }
+    }
+
+    private boolean isFirstMessage(Long chatRoomId) {
+        return chatMessageRepository.countByChatRoomId(chatRoomId) == 1;
+    }
+
+    private void handleFirstDirectMessage(Long chatRoomId, Long senderId) {
+        log.info("첫 번째 개인 메시지 처리 - 채팅방: {}", chatRoomId);
+        Optional<ChatRoomMember> pendingMemberOpt = chatRoomMemberRepository.findPendingMemberInDirect(chatRoomId, senderId);
+
+        if (pendingMemberOpt.isPresent()) {
+            ChatRoomMember pendingMember = pendingMemberOpt.get();
+            pendingMember.joinChatRoom();
+            chatRoomMemberRepository.save(pendingMember);
+
+            Long targetMemberId = pendingMember.getMember().getId();
+            log.info("PENDING 멤버를 JOINED로 변경 완료 - 멤버 ID: {}", targetMemberId);
+        }
     }
 
     // ========== 검증 메서드 ==========
@@ -122,6 +153,11 @@ public class ChatWebSocketService {
 
     private ChatRoom findChatRoomOrThrow(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {
+        return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 

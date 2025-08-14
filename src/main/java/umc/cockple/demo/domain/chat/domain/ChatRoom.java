@@ -29,8 +29,28 @@ public class ChatRoom extends BaseEntity {
     private ChatRoomType type;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ChatMessage> chatMessages = new ArrayList<>();
+
+    public static ChatRoom createPartyChatRoom(Party party) {
+        return ChatRoom.builder()
+                .party(party)
+                .type(ChatRoomType.PARTY)
+                .build();
+    }
+
+    public static ChatRoom createDirectChatRoom(){
+        return ChatRoom.builder()
+                .type(ChatRoomType.DIRECT)
+                .build();
+    }
+
+    public void addChatRoomMember(ChatRoomMember chatRoomMember) {
+        this.chatRoomMembers.add(chatRoomMember);
+        chatRoomMember.setChatRoom(this);
+    }
 }
