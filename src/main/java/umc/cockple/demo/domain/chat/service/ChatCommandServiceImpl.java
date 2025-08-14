@@ -39,8 +39,8 @@ public class ChatCommandServiceImpl implements ChatCommandService {
             throw new ChatException(ChatErrorCode.CANNOT_CHAT_WITH_SELF);
         }
 
-        Member me = getMember(memberId);
-        Member target = getMember(targetMemberId);
+        Member me = findMemberOrThrow(memberId);
+        Member target = findMemberOrThrow(targetMemberId);
 
         // 이미 존재하는 1:1 채팅방 있는지 확인
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDirectChatRoomByMemberIds(memberId, targetMemberId);
@@ -71,7 +71,7 @@ public class ChatCommandServiceImpl implements ChatCommandService {
                 .build();
     }
 
-    private Member getMember(Long memberId) {
+    private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
