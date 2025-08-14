@@ -33,6 +33,18 @@ public class ChatRoomMember extends BaseEntity {
     @Column(nullable = false)
     private ChatRoomMemberStatus status = ChatRoomMemberStatus.PENDING;
 
+    public static ChatRoomMember create(ChatRoom chatRoom, Member member) {
+        return ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .status(ChatRoomMemberStatus.JOINED)
+                .build();
+    }
+
+    void setChatRoom(ChatRoom chatRoom) {
+        this.chatRoom = chatRoom;
+    }
+
     public void updateDisplayName(String newDisplayName) {
         this.displayName = newDisplayName;
     }

@@ -29,18 +29,12 @@ public class ChatRoomService {
 
     public void createChatRoom(Party party, Member owner){
         log.info("[모임 채팅방 생성 시작] - partyId: {}", party.getId());
+        ChatRoom chatRoom = ChatRoom.create(party, ChatRoomType.PARTY);
+        ChatRoomMember chatRoomMember = ChatRoomMember.create(chatRoom, owner);
 
-        ChatRoom newChatRoom = chatRoomRepository.save(ChatRoom.builder()
-                .party(party)
-                .type(ChatRoomType.PARTY)
-                .build());
-        chatRoomMemberRepository.save(ChatRoomMember.builder()
-                .chatRoom(newChatRoom)
-                .member(owner)
-                .status(ChatRoomMemberStatus.JOINED)
-                .build());
-
-        log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", newChatRoom.getId());
+        chatRoom.addChatRoomMember(chatRoomMember);
+        ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
+        log.info("[모임 채팅방 생성 완료] - chatRoomId: {}", savedChatRoom.getId());
     }
 
     public void joinPartyChatRoom(Long partyId, Long memberId) {

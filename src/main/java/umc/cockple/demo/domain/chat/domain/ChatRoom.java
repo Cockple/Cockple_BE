@@ -33,4 +33,16 @@ public class ChatRoom extends BaseEntity {
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMessage> chatMessages = new ArrayList<>();
+
+    public static ChatRoom create(Party party, ChatRoomType type) {
+        return ChatRoom.builder()
+                .party(party)
+                .type(type)
+                .build();
+    }
+
+    public void addChatRoomMember(ChatRoomMember chatRoomMember) {
+        this.chatRoomMembers.add(chatRoomMember);
+        chatRoomMember.setChatRoom(this);
+    }
 }
