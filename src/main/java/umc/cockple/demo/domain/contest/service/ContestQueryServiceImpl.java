@@ -60,19 +60,22 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
         // 2. 미입상 요청이면 필터링
         if (medalType == MedalType.NONE) {
-            List<Contest> noneMedalContests = contests.stream()
+            contests = contests.stream()
                     .filter(c -> c.getMedalType() == MedalType.NONE)
                     .toList();
 
             log.info("[미입상] 대회 기록 조회 완료 - memberId: {}", memberId);
-
-            return contestConverter.toSimpleDTOList(noneMedalContests);
+        } else {
+            log.info("[전체] 대회 기록 조회 완료 - memberId: {}", memberId);
         }
 
-        log.info("[전체] 대회 기록 조회 완료 - memberId: {}", memberId);
-
-        return contestConverter.toSimpleDTOList(contests);
-    }
+        // 3. medalUrl 생성 + DTO 변환
+        return contests.stream()
+                .map(contest -> {
+                    String medalUrl = getMedalImgUrl(contest); // S3 URL 생성
+                    return contestConverter.toSimpleResponseDTO(contest, medalUrl);
+                })
+                .toList();    }
 
     // 메달 개수 조회
     @Override
@@ -115,4 +118,14 @@ public class ContestQueryServiceImpl implements ContestQueryService {
                 : "";
     }
 
+    public String getMedalImgUrl(Contest contest) {
+        String baseKey = "contest/";
+        String key = switch (contest.getMedalType()) {
+            case GOLD   -> baseKey + "b0ac9ac7-169a-40de-aeb3-a8572bc91506.svg";
+            case SILVER -> baseKey + "c0a3b94c-bf46-4aa0-934f-0c427475bc0b.svg";
+            case BRONZE -> baseKey + "3f9778a5-479a-44cf-bfb0-bea187a839c5.svg";
+            case NONE   -> baseKey + "84e4dd20-7989-4871-954b-7363213b941e.svg";
+        };
+        return imageService.getUrlFromKey(key);
+    }
 }
