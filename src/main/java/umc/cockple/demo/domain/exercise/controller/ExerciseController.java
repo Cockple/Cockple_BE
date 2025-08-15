@@ -197,6 +197,20 @@ public class ExerciseController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/exercises/{exerciseId}/for-edit")
+    @Operation(summary = "운동 수정용 상세 조회",
+            description = "운동 수정을 위한 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운동 수정용 상세 조회 성공")
+    @ApiResponse(responseCode = "403", description = "권한 없음 (모임장/부모임장이 아님)")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
+    public BaseResponse<ExerciseEditDetailDTO.Response> getExerciseForEdit(
+            @PathVariable Long exerciseId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ExerciseEditDetailDTO.Response response = exerciseQueryService.getExerciseForEdit(exerciseId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @GetMapping("/exercises/{exerciseId}/guests")
     @Operation(summary = "내가 초대한 운동 게스트 조회",
             description = "내가 초대한 운동 게스트 목록을 조회합니다.")

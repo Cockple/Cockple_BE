@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
@@ -143,6 +144,24 @@ public class ExerciseConverter {
                 .info(exerciseInfo)
                 .participants(participantGroup)
                 .waiting(waitingGroup)
+                .build();
+    }
+
+    public ExerciseEditDetailDTO.Response toEditDetailResponse(Exercise exercise) {
+        ExerciseAddr addr = exercise.getExerciseAddr();
+
+        return ExerciseEditDetailDTO.Response.builder()
+                .date(exercise.getDate())
+                .buildingName(addr.getBuildingName())
+                .roadAddress(addr.getStreetAddr())
+                .latitude(addr.getLatitude())
+                .longitude(addr.getLongitude())
+                .startTime(exercise.getStartTime())
+                .endTime(exercise.getEndTime())
+                .maxCapacity(exercise.getMaxCapacity())
+                .allowMemberGuestsInvitation(exercise.getPartyGuestAccept())
+                .allowExternalGuests(exercise.getOutsideGuestAccept())
+                .notice(exercise.getNotice())
                 .build();
     }
 
