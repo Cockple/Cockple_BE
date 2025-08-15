@@ -347,6 +347,13 @@ public class ExerciseQueryService {
                 , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
     }
 
+    public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
+        log.info("운동 수정용 상세조회 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+        Exercise exercise = findExerciseWithBasicInfoOrThrow(exerciseId);
+        log.info("운동 수정용 상세조회 완료 - exerciseId: {}", exerciseId);
+        return exerciseConverter.toEditDetailResponse(exercise);
+    }
+
     // ========== 검증 메서드들 ==========
 
     private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
