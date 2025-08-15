@@ -201,8 +201,8 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //모임, 가입신청 조회
         Party party = findPartyOrThrow(partyId);
-        Member member = findMemberOrThrow(memberId);
         PartyJoinRequest partyJoinRequest = findJoinRequestOrThrow(requestId);
+        Member member = partyJoinRequest.getMember();
 
         //모임 활성화 검증
         validatePartyIsActive(party);
