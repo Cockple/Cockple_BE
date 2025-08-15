@@ -68,6 +68,13 @@ public class ChatConverter {
                 .build();
     }
 
+    public DirectChatRoomDTO.Response toEmptyDirectChatRoomInfos() {
+        return DirectChatRoomDTO.Response.builder()
+                .content(Collections.emptyList())
+                .hasNext(false)
+                .build();
+    }
+
     public DirectChatRoomDTO.ChatRoomInfo toDirectChatRoomInfo(ChatRoom chatRoom,
                                                                ChatRoomMember chatRoomMember,
                                                                int unreadCount,
