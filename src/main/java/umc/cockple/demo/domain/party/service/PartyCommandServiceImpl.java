@@ -381,18 +381,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //생성하려는 모임의 나이 조건에 본인도 적합한지 확인
         validateAgeRequirement(owner, command.minBirthYear(), command.maxBirthYear());
-
-        //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
-        List<Level> requiredLevels;
-        if (ownerGender == Gender.FEMALE) {
-            requiredLevels = command.femaleLevel();
-        } else { // MALE
-            requiredLevels = command.maleLevel();
-        }
-        if (!requiredLevels.contains(ownerLevel)) {
-            throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
-        }
-
     }
 
     //모임 멤버 삭제 검증
