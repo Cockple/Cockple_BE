@@ -177,7 +177,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     // ========== 비즈니스 로직 ==========
     private PartyChatRoomDTO.Response toPartyChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
+            return chatConverter.toEmptyPartyChatRoomInfos();
         }
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
                 .map(chatRoom -> {
@@ -210,7 +210,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private DirectChatRoomDTO.Response toDirectChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
+            return chatConverter.toEmptyDirectChatRoomInfos();
         }
         // 각 채팅방에 대해 ChatRoomInfo 생성
         List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
