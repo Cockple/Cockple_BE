@@ -199,7 +199,7 @@ public class ExerciseController {
 
     @GetMapping("/exercises/{exerciseId}/for-edit")
     @Operation(summary = "운동 수정용 상세 조회",
-            description = "운동 수정을 위한 상세 정보를 조회합니다. 모임장과 부모임장만 조회 가능합니다.")
+            description = "운동 수정을 위한 상세 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "운동 수정용 상세 조회 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장/부모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
