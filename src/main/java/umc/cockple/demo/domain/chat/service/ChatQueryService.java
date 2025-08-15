@@ -1,9 +1,6 @@
 package umc.cockple.demo.domain.chat.service;
 
-import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
-import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.dto.*;
 
 public interface ChatQueryService {
     PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size);
@@ -17,4 +14,6 @@ public interface ChatQueryService {
     ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId);
 
     ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size);
+
+    PartyChatRoomIdDTO getChatRoomId(Long partyId, Long memberId);
 }

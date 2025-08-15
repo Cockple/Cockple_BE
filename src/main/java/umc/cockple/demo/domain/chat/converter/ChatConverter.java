@@ -224,4 +224,10 @@ public class ChatConverter {
                 .expiresAt(token.getExpiresAt())
                 .build();
     }
+
+    public PartyChatRoomIdDTO toChatRoomIdDTO(ChatRoom chatRoom) {
+        return PartyChatRoomIdDTO.builder()
+                .roomId(chatRoom.getId())
+                .build();
+    }
 }

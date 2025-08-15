@@ -12,10 +12,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
-import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
-import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
-import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
@@ -25,7 +22,10 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
+import umc.cockple.demo.domain.party.repository.PartyRepository;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +41,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final PartyRepository partyRepository;
+    private final MemberPartyRepository memberPartyRepository;
     private final ChatConverter chatConverter;
     private final ImageService imageService;
 
@@ -139,11 +141,37 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatConverter.toChatMessageResponse(messageInfos, hasNext, nextCursor);
     }
 
+    @Override
+    public PartyChatRoomIdDTO getChatRoomId(Long partyId, Long memberId) {
+        log.info("채팅방 ID 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
+
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        // 해당 모임의 멤버가 맞는지 검증
+        validateIsMember(partyId, memberId);
+
+        ChatRoom chatRoom = party.getChatRoom();
+        if (chatRoom == null) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
+        }
+
+        log.info("채팅방 ID 조회 완료 - roomId: {}", chatRoom.getId());
+
+        return chatConverter.toChatRoomIdDTO(chatRoom);
+    }
+
     // ========== 검증 로직 ==========
 
     private void validateChatRoomAccess(Long roomId, Long memberId) {
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
             throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+    }
+
+    private void validateIsMember(Long partyId, Long memberId) {
+        if (!memberPartyRepository.existsByPartyIdAndMemberId(partyId, memberId)) {
+            throw new ChatException(ChatErrorCode.NOT_PARTY_MEMBER);
+        }
     }
 
     // ========== 비즈니스 로직 ==========
@@ -367,5 +395,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
         return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
+    }
+
+    private Party findPartyOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.PARTY_NOT_FOUND));
     }
 }

@@ -136,4 +136,17 @@ public class ChatController {
     ) {
         return chatFileService.downloadFile(fileId, token);
     }
+
+    @GetMapping("/parties/{partyId}")
+    @Operation(summary = "모임 채팅방 ID 조회")
+    @ApiResponse(responseCode = "200", description = "채팅방 ID 조회 성공")
+    @ApiResponse(responseCode = "403", description = "채팅방 접근 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 채팅방")
+    public BaseResponse<PartyChatRoomIdDTO> getChatRoomId(
+            @PathVariable Long partyId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        PartyChatRoomIdDTO response = chatQueryService.getChatRoomId(partyId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
 }

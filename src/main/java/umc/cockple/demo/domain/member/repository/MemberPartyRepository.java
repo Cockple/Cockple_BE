@@ -19,6 +19,8 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
 
     boolean existsByPartyAndMember(Party party, Member member);
 
+    boolean existsByPartyIdAndMemberId(Long partyId, Long memberId);
+
     @Query("""
             SELECT mp FROM MemberParty mp
             WHERE mp.party.id = :partyId
