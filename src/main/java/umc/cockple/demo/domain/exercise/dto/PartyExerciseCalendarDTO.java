@@ -44,7 +44,8 @@ public class PartyExerciseCalendarDTO {
             List<String> femaleLevel,
             List<String> maleLevel,
             Integer currentParticipants,
-            Integer maxCapacity
+            Integer maxCapacity,
+            Boolean isParticipating
     ) {
     }
 }
