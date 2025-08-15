@@ -2,17 +2,20 @@ package umc.cockple.demo.domain.exercise.dto;
 
 import lombok.Builder;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 public class ExerciseEditDetailDTO {
 
     @Builder
     public record Response(
-            String date,
+            LocalDate date,
             String buildingName,
             String roadAddress,
             Double latitude,
             Double longitude,
-            String startTime,
-            String endTime,
+            LocalTime startTime,
+            LocalTime endTime,
             Integer maxCapacity,
             Boolean allowMemberGuestsInvitation,
             Boolean allowExternalGuests,
