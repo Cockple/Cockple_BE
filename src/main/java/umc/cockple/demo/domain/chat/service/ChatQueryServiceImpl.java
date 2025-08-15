@@ -177,7 +177,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     // ========== 비즈니스 로직 ==========
     private PartyChatRoomDTO.Response toPartyChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
+            return chatConverter.toEmptyPartyChatRoomInfos();
         }
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
                 .map(chatRoom -> {

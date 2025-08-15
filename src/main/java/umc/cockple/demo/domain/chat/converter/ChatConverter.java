@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.chat.dto.*;
 
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +23,13 @@ public class ChatConverter {
         return PartyChatRoomDTO.Response.builder()
                 .content(chatRoomInfos)
                 .hasNext(hasNext)
+                .build();
+    }
+
+    public PartyChatRoomDTO.Response toEmptyPartyChatRoomInfos() {
+        return PartyChatRoomDTO.Response.builder()
+                .content(Collections.emptyList())
+                .hasNext(false)
                 .build();
     }
 
