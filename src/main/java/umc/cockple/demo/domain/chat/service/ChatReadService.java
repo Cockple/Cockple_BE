@@ -7,8 +7,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -16,30 +18,48 @@ import java.util.List;
 @Slf4j
 public class ChatReadService {
 
+    private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markAsRead(Long chatRoomId, Long messageId, List<Long> memberIds) {
-        log.debug("읽음 처리 시작 - 채팅방: {}, 메시지: {}, 멤버 수: {}", chatRoomId, messageId, memberIds.size());
+    @Transactional
+    public int subscribersToReadStatus(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
+        log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
+                messageId, activeSubscribers.size(), senderId);
 
-        List<ChatRoomMember> chatRoomMembers = findChatRoomMembersInChatRoom(chatRoomId, memberIds);
+        List<Long> readers = activeSubscribers.stream()
+                .filter(memberId -> !memberId.equals(senderId))
+                .toList();
 
-        int updatedCount = 0;
-        for (ChatRoomMember chatRoomMember : chatRoomMembers) {
-            try {
-                if (chatRoomMember.getLastReadMessageId() == null || messageId > chatRoomMember.getLastReadMessageId()) {
-                    chatRoomMember.updateLastReadMessageId(messageId);
-                    updatedCount++;
-                    log.debug("읽음 처리 완료 - 멤버: {}", chatRoomMember.getMember().getId());
-                }
-            } catch (Exception e) {
-                log.error("읽음 처리 실패 - 멤버: {}", chatRoomMember.getMember().getId(), e);
-            }
+        if (!readers.isEmpty()) {
+            int updatedCount = messageReadStatusRepository.markAsReadInMembers(messageId, readers);
+            log.info("초기 읽음 처리 완료 - 처리된 구독자: {}명", updatedCount);
+
+            updateLastReadMessageIds(chatRoomId, messageId, readers);
         }
-        log.info("전체 읽음 처리 완료 - 채팅방: {}, 업데이트된 멤버: {}명", chatRoomId, updatedCount);
+
+        int finalUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
+        log.info("초기 처리 후 최종 안읽은 수: {}", finalUnreadCount);
+
+        return finalUnreadCount;
     }
 
-    private List<ChatRoomMember> findChatRoomMembersInChatRoom(Long chatRoomId, List<Long> memberIds) {
-        return chatRoomMemberRepository.findChatRoomMembersInChatRoom(chatRoomId, memberIds);
+    private void updateLastReadMessageIds(Long chatRoomId, Long messageId, List<Long> memberIds) {
+        for (Long memberId : memberIds) {
+            try {
+                Optional<ChatRoomMember> chatRoomMemberOpt =
+                        chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
+
+                if (chatRoomMemberOpt.isPresent()) {
+                    ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
+
+                    if (chatRoomMember.getLastReadMessageId() == null ||
+                            messageId > chatRoomMember.getLastReadMessageId()) {
+                        chatRoomMember.updateLastReadMessageId(messageId);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
+            }
+        }
     }
 }

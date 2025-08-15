@@ -34,7 +34,8 @@ public class WebSocketMessageDTO {
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
-            LocalDateTime timestamp
+            LocalDateTime timestamp,
+            Integer unreadCount
     ) {
     }
 
@@ -53,6 +54,16 @@ public class WebSocketMessageDTO {
             String errorCode,
             String message,
             Long chatRoomId
+    ) {
+    }
+
+    @Builder
+    public record UnreadCountUpdateMessage(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            Long messageId,
+            int newUnreadCount,
+            LocalDateTime timestamp
     ) {
     }
 

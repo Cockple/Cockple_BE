@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -43,6 +44,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatMessageRepository chatMessageRepository;
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
+    private final MessageReadStatusRepository messageReadStatusRepository;
+
     private final ChatConverter chatConverter;
     private final ImageService imageService;
 
@@ -102,11 +105,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
-
-        if (!recentMessages.isEmpty()) {
-            ChatMessage lastMessage = recentMessages.get(recentMessages.size() - 1);
-            updateLastReadMessage(myMembership, lastMessage.getId());
-        }
 
         log.info("[초기 채팅방 조회 완료] - 메시지 수: {}, 참여자 수: {}",
                 messageInfos.size(), memberInfos.size());
@@ -188,9 +186,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
                     Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
-                    int unreadCount = (lastReadMessageId == null)
-                            ? 0
-                            : chatMessageRepository.countUnreadMessages(chatRoomId, lastReadMessageId);
+                    int unreadCount;
+                    if (lastReadMessageId == null) {
+                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
+                    } else {
+                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
+                    }
 
                     ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -228,9 +229,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
 
                     Long lastReadMessageId = myMember.getLastReadMessageId();
-                    int unreadCount = (lastReadMessageId == null)
-                            ? 0
-                            : chatMessageRepository.countUnreadMessages(chatRoomId, lastReadMessageId);
+                    int unreadCount;
+                    if (lastReadMessageId == null) {
+                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
+                    } else {
+                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
+                    }
 
                     ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
 
@@ -338,11 +342,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         String memberProfileImgUrl = getImageUrl(member.getProfileImg());
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
-    }
-
-    private void updateLastReadMessage(ChatRoomMember myMembership, Long messageId) {
-        myMembership.updateLastReadMessageId(messageId);
-        chatRoomMemberRepository.save(myMembership);
     }
 
     private String getImageUrl(PartyImg partyImg) {

@@ -54,20 +54,13 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
             JOIN FETCH crm.member m
-            WHERE crm.chatRoom.id = :chatRoomId
-            AND crm.member.id IN :memberIds
-            """)
-    List<ChatRoomMember> findChatRoomMembersInChatRoom(
-            @Param("chatRoomId") Long chatRoomId,
-            @Param("memberIds") List<Long> memberIds);
-
-    @Query("""
-            SELECT crm FROM ChatRoomMember crm
-            JOIN FETCH crm.member m
             WHERE crm.chatRoom.id = :chatRoomId 
             AND crm.member.id != :senderId
             AND crm.status = 'PENDING'
             """)
     Optional<ChatRoomMember> findPendingMemberInDirect(Long chatRoomId, Long senderId);
+
+    @Query("SELECT crm.member.id FROM ChatRoomMember crm WHERE crm.chatRoom.id = :chatRoomId")
+    List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
 }
 

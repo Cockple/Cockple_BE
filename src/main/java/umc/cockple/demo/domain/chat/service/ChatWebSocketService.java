@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -37,8 +38,10 @@ public class ChatWebSocketService {
 
     private final ImageService imageService;
     private final SubscriptionService subscriptionService;
+    private final MessageReadCreationService messageReadCreationService;
 
     private final ChatConverter chatConverter;
+    private final ChatReadService chatReadService;
 
     public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
         log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
@@ -67,10 +70,14 @@ public class ChatWebSocketService {
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
         checkFirstMessageInDirect(chatRoomId, senderId, chatRoom);
+        messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
+
+        List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
+        int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
-                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl);
+                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
