@@ -21,7 +21,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry
                 .addHandler(chatWebSocketHandler, "/ws/chats")
                 .addInterceptors(jwtWebSocketAuthInterceptor)
-                .setAllowedOrigins("http://localhost:5173", "https://cockple.store")
+                .setAllowedOrigins("http://localhost:5173", "https://cockple.store", "https://cockple-fe.vercel.app/")
                 .withSockJS(); // 브라우저 호환성
     }
 }
