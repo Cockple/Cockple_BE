@@ -204,6 +204,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //모임, 가입신청 조회
         Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
         PartyJoinRequest partyJoinRequest = findJoinRequestOrThrow(requestId);
 
         //모임 활성화 검증
@@ -211,7 +212,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
         //가입신청 처리 가능한지 검증
-        validateJoinRequestAction(party, partyJoinRequest);
+        validateJoinRequestAction(party, partyJoinRequest, member);
 
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if (RequestAction.APPROVE.equals(request.action())) {
@@ -380,18 +381,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //생성하려는 모임의 나이 조건에 본인도 적합한지 확인
         validateAgeRequirement(owner, command.minBirthYear(), command.maxBirthYear());
-
-        //생성하려는 모임의 급수 조건에 본인도 적합한지 확인
-        List<Level> requiredLevels;
-        if (ownerGender == Gender.FEMALE) {
-            requiredLevels = command.femaleLevel();
-        } else { // MALE
-            requiredLevels = command.maleLevel();
-        }
-        if (!requiredLevels.contains(ownerLevel)) {
-            throw new PartyException(PartyErrorCode.LEVEL_NOT_MATCH);
-        }
-
     }
 
     //모임 멤버 삭제 검증
@@ -457,11 +446,17 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     }
 
     //모임 가입신청 처리 검증
-    private void validateJoinRequestAction(Party party, PartyJoinRequest joinRequest) {
+    private void validateJoinRequestAction(Party party, PartyJoinRequest joinRequest, Member member) {
         //해당 모임의 가입신청인지 검증
         if (!joinRequest.getParty().getId().equals(party.getId())) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_PARTY_NOT_FOUND);
         }
+
+        //이미 멤버인지 검증
+        if (memberPartyRepository.existsByPartyAndMember(party, member)) {
+            throw new PartyException(PartyErrorCode.ALREADY_MEMBER);
+        }
+
         //이미 처리된 가입신청인지 검증
         if (joinRequest.getStatus() != RequestStatus.PENDING) {
             throw new PartyException(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
