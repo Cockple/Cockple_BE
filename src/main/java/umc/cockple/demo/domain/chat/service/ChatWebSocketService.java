@@ -77,6 +77,11 @@ public class ChatWebSocketService {
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
         int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
+        List<WebSocketMessageDTO.MessageResponse.ImageInfo> responseImages =
+                createResponseImageInfos(savedMessage.getChatMessageImgs());
+        List<WebSocketMessageDTO.MessageResponse.FileInfo> responseFiles =
+                createResponseFileInfos(savedMessage.getChatMessageFiles());
+
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
                 chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl, unreadCount);
@@ -144,6 +149,29 @@ public class ChatWebSocketService {
             Long targetMemberId = pendingMember.getMember().getId();
             log.info("PENDING 멤버를 JOINED로 변경 완료 - 멤버 ID: {}", targetMemberId);
         }
+    }
+
+    private List<WebSocketMessageDTO.MessageResponse.ImageInfo> createResponseImageInfos(
+            List<ChatMessageImg> savedImages) {
+        return savedImages.stream()
+                .map(img -> WebSocketMessageDTO.MessageResponse.ImageInfo.builder()
+                        .imageId(img.getId())
+                        .imageUrl(imageService.getUrlFromKey(img.getImgKey()))
+                        .imgOrder(img.getImgOrder())
+                        .build())
+                .toList();
+    }
+
+    private List<WebSocketMessageDTO.MessageResponse.FileInfo> createResponseFileInfos(
+            List<ChatMessageFile> savedFiles) {
+        return savedFiles.stream()
+                .map(file -> WebSocketMessageDTO.MessageResponse.FileInfo.builder()
+                        .fileId(file.getId())
+                        .originalFileName(file.getOriginalFileName())
+                        .fileSize(file.getFileSize())
+                        .fileType(file.getFileType())
+                        .build())
+                .toList();
     }
 
     // ========== 검증 메서드 ==========
