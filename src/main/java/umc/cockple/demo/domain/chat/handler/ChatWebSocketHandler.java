@@ -76,7 +76,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             switch (request.type()) {
                 case SEND:
                     ChatMessageSendEvent sendEvent =
-                            ChatMessageSendEvent.create(request.chatRoomId(), request.content(), memberId);
+                            ChatMessageSendEvent.create(
+                                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
                     eventPublisher.publishEvent(sendEvent);
                     break;
                 case SUBSCRIBE:
