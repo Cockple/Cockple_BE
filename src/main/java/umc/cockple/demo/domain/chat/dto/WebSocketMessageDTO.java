@@ -54,6 +54,20 @@ public class WebSocketMessageDTO {
             LocalDateTime timestamp,
             Integer unreadCount
     ) {
+        @Builder
+        public record FileInfo(
+                Long fileId,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {}
+
+        @Builder
+        public record ImageInfo(
+                Long imageId,
+                String imageUrl,
+                Integer imgOrder
+        ) {}
     }
 
     @Builder
