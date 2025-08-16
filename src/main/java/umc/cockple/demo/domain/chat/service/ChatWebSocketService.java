@@ -5,9 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
-import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.FileInfo;
@@ -68,6 +66,8 @@ public class ChatWebSocketService {
 
         // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
+        attachFiles(chatMessage, files);
+        attachImages(chatMessage, images);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
@@ -98,6 +98,31 @@ public class ChatWebSocketService {
     }
 
     // ========== 비즈니스 메서드 ==========
+    private void attachFiles(ChatMessage message, List<FileInfo> files) {
+        if (files != null && !files.isEmpty()) {
+            files.forEach(fileInfo -> {
+                ChatMessageFile messageFile = ChatMessageFile.create(
+                        message, fileInfo.originalFileName(),
+                        fileInfo.fileKey(), fileInfo.fileSize(), fileInfo.fileType()
+                );
+                message.getChatMessageFiles().add(messageFile);
+            });
+        }
+    }
+
+    private void attachImages(ChatMessage message, List<ImageInfo> images) {
+        if (images != null && !images.isEmpty()) {
+            images.forEach(imageInfo -> {
+                ChatMessageImg messageImg = ChatMessageImg.builder()
+                        .chatMessage(message)
+                        .imgKey(imageInfo.imgKey())
+                        .imgOrder(imageInfo.imgOrder())
+                        .build();
+                message.getChatMessageImgs().add(messageImg);
+            });
+        }
+    }
+
     private void checkFirstMessageInDirect(Long chatRoomId, Long senderId, ChatRoom chatRoom) {
         if (chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
             handleFirstDirectMessage(chatRoomId, senderId);
