@@ -1,8 +1,8 @@
 package umc.cockple.demo.domain.chat.events;
 
 import lombok.Builder;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.FileInfo;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ImageInfo;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 
 import java.util.List;

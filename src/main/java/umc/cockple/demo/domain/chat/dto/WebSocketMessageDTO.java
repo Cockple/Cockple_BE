@@ -16,22 +16,21 @@ public class WebSocketMessageDTO {
             List<ImageInfo> images,
             Long lastReadMessageId
     ) {
+        @Builder
+        public record FileInfo(
+                String fileKey,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {}
+
+        @Builder
+        public record ImageInfo(
+                String imgKey,
+                String imgUrl,
+                Integer imgOrder
+        ) {}
     }
-
-    @Builder
-    public record FileInfo(
-            String fileKey,
-            String originalFileName,
-            Long fileSize,
-            String fileType
-    ) {}
-
-    @Builder
-    public record ImageInfo(
-            String imgKey,
-            String imgUrl,
-            Integer imgOrder
-    ) {}
 
     @Builder
     public record ConnectionInfo(
