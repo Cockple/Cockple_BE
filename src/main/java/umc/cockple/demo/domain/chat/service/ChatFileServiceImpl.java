@@ -23,8 +23,6 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.DownloadTokenRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
 
-import java.net.MalformedURLException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
