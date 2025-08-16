@@ -48,6 +48,8 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long messageId,
             String content,
+            List<FileInfo> files,
+            List<ImageInfo> images,
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
