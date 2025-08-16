@@ -115,7 +115,6 @@ public class ChatWebSocketService {
         if (pendingMemberOpt.isPresent()) {
             ChatRoomMember pendingMember = pendingMemberOpt.get();
             pendingMember.joinChatRoom();
-            chatRoomMemberRepository.save(pendingMember);
 
             Long targetMemberId = pendingMember.getMember().getId();
             log.info("PENDING 멤버를 JOINED로 변경 완료 - 멤버 ID: {}", targetMemberId);
