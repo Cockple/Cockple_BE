@@ -120,12 +120,17 @@ public class ChatConverter {
     }
 
     public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
-            Long chatRoomId, String content, ChatMessage savedMessage, Member sender, String senderProfileImageUrl, int unreadCount) {
+            Long chatRoomId, String content,
+            List<WebSocketMessageDTO.MessageResponse.ImageInfo> images,
+            List<WebSocketMessageDTO.MessageResponse.FileInfo> files,
+            ChatMessage savedMessage, Member sender, String senderProfileImageUrl, int unreadCount) {
         return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
                 .content(content)
+                .images(images)
+                .files(files)
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
