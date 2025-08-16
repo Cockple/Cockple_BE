@@ -9,41 +9,29 @@
 
 ## 💻 <strong>Cockple Backend Team
 
-<table align="center">
-  <tr>
-    <td align="center">
-      <a href="https://github.com/kanghana1" target="_blank">
-        <img src="https://github.com/kanghana1.png" width="100" height="100"><br/>
-        <img src="https://img.shields.io/badge/kanghana1-181717?style=for-the-badge&logo=github&logoColor=white"/>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/ri-mmu" target="_blank">
-        <img src="https://github.com/ri-mmu.png" width="100" height="100"><br/>
-        <img src="https://img.shields.io/badge/ri-mmu-181717?style=for-the-badge&logo=github&logoColor=white"/>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/dbalsk" target="_blank">
-        <img src="https://github.com/dbalsk.png" width="100" height="100"><br/>
-        <img src="https://img.shields.io/badge/dbalsk-181717?style=for-the-badge&logo=github&logoColor=white"/>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/Dimo-2562" target="_blank">
-        <img src="https://github.com/Dimo-2562.png" width="100" height="100"><br/>
-        <img src="https://img.shields.io/badge/Dimo-2562-181717?style=for-the-badge&logo=github&logoColor=white"/>
-      </a>
-    </td>
-  </tr>
-</table>
+<br>
+
+| <img src="https://github.com/kanghana1.png" width="100" height="100"> | <img src="https://github.com/ri-mmu.png" width="100" height="100"> | <img src="https://github.com/dbalsk.png" width="100" height="100"> | <img src="https://github.com/Dimo-2562.png" width="100" height="100"> |
+|:---:|:---:|:---:|:---:|
+| [강하나](https://github.com/kanghana1) | [김재림](https://github.com/ri-mmu) | [권유민](https://github.com/dbalsk) | [조세훈](https://github.com/Dimo-2562) |
+| Backend<br>Leader<br>DevOps | Backend<br><br> | Backend<br><br> | Backend<br><br> |
+
+
+
+<br>
+<br>
+
 
 <br>
 <br>
 
 ## 🏗️ Architecture
-![클라우드.png](image/%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C.png)
+<img width="870" height="571" alt="스크린샷 2025-08-15 232843" src="https://github.com/user-attachments/assets/08686842-22d1-4475-b5a3-4fe76396e66f" />
 
+
+
+<br>
+<br>
 <br>
 <br>
 
@@ -64,8 +52,11 @@
 ![AWS](https://img.shields.io/badge/AWS-ff9900?style=flat-square&logo=Amazon%20Web%20Services&logoColor=white) ![EC2](https://img.shields.io/badge/EC2-FF9900?style=flat&logo=amazon-ec2&logoColor=white) ![S3](https://img.shields.io/badge/S3-569A31?style=flat&logo=amazon-s3&logoColor=white) ![RDS](https://img.shields.io/badge/RDS-527FFF?style=flat&logo=amazon-rds&logoColor=white) ![Route 53](https://img.shields.io/badge/Route53-8C4FFF?style=flat&logo=amazon-route-53&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat&logo=nginx&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-40B4F4?style=flat&logo=githubactions&logoColor=white) 
 
+
 <br>
 <br>
+<br>
+
 
 ## 🗂️ ERD
 
@@ -76,6 +67,8 @@
 
 
 # ☘️ Convention
+<br>
+
 ## ☘️ 커밋컨벤션
 
 ‼️ 콜론 뒤에 한글로 커밋 작성
@@ -90,6 +83,8 @@
 | 설정, 부가기능 | **chore**    | 🎵  |
 | 문서작업 | **docs**     | 📜  |
 | 에러 수정 | **debug**    | 🕷️ |
+
+<br>
 
 ## ☘️ PR컨벤션
 
@@ -125,13 +120,19 @@ close #{}
 - [ ] 이슈넘버를 적었는가?
 ```
 
+<br>
+
 ## ☘️ 브랜치컨벤션
 
 ex:   **feat/#이슈번호**
 
+<br>
+
 ## ☘️ 머지 방식
 
 **squash and merge**
+
+<br>
 
 ## ☘️ 코드컨벤션
 
@@ -155,12 +156,16 @@ ex:   **feat/#이슈번호**
 Member member = new Member();
 ```
 
+<br>
+
 ## ☘️ 클래스 명
 
 명사 + 동사 형태 사용
 
 > Ex) MemberCreateRequestDTO
 >
+
+<br>
 
 ## ☘️ 디렉토리 구조
 
