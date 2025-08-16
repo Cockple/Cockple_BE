@@ -146,10 +146,10 @@ public class ChatController {
     @ApiResponse(responseCode = "403", description = "이미지 접근 권한 없음")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 이미지")
     public BaseResponse<ChatDownloadTokenDTO.Response> issueImageDownloadToken(
-            @PathVariable Long ImageId
+            @PathVariable Long imageId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatDownloadTokenDTO.Response response = chatImageService.issueDownloadToken(ImageId, memberId);
+        ChatDownloadTokenDTO.Response response = chatImageService.issueDownloadToken(imageId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
