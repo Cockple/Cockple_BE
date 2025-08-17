@@ -48,20 +48,23 @@ public class PartyConverter {
                 .build();
     }
 
-    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt, String imgUrl) {
-        // 급수 정보 가공
+    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt, String imgUrl, boolean hasPendingJoinRequest) {
+        //급수 정보 가공
         List<String> femaleLevel = getLevelList(party, Gender.FEMALE);
         List<String> maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
                 null : getLevelList(party, Gender.MALE);
-        // 멤버 정보 가공
+        //멤버 정보 가공
         String memberStatus = memberPartyOpt.isPresent() ? "MEMBER" : "NOT_MEMBER";
         String memberRole = memberPartyOpt.map(mp -> mp.getRole().name()).orElse(null);
+        Boolean pendingRequestStatus = "NOT_MEMBER".equals(memberStatus) ? hasPendingJoinRequest : null;
 
         return PartyDetailDTO.Response.builder()
                 .partyId(party.getId())
+                .ownerId(party.getOwnerId())
                 .partyName(party.getPartyName())
                 .memberStatus(memberStatus)
                 .memberRole(memberRole)
+                .hasPendingJoinRequest(pendingRequestStatus)
                 .addr1(party.getPartyAddr().getAddr1())
                 .addr2(party.getPartyAddr().getAddr2())
                 .activityDays(party.getActiveDays().stream().map(day -> day.getActiveDay().getKoreanName()).toList())
