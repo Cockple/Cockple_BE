@@ -143,8 +143,11 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //memberParty 조회 로직 수행
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
 
+        //가입신청 상태 확인하는 비즈니스 로직 수행
+        boolean hasPendingJoinRequest = hasPendingJoinRequest(party, member, memberParty);
+
         String imgUrl = getImageUrl(party.getPartyImg());
-        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl);
+        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl, hasPendingJoinRequest);
 
         log.info("모임 상세 정보 조회 완료 - partyId: {}", partyId);
         return response;
@@ -319,6 +322,13 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         List<Party> content = (start >= sortedParties.size()) ? Collections.emptyList() : sortedParties.subList(start, end);
         boolean hasNext = end < sortedParties.size();
         return new SliceImpl<>(content, pageable, hasNext);
+    }
+
+    private boolean hasPendingJoinRequest(Party party, Member member, Optional<MemberParty> memberParty){
+        if (memberParty.isEmpty()) {
+            return partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING);
+        }
+        return false;
     }
 
     // ========== 데이터 변환 메서드 ==========
