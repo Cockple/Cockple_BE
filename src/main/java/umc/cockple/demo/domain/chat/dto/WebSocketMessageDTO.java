@@ -27,8 +27,10 @@ public class WebSocketMessageDTO {
         @Builder
         public record ImageInfo(
                 String imgKey,
-                String imgUrl,
-                Integer imgOrder
+                Integer imgOrder,
+                String originalFileName,
+                Long fileSize,
+                String fileType
         ) {}
     }
 
