@@ -9,9 +9,11 @@ public class PartyDetailDTO {
     @Builder
     public record Response(
             Long partyId,
+            Long ownerId,
             String partyName,
             String memberStatus,
             String memberRole,
+            Boolean hasPendingJoinRequest,
             String addr1,
             String addr2,
             List<String> activityDays,
