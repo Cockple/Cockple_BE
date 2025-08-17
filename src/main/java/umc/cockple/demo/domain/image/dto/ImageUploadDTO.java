@@ -6,6 +6,9 @@ public class ImageUploadDTO{
     @Builder
     public record Response(
             String imgUrl,
-            String imgKey
+            String imgKey,
+            String originalFileName,
+            Long fileSize,
+            String fileType
     ) {}
 }
