@@ -118,11 +118,10 @@ public class ChatWebSocketService {
     private void attachImages(ChatMessage message, List<ImageInfo> images) {
         if (images != null && !images.isEmpty()) {
             images.forEach(imageInfo -> {
-                ChatMessageImg messageImg = ChatMessageImg.builder()
-                        .chatMessage(message)
-                        .imgKey(imageInfo.imgKey())
-                        .imgOrder(imageInfo.imgOrder())
-                        .build();
+                ChatMessageImg messageImg = ChatMessageImg.create(
+                        message, imageInfo.imgKey(), imageInfo.imgOrder(),
+                        imageInfo.originalFileName(), imageInfo.fileSize(), imageInfo.fileType()
+                );
                 message.getChatMessageImgs().add(messageImg);
             });
         }
