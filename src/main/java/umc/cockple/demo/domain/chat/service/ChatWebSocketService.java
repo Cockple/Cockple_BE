@@ -58,13 +58,12 @@ public class ChatWebSocketService {
     public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
-        validateSendMessage(chatRoomId, content, senderId);
+        validateSendMessage(chatRoomId, content, files, images, senderId);
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberWithProfileOrThrow(senderId);
 
         String profileImageUrl = getImageUrl(sender.getProfileImg());
 
-        // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         attachFiles(chatMessage, files);
         attachImages(chatMessage, images);
@@ -175,9 +174,9 @@ public class ChatWebSocketService {
 
     // ========== 검증 메서드 ==========
 
-    private void validateSendMessage(Long chatRoomId, String content, Long senderId) {
+    private void validateSendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         validateChatRoom(chatRoomId);
-        validateContent(content);
+        validateMessage(content, files, images);
         validateChatRoomMember(chatRoomId, senderId);
     }
 
@@ -189,12 +188,16 @@ public class ChatWebSocketService {
         }
     }
 
-    private void validateContent(String content) {
-        if (content == null || content.trim().isEmpty()) {
-            throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
-        }
+    private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
+        boolean hasContent = content != null && content.trim().isEmpty();
+        boolean hasFiles = files != null && !files.isEmpty();
+        boolean hasImages = images != null && !images.isEmpty();
 
-        if (content.length() > 1000) {
+        if (!hasContent && !hasFiles && !hasImages) {
+            throw new ChatException(ChatErrorCode.EMPTY_MESSAGE_NOT_ALLOWED);
+        }
+        
+        if (content != null && content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
         }
     }

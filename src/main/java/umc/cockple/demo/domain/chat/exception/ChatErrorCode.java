@@ -13,7 +13,7 @@ public enum ChatErrorCode implements BaseErrorCode {
     //1xx: 클라이언트가 수정해야 할 입력값 문제
     CANNOT_CHAT_WITH_SELF(HttpStatus.BAD_REQUEST, "CHAT101", "나와의 채팅방 생성은 불가합니다."),
     CHATROOM_ID_NECESSARY(HttpStatus.BAD_REQUEST, "CHAT102", "채팅방 ID가 필요합니다."),
-    CONTENT_NECESSARY(HttpStatus.BAD_REQUEST, "CHAT103", "메시지 내용이 필요합니다."),
+    EMPTY_MESSAGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "CHAT103", "빈 메세지는 보낼 수 없습니다."),
     MESSAGE_TO_LONG(HttpStatus.BAD_REQUEST, "CHAT104", "메시지는 1000자를 초과할 수 없습니다."),
 
     // 2xx: 리소스 없음
