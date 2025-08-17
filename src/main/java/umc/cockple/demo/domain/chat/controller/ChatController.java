@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.service.ChatCommandService;
 import umc.cockple.demo.domain.chat.service.ChatFileService;
+import umc.cockple.demo.domain.chat.service.ChatImageService;
 import umc.cockple.demo.domain.chat.service.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -26,6 +27,7 @@ public class ChatController {
     private final ChatQueryService chatQueryService;
     private final ChatCommandService chatCommandService;
     private final ChatFileService chatFileService;
+    private final ChatImageService chatImageService;
 
     @GetMapping(value = "/parties")
     @Operation(summary = "모임 채팅방 목록 조회", description = "회원이 자신의 모임 채팅방 목록을 조회합니다.")
@@ -135,6 +137,33 @@ public class ChatController {
             @RequestParam String token
     ) {
         return chatFileService.downloadFile(fileId, token);
+    }
+
+    //TODO: 파일 다운로드 토큰 발급 API와 통합
+    @PostMapping("/images/{imageId}/download-token")
+    @Operation(summary = "채팅 이미지 다운로드 토큰 발급", description = "채팅방에 업로드된 특정 이미지를 다운로드할 수 있는 일회용 토큰을 발급합니다.")
+    @ApiResponse(responseCode = "200", description = "토큰 발급 성공")
+    @ApiResponse(responseCode = "403", description = "이미지 접근 권한 없음")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 이미지")
+    public BaseResponse<ChatDownloadTokenDTO.Response> issueImageDownloadToken(
+            @PathVariable Long imageId
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatDownloadTokenDTO.Response response = chatImageService.issueDownloadToken(imageId, memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    //TODO: 파일 다운로드 API와 통합
+    @GetMapping("/images/{imageId}/download")
+    @Operation(summary = "채팅 이미지 다운로드", description = "발급받은 다운로드 토큰을 검증하고, 유효할 경우 실제 이미지 데이터를 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "이미지 다운로드 성공")
+    @ApiResponse(responseCode = "403", description = "유효하지 않거나 만료된 토큰")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 이미지")
+    public ResponseEntity<Resource> downloadImage(
+            @PathVariable Long imageId,
+            @RequestParam String token
+    ) {
+        return chatImageService.downloadImage(imageId, token);
     }
 
     @GetMapping("/parties/{partyId}")

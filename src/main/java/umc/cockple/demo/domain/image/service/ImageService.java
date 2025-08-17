@@ -40,6 +40,7 @@ public class ImageService {
 
         log.info("[이미지 업로드 시작]");
 
+        String originalFileName = image.getOriginalFilename();
         String key = getFileKey(image, domainType); // 예: contest-images/uuid.jpg
         String imgUrl = uploadToS3(image, key, false);
 
@@ -47,6 +48,9 @@ public class ImageService {
         return ImageUploadDTO.Response.builder()
                 .imgUrl(imgUrl)
                 .imgKey(key)
+                .originalFileName(originalFileName)
+                .fileSize(image.getSize())
+                .fileType(image.getContentType())
                 .build();
     }
 
