@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -92,7 +93,12 @@ public class MemberRepositoryCustomImpl implements MemberRepositoryCustom{
 
         //검색 조건이 있는 경우 필터링에 추가
         if (StringUtils.hasText(levelSearch)) {
-            return baseRequirement.and(member.level.eq(Level.fromKorean(levelSearch)));
+            //검색 문자열을 포함하는 모든 Level Enum 리스트로 저장
+            List<Level> matchedLevels = Arrays.stream(Level.values())
+                    .filter(level -> level.getKoreanName().contains(levelSearch))
+                    .toList();
+
+            return baseRequirement.and(member.level.in(matchedLevels));
         }
         return baseRequirement;
     }
