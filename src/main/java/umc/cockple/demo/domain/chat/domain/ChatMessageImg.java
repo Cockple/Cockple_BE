@@ -43,6 +43,3 @@ public class ChatMessageImg extends BaseEntity {
                 .build();
     }
 }
-
-
-
