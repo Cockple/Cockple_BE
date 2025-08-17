@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import umc.cockple.demo.domain.chat.service.ChatReadService;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -19,7 +18,6 @@ public class ChatEventListener {
 
     private final ChatWebSocketService chatWebSocketService;
     private final SubscriptionService subscriptionService;
-    private final ChatReadService chatReadService;
 
     @EventListener
     @Async
@@ -27,7 +25,8 @@ public class ChatEventListener {
         log.info("메시지 전송 이벤트 처리 - 채팅방: {}, 발신자: {}",
                 event.chatRoomId(), event.senderId());
         try {
-            chatWebSocketService.sendMessage(event.chatRoomId(), event.content(), event.senderId());
+            chatWebSocketService
+                    .sendMessage(event.chatRoomId(), event.content(), event.files(), event.images(), event.senderId());
         } catch (Exception e) {
             log.error("메시지 전송 이벤트 처리 중 오류 발생", e);
         }

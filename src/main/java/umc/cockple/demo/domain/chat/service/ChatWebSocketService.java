@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
-import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -55,17 +55,18 @@ public class ChatWebSocketService {
                 .build();
     }
 
-    public void sendMessage(Long chatRoomId, String content, Long senderId) {
+    public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
-        validateSendMessage(chatRoomId, content, senderId);
+        validateSendMessage(chatRoomId, content, files, images, senderId);
         ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
         Member sender = findMemberWithProfileOrThrow(senderId);
 
         String profileImageUrl = getImageUrl(sender.getProfileImg());
 
-        // TODO: 다양한 타입의 텍스트 전송가능하도록 변경해야 함
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
+        attachFiles(chatMessage, files);
+        attachImages(chatMessage, images);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
@@ -75,9 +76,14 @@ public class ChatWebSocketService {
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
         int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
+        List<WebSocketMessageDTO.MessageResponse.ImageInfo> responseImages =
+                createResponseImageInfos(savedMessage.getChatMessageImgs());
+        List<WebSocketMessageDTO.MessageResponse.FileInfo> responseFiles =
+                createResponseFileInfos(savedMessage.getChatMessageFiles());
+
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
-                chatConverter.toSendMessageResponse(chatRoomId, content, savedMessage, sender, profileImageUrl, unreadCount);
+                chatConverter.toSendMessageResponse(chatRoomId, content, responseImages, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
     }
@@ -96,8 +102,32 @@ public class ChatWebSocketService {
     }
 
     // ========== 비즈니스 메서드 ==========
+    private void attachFiles(ChatMessage message, List<FileInfo> files) {
+        if (files != null && !files.isEmpty()) {
+            files.forEach(fileInfo -> {
+                ChatMessageFile messageFile = ChatMessageFile.create(
+                        message, fileInfo.originalFileName(),
+                        fileInfo.fileKey(), fileInfo.fileSize(), fileInfo.fileType()
+                );
+                message.getChatMessageFiles().add(messageFile);
+            });
+        }
+    }
+
+    private void attachImages(ChatMessage message, List<ImageInfo> images) {
+        if (images != null && !images.isEmpty()) {
+            images.forEach(imageInfo -> {
+                ChatMessageImg messageImg = ChatMessageImg.create(
+                        message, imageInfo.imgKey(), imageInfo.imgOrder(),
+                        imageInfo.originalFileName(), imageInfo.fileSize(), imageInfo.fileType()
+                );
+                message.getChatMessageImgs().add(messageImg);
+            });
+        }
+    }
+
     private void checkFirstMessageInDirect(Long chatRoomId, Long senderId, ChatRoom chatRoom) {
-        if(chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
+        if (chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
             handleFirstDirectMessage(chatRoomId, senderId);
         }
     }
@@ -113,18 +143,40 @@ public class ChatWebSocketService {
         if (pendingMemberOpt.isPresent()) {
             ChatRoomMember pendingMember = pendingMemberOpt.get();
             pendingMember.joinChatRoom();
-            chatRoomMemberRepository.save(pendingMember);
 
             Long targetMemberId = pendingMember.getMember().getId();
             log.info("PENDING 멤버를 JOINED로 변경 완료 - 멤버 ID: {}", targetMemberId);
         }
     }
 
+    private List<WebSocketMessageDTO.MessageResponse.ImageInfo> createResponseImageInfos(
+            List<ChatMessageImg> savedImages) {
+        return savedImages.stream()
+                .map(img -> WebSocketMessageDTO.MessageResponse.ImageInfo.builder()
+                        .imageId(img.getId())
+                        .imageUrl(imageService.getUrlFromKey(img.getImgKey()))
+                        .imgOrder(img.getImgOrder())
+                        .build())
+                .toList();
+    }
+
+    private List<WebSocketMessageDTO.MessageResponse.FileInfo> createResponseFileInfos(
+            List<ChatMessageFile> savedFiles) {
+        return savedFiles.stream()
+                .map(file -> WebSocketMessageDTO.MessageResponse.FileInfo.builder()
+                        .fileId(file.getId())
+                        .originalFileName(file.getOriginalFileName())
+                        .fileSize(file.getFileSize())
+                        .fileType(file.getFileType())
+                        .build())
+                .toList();
+    }
+
     // ========== 검증 메서드 ==========
 
-    private void validateSendMessage(Long chatRoomId, String content, Long senderId) {
+    private void validateSendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         validateChatRoom(chatRoomId);
-        validateContent(content);
+        validateMessage(content, files, images);
         validateChatRoomMember(chatRoomId, senderId);
     }
 
@@ -136,12 +188,16 @@ public class ChatWebSocketService {
         }
     }
 
-    private void validateContent(String content) {
-        if (content == null || content.trim().isEmpty()) {
-            throw new ChatException(ChatErrorCode.CONTENT_NECESSARY);
-        }
+    private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
+        boolean hasContent = content != null && content.trim().isEmpty();
+        boolean hasFiles = files != null && !files.isEmpty();
+        boolean hasImages = images != null && !images.isEmpty();
 
-        if (content.length() > 1000) {
+        if (!hasContent && !hasFiles && !hasImages) {
+            throw new ChatException(ChatErrorCode.EMPTY_MESSAGE_NOT_ALLOWED);
+        }
+        
+        if (content != null && content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
         }
     }

@@ -39,9 +39,11 @@ public class ChatMessage extends BaseEntity {
     private Boolean isDeleted;
 
     @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ChatMessageImg> chatMessageImgs = new ArrayList<>();
 
     @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ChatMessageFile> chatMessageFiles = new ArrayList<>();
 
     public static ChatMessage create(ChatRoom chatRoom, Member sender, String content, MessageType type) {

@@ -4,6 +4,7 @@ import lombok.Builder;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class WebSocketMessageDTO {
 
@@ -11,8 +12,26 @@ public class WebSocketMessageDTO {
             WebSocketMessageType type,
             Long chatRoomId,
             String content,
+            List<FileInfo> files,
+            List<ImageInfo> images,
             Long lastReadMessageId
     ) {
+        @Builder
+        public record FileInfo(
+                String fileKey,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {}
+
+        @Builder
+        public record ImageInfo(
+                String imgKey,
+                Integer imgOrder,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {}
     }
 
     @Builder
@@ -31,12 +50,28 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long messageId,
             String content,
+            List<FileInfo> files,
+            List<ImageInfo> images,
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
             LocalDateTime timestamp,
             Integer unreadCount
     ) {
+        @Builder
+        public record FileInfo(
+                Long fileId,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {}
+
+        @Builder
+        public record ImageInfo(
+                Long imageId,
+                String imageUrl,
+                Integer imgOrder
+        ) {}
     }
 
     @Builder
