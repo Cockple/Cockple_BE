@@ -7,8 +7,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import umc.cockple.demo.domain.chat.service.ChatSendService;
-import umc.cockple.demo.domain.chat.service.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
+import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
 @Component
