@@ -83,5 +83,6 @@ public class SubscriptionReadProcessingService {
     public record MessageUnreadUpdate(
             Long messageId,
             int newUnreadCount
-    ) {}
+    ) {
+    }
 }
