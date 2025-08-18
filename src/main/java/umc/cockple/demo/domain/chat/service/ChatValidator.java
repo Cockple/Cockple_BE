@@ -22,7 +22,17 @@ public class ChatValidator {
 
     public void validateSendRequest(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         validateChatRoom(chatRoomId);
+        validateChatRoomMember(chatRoomId, senderId);
         validateMessage(content, files, images);
+    }
+
+    public void validateSubscriptionRequest(Long chatRoomId, Long senderId) {
+        validateChatRoom(chatRoomId);
+        validateChatRoomMember(chatRoomId, senderId);
+    }
+
+    public void validateUnsubscriptionRequest(Long chatRoomId, Long senderId) {
+        validateChatRoom(chatRoomId);
         validateChatRoomMember(chatRoomId, senderId);
     }
 
@@ -38,6 +48,11 @@ public class ChatValidator {
         }
     }
 
+    private void validateChatRoomMember(Long chatRoomId, Long memberId) {
+        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+    }
+
     private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
         boolean hasContent = content != null && !content.trim().isEmpty();
         boolean hasFiles = files != null && !files.isEmpty();
@@ -50,10 +65,5 @@ public class ChatValidator {
         if (content != null && content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
         }
-    }
-
-    private void validateChatRoomMember(Long chatRoomId, Long memberId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
     }
 }
