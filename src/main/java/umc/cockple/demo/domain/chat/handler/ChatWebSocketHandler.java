@@ -127,10 +127,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         } catch (ChatException e) {
             log.warn("메시지 전송 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
-            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage());
         } catch (Exception e) {
             log.error("메시지 전송 처리 중 예외 발생", e);
-            sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.", request.chatRoomId());
+            sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -146,10 +146,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         } catch (ChatException e) {
             log.warn("구독 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
-            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage());
         } catch (Exception e) {
             log.error("구독 처리 중 예외 발생", e);
-            sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.", request.chatRoomId());
+            sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -165,10 +165,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         } catch (ChatException e) {
             log.warn("구독 해제 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
-            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage());
         } catch (Exception e) {
             log.error("구독 해제 처리 중 예외 발생", e);
-            sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.", request.chatRoomId());
+            sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 
