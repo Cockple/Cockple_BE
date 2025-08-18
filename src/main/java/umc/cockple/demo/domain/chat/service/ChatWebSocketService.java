@@ -43,18 +43,6 @@ public class ChatWebSocketService {
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
 
-    public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
-        log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
-
-        return MemberConnectionInfo.builder()
-                .memberId(memberId)
-                .memberName(member.getMemberName())
-                .build();
-    }
-
     public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 

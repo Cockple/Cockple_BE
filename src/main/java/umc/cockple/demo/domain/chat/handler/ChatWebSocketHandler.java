@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatValidator;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
+import umc.cockple.demo.domain.member.service.MemberQueryService;
 
 import java.time.LocalDateTime;
 
@@ -27,7 +28,7 @@ import java.time.LocalDateTime;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final SubscriptionService subscriptionService;
-    private final ChatWebSocketService chatWebSocketService;
+    private final MemberQueryService memberQueryService;
     private final ChatValidator chatValidator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
@@ -41,7 +42,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Boolean authenticated = (Boolean) session.getAttributes().get("authenticated");
 
             if (memberId != null && Boolean.TRUE.equals(authenticated)) {
-                MemberConnectionInfo memberInfo = chatWebSocketService.getMemberConnectionInfo(memberId);
+                MemberConnectionInfo memberInfo = memberQueryService.getMemberConnectionInfo(memberId);
                 session.getAttributes().put("memberName", memberInfo.memberName());
 
                 subscriptionService.addSession(memberId, session);
