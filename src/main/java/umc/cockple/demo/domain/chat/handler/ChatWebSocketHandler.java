@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
+import umc.cockple.demo.domain.chat.service.ChatValidator;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
@@ -118,7 +119,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
-            chatValidator.validateSendRequset(request.chatRoomId(), memberId);
+            chatValidator.validateSendRequest(
+                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
 
             ChatMessageSendEvent sendEvent =
                     ChatMessageSendEvent.create(
