@@ -55,4 +55,33 @@ public class ChatMessage extends BaseEntity {
                 .isDeleted(false)
                 .build();
     }
+
+    public String getDisplayContent() {
+        if (this.content != null && !this.content.trim().isEmpty()) {
+            return this.content;
+        }
+
+        boolean hasImages = this.chatMessageImgs != null && !this.chatMessageImgs.isEmpty();
+        boolean hasFiles = this.chatMessageFiles != null && !this.chatMessageFiles.isEmpty();
+
+        if (hasImages && hasFiles) {
+            return "사진과 파일을 보냈습니다.";
+        }
+
+        if (hasImages) {
+            int imageCount = this.chatMessageImgs.size();
+            return imageCount > 1 ?
+                    String.format("사진 %d장을 보냈습니다.", imageCount) :
+                    "사진을 보냈습니다.";
+        }
+
+        if (hasFiles) {
+            int fileCount = this.chatMessageFiles.size();
+            return fileCount > 1 ?
+                    String.format("파일 %d개를 보냈습니다.", fileCount) :
+                    "파일을 보냈습니다.";
+        }
+
+        return "메시지";
+    }
 }
