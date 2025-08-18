@@ -50,7 +50,7 @@ public class ChatValidator {
 
     private void validateChatRoomMember(Long chatRoomId, Long memberId) {
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
     private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {

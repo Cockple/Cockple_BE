@@ -82,7 +82,7 @@ public class ChatFileServiceImpl implements ChatFileService{
     private void validateMemberPermission(ChatMessageFile chatFile, Long memberId) {
         Long roomId = chatFile.getChatMessage().getChatRoom().getId();
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
     private void validateToken(Long fileId, String tokenValue) {
