@@ -170,6 +170,11 @@ public class Party extends BaseEntity {
         this.activeDays.add(partyActiveDay);
     }
 
+    public void updateKeywords(List<Keyword> keywords) {
+        this.keywords.clear();
+        keywords.forEach(this::addKeyword);
+    }
+
     public void addKeyword(Keyword keyword) {
         PartyKeyword partyKeyword = PartyKeyword.builder()
                 .keyword(keyword)

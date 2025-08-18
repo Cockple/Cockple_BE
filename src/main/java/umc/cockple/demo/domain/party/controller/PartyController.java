@@ -300,7 +300,6 @@ public class PartyController {
     @ApiResponse(responseCode = "200", description = "키워드 추가 성공")
     @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
-    @ApiResponse(responseCode = "409", description = "이미 추가된 키워드")
     public BaseResponse<Void> addKeyword(
             @PathVariable Long partyId,
             @RequestBody @Valid PartyKeywordDTO.Request request
@@ -308,22 +307,6 @@ public class PartyController {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.addKeyword(partyId, memberId, request);
-        return BaseResponse.success(CommonSuccessCode.OK);
-    }
-
-    @DeleteMapping("/parties/{partyId}/keywords")
-    @Operation(summary = "모임 키워드 삭제",
-            description = "사용자가 모임에 키워드를 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "키워드 삭제 성공")
-    @ApiResponse(responseCode = "403", description = "모임장 권한 없음")
-    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 키워드")
-    public BaseResponse<Void> deleteKeyword(
-            @PathVariable Long partyId,
-            @RequestBody @Valid PartyKeywordDTO.Request request
-    ){
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        partyCommandService.deleteKeyword(partyId, memberId, request);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 }
