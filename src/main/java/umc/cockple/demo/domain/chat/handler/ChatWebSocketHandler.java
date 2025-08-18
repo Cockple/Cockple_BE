@@ -27,6 +27,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final SubscriptionService subscriptionService;
     private final ChatWebSocketService chatWebSocketService;
+    private final ChatValidator chatValidator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -85,10 +86,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     handleSubscribe(session, request, memberId);
                     break;
                 case UNSUBSCRIBE:
-                    ChatRoomSubscriptionEvent unsubscribeEvent =
-                            ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
-                    eventPublisher.publishEvent(unsubscribeEvent);
-                    sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+                    handleUnsubscribe(session,request,memberId);
                     break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
@@ -139,6 +137,27 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.", request.chatRoomId());
         }
     }
+
+    private void handleUnsubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        try {
+            chatValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
+
+            ChatRoomSubscriptionEvent unsubscribeEvent =
+                    ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
+            eventPublisher.publishEvent(unsubscribeEvent);
+
+            sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+
+        } catch (ChatException e) {
+            log.warn("구독 해제 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+        } catch (Exception e) {
+            log.error("구독 해제 처리 중 예외 발생", e);
+            sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.", request.chatRoomId());
+        }
+    }
+
+    // ========== 반환 메시지 생성 메서드 ============
 
     private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         try {
