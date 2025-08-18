@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
 import umc.cockple.demo.domain.chat.service.SubscriptionService;
 
@@ -81,10 +82,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     eventPublisher.publishEvent(sendEvent);
                     break;
                 case SUBSCRIBE:
-                    ChatRoomSubscriptionEvent subscribeEvent =
-                            ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
-                    eventPublisher.publishEvent(subscribeEvent);
-                    sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+                    handleSubscribe(session, request, memberId);
                     break;
                 case UNSUBSCRIBE:
                     ChatRoomSubscriptionEvent unsubscribeEvent =
@@ -122,6 +120,25 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // ========== 내부 메서드들 ==========
+
+    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        try {
+            chatValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
+
+            ChatRoomSubscriptionEvent subscribeEvent =
+                    ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
+            eventPublisher.publishEvent(subscribeEvent);
+
+            sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+
+        } catch (ChatException e) {
+            log.warn("구독 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+        } catch (Exception e) {
+            log.error("구독 처리 중 예외 발생", e);
+            sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.", request.chatRoomId());
+        }
+    }
 
     private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         try {
