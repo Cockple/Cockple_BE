@@ -189,7 +189,7 @@ public class ChatWebSocketService {
     }
 
     private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
-        boolean hasContent = content != null && content.trim().isEmpty();
+        boolean hasContent = content != null && !content.trim().isEmpty();
         boolean hasFiles = files != null && !files.isEmpty();
         boolean hasImages = images != null && !images.isEmpty();
 
