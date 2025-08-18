@@ -396,7 +396,7 @@ public class ExerciseConverter {
         Role role = memberRoles.get(member.getId());
 
         return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(memberParticipant.getId())
+                .participantId(member.getId())
                 .participantNumber(0)
                 .profileImageUrl(getImageUrl(member.getProfileImg()))
                 .name(member.getMemberName())
@@ -413,7 +413,7 @@ public class ExerciseConverter {
         Member member = memberParticipant.getMember();
 
         return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(memberParticipant.getId())
+                .participantId(member.getId())
                 .participantNumber(0)
                 .profileImageUrl(getImageUrl(member.getProfileImg()))
                 .name(member.getMemberName())
