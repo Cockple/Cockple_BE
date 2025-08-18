@@ -54,7 +54,7 @@ public class ChatConverter {
 
         return PartyChatRoomDTO.LastMessageInfo.builder()
                 .messageId(message.getId())
-                .content(message.getContent())
+                .content(message.getDisplayContent())
                 .timestamp(message.getCreatedAt())
                 .messageType(message.getType().name())
                 .build();
@@ -94,7 +94,7 @@ public class ChatConverter {
 
         return DirectChatRoomDTO.LastMessageInfo.builder()
                 .messageId(message.getId())
-                .content(message.getContent())
+                .content(message.getDisplayContent())
                 .timestamp(message.getCreatedAt())
                 .messageType(message.getType().name())
                 .build();
