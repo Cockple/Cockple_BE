@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
@@ -116,30 +117,37 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
+        log.info("===== 프로필 이미지 key값 확인 : " + requestDto.imgKey());
+
         // 이미지 -> 저장 후 url 받아오기
         String imgKey = requestDto.imgKey();
 
-        // 기존 이미지 존재시 이미지 새로 업로드
-        if (member.getProfileImg() != null) {
-
-            // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
-            if (!member.getProfileImg().getImgKey().equals(imgKey)) {
-                imageService.delete(member.getProfileImg().getImgKey());
-                member.getProfileImg().updateProfile(imgKey);
-            }
-
-            // 회원 정보 수정하기 (프로필 사진 제외)
+        // 받은 key가 null인지 확인
+        if (!StringUtils.hasText(imgKey)) {
             member.updateMember(requestDto, keywords);
-
         } else {
-            // 받아온 이미지로 profile객체 생성
-            ProfileImg img = ProfileImg.builder()
-                    .member(member)
-                    .imgKey(imgKey)
-                    .build();
+            // 기존 이미지 존재시 이미지 새로 업로드
+            if (member.getProfileImg() != null) {
 
-            // 회원 정보 수정하기 (프로필 사진까지)
-            member.updateMember(requestDto, keywords, img);
+                // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
+                if (!member.getProfileImg().getImgKey().equals(imgKey)) {
+                    imageService.delete(member.getProfileImg().getImgKey());
+                    member.getProfileImg().updateProfile(imgKey);
+                }
+
+                // 회원 정보 수정하기 (프로필 사진 제외)
+                member.updateMember(requestDto, keywords);
+
+            } else {
+                // 받아온 이미지로 profile객체 생성
+                ProfileImg img = ProfileImg.builder()
+                        .member(member)
+                        .imgKey(imgKey)
+                        .build();
+
+                // 회원 정보 수정하기 (프로필 사진까지)
+                member.updateMember(requestDto, keywords, img);
+            }
         }
 
         //chatRoomMember의 displayName도 같이 업데이트
