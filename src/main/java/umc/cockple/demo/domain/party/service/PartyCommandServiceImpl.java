@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.party.repository.*;
 import umc.cockple.demo.global.enums.*;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -263,17 +264,19 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     }
 
     @Override
-    public void addKeyword(Long partyId, Long memberID, PartyKeywordDTO.Request request) {
+    public void addKeyword(Long partyId, Long memberId, PartyKeywordDTO.Request request) {
         log.info("키워드 추가 시작 - partyId: {}", partyId);
         //모임 조회, 키워드 변환
         Party party = findPartyOrThrow(partyId);
-        Keyword keyword = Keyword.fromKorean(request.keyword());
+        List<Keyword> keywords = request.keywords().stream()
+                .map(Keyword::fromKorean)
+                .toList();
 
-        //키워드 추가 가능한지 검증
-        validateAddKeyword(party, memberID, keyword);
+        //모임장 권한 검증
+        validateOwnerPermission(party, memberId);
 
         //키워드 추가
-        party.addKeyword(keyword);
+        party.updateKeywords(keywords);
         log.info("키워드 추가 완료 - partyId: {}", partyId);
     }
 
@@ -498,28 +501,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     private void validatePartyIsActive(Party party) {
         if (party.getStatus() == PartyStatus.INACTIVE) {
             throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
-        }
-    }
-
-    //키워드 추가 검증
-    private void validateAddKeyword(Party party, Long memberId, Keyword keyword) {
-        //모임장 권한 검증
-        validateOwnerPermission(party, memberId);
-
-        //이미 포함된 키워드인지 검증
-        if (partyKeywordRepository.existsByPartyAndKeyword(party, keyword)) {
-            throw new PartyException(PartyErrorCode.KEYWORD_ALREADY_EXISTS);
-        }
-    }
-
-    //키워드 삭제 검증
-    private void validateDeleteKeyword(Party party, Long memberId, Keyword keyword) {
-        //모임장 권한 검증
-        validateOwnerPermission(party, memberId);
-
-        //존재하는 키워드인지 검증
-        if (!partyKeywordRepository.existsByPartyAndKeyword(party, keyword)) {
-            throw new PartyException(PartyErrorCode.KEYWORD_NOT_FOUND);
         }
     }
 
