@@ -127,7 +127,7 @@ public class MemberCommandService {
             member.updateMember(requestDto, keywords);
         } else {
             // 기존 이미지 존재시 이미지 새로 업로드
-            if (member.getProfileImg() != null) {
+            if (member.getProfileImg() != null && StringUtils.hasText(member.getProfileImg().getImgKey())) {
 
                 // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
                 if (!member.getProfileImg().getImgKey().equals(imgKey)) {
@@ -147,6 +147,7 @@ public class MemberCommandService {
 
                 // 회원 정보 수정하기 (프로필 사진까지)
                 member.updateMember(requestDto, keywords, img);
+
             }
         }
 
