@@ -9,6 +9,7 @@ public class PartyDTO {
     public record Response(
             Long partyId,
             String partyName,
+            Boolean isBookmarked,
             String addr1,
             String addr2,
             List<String> femaleLevel,
