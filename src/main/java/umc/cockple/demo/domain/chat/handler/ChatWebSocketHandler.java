@@ -77,16 +77,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             switch (request.type()) {
                 case SEND:
-                    ChatMessageSendEvent sendEvent =
-                            ChatMessageSendEvent.create(
-                                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
-                    eventPublisher.publishEvent(sendEvent);
+                    handleSendMessage(session, request, memberId);
                     break;
                 case SUBSCRIBE:
                     handleSubscribe(session, request, memberId);
                     break;
                 case UNSUBSCRIBE:
-                    handleUnsubscribe(session,request,memberId);
+                    handleUnsubscribe(session, request, memberId);
                     break;
                 default:
                     sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
@@ -118,6 +115,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // ========== 내부 메서드들 ==========
+
+    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+        try {
+            chatValidator.validateSendRequset(request.chatRoomId(), memberId);
+
+            ChatMessageSendEvent sendEvent =
+                    ChatMessageSendEvent.create(
+                            request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
+            eventPublisher.publishEvent(sendEvent);
+
+        } catch (ChatException e) {
+            log.warn("메시지 전송 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getMessage());
+            sendErrorMessage(session, e.getErrorReason().getCode(), e.getMessage(), request.chatRoomId());
+        } catch (Exception e) {
+            log.error("메시지 전송 처리 중 예외 발생", e);
+            sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.", request.chatRoomId());
+        }
+    }
 
     private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
