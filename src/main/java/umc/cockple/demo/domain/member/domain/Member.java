@@ -115,7 +115,7 @@ public class Member extends BaseEntity {
         this.birth = requestDto.birth();
         this.level = requestDto.level();
         this.keywords = keywords;
-        this.profileImg = img;
+        updateProfileImg(img);
     }
 
     public void updateMemberFirst(MemberDetailInfoRequestDTO requestDto, List<MemberKeyword> keywords) {
@@ -132,7 +132,7 @@ public class Member extends BaseEntity {
         this.birth = requestDto.birth();
         this.level = requestDto.level();
         this.keywords = keywords;
-        this.profileImg = img;
+        updateProfileImg(img);
     }
 
     public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords) {

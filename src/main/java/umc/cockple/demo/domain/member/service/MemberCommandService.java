@@ -96,7 +96,7 @@ public class MemberCommandService {
 
     public void updateProfile(UpdateProfileRequestDTO requestDto, Long memberId) {
         // 회원 찾기
-        Member member = findByMemberId(memberId);
+        Member member = findProfileByMemberId(memberId);
 
         // 기존 키워드 삭제
         memberKeywordRepository.deleteAllByMember(member);
@@ -126,13 +126,15 @@ public class MemberCommandService {
         if (!StringUtils.hasText(imgKey)) {
             member.updateMember(requestDto, keywords);
         } else {
+
+            ProfileImg profile = member.getProfileImg();
             // 기존 이미지 존재시 이미지 새로 업로드
-            if (member.getProfileImg() != null && StringUtils.hasText(member.getProfileImg().getImgKey())) {
+            if (profile != null) {
 
                 // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
-                if (!member.getProfileImg().getImgKey().equals(imgKey)) {
-                    imageService.delete(member.getProfileImg().getImgKey());
-                    member.getProfileImg().updateProfile(imgKey);
+                if (!profile.getImgKey().equals(imgKey)) {
+                    imageService.delete(profile.getImgKey());
+                    profile.updateProfile(imgKey);
                 }
 
                 // 회원 정보 수정하기 (프로필 사진 제외)
@@ -248,6 +250,11 @@ public class MemberCommandService {
 
     private Member findByMemberId(Long memberId) {
         return memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private Member findProfileByMemberId(Long memberId) {
+        return memberRepository.findMemberWithProfileById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
