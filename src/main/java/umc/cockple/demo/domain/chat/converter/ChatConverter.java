@@ -2,10 +2,7 @@ package umc.cockple.demo.domain.chat.converter;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.domain.DownloadToken;
+import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -169,23 +166,42 @@ public class ChatConverter {
                 .build();
     }
 
-    public ChatRoomDetailDTO.MessageInfo toChatRoomDetailMessageInfo(
+    public ChatCommonDTO.MessageInfo toCommonMessageInfo(
             ChatMessage message,
-            Member sender,
             String senderProfileImageUrl,
-            List<String> imageUrls,
+            List<ChatCommonDTO.ImageInfo> processedImages,
             boolean isMyMessage) {
-        return ChatRoomDetailDTO.MessageInfo.builder()
+
+        return ChatCommonDTO.MessageInfo.builder()
                 .messageId(message.getId())
-                .senderId(sender.getId())
-                .senderName(sender.getMemberName())
+                .senderId(message.getSender().getId())
+                .senderName(message.getSender().getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
                 .content(message.getContent())
                 .messageType(message.getType())
-                .imageUrls(imageUrls)
+                .images(processedImages)
                 .timestamp(message.getCreatedAt())
                 .isMyMessage(isMyMessage)
                 .build();
+    }
+
+    public ChatCommonDTO.ImageInfo toImageInfo(ChatMessageImg img, String imageUrl) {
+        return ChatCommonDTO.ImageInfo.builder()
+                .imageId(img.getId())
+                .imageUrl(imageUrl)
+                .imgOrder(img.getImgOrder())
+                .isEmoji(img.getIsEmoji())
+                .originalFileName(img.getOriginalFileName())
+                .fileSize(img.getFileSize())
+                .fileType(img.getFileType())
+                .build();
+    }
+
+    public List<ChatRoomDetailDTO.MessageInfo> toChatRoomDetailMessageInfos(
+            List<ChatCommonDTO.MessageInfo> commonMessages) {
+        return commonMessages.stream()
+                .map(ChatRoomDetailDTO.MessageInfo::from)
+                .toList();
     }
 
     public ChatRoomDetailDTO.MemberInfo toChatRoomDetailMemberInfo(Member member, String memberProfileImgUrl) {
@@ -207,23 +223,11 @@ public class ChatConverter {
                 .build();
     }
 
-    public ChatMessageDTO.MessageInfo toPreviousMessageInfo(
-            ChatMessage message,
-            Member sender,
-            String senderProfileImageUrl,
-            List<String> imageUrls,
-            boolean isMyMessage) {
-        return ChatMessageDTO.MessageInfo.builder()
-                .messageId(message.getId())
-                .senderId(sender.getId())
-                .senderName(sender.getMemberName())
-                .senderProfileImageUrl(senderProfileImageUrl)
-                .content(message.getContent())
-                .messageType(message.getType())
-                .imageUrls(imageUrls)
-                .timestamp(message.getCreatedAt())
-                .isMyMessage(isMyMessage)
-                .build();
+    public List<ChatMessageDTO.MessageInfo> toChatMessageInfos(
+            List<ChatCommonDTO.MessageInfo> commonMessages) {
+        return commonMessages.stream()
+                .map(ChatMessageDTO.MessageInfo::from)
+                .toList();
     }
 
     public ChatMessageDTO.Response toChatMessageResponse(
