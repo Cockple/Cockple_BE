@@ -105,7 +105,7 @@ public class MemberController {
     public ResponseEntity<TokenRefreshResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
 
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new MemberException(MemberErrorCode.REFRESHTOKEN_NOT_FOUND);
+            throw new MemberException(MemberErrorCode.REFRESHTOKEN_IS_NULL);
         }
 
         // 리프레시 토큰 유효성 검사
