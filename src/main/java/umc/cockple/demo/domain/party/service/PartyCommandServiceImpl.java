@@ -249,6 +249,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //모임 초대 조회
         PartyInvitation invitation = findInvitationOrThrow(invitationId);
+        Member invitee = findMemberOrThrow(memberId);
 
         //모임 초대 처리 검증
         validateInvitationAction(invitation, memberId);
@@ -256,6 +257,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if (RequestAction.APPROVE.equals(request.action())) {
             approveInvitation(invitation);
+            createInviteApprovedNotification(invitation.getInviter(), invitation.getParty().getId(), NotificationTarget.PARTY_APPROVED, invitee);
         } else {
             rejectInvitation(invitation);
         }
@@ -535,6 +537,16 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                 .partyId(partyId)
                 .target(notificationTarget)
                 .invitationId(inviteId)
+                .build();
+        notificationCommandService.createNotification(dto);
+    }
+
+    private void createInviteApprovedNotification(Member member, Long partyId, NotificationTarget notificationTarget, Member invitee) {
+        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                .member(member)
+                .partyId(partyId)
+                .target(notificationTarget)
+                .subjectName(invitee.getNickname())
                 .build();
         notificationCommandService.createNotification(dto);
     }
