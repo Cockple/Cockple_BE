@@ -82,7 +82,7 @@ public class ChatImageServiceImpl implements ChatImageService{
     private void validateMemberPermission(ChatMessageImg chatImage, Long memberId) {
         Long roomId = chatImage.getChatMessage().getChatRoom().getId();
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
     private void validateToken(Long ImageId, String tokenValue) {

@@ -163,7 +163,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private void validateChatRoomAccess(Long roomId, Long memberId) {
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
     private void validateIsMember(Long partyId, Long memberId) {
@@ -182,7 +182,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                     Long chatRoomId = chatRoom.getId();
 
                     ChatRoomMember chatRoomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
                     Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
@@ -220,13 +220,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
                     // 나의 채팅방 참여 정보
                     ChatRoomMember myMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     // 상대방 찾기 (나 제외)
                     ChatRoomMember displayMember = chatRoom.getChatRoomMembers().stream()
                             .filter(crm -> !crm.getMember().getId().equals(memberId))
                             .findFirst()
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     Long lastReadMessageId = myMember.getLastReadMessageId();
                     int unreadCount;
@@ -375,13 +375,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private ChatRoomMember findChatRoomMembershipOrThrow(Long roomId, Long memberId) {
         return chatRoomMemberRepository
                 .findByChatRoomIdAndMemberId(roomId, memberId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
     }
 
     private ChatRoomMember findCounterPartWithMemberOrThrow(ChatRoom chatRoom, ChatRoomMember myMembership) {
         return chatRoomMemberRepository
                 .findCounterPartWithMember(chatRoom.getId(), myMembership.getMember().getId())
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
     }
 
     private List<ChatRoomMember> findChatRoomMembersWithMemberOrThrow(Long roomId) {

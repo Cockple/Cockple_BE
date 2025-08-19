@@ -11,13 +11,13 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
-import umc.cockple.demo.domain.chat.service.ChatWebSocketService;
-import umc.cockple.demo.domain.chat.service.SubscriptionService;
-
-import java.time.LocalDateTime;
+import umc.cockple.demo.domain.chat.exception.ChatException;
+import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.WebSocketMessageService;
+import umc.cockple.demo.domain.member.service.MemberQueryService;
 
 @Component
 @Slf4j
@@ -25,7 +25,9 @@ import java.time.LocalDateTime;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final SubscriptionService subscriptionService;
-    private final ChatWebSocketService chatWebSocketService;
+    private final MemberQueryService memberQueryService;
+    private final WebSocketMessageService webSocketMessageService;
+    private final ChatValidator chatValidator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -38,13 +40,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Boolean authenticated = (Boolean) session.getAttributes().get("authenticated");
 
             if (memberId != null && Boolean.TRUE.equals(authenticated)) {
-                MemberConnectionInfo memberInfo = chatWebSocketService.getMemberConnectionInfo(memberId);
+                MemberConnectionInfo memberInfo = memberQueryService.getMemberConnectionInfo(memberId);
                 session.getAttributes().put("memberName", memberInfo.memberName());
 
                 subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
-                sendConnectionSuccessMessage(session, memberInfo);
+                webSocketMessageService.sendConnectionSuccessMessage(session, memberInfo);
             } else {
                 log.warn("memberId를 찾을 수 없습니다. 세션을 종료합니다.");
                 session.close();
@@ -67,7 +69,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             Long memberId = (Long) session.getAttributes().get("memberId");
             if (memberId == null) {
-                sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
+                webSocketMessageService.sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
                 return;
             }
 
@@ -75,30 +77,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             switch (request.type()) {
                 case SEND:
-                    ChatMessageSendEvent sendEvent =
-                            ChatMessageSendEvent.create(
-                                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
-                    eventPublisher.publishEvent(sendEvent);
+                    handleSendMessage(session, request, memberId);
                     break;
                 case SUBSCRIBE:
-                    ChatRoomSubscriptionEvent subscribeEvent =
-                            ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
-                    eventPublisher.publishEvent(subscribeEvent);
-                    sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+                    handleSubscribe(session, request, memberId);
                     break;
                 case UNSUBSCRIBE:
-                    ChatRoomSubscriptionEvent unsubscribeEvent =
-                            ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
-                    eventPublisher.publishEvent(unsubscribeEvent);
-                    sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+                    handleUnsubscribe(session, request, memberId);
                     break;
                 default:
-                    sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
+                    webSocketMessageService.sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }
 
         } catch (Exception e) {
             log.error("메시지 처리 중 에러 발생", e);
-            sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
+            webSocketMessageService.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
         }
     }
 
@@ -123,67 +116,60 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     // ========== 내부 메서드들 ==========
 
-    private void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
+    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
-            WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
-                    .type(WebSocketMessageType.CONNECT)
-                    .memberId(memberInfo.memberId())
-                    .memberName(memberInfo.memberName())
-                    .timestamp(LocalDateTime.now())
-                    .message("WebSocket 연결이 성공했습니다.")
-                    .build();
+            chatValidator.validateSendRequest(
+                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
 
-            String messageJson = objectMapper.writeValueAsString(connectionInfo);
-            session.sendMessage(new TextMessage(messageJson));
+            ChatMessageSendEvent sendEvent =
+                    ChatMessageSendEvent.create(
+                            request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
+            eventPublisher.publishEvent(sendEvent);
 
-            log.info("연결 성공 메시지 전송 완료 - memberId: {}", memberInfo.memberId());
+        } catch (ChatException e) {
+            log.warn("메시지 전송 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
+            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
-            log.error("연결 성공 메시지 전송 실패", e);
+            log.error("메시지 전송 처리 중 예외 발생", e);
+            webSocketMessageService.sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void sendErrorMessage(WebSocketSession session, String errorCode, String message) {
-        if (!session.isOpen()) {
-            log.warn("세션이 닫혀있어 에러 메시지를 전송할 수 없습니다.");
-            return;
-        }
-
+    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
-            WebSocketMessageDTO.ErrorResponse errorResponse = WebSocketMessageDTO.ErrorResponse.builder()
-                    .type(WebSocketMessageType.ERROR)
-                    .errorCode(errorCode)
-                    .message(message)
-                    .build();
+            chatValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
 
-            String errorJson = objectMapper.writeValueAsString(errorResponse);
-            session.sendMessage(new TextMessage(errorJson));
+            ChatRoomSubscriptionEvent subscribeEvent =
+                    ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
+            eventPublisher.publishEvent(subscribeEvent);
 
-            log.info("에러 메시지 전송 완료 - 코드: {}, 메시지: {}", errorCode, message);
+            webSocketMessageService.sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+
+        } catch (ChatException e) {
+            log.warn("구독 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
+            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
-            log.error("에러 메시지 전송 실패", e);
+            log.error("구독 처리 중 예외 발생", e);
+            webSocketMessageService.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void sendSubscriptionMessage(WebSocketSession session, Long chatRoomId, String action) {
-        if (!session.isOpen()) {
-            log.warn("세션이 닫혀있어 구독 응답 메시지를 전송할 수 없습니다.");
-            return;
-        }
-
+    private void handleUnsubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
-            WebSocketMessageDTO.SubscriptionResponse subscriptionResponse = WebSocketMessageDTO.SubscriptionResponse.builder()
-                    .type(WebSocketMessageType.valueOf(action))
-                    .chatRoomId(chatRoomId)
-                    .message(action.equals("SUBSCRIBE") ? "채팅방 구독이 완료되었습니다." : "채팅방 구독이 해제되었습니다.")
-                    .timestamp(LocalDateTime.now())
-                    .build();
+            chatValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
 
-            String responseJson = objectMapper.writeValueAsString(subscriptionResponse);
-            session.sendMessage(new TextMessage(responseJson));
+            ChatRoomSubscriptionEvent unsubscribeEvent =
+                    ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
+            eventPublisher.publishEvent(unsubscribeEvent);
 
-            log.info("구독 응답 메시지 전송 완료 - 액션: {}, 채팅방: {}", action, chatRoomId);
+            webSocketMessageService.sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+
+        } catch (ChatException e) {
+            log.warn("구독 해제 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
+            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
-            log.error("구독 응답 메시지 전송 실패", e);
+            log.error("구독 해제 처리 중 예외 발생", e);
+            webSocketMessageService.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 }

@@ -22,7 +22,8 @@ public class WebSocketMessageDTO {
                 String originalFileName,
                 Long fileSize,
                 String fileType
-        ) {}
+        ) {
+        }
 
         @Builder
         public record ImageInfo(
@@ -31,7 +32,8 @@ public class WebSocketMessageDTO {
                 String originalFileName,
                 Long fileSize,
                 String fileType
-        ) {}
+        ) {
+        }
     }
 
     @Builder
@@ -64,14 +66,16 @@ public class WebSocketMessageDTO {
                 String originalFileName,
                 Long fileSize,
                 String fileType
-        ) {}
+        ) {
+        }
 
         @Builder
         public record ImageInfo(
                 Long imageId,
                 String imageUrl,
                 Integer imgOrder
-        ) {}
+        ) {
+        }
     }
 
     @Builder
@@ -87,8 +91,7 @@ public class WebSocketMessageDTO {
     public record ErrorResponse(
             WebSocketMessageType type,
             String errorCode,
-            String message,
-            Long chatRoomId
+            String message
     ) {
     }
 

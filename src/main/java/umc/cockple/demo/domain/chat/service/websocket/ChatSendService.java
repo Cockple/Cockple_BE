@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.*;
-import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
@@ -29,7 +28,7 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ChatWebSocketService {
+public class ChatSendService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
@@ -43,24 +42,11 @@ public class ChatWebSocketService {
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
 
-    public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
-        log.debug("멤버 연결 정보 조회 - memberId: {}", memberId);
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
-
-        return MemberConnectionInfo.builder()
-                .memberId(memberId)
-                .memberName(member.getMemberName())
-                .build();
-    }
-
     public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
-        validateSendMessage(chatRoomId, content, files, images, senderId);
-        ChatRoom chatRoom = findChatRoomOrThrow(chatRoomId);
-        Member sender = findMemberWithProfileOrThrow(senderId);
+        ChatRoom chatRoom = findChatRoom(chatRoomId);
+        Member sender = findMemberWithProfile(senderId);
 
         String profileImageUrl = getImageUrl(sender.getProfileImg());
 
@@ -89,7 +75,7 @@ public class ChatWebSocketService {
     }
 
     public void sendSystemMessage(Long partyId, String content) {
-        ChatRoom chatRoom = findChatRoomByPartyIdOrThrow(partyId);
+        ChatRoom chatRoom = findChatRoomByPartyId(partyId);
 
         ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
         chatMessageRepository.save(systemMessage);
@@ -172,41 +158,6 @@ public class ChatWebSocketService {
                 .toList();
     }
 
-    // ========== 검증 메서드 ==========
-
-    private void validateSendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
-        validateChatRoom(chatRoomId);
-        validateMessage(content, files, images);
-        validateChatRoomMember(chatRoomId, senderId);
-    }
-
-    // ========== 세부 검증 메서드 ==========
-
-    private void validateChatRoom(Long chatRoomId) {
-        if (chatRoomId == null) {
-            throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
-        }
-    }
-
-    private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
-        boolean hasContent = content != null && !content.trim().isEmpty();
-        boolean hasFiles = files != null && !files.isEmpty();
-        boolean hasImages = images != null && !images.isEmpty();
-
-        if (!hasContent && !hasFiles && !hasImages) {
-            throw new ChatException(ChatErrorCode.EMPTY_MESSAGE_NOT_ALLOWED);
-        }
-        
-        if (content != null && content.length() > 1000) {
-            throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
-        }
-    }
-
-    private void validateChatRoomMember(Long chatRoomId, Long memberId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND);
-    }
-
     private String getImageUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(profileImg.getImgKey());
@@ -214,17 +165,17 @@ public class ChatWebSocketService {
         return null;
     }
 
-    private ChatRoom findChatRoomOrThrow(Long chatRoomId) {
+    private ChatRoom findChatRoom(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
-    private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {
+    private ChatRoom findChatRoomByPartyId(Long partyId) {
         return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
-    private Member findMemberWithProfileOrThrow(Long senderId) {
+    private Member findMemberWithProfile(Long senderId) {
         return memberRepository.findMemberWithProfileById(senderId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
     }

@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -16,7 +18,6 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.contest.enums.MedalType;
 
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,8 @@ public class MemberQueryService {
     private final ImageService imageService;
 
     /*
-    * 프로필 관련 조회 메서드
-    * */
+     * 프로필 관련 조회 메서드
+     * */
     public GetMyProfileResponseDTO getMyProfile(Long memberId) {
         // 회원 조회
         Member member = findByMemberId(memberId);
@@ -106,6 +107,15 @@ public class MemberQueryService {
                 })
                 .map(MemberConverter::toGetAllAddressResponseDTO)
                 .toList();
+    }
+
+    public MemberConnectionInfo getMemberConnectionInfo(Long memberId) {
+        Member member = findByMemberId(memberId);
+
+        return MemberConnectionInfo.builder()
+                .memberId(memberId)
+                .memberName(member.getMemberName())
+                .build();
     }
 
 
