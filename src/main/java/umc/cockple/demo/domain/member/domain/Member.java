@@ -51,7 +51,6 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberStatus isActive;
 
-    @Column(nullable = false)
     private String refreshToken;
 
     @Column(nullable = false)

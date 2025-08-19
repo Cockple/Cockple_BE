@@ -6,6 +6,9 @@ import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
+import umc.cockple.demo.global.enums.Keyword;
+
+import java.util.List;
 
 public class MemberConverter {
 
@@ -24,12 +27,13 @@ public class MemberConverter {
                 .build();
     }
 
-    public static GetMyProfileResponseDTO toGetMyProfileResponseDTO(GetProfileResponseDTO dto, MemberAddr mainAddr, Integer exerciseCnt) {
+    public static GetMyProfileResponseDTO toGetMyProfileResponseDTO(GetProfileResponseDTO dto, MemberAddr mainAddr, Integer exerciseCnt, List<Keyword> keywords) {
         return GetMyProfileResponseDTO.builder()
                 .memberName(dto.memberName())
                 .birth(dto.birth())
                 .gender(dto.gender())
                 .level(dto.level())
+                .keywords(keywords)
                 .addr3(mainAddr.getAddr3())
                 .streetAddr(mainAddr.getStreetAddr())
                 .buildingName(mainAddr.getBuildingName())
