@@ -32,7 +32,13 @@ public class ChatMessageImg extends BaseEntity {
 
     private String fileType;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isEmoji = false;
+
     public static ChatMessageImg create(ChatMessage message, String imgKey, Integer imgOrder, String originalFileName, Long fileSize, String fileType) {
+        boolean isEmoji = isEmojiFileName(originalFileName);
+
         return ChatMessageImg.builder()
                 .chatMessage(message)
                 .imgKey(imgKey)
@@ -40,7 +46,15 @@ public class ChatMessageImg extends BaseEntity {
                 .originalFileName(originalFileName)
                 .fileSize(fileSize)
                 .fileType(fileType)
+                .isEmoji(isEmoji)
                 .build();
+    }
+
+    private static boolean isEmojiFileName(String originalFileName) {
+        if (originalFileName == null) {
+            return false;
+        }
+        return "emoji.png".equalsIgnoreCase(originalFileName.trim());
     }
 }
 

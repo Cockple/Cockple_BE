@@ -36,10 +36,23 @@ public class ChatRoomDetailDTO {
             String senderProfileImageUrl,
             String content,
             MessageType messageType,
-            List<String> imageUrls,  // 이미지 메시지인 경우
+            List<ChatCommonDTO.ImageInfo> images,
             LocalDateTime timestamp,
-            boolean isMyMessage    // 내가 보낸 메시지인지
+            boolean isMyMessage
     ) {
+        public static MessageInfo from(ChatCommonDTO.MessageInfo common) {
+            return MessageInfo.builder()
+                    .messageId(common.messageId())
+                    .senderId(common.senderId())
+                    .senderName(common.senderName())
+                    .senderProfileImageUrl(common.senderProfileImageUrl())
+                    .content(common.content())
+                    .messageType(common.messageType())
+                    .images(common.images())
+                    .timestamp(common.timestamp())
+                    .isMyMessage(common.isMyMessage())
+                    .build();
+        }
     }
 
     @Builder
@@ -48,5 +61,12 @@ public class ChatRoomDetailDTO {
             String memberName,
             String profileImgUrl
     ) {
+        public static MemberInfo from(ChatCommonDTO.MemberInfo common) {
+            return MemberInfo.builder()
+                    .memberId(common.memberId())
+                    .memberName(common.memberName())
+                    .profileImgUrl(common.profileImgUrl())
+                    .build();
+        }
     }
 }

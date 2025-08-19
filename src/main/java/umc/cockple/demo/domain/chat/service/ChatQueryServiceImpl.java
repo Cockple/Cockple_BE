@@ -48,6 +48,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private final ChatConverter chatConverter;
     private final ImageService imageService;
+    private final ChatProcessor chatProcessor;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -101,7 +102,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         Pageable pageable = PageRequest.of(0, 50);
         List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
         Collections.reverse(recentMessages);
-        List<ChatRoomDetailDTO.MessageInfo> messageInfos = buildMessageInfos(memberId, recentMessages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, recentMessages);
+        List<ChatRoomDetailDTO.MessageInfo> messageInfos = chatConverter.toChatRoomDetailMessageInfos(commonMessages);
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
         List<ChatRoomDetailDTO.MemberInfo> memberInfos = buildMemberInfos(participants);
@@ -128,8 +130,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         }
 
         Collections.reverse(messages);
-
-        List<ChatMessageDTO.MessageInfo> messageInfos = buildPreviousMessageInfos(memberId, messages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, messages);
+        List<ChatMessageDTO.MessageInfo> messageInfos = chatConverter.toChatMessageInfos(commonMessages);
 
         Long nextCursor = hasNext && !messages.isEmpty()
                 ? messages.get(0).getId() : null;
@@ -279,58 +281,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 lastReadMessageId);
     }
 
-    private List<ChatRoomDetailDTO.MessageInfo> buildMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
-        return recentMessages.stream()
-                .map(message -> buildMessageInfo(message, memberId))
-                .toList();
-    }
-
-    private List<ChatMessageDTO.MessageInfo> buildPreviousMessageInfos(Long memberId, List<ChatMessage> recentMessages) {
-        return recentMessages.stream()
-                .map(message -> buildPreviousMessageInfo(message, memberId))
-                .toList();
-    }
-
-    private ChatRoomDetailDTO.MessageInfo buildMessageInfo(ChatMessage message, Long currentUserId) {
-        Member sender = message.getSender();
-
-        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
-
-        List<String> imageUrls = message.getChatMessageImgs().stream()
-                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
-                .map(this::getImageUrl)
-                .toList();
-
-        boolean isMyMessage = sender.getId().equals(currentUserId);
-
-        return chatConverter.toChatRoomDetailMessageInfo(
-                message,
-                sender,
-                senderProfileImageUrl,
-                imageUrls,
-                isMyMessage);
-    }
-
-    private ChatMessageDTO.MessageInfo buildPreviousMessageInfo(ChatMessage message, Long currentUserId) {
-        Member sender = message.getSender();
-
-        String senderProfileImageUrl = getImageUrl(sender.getProfileImg());
-
-        List<String> imageUrls = message.getChatMessageImgs().stream()
-                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
-                .map(this::getImageUrl)
-                .toList();
-
-        boolean isMyMessage = sender.getId().equals(currentUserId);
-
-        return chatConverter.toPreviousMessageInfo(
-                message,
-                sender,
-                senderProfileImageUrl,
-                imageUrls,
-                isMyMessage);
-    }
-
     private List<ChatRoomDetailDTO.MemberInfo> buildMemberInfos(List<ChatRoomMember> participants) {
         return participants.stream()
                 .map(this::buildMemberInfo)
@@ -356,13 +306,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             return null;
         }
         return imageService.getUrlFromKey(profileImg.getImgKey());
-    }
-
-    private String getImageUrl(ChatMessageImg chatMessageImg) {
-        if (chatMessageImg != null && chatMessageImg.getImgKey() != null && !chatMessageImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(chatMessageImg.getImgKey());
-        }
-        return null;
     }
 
     // ========== 조회 메서드 ==========
