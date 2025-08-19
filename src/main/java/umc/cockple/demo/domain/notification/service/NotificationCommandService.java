@@ -97,7 +97,7 @@ public class NotificationCommandService {
             } else if (dto.target() == NotificationTarget.PARTY_INVITE_APPROVED) {
                 content = notificationMessageGenerator.generateInviteApprovedMessage(dto.subjectName());
             }else {
-                content = notificationMessageGenerator.generateInviteAcceptedMessage();
+                content = notificationMessageGenerator.generateJoinRequestApprovedMessage(party.getPartyName());
             }
 
             String data = objectMapper.writeValueAsString(context);

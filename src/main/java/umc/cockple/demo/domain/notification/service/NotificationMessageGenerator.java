@@ -9,12 +9,12 @@ public class NotificationMessageGenerator {
         return String.format("'%s' 모임에 초대를 받았습니다.", partyName);
     }
 
-    public String generateInviteAcceptedMessage() {
-        return "모임 가입이 승인되었어요!";
+    public String generateJoinRequestApprovedMessage(String partyName) {
+        return String.format("'%s' 모임 가입이 승인되었어요!", partyName);
     }
 
     public String generateInviteApprovedMessage(String nickname) {
-        return String.format("'%s'님이 모임을 수락하셨습니다!", nickname);
+        return String.format("'%s'님이 모임 초대를 수락하셨습니다!", nickname);
     }
 
     public String generatePartyInfoChangedMessage() {
