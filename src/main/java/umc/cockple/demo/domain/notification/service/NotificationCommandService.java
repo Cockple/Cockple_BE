@@ -94,7 +94,9 @@ public class NotificationCommandService {
             } else if (dto.target() == NotificationTarget.PARTY_INVITE) {
                 content = notificationMessageGenerator.generateInviteMessage(party.getPartyName());
                 title = "새로운 모임";
-            } else {
+            } else if (dto.target() == NotificationTarget.PARTY_APPROVED) {
+                content = notificationMessageGenerator.generateInviteApprovedMessage(dto.subjectName());
+            }else {
                 content = notificationMessageGenerator.generateInviteAcceptedMessage();
             }
 
