@@ -14,6 +14,7 @@ public class PartyDetailDTO {
             String memberStatus,
             String memberRole,
             Boolean hasPendingJoinRequest,
+            Boolean isBookmarked,
             String addr1,
             String addr2,
             List<String> activityDays,

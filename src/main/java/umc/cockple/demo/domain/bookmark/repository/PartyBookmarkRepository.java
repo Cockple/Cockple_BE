@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Long> {
 
@@ -25,6 +26,13 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
         WHERE pb.member = :member
         """)
     List<PartyBookmark> findAllByMemberWithParty(@Param("member") Member member);
+
+    @Query("""
+        SELECT pb.party.id
+        FROM PartyBookmark pb
+        WHERE pb.member.id = :memberId
+        """)
+    Set<Long> findAllPartyIdsByMemberId(@Param("memberId") Long memberId);
 
     List<PartyBookmark> findAllByMember(Member member);
 
