@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.domain.MemberKeyword;
 import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
@@ -18,6 +19,7 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.global.enums.Keyword;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,13 @@ public class MemberQueryService {
         // 운동 개수 추출
         int exerciseCnt = member.getMemberExercises().size();
 
-        return toGetMyProfileResponseDTO(profileDto, memberAddr, exerciseCnt);
+        // 엔티티 -> 값 타입으로 변환
+        List<Keyword> keywords = member.getKeywords().stream()
+                .map(MemberKeyword::getKeyword)
+                .toList();
+
+
+        return toGetMyProfileResponseDTO(profileDto, memberAddr, exerciseCnt, keywords);
     }
 
 
