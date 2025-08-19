@@ -6,9 +6,9 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.domain.DownloadToken;
+import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.chat.dto.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -140,7 +140,7 @@ public class ChatConverter {
     }
 
     public WebSocketMessageDTO.MessageResponse toSystemMessageResponse(
-            Long chatRoomId, String content, ChatMessage savedMessage){
+            Long chatRoomId, String content, ChatMessage savedMessage) {
         return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
