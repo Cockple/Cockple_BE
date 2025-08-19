@@ -126,6 +126,7 @@ public class MemberCommandService {
         if (!StringUtils.hasText(imgKey)) {
             member.updateMember(requestDto, keywords);
         } else {
+
             ProfileImg profile = member.getProfileImg();
             // 기존 이미지 존재시 이미지 새로 업로드
             if (profile != null) {

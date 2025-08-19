@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.image.service.ImageService;
@@ -47,6 +48,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final MemberPartyRepository memberPartyRepository;
     private final MemberAddrRepository memberAddrRepository;
     private final ExerciseRepository exerciseRepository;
+    private final PartyBookmarkRepository partyBookmarkRepository;
     private final ImageService imageService;
 
     @Override
@@ -74,6 +76,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
+        //북마크 목록 조회
+        Set<Long> bookmarkedPartyIds = partyBookmarkRepository.findAllPartyIdsByMemberId(memberId);
 
         log.info("내 모임 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
 
@@ -82,7 +86,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
             String imgUrl = getImageUrl(party.getPartyImg());
-            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl);
+            Boolean isBookmarked = bookmarkedPartyIds.contains(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl, isBookmarked);
         });
     }
 
@@ -103,6 +108,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
         //운동 정보 조회
         ExerciseInfo exerciseInfo = getExerciseInfo(partySlice.getContent().stream().map(Party::getId).toList());
+        //북마크 목록 조회
+        Set<Long> bookmarkedPartyIds = partyBookmarkRepository.findAllPartyIdsByMemberId(memberId);
 
         log.info("모임 추천 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
 
@@ -110,7 +117,8 @@ public class PartyQueryServiceImpl implements PartyQueryService{
             Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
             String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
             String imgUrl = getImageUrl(party.getPartyImg());
-            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl);
+            Boolean isBookmarked = bookmarkedPartyIds.contains(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl, isBookmarked);
         });
     }
 
@@ -140,14 +148,15 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //모임 활성화 검증
         validatePartyIsActive(party);
 
-        //memberParty 조회 로직 수행
+        //memberParty 조회
         Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
-
+        //북마크 여부 확인
+        boolean isBookmarked = partyBookmarkRepository.existsByMemberAndParty(member, party);
         //가입신청 상태 확인하는 비즈니스 로직 수행
         boolean hasPendingJoinRequest = hasPendingJoinRequest(party, member, memberParty);
 
         String imgUrl = getImageUrl(party.getPartyImg());
-        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl, hasPendingJoinRequest);
+        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl, hasPendingJoinRequest, isBookmarked);
 
         log.info("모임 상세 정보 조회 완료 - partyId: {}", partyId);
         return response;

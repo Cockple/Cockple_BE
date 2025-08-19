@@ -33,11 +33,12 @@ public class PartyConverter {
                 .build();
     }
 
-    public PartyDTO.Response toMyPartyDTO(Party party, String nextExerciseInfo, Integer totalExerciseCount, String imgUrl) {
+    public PartyDTO.Response toMyPartyDTO(Party party, String nextExerciseInfo, Integer totalExerciseCount, String imgUrl, Boolean isBookmarked) {
         //급수 조건 가공 필요
         return PartyDTO.Response.builder()
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
+                .isBookmarked(isBookmarked)
                 .addr1(party.getPartyAddr().getAddr1())
                 .addr2(party.getPartyAddr().getAddr2())
                 .femaleLevel(getLevelList(party, Gender.FEMALE))
@@ -48,7 +49,7 @@ public class PartyConverter {
                 .build();
     }
 
-    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt, String imgUrl, boolean hasPendingJoinRequest) {
+    public PartyDetailDTO.Response toPartyDetailResponseDTO(Party party, Optional<MemberParty> memberPartyOpt, String imgUrl, boolean hasPendingJoinRequest, boolean isBookmarked) {
         //급수 정보 가공
         List<String> femaleLevel = getLevelList(party, Gender.FEMALE);
         List<String> maleLevel = (party.getPartyType() == ParticipationType.WOMEN_DOUBLES) ?
@@ -65,6 +66,7 @@ public class PartyConverter {
                 .memberStatus(memberStatus)
                 .memberRole(memberRole)
                 .hasPendingJoinRequest(pendingRequestStatus)
+                .isBookmarked(isBookmarked)
                 .addr1(party.getPartyAddr().getAddr1())
                 .addr2(party.getPartyAddr().getAddr2())
                 .activityDays(party.getActiveDays().stream().map(day -> day.getActiveDay().getKoreanName()).toList())
