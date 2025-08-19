@@ -26,6 +26,7 @@ public record CreateNotificationRequestDTO(
         Long exerciseId, // 운동 관련이 아니면 필요 X
         LocalDate exerciseDate, // 운동 관련이 아니면 필요 X
         Long invitationId, // INVITE 외 타입에서는 필요 X
+        String subjectName, // APPROVED 외 타입에서는 필요 X
         NotificationTarget target
 ) {
 }

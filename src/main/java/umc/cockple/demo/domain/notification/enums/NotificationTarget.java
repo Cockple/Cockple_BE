@@ -7,6 +7,7 @@ public enum NotificationTarget {
     PARTY_DELETE(NotificationType.SIMPLE),
     PARTY_MODIFY(NotificationType.CHANGE),
     PARTY_INVITE(NotificationType.INVITE),
+    PARTY_APPROVED(NotificationType.SIMPLE),
     PARTY_ACCEPTED(NotificationType.CHANGE);
 
     private final NotificationType defaultType;
