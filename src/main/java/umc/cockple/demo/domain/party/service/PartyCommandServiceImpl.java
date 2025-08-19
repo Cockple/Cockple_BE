@@ -29,7 +29,6 @@ import umc.cockple.demo.domain.party.repository.*;
 import umc.cockple.demo.global.enums.*;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -257,7 +256,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if (RequestAction.APPROVE.equals(request.action())) {
             approveInvitation(invitation);
-            createInviteApprovedNotification(invitation.getInviter(), invitation.getParty().getId(), NotificationTarget.PARTY_APPROVED, invitee);
+            createInviteApprovedNotification(invitation.getInviter(), invitation.getParty().getId(), NotificationTarget.PARTY_INVITE_APPROVED, invitee);
         } else {
             rejectInvitation(invitation);
         }
