@@ -11,6 +11,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.member.dto.*;
 import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
@@ -101,6 +103,11 @@ public class MemberController {
     @Operation(summary = "리프레시 토큰 재발급 API",
             description = "리프레시 토큰이 만료되었을 경우 (1주일) 재발급 해주는 api입니다. 리프레시토큰은 헤더에 쿠키로 들어갑니다.")
     public ResponseEntity<TokenRefreshResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new MemberException(MemberErrorCode.REFRESHTOKEN_IS_NULL);
+        }
+
         // 리프레시 토큰 유효성 검사
         TokenRefreshResponse response = kakaoOauthService.validateMember(refreshToken);
 
