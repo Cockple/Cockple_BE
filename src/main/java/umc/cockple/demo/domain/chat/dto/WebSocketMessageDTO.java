@@ -53,7 +53,7 @@ public class WebSocketMessageDTO {
             Long messageId,
             String content,
             List<FileInfo> files,
-            List<ImageInfo> images,
+            List<ChatCommonDTO.ImageInfo> images,
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
@@ -66,14 +66,6 @@ public class WebSocketMessageDTO {
                 String originalFileName,
                 Long fileSize,
                 String fileType
-        ) {
-        }
-
-        @Builder
-        public record ImageInfo(
-                Long imageId,
-                String imageUrl,
-                Integer imgOrder
         ) {
         }
     }

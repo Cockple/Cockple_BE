@@ -25,9 +25,22 @@ public class ChatMessageDTO {
             String senderProfileImageUrl,
             String content,
             MessageType messageType,
-            List<String> imageUrls,
+            List<ChatCommonDTO.ImageInfo> images,
             LocalDateTime timestamp,
             boolean isMyMessage
     ) {
+        public static MessageInfo from(ChatCommonDTO.MessageInfo common) {
+            return MessageInfo.builder()
+                    .messageId(common.messageId())
+                    .senderId(common.senderId())
+                    .senderName(common.senderName())
+                    .senderProfileImageUrl(common.senderProfileImageUrl())
+                    .content(common.content())
+                    .messageType(common.messageType())
+                    .images(common.images())
+                    .timestamp(common.timestamp())
+                    .isMyMessage(common.isMyMessage())
+                    .build();
+        }
     }
 }
