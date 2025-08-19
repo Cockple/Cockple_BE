@@ -118,7 +118,7 @@ public class ChatConverter {
 
     public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
             Long chatRoomId, String content,
-            List<WebSocketMessageDTO.MessageResponse.ImageInfo> images,
+            List<ChatCommonDTO.ImageInfo> images,
             List<WebSocketMessageDTO.MessageResponse.FileInfo> files,
             ChatMessage savedMessage, Member sender, String senderProfileImageUrl, int unreadCount) {
         return WebSocketMessageDTO.MessageResponse.builder()

@@ -36,7 +36,7 @@ public class ChatProcessor {
         return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedImages, isMyMessage);
     }
 
-    private String generateProfileImageUrl(ProfileImg profileImg) {
+    public String generateProfileImageUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(profileImg.getImgKey());
         }
@@ -55,7 +55,7 @@ public class ChatProcessor {
         return chatConverter.toImageInfo(img, imageUrl);
     }
 
-    private String generateImageUrl(ChatMessageImg img) {
+    public String generateImageUrl(ChatMessageImg img) {
         if (img != null && img.getImgKey() != null && !img.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(img.getImgKey());
         }

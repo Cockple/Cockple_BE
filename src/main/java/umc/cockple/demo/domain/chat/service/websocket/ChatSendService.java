@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.*;
+import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
@@ -16,9 +17,8 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
 import java.util.List;
@@ -35,10 +35,9 @@ public class ChatSendService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-    private final ImageService imageService;
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
-
+    private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
 
@@ -48,7 +47,7 @@ public class ChatSendService {
         ChatRoom chatRoom = findChatRoom(chatRoomId);
         Member sender = findMemberWithProfile(senderId);
 
-        String profileImageUrl = getImageUrl(sender.getProfileImg());
+        String profileImageUrl = chatProcessor.generateProfileImageUrl(sender.getProfileImg());
 
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         attachFiles(chatMessage, files);
@@ -62,7 +61,7 @@ public class ChatSendService {
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
         int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
-        List<WebSocketMessageDTO.MessageResponse.ImageInfo> responseImages =
+        List<ChatCommonDTO.ImageInfo> responseImages =
                 createResponseImageInfos(savedMessage.getChatMessageImgs());
         List<WebSocketMessageDTO.MessageResponse.FileInfo> responseFiles =
                 createResponseFileInfos(savedMessage.getChatMessageFiles());
@@ -135,13 +134,17 @@ public class ChatSendService {
         }
     }
 
-    private List<WebSocketMessageDTO.MessageResponse.ImageInfo> createResponseImageInfos(
+    private List<ChatCommonDTO.ImageInfo> createResponseImageInfos(
             List<ChatMessageImg> savedImages) {
         return savedImages.stream()
-                .map(img -> WebSocketMessageDTO.MessageResponse.ImageInfo.builder()
+                .map(img -> ChatCommonDTO.ImageInfo.builder()
                         .imageId(img.getId())
-                        .imageUrl(imageService.getUrlFromKey(img.getImgKey()))
+                        .imageUrl(chatProcessor.generateImageUrl(img))
                         .imgOrder(img.getImgOrder())
+                        .isEmoji(img.getIsEmoji())
+                        .originalFileName(img.getOriginalFileName())
+                        .fileSize(img.getFileSize())
+                        .fileType(img.getFileType())
                         .build())
                 .toList();
     }
@@ -156,13 +159,6 @@ public class ChatSendService {
                         .fileType(file.getFileType())
                         .build())
                 .toList();
-    }
-
-    private String getImageUrl(ProfileImg profileImg) {
-        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(profileImg.getImgKey());
-        }
-        return null;
     }
 
     private ChatRoom findChatRoom(Long chatRoomId) {
