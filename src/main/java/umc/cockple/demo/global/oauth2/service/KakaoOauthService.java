@@ -28,7 +28,7 @@ public class KakaoOauthService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
-    private static final long EXPIRED = 3 * 24 * 60 * 60 * 1000L;
+    private static final long EXPIRED = 7 * 24 * 60 * 60 * 1000L;
 
     @Transactional
     public KakaoLoginResponseDTO signup(String code) {
