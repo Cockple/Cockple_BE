@@ -202,18 +202,19 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //모임, 가입신청 조회
         Party party = findPartyOrThrow(partyId);
         PartyJoinRequest partyJoinRequest = findJoinRequestOrThrow(requestId);
-        Member member = partyJoinRequest.getMember();
+        Member JoinRequestMember = partyJoinRequest.getMember();
 
         //모임 활성화 검증
         validatePartyIsActive(party);
         //모임장 권한 검증
         validateOwnerPermission(party, memberId);
         //가입신청 처리 가능한지 검증
-        validateJoinRequestAction(party, partyJoinRequest, member);
+        validateJoinRequestAction(party, partyJoinRequest, JoinRequestMember);
 
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if (RequestAction.APPROVE.equals(request.action())) {
             approveJoinRequest(partyJoinRequest);
+            createNotification(JoinRequestMember, partyId, NotificationTarget.PARTY_JOINREQUEST_APPROVED);
         } else {
             rejectJoinRequest(partyJoinRequest);
         }
