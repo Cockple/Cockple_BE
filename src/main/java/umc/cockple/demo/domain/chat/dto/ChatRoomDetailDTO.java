@@ -36,10 +36,21 @@ public class ChatRoomDetailDTO {
             String senderProfileImageUrl,
             String content,
             MessageType messageType,
-            List<String> imageUrls,  // 이미지 메시지인 경우
+            List<ImageInfo> images,
             LocalDateTime timestamp,
-            boolean isMyMessage    // 내가 보낸 메시지인지
+            boolean isMyMessage
     ) {
+        @Builder
+        public record ImageInfo(
+                Long imageId,
+                String imageUrl,
+                Integer imgOrder,
+                Boolean isEmoji,
+                String originalFileName,
+                Long fileSize,
+                String fileType
+        ) {
+        }
     }
 
     @Builder
