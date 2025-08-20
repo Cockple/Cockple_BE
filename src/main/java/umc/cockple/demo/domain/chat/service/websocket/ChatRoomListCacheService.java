@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.dto.ChatRoomListCacheDTO;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 
 @Service
@@ -26,6 +27,10 @@ public class ChatRoomListCacheService {
         }
 
         return ChatRoomListCacheDTO.LastMessageCache.builder()
+                .messageId(lastMessage.getId())
+                .content(lastMessage.getContent())
+                .timestamp(lastMessage.getCreatedAt())
+                .messageType(lastMessage.getType().name())
                 .build();
     }
 
