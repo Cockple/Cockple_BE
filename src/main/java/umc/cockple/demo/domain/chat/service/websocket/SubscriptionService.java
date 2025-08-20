@@ -26,8 +26,7 @@ public class SubscriptionService {
 
     // 세션 관리
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
-    // 구독 관리
-    private final Map<Long, Set<Long>> chatRoomSubscriptions = new ConcurrentHashMap<>();
+    private final RedisSubscriptionService redisSubscriptionService;
 
     public void addSession(Long memberId, WebSocketSession session) {
         memberSessions.put(memberId, session);
@@ -45,9 +44,7 @@ public class SubscriptionService {
     }
 
     public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
-        chatRoomSubscriptions.computeIfAbsent(chatRoomId, k -> ConcurrentHashMap.newKeySet())
-                .add(memberId);
-
+        redisSubscriptionService.addSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
 
         List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates =
@@ -60,17 +57,7 @@ public class SubscriptionService {
     }
 
     public void unsubscribeToChatRoom(Long chatRoomId, Long memberId) {
-        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
-        if (subscribers == null || subscribers.isEmpty()) {
-            log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
-            return;
-        }
-
-        subscribers.remove(memberId);
-        if (subscribers.isEmpty()) {
-            chatRoomSubscriptions.remove(chatRoomId);
-        }
-
+        redisSubscriptionService.removeSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 해제 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
