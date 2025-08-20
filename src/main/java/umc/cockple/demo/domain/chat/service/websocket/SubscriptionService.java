@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -28,6 +27,7 @@ public class SubscriptionService {
 
     private final SubscriptionReadProcessingService subscriptionReadProcessingService;
     private final RedisSubscriptionService redisSubscriptionService;
+    private final ChatListSubscriptionService chatListSubscriptionService;
 
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
@@ -175,13 +175,19 @@ public class SubscriptionService {
             Map<Long, ChatRoomListUpdateData> memberUpdateData) {
         log.info("채팅방 목록 업데이트 개별 브로드캐스트 시작 - 채팅방: {}, 대상자: {}명", chatRoomId, memberUpdateData.size());
 
+        Set<Long> chatListSubscribers = chatListSubscriptionService.getChatListSubscribers(chatRoomId);
+
         int successCount = 0;
         int failedCount = 0;
 
         for (Map.Entry<Long, ChatRoomListUpdateData> entry : memberUpdateData.entrySet()) {
             Long memberId = entry.getKey();
-            ChatRoomListUpdateData updateData = entry.getValue();
 
+            if (!chatListSubscribers.contains(memberId)) {
+                continue;
+            }
+
+            ChatRoomListUpdateData updateData = entry.getValue();
             WebSocketSession session = memberSessions.get(memberId);
             if (session != null && session.isOpen()) {
                 try {
@@ -216,6 +222,7 @@ public class SubscriptionService {
     @Builder
     public record ChatRoomListUpdateData(
             LastMessageUpdate lastMessage,
-            int unreadCount  // 단순화된 int
-    ) {}
+            int unreadCount
+    ) {
+    }
 }
