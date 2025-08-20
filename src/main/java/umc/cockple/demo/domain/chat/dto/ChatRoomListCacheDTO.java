@@ -8,7 +8,6 @@ public class ChatRoomListCacheDTO {
 
     @Builder
     public record LastMessageCache(
-            Long messageId,
             String content,
             LocalDateTime timestamp,
             String messageType
