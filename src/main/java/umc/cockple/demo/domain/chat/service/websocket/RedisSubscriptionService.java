@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -35,6 +38,25 @@ public class RedisSubscriptionService {
 
         } catch (Exception e) {
             log.error("Redis 구독 제거 실패 - 채팅방: {}, 멤버: {}", chatRoomId, memberId, e);
+        }
+    }
+
+    public Set<Long> getSubscribers(Long chatRoomId) {
+        try {
+            String subscribersKey = CHAT_ROOM_SUBSCRIBERS + chatRoomId;
+            Set<Object> members = redisTemplate.opsForSet().members(subscribersKey);
+
+            if (members == null || members.isEmpty()) {
+                return Set.of();
+            }
+
+            return members.stream()
+                    .map(Long.class::cast)
+                    .collect(Collectors.toSet());
+
+        } catch (Exception e) {
+            log.error("Redis 구독자 조회 실패 - 채팅방: {}", chatRoomId, e);
+            return Set.of();
         }
     }
 }

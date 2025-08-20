@@ -70,12 +70,9 @@ public class SubscriptionService {
     }
 
     public List<Long> getActiveSubscribers(Long chatRoomId) {
-        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
-        if (subscribers == null || subscribers.isEmpty()) {
-            return List.of();
-        }
+        Set<Long> redisSubscribers = redisSubscriptionService.getSubscribers(chatRoomId);
 
-        return subscribers.stream()
+        return redisSubscribers.stream()
                 .filter(memberId -> {
                     WebSocketSession session = memberSessions.get(memberId);
                     return session != null && session.isOpen();
@@ -84,7 +81,7 @@ public class SubscriptionService {
     }
 
     private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
-        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        List<Long> subscribers = getActiveSubscribers(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
             return;
@@ -108,51 +105,24 @@ public class SubscriptionService {
             }
 
             WebSocketSession session = memberSessions.get(memberId);
-
             if (session != null && session.isOpen()) {
                 try {
                     synchronized (session) {
                         session.sendMessage(new TextMessage(messageJson));
                     }
-
                     successMembers.add(memberId);
-                    log.debug("메시지 전송 성공 - 사용자: {}", memberId);
                 } catch (Exception e) {
                     log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
                     failedMembers.add(memberId);
                 }
             } else {
-                log.warn("유효하지 않은 세션 - 사용자: {}", memberId);
                 failedMembers.add(memberId);
             }
         }
 
-        cleanupFailedSubscriptions(chatRoomId, failedMembers);
+        failedMembers.forEach(memberSessions::remove);
 
         log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
-    }
-
-    private void cleanupFailedSubscriptions(Long chatRoomId, List<Long> failedMemberIds) {
-        if (failedMemberIds.isEmpty()) return;
-
-        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
-        if (subscribers != null) {
-            int removedCount = 0;
-            for (Long failedMemberId : failedMemberIds) {
-                if (subscribers.remove(failedMemberId)) {
-                    removedCount++;
-                    log.info("구독에서 제거된 사용자: {} (채팅방: {})", failedMemberId, chatRoomId);
-                }
-            }
-
-            if (subscribers.isEmpty()) {
-                chatRoomSubscriptions.remove(chatRoomId);
-                log.info("빈 채팅방 구독자 목록 제거 - 채팅방: {}", chatRoomId);
-            }
-
-            log.info("구독 세션 정리 완료 - 채팅방: {}, 제거된 구독: {}명, 남은 구독: {}명",
-                    chatRoomId, removedCount, subscribers.size());
-        }
     }
 
     private void broadcastUnreadCountUpdates(
