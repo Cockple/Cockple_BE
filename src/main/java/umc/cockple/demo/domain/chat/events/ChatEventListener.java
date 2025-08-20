@@ -7,9 +7,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
+import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -18,6 +24,7 @@ public class ChatEventListener {
 
     private final ChatSendService chatSendService;
     private final SubscriptionService subscriptionService;
+    private final ChatRoomListCacheService chatRoomListCacheService;
 
     @EventListener
     @Async
@@ -62,6 +69,41 @@ public class ChatEventListener {
             }
         } catch (Exception e) {
             log.error("채팅방 구독 이벤트 처리 중 오류 발생", e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleChatRoomListUpdate(ChatRoomListUpdateEvent event) {
+        log.info("채팅방 목록 업데이트 이벤트 처리 시작 - 채팅방: {}", event.chatRoomId());
+
+        try {
+            chatRoomListCacheService.evictLastMessage(event.chatRoomId());
+
+            Map<Long, SubscriptionService.ChatRoomListUpdateData> memberUpdateData = new HashMap<>();
+
+            LastMessageUpdate lastMessageUpdate = LastMessageUpdate.builder()
+                    .content(event.content())
+                    .timestamp(event.timestamp())
+                    .messageType(event.messageType())
+                    .build();
+
+            for (Map.Entry<Long, Integer> entry : event.memberUnreadCounts().entrySet()) {
+                Long memberId = entry.getKey();
+                Integer unreadCount = entry.getValue();
+
+                memberUpdateData.put(memberId, SubscriptionService.ChatRoomListUpdateData.builder()
+                        .lastMessage(lastMessageUpdate)
+                        .unreadCount(unreadCount)
+                        .build());
+            }
+
+            subscriptionService.broadcastChatRoomListUpdateToMembers(event.chatRoomId(), memberUpdateData);
+
+            log.info("채팅방 목록 업데이트 이벤트 처리 완료 - 채팅방: {}", event.chatRoomId());
+
+        } catch (Exception e) {
+            log.error("채팅방 목록 업데이트 이벤트 처리 중 오류 발생 - 채팅방: {}", event.chatRoomId(), e);
         }
     }
 }

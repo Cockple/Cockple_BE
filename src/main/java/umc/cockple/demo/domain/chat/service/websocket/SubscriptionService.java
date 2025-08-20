@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.service.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 
 import java.time.LocalDateTime;
@@ -167,4 +169,10 @@ public class SubscriptionService {
             }
         }
     }
+
+    @Builder
+    public record ChatRoomListUpdateData(
+            LastMessageUpdate lastMessage,
+            int unreadCount  // 단순화된 int
+    ) {}
 }
