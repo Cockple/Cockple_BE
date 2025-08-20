@@ -46,14 +46,13 @@ public class ChatConverter {
                 .build();
     }
 
-    public PartyChatRoomDTO.LastMessageInfo toPartyLastMessageInfo(ChatMessage message) {
+    public PartyChatRoomDTO.LastMessageInfo toPartyLastMessageInfo(ChatRoomListCacheDTO.LastMessageCache message) {
         if (message == null) return null;
 
         return PartyChatRoomDTO.LastMessageInfo.builder()
-                .messageId(message.getId())
-                .content(message.getDisplayContent())
-                .timestamp(message.getCreatedAt())
-                .messageType(message.getType().name())
+                .content(message.content())
+                .timestamp(message.timestamp())
+                .messageType(message.messageType())
                 .build();
     }
 
@@ -86,14 +85,13 @@ public class ChatConverter {
                 .build();
     }
 
-    public DirectChatRoomDTO.LastMessageInfo toDirectLastMessageInfo(ChatMessage message) {
+    public DirectChatRoomDTO.LastMessageInfo toDirectLastMessageInfo(ChatRoomListCacheDTO.LastMessageCache message) {
         if (message == null) return null;
 
         return DirectChatRoomDTO.LastMessageInfo.builder()
-                .messageId(message.getId())
-                .content(message.getDisplayContent())
-                .timestamp(message.getCreatedAt())
-                .messageType(message.getType().name())
+                .content(message.content())
+                .timestamp(message.timestamp())
+                .messageType(message.messageType())
                 .build();
     }
 

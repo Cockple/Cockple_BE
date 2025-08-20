@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -49,6 +50,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatConverter chatConverter;
     private final ImageService imageService;
     private final ChatProcessor chatProcessor;
+    private final ChatRoomListCacheService chatRoomListCacheService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -195,7 +197,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                         unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
                     }
 
-                    ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
+                    ChatRoomListCacheDTO.LastMessageCache lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
 
                     return chatConverter.toPartyChatRoomInfo(
@@ -238,7 +240,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                         unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
                     }
 
-                    ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
+                    ChatRoomListCacheDTO.LastMessageCache lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
                     String displayProfileImgUrl = getImageUrl(displayMember.getMember().getProfileImg());
 
