@@ -187,7 +187,11 @@ public class SubscriptionService {
             }
 
         } catch (Exception e) {
-            log.error("멤버 {} 구독 정리 중 오류 발생", memberId, e);
+            if (isShutdownRelatedError(e)) {
+                log.debug("서버 종료로 인한 구독 정리 실패(정상) - 멤버: {}", memberId);
+            } else {
+                log.error("멤버 {} 구독 정리 중 오류 발생", memberId, e);
+            }
         }
     }
 
@@ -205,5 +209,12 @@ public class SubscriptionService {
             log.error("구독 정리 실패 - 키: {}, 멤버: {}", key, memberId, e);
         }
         return cleanedCount;
+    }
+
+    private boolean isShutdownRelatedError(Throwable exception) {
+        if (exception == null) return false;
+
+        String message = exception.getMessage();
+        return message != null && message.contains("LettuceConnectionFactory was destroyed");
     }
 }

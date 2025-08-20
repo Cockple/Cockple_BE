@@ -111,7 +111,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         Long memberId = (Long) session.getAttributes().get("memberId");
-        log.error("WebSocket 전송 오류 발생 - 세션 ID: {}, 사용자 ID: {}", session.getId(), memberId, exception);
+        if (isShutdownRelatedError(exception)) {
+            log.debug("서버 종료 관련 WebSocket 전송 오류 (정상) - 세션: {}, 사용자: {}", session.getId(), memberId);
+        } else {
+            log.error("WebSocket 전송 오류 발생 - 세션 ID: {}, 사용자 ID: {}", session.getId(), memberId, exception);
+        }
     }
 
     // ========== 내부 메서드들 ==========
@@ -171,5 +175,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.error("구독 해제 처리 중 예외 발생", e);
             webSocketMessageService.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
         }
+    }
+
+    private boolean isShutdownRelatedError(Throwable exception) {
+        if (exception == null) return false;
+
+        String message = exception.getMessage();
+        return message != null && message.contains("ClosedChannelException");
     }
 }
