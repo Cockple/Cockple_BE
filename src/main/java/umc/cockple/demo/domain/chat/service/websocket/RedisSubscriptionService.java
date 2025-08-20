@@ -36,7 +36,7 @@ public class RedisSubscriptionService {
     public void removeSubscriber(Long chatRoomId, Long memberId) {
         try {
             String subscribersKey = CHAT_ROOM_SUBSCRIBERS + chatRoomId;
-            stringRedisTemplate.opsForSet().remove(subscribersKey, memberId);
+            stringRedisTemplate.opsForSet().remove(subscribersKey, memberId.toString());
 
             Long remainingCount = stringRedisTemplate.opsForSet().size(subscribersKey);
             if (remainingCount != null && remainingCount == 0) {
