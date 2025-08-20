@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.chat.service.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -26,7 +26,7 @@ public class SubscriptionService {
 
     private final SubscriptionReadProcessingService subscriptionReadProcessingService;
     private final RedisSubscriptionService redisSubscriptionService;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
@@ -172,7 +172,7 @@ public class SubscriptionService {
 
     private void cleanupMemberSubscriptions(Long memberId) {
         try {
-            Set<String> chatRoomKeys = redisTemplate.keys("chatroom:subscribers:*");
+            Set<String> chatRoomKeys = stringRedisTemplate.keys("chatroom:subscribers:*");
             if (chatRoomKeys == null || chatRoomKeys.isEmpty()) {
                 return;
             }
@@ -193,9 +193,9 @@ public class SubscriptionService {
 
     private int cleanupMemberSubscription(Long memberId, String key, int cleanedCount) {
         try {
-            Set<Object> members = redisTemplate.opsForSet().members(key);
+            Set<String> members = stringRedisTemplate.opsForSet().members(key);
             if (members != null && members.contains(memberId)) {
-                redisTemplate.opsForSet().remove(key, memberId);
+                stringRedisTemplate.opsForSet().remove(key, memberId);
                 cleanedCount++;
 
                 String chatRoomIdStr = key.replace("chatroom:subscribers:", "");

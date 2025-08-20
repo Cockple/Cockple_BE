@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.chat.service.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RedisSubscriptionService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final String CHAT_ROOM_SUBSCRIBERS = "chatroom:subscribers:";
 
@@ -23,8 +23,8 @@ public class RedisSubscriptionService {
     public void addSubscriber(Long chatRoomId, Long memberId) {
         try {
             String subscribersKey = CHAT_ROOM_SUBSCRIBERS + chatRoomId;
-            redisTemplate.opsForSet().add(subscribersKey, memberId);
-            redisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
+            stringRedisTemplate.opsForSet().add(subscribersKey, memberId.toString());
+            stringRedisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
 
             log.info("Redis 구독 추가 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
 
@@ -36,14 +36,14 @@ public class RedisSubscriptionService {
     public void removeSubscriber(Long chatRoomId, Long memberId) {
         try {
             String subscribersKey = CHAT_ROOM_SUBSCRIBERS + chatRoomId;
-            redisTemplate.opsForSet().remove(subscribersKey, memberId);
+            stringRedisTemplate.opsForSet().remove(subscribersKey, memberId);
 
-            Long remainingCount = redisTemplate.opsForSet().size(subscribersKey);
+            Long remainingCount = stringRedisTemplate.opsForSet().size(subscribersKey);
             if (remainingCount != null && remainingCount == 0) {
-                redisTemplate.delete(subscribersKey);
+                stringRedisTemplate.delete(subscribersKey);
                 log.debug("빈 구독 키 삭제 - 채팅방: {}", chatRoomId);
             } else {
-                redisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
+                stringRedisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
             }
 
             log.info("Redis 구독 제거 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
@@ -57,18 +57,18 @@ public class RedisSubscriptionService {
         try {
             String subscribersKey = CHAT_ROOM_SUBSCRIBERS + chatRoomId;
 
-            if (redisTemplate.hasKey(subscribersKey)) {
-                redisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
+            if (stringRedisTemplate.hasKey(subscribersKey)) {
+                stringRedisTemplate.expire(subscribersKey, SUBSCRIPTION_TTL);
             }
 
-            Set<Object> members = redisTemplate.opsForSet().members(subscribersKey);
+            Set<String> members = stringRedisTemplate.opsForSet().members(subscribersKey);
 
             if (members == null || members.isEmpty()) {
                 return Set.of();
             }
 
             return members.stream()
-                    .map(Long.class::cast)
+                    .map(Long::parseLong)
                     .collect(Collectors.toSet());
 
         } catch (Exception e) {
