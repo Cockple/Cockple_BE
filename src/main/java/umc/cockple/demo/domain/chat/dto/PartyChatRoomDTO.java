@@ -31,7 +31,6 @@ public class PartyChatRoomDTO {
     // 마지막 메시지 정보
     @Builder
     public record LastMessageInfo(
-            Long messageId,
             String content,
             LocalDateTime timestamp,
             String messageType

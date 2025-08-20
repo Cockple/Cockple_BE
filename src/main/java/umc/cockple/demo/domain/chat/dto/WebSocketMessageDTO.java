@@ -11,6 +11,7 @@ public class WebSocketMessageDTO {
     public record Request(
             WebSocketMessageType type,
             Long chatRoomId,
+            List<Long> memberRooms,
             String content,
             List<FileInfo> files,
             List<ImageInfo> images,
@@ -97,4 +98,29 @@ public class WebSocketMessageDTO {
     ) {
     }
 
+    @Builder
+    public record ChatRoomListUpdate(
+            WebSocketMessageType type,
+            Long chatRoomId,
+            LastMessageUpdate lastMessage,
+            int newUnreadCount,
+            LocalDateTime timestamp
+    ) {
+        @Builder
+        public record LastMessageUpdate(
+                String content,
+                LocalDateTime timestamp,
+                String messageType
+        ) {
+        }
+    }
+
+    @Builder
+    public record ChatListSubscriptionResponse(
+            WebSocketMessageType type,
+            List<Long> chatRoomIds,
+            String message,
+            LocalDateTime timestamp
+    ) {
+    }
 }

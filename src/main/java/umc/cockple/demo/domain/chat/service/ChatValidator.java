@@ -36,6 +36,16 @@ public class ChatValidator {
         validateChatRoomMember(chatRoomId, senderId);
     }
 
+    public void validateChatListSubscriptionRequest(Long memberId, List<Long> chatRoomIds) {
+        validateChatRoomIds(chatRoomIds);
+        validateChatRoomId(memberId, chatRoomIds);
+    }
+
+    public void validateChatListUnsubscriptionRequest(Long memberId, List<Long> chatRoomIds) {
+        validateChatRoomIds(chatRoomIds);
+        validateChatRoomId(memberId, chatRoomIds);
+    }
+
     // ========== 세부 검증 메서드 ==========
 
     private void validateChatRoom(Long chatRoomId) {
@@ -64,6 +74,30 @@ public class ChatValidator {
 
         if (content != null && content.length() > 1000) {
             throw new ChatException(ChatErrorCode.MESSAGE_TO_LONG);
+        }
+    }
+
+    private static void validateChatRoomIds(List<Long> chatRoomIds) {
+        if (chatRoomIds == null || chatRoomIds.isEmpty()) {
+            throw new ChatException(ChatErrorCode.CHATROOM_LIST_EMPTY);
+        }
+
+        if (chatRoomIds.size() > 100) {
+            throw new ChatException(ChatErrorCode.TOO_MANY_CHATROOMS);
+        }
+    }
+
+    private void validateChatRoomId(Long memberId, List<Long> chatRoomIds) {
+        List<Long> uniqueRoomIds = chatRoomIds.stream().distinct().toList();
+
+        for (Long chatRoomId : uniqueRoomIds) {
+            if (chatRoomId == null || chatRoomId <= 0) {
+                throw new ChatException(ChatErrorCode.INVALID_CHATROOM_ID);
+            }
+
+            if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId)) {
+                throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
+            }
         }
     }
 }

@@ -15,6 +15,9 @@ public enum ChatErrorCode implements BaseErrorCode {
     CHATROOM_ID_NECESSARY(HttpStatus.BAD_REQUEST, "CHAT102", "채팅방 ID가 필요합니다."),
     EMPTY_MESSAGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "CHAT103", "빈 메세지는 보낼 수 없습니다."),
     MESSAGE_TO_LONG(HttpStatus.BAD_REQUEST, "CHAT104", "메시지는 1000자를 초과할 수 없습니다."),
+    CHATROOM_LIST_EMPTY(HttpStatus.BAD_REQUEST, "CHAT105", "구독할 채팅방 목록이 필요합니다."),
+    TOO_MANY_CHATROOMS(HttpStatus.BAD_REQUEST, "CHAT106", "한 번에 구독할 수 있는 채팅방은 최대 100개입니다."),
+    INVALID_CHATROOM_ID(HttpStatus.BAD_REQUEST, "CHAT107", "유효하지 않은 채팅방 ID입니다."),
 
     // 2xx: 리소스 없음
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT201", "채팅방을 찾을 수 없습니다."),
