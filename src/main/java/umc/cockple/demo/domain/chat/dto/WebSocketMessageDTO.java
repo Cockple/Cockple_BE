@@ -11,6 +11,7 @@ public class WebSocketMessageDTO {
     public record Request(
             WebSocketMessageType type,
             Long chatRoomId,
+            List<Long> memberRooms,
             String content,
             List<FileInfo> files,
             List<ImageInfo> images,
