@@ -912,6 +912,7 @@ public class ExerciseConverter {
             Map<Long, Boolean> isCompletedMap) {
 
         Party party = exercise.getParty();
+        PartyLevelCache levelCache = createPartyLevelCache(party);
 
         return MyExerciseListDTO.ExerciseItem.builder()
                 .exerciseId(exercise.getId())
@@ -923,6 +924,8 @@ public class ExerciseConverter {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
+                .femaleLevel(levelCache.femaleLevel())
+                .maleLevel(levelCache.maleLevel())
                 .currentParticipants(participantCountMap.getOrDefault(exercise.getId(), 0))
                 .maxCapacity(exercise.getMaxCapacity())
                 .isCompleted(isCompletedMap.getOrDefault(exercise.getId(), false))

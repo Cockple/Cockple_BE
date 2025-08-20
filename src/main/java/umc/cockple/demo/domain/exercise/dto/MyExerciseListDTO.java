@@ -27,6 +27,8 @@ public class MyExerciseListDTO {
             String buildingName,
             LocalTime startTime,
             LocalTime endTime,
+            List<String> femaleLevel,
+            List<String> maleLevel,
             Integer currentParticipants,
             Integer maxCapacity,
             Boolean isCompleted,
