@@ -192,7 +192,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatListSubscriptionEvent.subscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(subscribeEvent);
 
-            webSocketMessageService.sendSubscriptionMessage(session, null, "SUBSCRIBE_CHAT_LIST");
+            webSocketMessageService.sendChatListSubscriptionMessage(session, request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());
@@ -211,7 +211,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatListSubscriptionEvent.unsubscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(unsubscribeEvent);
 
-            webSocketMessageService.sendSubscriptionMessage(session, null, "UNSUBSCRIBE_CHAT_LIST");
+            webSocketMessageService.sendChatListSubscriptionMessage(session, request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 해제 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());

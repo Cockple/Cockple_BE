@@ -114,4 +114,13 @@ public class WebSocketMessageDTO {
         ) {
         }
     }
+
+    @Builder
+    public record ChatListSubscriptionResponse(
+            WebSocketMessageType type,
+            List<Long> chatRoomIds,
+            String message,
+            LocalDateTime timestamp
+    ) {
+    }
 }
