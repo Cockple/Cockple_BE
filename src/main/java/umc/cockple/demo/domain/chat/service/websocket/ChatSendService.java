@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.chat.service.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -12,16 +13,20 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
+import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -34,12 +39,15 @@ public class ChatSendService {
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final MessageReadStatusRepository messageReadStatusRepository;
 
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
@@ -71,6 +79,8 @@ public class ChatSendService {
                 chatConverter.toSendMessageResponse(chatRoomId, content, responseImages, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
+
+        publishChatRoomListUpdateEvent(chatRoom, savedMessage);
     }
 
     public void sendSystemMessage(Long partyId, String content) {
@@ -159,6 +169,62 @@ public class ChatSendService {
                         .fileType(file.getFileType())
                         .build())
                 .toList();
+    }
+
+    private void publishChatRoomListUpdateEvent(ChatRoom chatRoom, ChatMessage savedMessage) {
+        try {
+            List<Long> chatRoomMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId());
+
+            Map<Long, Integer> memberUnreadCounts = calculateUnreadCountForMembers(
+                    chatRoom.getId(), chatRoomMemberIds);
+
+            ChatRoomListUpdateEvent listUpdateEvent = ChatRoomListUpdateEvent.create(
+                    chatRoom.getId(),
+                    savedMessage.getDisplayContent(),
+                    savedMessage.getCreatedAt(),
+                    savedMessage.getType().name(),
+                    memberUnreadCounts
+            );
+
+            eventPublisher.publishEvent(listUpdateEvent);
+            log.info("채팅방 목록 업데이트 이벤트 발행 - 채팅방: {}", chatRoom.getId());
+
+        } catch (Exception e) {
+            log.error("채팅방 목록 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
+        }
+    }
+
+    private Map<Long, Integer> calculateUnreadCountForMembers(
+            Long chatRoomId, List<Long> memberIds) {
+
+        Map<Long, Integer> unreadCounts = new HashMap<>();
+
+        for (Long memberId : memberIds) {
+            try {
+                Optional<ChatRoomMember> memberOpt = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
+
+                int unreadCount;
+                if (memberOpt.isPresent()) {
+                    Long lastReadMessageId = memberOpt.get().getLastReadMessageId();
+
+                    if (lastReadMessageId == null) {
+                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
+                    } else {
+                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
+                    }
+                } else {
+                    unreadCount = 0;
+                }
+
+                unreadCounts.put(memberId, unreadCount);
+
+            } catch (Exception e) {
+                log.error("멤버 {} 안 읽은 메시지 수 계산 실패 - 채팅방: {}", memberId, chatRoomId, e);
+                unreadCounts.put(memberId, 0);
+            }
+        }
+
+        return unreadCounts;
     }
 
     private ChatRoom findChatRoom(Long chatRoomId) {
