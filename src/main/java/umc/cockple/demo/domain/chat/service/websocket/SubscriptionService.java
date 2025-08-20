@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.chat.service.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -22,11 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
-    private final SubscriptionReadProcessingService subscriptionReadProcessingService;
 
-    // 세션 관리
-    private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
+    private final SubscriptionReadProcessingService subscriptionReadProcessingService;
     private final RedisSubscriptionService redisSubscriptionService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
     public void addSession(Long memberId, WebSocketSession session) {
         memberSessions.put(memberId, session);
@@ -34,13 +36,8 @@ public class SubscriptionService {
 
     public void removeSession(Long memberId) {
         memberSessions.remove(memberId);
-
-        chatRoomSubscriptions.forEach((chatRoomId, subscribers) -> {
-            subscribers.remove(memberId);
-            if (subscribers.isEmpty()) {
-                chatRoomSubscriptions.remove(chatRoomId);
-            }
-        });
+        cleanupMemberSubscriptions(memberId);
+        log.info("로컬 세션 제거 - 멤버: {}", memberId);
     }
 
     public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
@@ -171,5 +168,42 @@ public class SubscriptionService {
                 log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId(), e);
             }
         }
+    }
+
+    private void cleanupMemberSubscriptions(Long memberId) {
+        try {
+            Set<String> chatRoomKeys = redisTemplate.keys("chatroom:subscribers:*");
+            if (chatRoomKeys == null || chatRoomKeys.isEmpty()) {
+                return;
+            }
+
+            int cleanedCount = 0;
+            for (String key : chatRoomKeys) {
+                cleanedCount = cleanupMemberSubscription(memberId, key, cleanedCount);
+            }
+
+            if (cleanedCount > 0) {
+                log.info("멤버 {} 구독 정리 완료 - 정리된 구독 수: {}", memberId, cleanedCount);
+            }
+
+        } catch (Exception e) {
+            log.error("멤버 {} 구독 정리 중 오류 발생", memberId, e);
+        }
+    }
+
+    private int cleanupMemberSubscription(Long memberId, String key, int cleanedCount) {
+        try {
+            Set<Object> members = redisTemplate.opsForSet().members(key);
+            if (members != null && members.contains(memberId)) {
+                redisTemplate.opsForSet().remove(key, memberId);
+                cleanedCount++;
+
+                String chatRoomIdStr = key.replace("chatroom:subscribers:", "");
+                log.debug("구독 해제 - 채팅방: {}, 멤버: {}", chatRoomIdStr, memberId);
+            }
+        } catch (Exception e) {
+            log.error("구독 정리 실패 - 키: {}, 멤버: {}", key, memberId, e);
+        }
+        return cleanedCount;
     }
 }
