@@ -127,14 +127,10 @@ public class SubscriptionService {
 
     private void broadcastUnreadCountUpdates(
             Long chatRoomId, List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates, Long excludedMemberId) {
-        Set<Long> subscribers = chatRoomSubscriptions.get(chatRoomId);
+        List<Long> subscribers = getActiveSubscribers(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
-            log.debug("브로드캐스트할 구독자가 없음 - 채팅방: {}", chatRoomId);
             return;
         }
-
-        log.debug("안읽은 수 업데이트 브로드캐스트 시작 - 채팅방: {}, 구독자 수: {}, 업데이트 메시지 수: {}",
-                chatRoomId, subscribers.size(), updates.size());
 
         for (SubscriptionReadProcessingService.MessageUnreadUpdate update : updates) {
             try {
