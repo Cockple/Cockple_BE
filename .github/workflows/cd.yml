@@ -51,7 +51,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.KEY }}
           script: |
-            cd /home/monitor
+            cd /home/ubuntu/home/monitor
 
             echo "=== 배포 전 상태 ==="
             sudo docker ps
