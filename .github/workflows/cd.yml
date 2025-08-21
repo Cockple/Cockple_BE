@@ -53,14 +53,15 @@ jobs:
           script: |
             cd /home/monitor
 
+            sudo docker image prune -f
+            sudo docker pull ${{ secrets.DOCKER_REPO }}
+            sudo docker stop cockple-app || true
+            sudo docker rm -f cockple-app || true
+            
             if ! sudo docker ps | grep -q redis; then
-              echo "Redis가 죽어있음, 재시작 중..."
+              echo "Redis가 죽었음, 재시작 중..."
               sudo docker compose up -d redis
               sleep 10
             fi
             
-            sudo docker stop cockple-app || true
-            sudo docker rm -f cockple-app || true
-            sudo docker pull ${{ secrets.DOCKER_REPO }}
             sudo docker compose up -d cockple-app
-            sudo docker image prune -f
