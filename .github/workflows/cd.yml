@@ -52,9 +52,8 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             cd /home/monitor  
-            sudo docker-compose down || true
+            sudo docker stop cockple-app || true
             sudo docker rm -f cockple-app || true
-            sudo docker rm -f monitor_cockple-app_1 || true
             sudo docker pull ${{ secrets.DOCKER_REPO }}
-            sudo docker-compose up -d --force-recreate
+            sudo docker compose up -d cockple-app
             sudo docker image prune -f
