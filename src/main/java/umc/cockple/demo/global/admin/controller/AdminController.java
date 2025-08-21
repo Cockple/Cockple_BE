@@ -7,10 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.global.response.BaseResponse;
+import umc.cockple.demo.global.response.code.status.CommonErrorCode;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 
 import java.util.HashMap;
@@ -26,6 +28,32 @@ public class AdminController {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final CacheManager cacheManager;
+
+    @GetMapping("/redis/health")
+    @Operation(summary = "Redis 연결 상태 확인", description = "Redis가 살아있는지 간단히 확인합니다.")
+    public BaseResponse<Map<String, Object>> checkRedisHealth() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            String pong = stringRedisTemplate.getConnectionFactory()
+                    .getConnection()
+                    .ping();
+
+            result.put("status", "UP");
+            result.put("ping", pong);
+
+            log.info("Redis 헬스체크 성공");
+            return BaseResponse.success(CommonSuccessCode.OK, result);
+
+        } catch (Exception e) {
+            log.error("Redis 헬스체크 실패", e);
+
+            result.put("status", "DOWN");
+            result.put("error", e.getMessage());
+
+            return BaseResponse.error(CommonErrorCode.SERVICE_UNAVAILABLE, "Redis 연결 실패");
+        }
+    }
 
     @PostMapping("/cache/clear-all")
     @Operation(summary = "모든 캐시 삭제", description = "Redis의 모든 캐시와 Spring Cache를 삭제합니다.")
