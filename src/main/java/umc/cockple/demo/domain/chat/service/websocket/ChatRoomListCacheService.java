@@ -6,7 +6,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.dto.ChatRoomListCacheDTO;
+import umc.cockple.demo.domain.chat.dto.LastMessageCacheDTO;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 
 @Service
@@ -17,7 +17,7 @@ public class ChatRoomListCacheService {
     private final ChatMessageRepository chatMessageRepository;
 
     @Cacheable(value = "chatRoomLastMessage", key = "#chatRoomId")
-    public ChatRoomListCacheDTO.LastMessageCache getLastMessage(Long chatRoomId) {
+    public LastMessageCacheDTO getLastMessage(Long chatRoomId) {
         log.info("캐시 미스 - 채팅방 {} 마지막 메시지 DB 조회", chatRoomId);
 
         ChatMessage lastMessage = chatMessageRepository.findTop1ByChatRoom_IdOrderByCreatedAtDesc(chatRoomId);
@@ -26,7 +26,7 @@ public class ChatRoomListCacheService {
             return null;
         }
 
-        return ChatRoomListCacheDTO.LastMessageCache.builder()
+        return LastMessageCacheDTO.builder()
                 .content(lastMessage.getContent())
                 .timestamp(lastMessage.getCreatedAt())
                 .messageType(lastMessage.getType().name())
