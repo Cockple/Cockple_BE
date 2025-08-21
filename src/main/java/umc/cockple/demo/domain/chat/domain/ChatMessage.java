@@ -61,21 +61,21 @@ public class ChatMessage extends BaseEntity {
             return this.content;
         }
 
-        boolean hasImages = this.chatMessageImgs != null && !this.chatMessageImgs.isEmpty();
-        boolean hasFiles = this.chatMessageFiles != null && !this.chatMessageFiles.isEmpty();
+        if (this.chatMessageImgs != null && !this.chatMessageImgs.isEmpty()) {
+            ChatMessageImg firstImg = this.chatMessageImgs.get(0);
+            int count = this.chatMessageImgs.size();
 
-        if (hasImages && hasFiles) {
-            return "사진과 파일을 보냈습니다.";
+            if (firstImg.getIsEmoji()) {
+                return "이모티콘을 보냈습니다.";
+            } else {
+                return count > 1 ?
+                        String.format("사진 %d장을 보냈습니다.", count) :
+                        "사진을 보냈습니다.";
+            }
         }
 
-        if (hasImages) {
-            int imageCount = this.chatMessageImgs.size();
-            return imageCount > 1 ?
-                    String.format("사진 %d장을 보냈습니다.", imageCount) :
-                    "사진을 보냈습니다.";
-        }
-
-        if (hasFiles) {
+        // 파일이 있는 경우
+        if (this.chatMessageFiles != null && !this.chatMessageFiles.isEmpty()) {
             int fileCount = this.chatMessageFiles.size();
             return fileCount > 1 ?
                     String.format("파일 %d개를 보냈습니다.", fileCount) :
