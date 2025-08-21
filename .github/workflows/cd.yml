@@ -53,6 +53,9 @@ jobs:
           script: |
             cd /home/monitor
 
+            echo "=== 배포 전 상태 ==="
+            sudo docker ps
+
             sudo docker image prune -f
             sudo docker pull ${{ secrets.DOCKER_REPO }}
             sudo docker stop cockple-app || true
@@ -65,3 +68,6 @@ jobs:
             fi
             
             sudo docker compose up -d cockple-app
+
+            echo "=== 배포 후 상태 ==="
+            sudo docker ps
