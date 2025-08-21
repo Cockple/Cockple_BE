@@ -27,7 +27,7 @@ public class ChatRoomListCacheService {
         }
 
         return LastMessageCacheDTO.builder()
-                .content(lastMessage.getContent())
+                .content(lastMessage.getDisplayContent())
                 .timestamp(lastMessage.getCreatedAt())
                 .messageType(lastMessage.getType().name())
                 .build();
