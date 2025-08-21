@@ -1,7 +1,10 @@
 package umc.cockple.demo.global.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +47,20 @@ public class RedisConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        PolymorphicTypeValidator customValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType("umc.cockple.demo.**")
+                .allowIfSubType("java.time.**")
+                .allowIfSubType("java.lang.**")
+                .allowIfSubType("java.util.**")
+                .build();
+
+        objectMapper.activateDefaultTyping(
+                customValidator,
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY
+        );
+
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
         redisTemplate.setKeySerializer(new StringRedisSerializer());
@@ -65,6 +82,19 @@ public class RedisConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        PolymorphicTypeValidator customValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType("umc.cockple.demo.**")
+                .allowIfSubType("java.time.**")
+                .allowIfSubType("java.lang.**")
+                .allowIfSubType("java.util.**")
+                .build();
+
+        objectMapper.activateDefaultTyping(
+                customValidator,
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY
+        );
 
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
