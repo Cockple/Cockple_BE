@@ -61,7 +61,7 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
-        if (requestDTO.imgKey() != null) {
+        if (!StringUtils.hasText(requestDTO.imgKey())) {
             ProfileImg profile = ProfileImg.builder()
                     .member(member)
                     .imgKey(requestDTO.imgKey())
