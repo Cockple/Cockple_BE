@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.*;
@@ -30,7 +29,6 @@ import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -123,7 +121,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         validateChatRoomAccess(roomId, memberId);
 
-        Pageable pageable = PageRequest.of(0, size+1);
+        Pageable pageable = PageRequest.of(0, size + 1);
         List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, pageable);
 
         boolean hasNext = messages.size() > size;
@@ -197,7 +195,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                         unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
                     }
 
-                    ChatRoomListCacheDTO.LastMessageCache lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
+                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
 
                     return chatConverter.toPartyChatRoomInfo(
@@ -240,7 +238,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                         unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
                     }
 
-                    ChatRoomListCacheDTO.LastMessageCache lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
+                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
                     String displayProfileImgUrl = getImageUrl(displayMember.getMember().getProfileImg());
 

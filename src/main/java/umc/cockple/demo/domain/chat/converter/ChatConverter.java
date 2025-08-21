@@ -46,7 +46,7 @@ public class ChatConverter {
                 .build();
     }
 
-    public PartyChatRoomDTO.LastMessageInfo toPartyLastMessageInfo(ChatRoomListCacheDTO.LastMessageCache message) {
+    public PartyChatRoomDTO.LastMessageInfo toPartyLastMessageInfo(LastMessageCacheDTO message) {
         if (message == null) return null;
 
         return PartyChatRoomDTO.LastMessageInfo.builder()
@@ -85,7 +85,7 @@ public class ChatConverter {
                 .build();
     }
 
-    public DirectChatRoomDTO.LastMessageInfo toDirectLastMessageInfo(ChatRoomListCacheDTO.LastMessageCache message) {
+    public DirectChatRoomDTO.LastMessageInfo toDirectLastMessageInfo(LastMessageCacheDTO message) {
         if (message == null) return null;
 
         return DirectChatRoomDTO.LastMessageInfo.builder()
