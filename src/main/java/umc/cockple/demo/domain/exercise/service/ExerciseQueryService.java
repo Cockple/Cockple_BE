@@ -458,23 +458,17 @@ public class ExerciseQueryService {
     private Map<Long, ExerciseMyGuestListDTO.GuestGroups> createGuestNumberMap(List<ParticipantInfo> allParticipants, Integer maxCapacity) {
         Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestNumberMap = new HashMap<>();
 
-        int size = allParticipants.size();
-        for (int i = 0; i < Math.min(size, maxCapacity); i++) {
+        for (int i = 0; i < allParticipants.size(); i++) {
             ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
-            if ("GUEST".equals(participant.participantType())) {
-                guestNumberMap.put(participant.participantId(),
-                        ExerciseMyGuestListDTO.GuestGroups.participant(i + 1));
-            }
-        }
 
-        if (size > maxCapacity) {
-            int waitingNumber = 1;
-            for (int i = maxCapacity; i < size; i++) {
-                ExerciseDetailDTO.ParticipantInfo participant = allParticipants.get(i);
-                if ("GUEST".equals(participant.participantType())) {
+            if ("GUEST".equals(participant.participantType())) {
+                if (i < maxCapacity) {
+                    guestNumberMap.put(participant.participantId(),
+                            ExerciseMyGuestListDTO.GuestGroups.participant(i + 1));
+                } else {
+                    int waitingNumber = i - maxCapacity + 1;
                     guestNumberMap.put(participant.participantId(),
                             ExerciseMyGuestListDTO.GuestGroups.waiting(waitingNumber));
-                    waitingNumber++;
                 }
             }
         }
