@@ -61,6 +61,21 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
+    @GetMapping("/my/parties/{memberId}")
+    @Operation(summary = "사용자 모임 조회",
+            description = "특정 사용자가 가입한 모임을 조회합니다. ")
+    @ApiResponse(responseCode = "200", description = "모임 조회 성공")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    public BaseResponse<Slice<PartyDTO.Response>> getMyParties(
+            @RequestParam(required = false, defaultValue = "false") Boolean created,
+            @RequestParam(required = false, defaultValue = "최신순") String sort,
+            @PageableDefault(size = 10) Pageable pageable,
+            @PathVariable Long memberId
+    ){
+        Slice<PartyDTO.Response> response = partyQueryService.getMyParties(memberId, created, sort, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @GetMapping("/my/parties/suggestions")
     @Operation(summary = "추천 모임 조회",
             description = "사용자에게 추천되는 모임 목록을 조회합니다.")
