@@ -1,0 +1,394 @@
+package umc.cockple.demo.domain.party.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.member.domain.*;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.party.converter.PartyConverter;
+import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
+import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
+import umc.cockple.demo.domain.party.domain.PartyKeyword;
+import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
+import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
+import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.global.enums.*;
+
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+//조회 용 서비스이기에 readOnly = true를 추가하여 성능 향상했습니다.
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+@Slf4j
+public class PartyQueryServiceImpl implements PartyQueryService{
+    private final PartyRepository partyRepository;
+    private final PartyJoinRequestRepository partyJoinRequestRepository;
+    private final PartyConverter partyConverter;
+    private final MemberRepository memberRepository;
+    private final MemberPartyRepository memberPartyRepository;
+    private final MemberAddrRepository memberAddrRepository;
+    private final ExerciseRepository exerciseRepository;
+    private final PartyBookmarkRepository partyBookmarkRepository;
+    private final ImageService imageService;
+
+    @Override
+    public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
+        log.info("내 모임 간략화 조회 시작 - memberId: {}", memberId);
+        //사용자 조회
+        Member member = findMemberOrThrow(memberId);
+        //memberParty 조회 로직 수행
+        Slice<MemberParty> memberPartySlice = memberPartyRepository.findByMember(member, pageable);
+
+        log.info("내 모임 간략화 목록 조회 완료. 조회된 항목 수: {}", memberPartySlice.getNumberOfElements());
+        return memberPartySlice.map(memberParty ->
+                partyConverter.toPartySimpleDTO(memberParty, getImageUrl(memberParty.getParty().getPartyImg())));
+    }
+
+    @Override
+    public Slice<PartyDTO.Response> getMyParties(Long memberId, Boolean created, String sort, Pageable pageable) {
+        log.info("내 모임 조회 시작 - memberId: {}", memberId);
+
+        //정렬 기준 문자 검증, Pageable 객체 생성
+        Pageable sortedPageable = createSortedPageable(pageable, sort);
+
+        //모임 정보 조회
+        Slice<Party> partySlice = partyRepository.findMyParty(memberId, created, sortedPageable);
+        List<Long> partyIds = partySlice.getContent().stream().map(Party::getId).toList();
+        //운동 정보 조회
+        ExerciseInfo exerciseInfo = getExerciseInfo(partyIds);
+        //북마크 목록 조회
+        Set<Long> bookmarkedPartyIds = partyBookmarkRepository.findAllPartyIdsByMemberId(memberId);
+
+        log.info("내 모임 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
+
+        //기본 정보와 추가 정보를 조합하여 최종 DTO 생성
+        return partySlice.map(party -> {
+            Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
+            String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
+            String imgUrl = getImageUrl(party.getPartyImg());
+            Boolean isBookmarked = bookmarkedPartyIds.contains(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl, isBookmarked);
+        });
+    }
+
+    @Override
+    public Slice<PartyDTO.Response> getRecommendedParties(Long memberId, Boolean isCockpleRecommend, PartyFilterDTO.Request filter, String sort, Pageable pageable) {
+        log.info("모임 추천 조회 시작 - memberId: {}", memberId);
+
+        Slice<Party> partySlice;
+
+        if (isCockpleRecommend) {
+            //--- 콕플 추천 로직 실행 ---
+            partySlice = getCockpleRecommendedParties(memberId, pageable);
+        } else {
+            //--- 필터 조회 로직 실행 ---
+            Pageable sortedPageable = createSortedPageable(pageable, sort); //정렬 기준 문자 검증, Pageable 객체 생성
+            partySlice = partyRepository.searchParties(memberId, filter, sortedPageable);
+        }
+
+        //운동 정보 조회
+        ExerciseInfo exerciseInfo = getExerciseInfo(partySlice.getContent().stream().map(Party::getId).toList());
+        //북마크 목록 조회
+        Set<Long> bookmarkedPartyIds = partyBookmarkRepository.findAllPartyIdsByMemberId(memberId);
+
+        log.info("모임 추천 목록 조회 완료. 조회된 항목 수: {}", partySlice.getNumberOfElements());
+
+        return partySlice.map(party -> {
+            Integer totalExerciseCount = exerciseInfo.countMap().getOrDefault(party.getId(), 0);
+            String nextExerciseInfo = exerciseInfo.nextInfoMap().get(party.getId());
+            String imgUrl = getImageUrl(party.getPartyImg());
+            Boolean isBookmarked = bookmarkedPartyIds.contains(party.getId());
+            return partyConverter.toMyPartyDTO(party, nextExerciseInfo, totalExerciseCount, imgUrl, isBookmarked);
+        });
+    }
+
+    @Override
+    public PartyMemberDTO.Response getPartyMembers(Long partyId, Long currentMemberId) {
+        log.info("모임 멤버 조회 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임 활성화 검증
+        validatePartyIsActive(party);
+        //모임 멤버 목록 조회
+        List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+
+        log.info("모임 멤버 목록 조회 완료 - partyId: {}", partyId);
+        return partyConverter.toPartyMemberDTO(memberParties, currentMemberId);
+    }
+
+    @Override
+    public PartyDetailDTO.Response getPartyDetails(Long partyId, Long memberId) {
+        log.info("모임 상세 정보 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
+
+        //모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member member = findMemberOrThrow(memberId);
+
+        //모임 활성화 검증
+        validatePartyIsActive(party);
+
+        //memberParty 조회
+        Optional<MemberParty> memberParty = memberPartyRepository.findByPartyAndMember(party, member);
+        //북마크 여부 확인
+        boolean isBookmarked = partyBookmarkRepository.existsByMemberAndParty(member, party);
+        //가입신청 상태 확인하는 비즈니스 로직 수행
+        boolean hasPendingJoinRequest = hasPendingJoinRequest(party, member, memberParty);
+
+        String imgUrl = getImageUrl(party.getPartyImg());
+        PartyDetailDTO.Response response = partyConverter.toPartyDetailResponseDTO(party, memberParty, imgUrl, hasPendingJoinRequest, isBookmarked);
+
+        log.info("모임 상세 정보 조회 완료 - partyId: {}", partyId);
+        return response;
+    }
+
+    @Override
+    public Slice<PartyJoinDTO.Response> getJoinRequests(Long partyId, Long memberId, String status, Pageable pageable) {
+        log.info("가입 신청 목록 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
+
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //모임 활성화 검증
+        validatePartyIsActive(party);
+        //모임장 권한이 있는지 검증
+        validateOwnerPermission(party, memberId);
+        //status를 ENUM으로 변환 및 검증
+        RequestStatus requestStatus = parseRequestStatus(status);
+
+        //조회 로직 수행
+        Slice<PartyJoinRequest> requestSlice = partyJoinRequestRepository
+                .findByPartyAndStatus(party, requestStatus, pageable);
+
+        log.info("가입 신청 목록 조회 완료. 조회된 항목 수: {}", requestSlice.getNumberOfElements());
+        return requestSlice.map(partyConverter::toPartyJoinResponseDTO);
+    }
+
+    @Override
+    public Slice<PartyMemberSuggestionDTO.Response> getRecommendedMembers(Long partyId, String levelSearch, Pageable pageable) {
+        log.info("신규 멤버 추천 시작 - partyId: {}", partyId);
+        //모임 조회
+        Party party = findPartyOrThrow(partyId);
+
+        //멤버 추천 로직 수행
+        Slice<Member> recommendedMembersSlice = memberRepository.findRecommendedMembers(party, levelSearch, pageable);
+
+        log.info("신규 멤버 추천 완료. - 조회된 항목 수: {}", recommendedMembersSlice.getNumberOfElements());
+        return recommendedMembersSlice.map(member -> partyConverter.toPartyMemberSuggestionDTO(member, getProfileUrl(member.getProfileImg())));
+    }
+
+    // ========== 조회 메서드 ==========
+    //사용자 조회
+    private Party findPartyOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
+    }
+
+    //사용자 주소 조회
+    private MemberAddr findMainAddressOrThrow(Member member) {
+        return memberAddrRepository.findByMemberAndIsMain(member, true)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MAIN_ADDRESS_NULL));
+    }
+
+    //멤버 조회
+    private Member findMemberOrThrow(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    //운동 정보 조회
+    private ExerciseInfo getExerciseInfo(List<Long> partyIds) {
+        //운동 개수 정보 조회
+        Map<Long, Integer> exerciseCountMap = exerciseRepository.findTotalExerciseCountsByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(PartyExerciseInfoDTO::partyId, dto -> dto.count().intValue()));
+
+        //가장 최신의 운동 정보 조회
+        Map<Long, String> nextExerciseInfoMap = exerciseRepository.findUpcomingExercisesByPartyIds(partyIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        exercise -> exercise.getParty().getId(),
+                        this::formatNextExerciseInfo,
+                        (existing, replacement) -> existing //key중복 시 처리 방법: 최초 값(existing)만 사용
+                ));
+
+        return new ExerciseInfo(exerciseCountMap, nextExerciseInfoMap);
+    }
+
+    //모임 추천 정보 조회
+    private RecommendedPartiesInfo getRecommendedPartiesInfo(Long memberId) {
+        //사용자, 사용자 주소, 사용자 키워드 조회
+        Member member = findMemberOrThrow(memberId);
+        MemberAddr memberAddr = findMainAddressOrThrow(member);
+        Set<Keyword> memberKeywords = member.getKeywords().stream()
+                .map(MemberKeyword::getKeyword)
+                .collect(Collectors.toSet());
+
+        return new RecommendedPartiesInfo(
+                memberAddr.getAddr1(),
+                member.getBirth().getYear(),
+                member.getGender(),
+                member.getLevel(),
+                memberKeywords,
+                memberId
+        );
+    }
+
+    //필터링된 모임 추천 목록 조회
+    private List<Party> findFilteredParties(RecommendedPartiesInfo partiesInfo) {
+        return partyRepository.findRecommendedParties(
+                partiesInfo.addr1(),
+                partiesInfo.birthYear(),
+                partiesInfo.gender(),
+                partiesInfo.level(),
+                partiesInfo.memberId()
+        );
+    }
+
+    // ========== 검증 메서드 ==========
+    //모임장 권한 검증
+    private void validateOwnerPermission(Party party, Long memberId) {
+        if(!party.getOwnerId().equals(memberId)){
+            throw new PartyException(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+    }
+
+    //모임 활성화 검증
+    private void validatePartyIsActive(Party party) {
+        if (party.getStatus() == PartyStatus.INACTIVE) {
+            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
+        }
+    }
+
+    // ========== 비즈니스 로직 메서드 ==========
+    //콕플 추천 로직을 처리
+    private Slice<Party> getCockpleRecommendedParties(Long memberId, Pageable pageable) {
+        //추천의 기준이 되는 정보 조회
+        RecommendedPartiesInfo partiesInfo = getRecommendedPartiesInfo(memberId);
+        //지역, 나이대, 급수로 필터링 된 모임 목록 조회
+        List<Party> filteredParties = findFilteredParties(partiesInfo);
+
+        //키워드 일치 개수로 정렬
+        List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
+        //수동으로 페이징
+        Slice<Party> partySlice = paginate(sortedParties, pageable);
+
+        return partySlice;
+    }
+
+    //정렬 로직 처리
+    private Pageable createSortedPageable(Pageable pageable, String sort) {
+        PartyOrderType sortType = PartyOrderType.fromKorean(sort);
+
+        Sort sorting = switch (sortType) {
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case EXERCISE_COUNT -> Sort.by("exerciseCount").descending();
+            default -> Sort.by("createdAt").descending(); //기본값은 LATEST (createdAt 내림차순)
+        };
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sorting);
+    }
+
+    //키워드 일치 개수로 정렬
+    private List<Party> sortPartiesByKeywordMatch(List<Party> parties, Set<Keyword> memberKeywords) {
+        return parties.stream()
+                .sorted(Comparator.comparingInt((Party p) -> calculateKeywordMatchScore(p, memberKeywords)).reversed())
+                .toList();
+    }
+
+    //키워드 일치 개수 계산
+    private int calculateKeywordMatchScore(Party party, Set<Keyword> memberKeywords) {
+        Set<Keyword> partyKeywords = party.getKeywords().stream()
+                .map(PartyKeyword::getKeyword)
+                .collect(Collectors.toSet());
+        partyKeywords.retainAll(memberKeywords); //교집합 계산
+        return partyKeywords.size();
+    }
+
+    //페이징 처리
+    private Slice<Party> paginate(List<Party> sortedParties, Pageable pageable) {
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sortedParties.size());
+        List<Party> content = (start >= sortedParties.size()) ? Collections.emptyList() : sortedParties.subList(start, end);
+        boolean hasNext = end < sortedParties.size();
+        return new SliceImpl<>(content, pageable, hasNext);
+    }
+
+    private boolean hasPendingJoinRequest(Party party, Member member, Optional<MemberParty> memberParty){
+        if (memberParty.isEmpty()) {
+            return partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member, RequestStatus.PENDING);
+        }
+        return false;
+    }
+
+    // ========== 데이터 변환 메서드 ==========
+    //이미지 키를 이미지 url로 변환
+    private String getImageUrl(PartyImg partyImg) {
+        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(partyImg.getImgKey());
+        }
+        return null;
+    }
+
+    private String getProfileUrl(ProfileImg profileImg) {
+        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(profileImg.getImgKey());
+        }
+        return null;
+    }
+
+    //가입신청 상태 변환
+    private RequestStatus parseRequestStatus(String status) {
+        try {
+            return RequestStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new PartyException(PartyErrorCode.INVALID_REQUEST_STATUS);
+        }
+    }
+
+    //운동 정보 변환
+    private String formatNextExerciseInfo(Exercise exercise) {
+        //날짜 포맷팅 ex) 05.01
+        String datePart = exercise.getDate().format(DateTimeFormatter.ofPattern("MM.dd"));
+
+        //시간 포맷팅 (오전/오후)
+        String timePart = convertToTimeOfDay(exercise.getStartTime());
+
+        return datePart + " " + timePart + " 운동";
+    }
+
+    //LocalTime을 오전/오후로 변환
+    private String convertToTimeOfDay(LocalTime time) {
+        int hour = time.getHour();
+        if (hour >= 0 && hour < 12) {
+            return "오전";
+        } else{
+            return "오후";
+        }
+    }
+
+    // ========== record ==========
+    //임시로 사용할 데이터 묶음을 record로 구현
+    private record ExerciseInfo(Map<Long, Integer> countMap, Map<Long, String> nextInfoMap) {} //운동 정보
+    private record RecommendedPartiesInfo(String addr1, int birthYear, Gender gender, Level level, Set<Keyword> keywords, Long memberId) {} //추천 정보
+
+}
