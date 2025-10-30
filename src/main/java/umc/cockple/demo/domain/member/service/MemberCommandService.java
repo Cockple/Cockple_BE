@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.image.service.ImageService;
 
 import java.util.List;
+import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
@@ -36,6 +37,7 @@ public class MemberCommandService {
     private final MemberPartyRepository memberPartyRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
+    private final KakaoOauthService kakaoOauthService;
     private final ImageService imageService;
 
 
@@ -86,6 +88,9 @@ public class MemberCommandService {
         // 참여중인 운동, 모임에서 나가기
         memberExerciseRepository.deleteAllByMember(member);
         memberPartyRepository.deleteAllByMember(member);
+
+        // 카카오 연결 끊기
+        kakaoOauthService.unlinkAccess(member);
 
         // 활성화 여부 해제, 리프레시 토큰 삭제
         member.withdraw();

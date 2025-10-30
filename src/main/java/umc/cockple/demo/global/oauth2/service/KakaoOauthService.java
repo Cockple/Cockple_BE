@@ -65,6 +65,17 @@ public class KakaoOauthService {
         return new KakaoLoginResponseDTO(accessToken, refreshToken, member.getId(), member.getNickname(), newMember);
     }
 
+    public void unlinkAccess(Member member) {
+        if (member.getSocialId() != null) {
+            try {
+                kakaoClient.unlinkByAdmin(member.getSocialId());
+            } catch (Exception e) {
+                throw new MemberException(MemberErrorCode.OAUTH_UNLINK_FAIL);
+            }
+        }
+
+    }
+
     public KakaoLoginResponseDTO createDevToken() {
         // 특정 member 가져오기
         Member member = memberRepository.findById(1L)
