@@ -41,7 +41,6 @@ public class KakaoClient {
     private String adminKey;
 
 
-
     // 인가코드로 AccessToken 요청하기
     public String getAccessToken(String code) {
         BodyInserters.FormInserter<String> formData = BodyInserters.fromFormData("grant_type", "authorization_code")
@@ -96,6 +95,4 @@ public class KakaoClient {
 
         log.info("[KAKAO] unlink OK. kakaoUserId={}", socialId);
     }
-
-
 }

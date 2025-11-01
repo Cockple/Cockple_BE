@@ -45,6 +45,7 @@ public enum MemberErrorCode implements BaseErrorCode {
 
     OAUTH_UNLINK_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "MEM_AUTH_501", "카카오 연결 끊기에 실패했습니다.")
 
+
     ;
 
     private final HttpStatus httpStatus;

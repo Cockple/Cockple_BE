@@ -10,7 +10,6 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
-import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -22,7 +21,6 @@ import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
-import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
 
 @Service
 @Transactional
