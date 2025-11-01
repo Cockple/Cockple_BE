@@ -34,6 +34,12 @@ public class KakaoClient {
     @Value("${kakao.user-info-uri}")
     private String userInfoUri;
 
+    @Value("${kakao.unlink-uri}")
+    private String unlinkUri;
+
+    @Value("$kakao.admin-key")
+    private String adminKey;
+
 
     // 인가코드로 AccessToken 요청하기
     public String getAccessToken(String code) {
@@ -74,5 +80,19 @@ public class KakaoClient {
         return new KakaoClientInfo(kakaoId, nickname);
     }
 
+    // 회원 탈퇴를 위해 카카오와 연결 끊기
+    public void unlinkByAdmin(Long socialId) {
+        webClient.post()
+                .uri(unlinkUri)
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + adminKey)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData("target_id_type", "user_id")
+                        .with("target_id", String.valueOf(socialId)))
+                .retrieve()
+                .toBodilessEntity()
+                .block()
+        ;
 
+        log.info("[KAKAO] unlink OK. kakaoUserId={}", socialId);
+    }
 }

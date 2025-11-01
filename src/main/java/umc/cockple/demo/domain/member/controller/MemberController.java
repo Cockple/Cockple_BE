@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.member.dto.*;
-import umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
@@ -19,6 +19,7 @@ import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
+import umc.cockple.demo.global.security.domain.CustomUserDetails;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 import java.io.IOException;
@@ -128,9 +129,9 @@ public class MemberController {
     @PatchMapping(value = "/member")
     @Operation(summary = "회원 탈퇴 API",
             description = "사용자 회원 탈퇴")
-    public BaseResponse<String> withdraw() {
+    public BaseResponse<String> withdraw(@AuthenticationPrincipal CustomUserDetails member) {
 
-        Long memberId = SecurityUtil.getCurrentMemberId();
+        Long memberId = member.getMemberId();
 
         memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
