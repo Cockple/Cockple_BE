@@ -37,7 +37,7 @@ public class KakaoClient {
     @Value("${kakao.unlink-uri}")
     private String unlinkUri;
 
-    @Value("$kakao.admin-key")
+    @Value("${kakao.admin-key}")
     private String adminKey;
 
 
