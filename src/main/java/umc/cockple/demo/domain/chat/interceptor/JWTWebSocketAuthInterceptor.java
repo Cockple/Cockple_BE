@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -27,7 +26,7 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
         try {
             String token = extractTokenFromRequest(request);
 
-            if (isValidToken(token)) return false;
+            if (isInvalidToken(token)) return false;
 
             Long memberId = jwtTokenProvider.getUserId(token);
 
@@ -65,7 +64,7 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
         return null;
     }
 
-    private boolean isValidToken(String token) {
+    private boolean isInvalidToken(String token) {
         if (token == null) {
             log.debug("JWT 토큰이 없습니다 (WebSocket)");
             return true;
