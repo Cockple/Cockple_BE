@@ -67,12 +67,12 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
 
     private boolean isValidToken(String token) {
         if (token == null) {
-            log.error("JWT 토큰이 없습니다");
+            log.debug("JWT 토큰이 없습니다 (WebSocket)");
             return true;
         }
 
         if (!jwtTokenProvider.validateToken(token)) {
-            log.error("유효하지 않은 JWT 토큰");
+            log.debug("유효하지 않은 JWT 토큰 (WebSocket)");
             return true;
         }
         return false;
