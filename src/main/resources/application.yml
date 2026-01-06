@@ -30,6 +30,7 @@ spring:
         default_batch_fetch_size: 1000
         show_sql: false
 
+
   servlet:
     multipart:
       max-file-size: 30MB
@@ -83,5 +84,4 @@ jwt:
 
 logging:
   level:
-
     org.hibernate.SQL: WARN
