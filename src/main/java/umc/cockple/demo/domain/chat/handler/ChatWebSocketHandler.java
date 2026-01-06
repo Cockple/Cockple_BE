@@ -103,7 +103,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status){
         Long memberId = (Long) session.getAttributes().get("memberId");
 
         log.info("웹소켓 연결 종료");
@@ -226,6 +226,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (exception == null) return false;
 
         String message = exception.getMessage();
-        return message != null && message.contains("ClosedChannelException");
+        return message != null && (
+                message.contains("ClosedChannelException") ||
+                message.contains("WebSocket session has been closed")
+        );
     }
 }
