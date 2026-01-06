@@ -8,7 +8,6 @@ spring:
   profiles:
     active: local
 
-
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL}
@@ -25,10 +24,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
-        show_sql: false
         format_sql: true
         use_sql_comments: true
         default_batch_fetch_size: 1000
+      show_sql: false
 
   servlet:
     multipart:
@@ -79,5 +78,8 @@ kakao:
 jwt:
   secret: ${JWT_SECRET_KEY}
   access-token-validity: 3600000
-
   refresh-token-validity: 1209600000
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
