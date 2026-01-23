@@ -33,20 +33,20 @@ public class ContestRecordUpdateDTO {
             @Size(max = 100, message = "대회 기록은 최대 100자까지 가능합니다.")
             String content,
 
-            Boolean contentIsOpen,
+            boolean contentIsOpen,
 
-            Boolean videoIsOpen,
+            boolean videoIsOpen,
 
             // 새로 추가할 영상 링크들
-            List<String> contestVideos,
+            List<AddContestVideoRequest> contestVideos,
 
             // 새로 추가할 이미지
-            List<String> contestImgs,
+            List<AddContestImgRequest> contestImgs,
 
-            // 삭제할 이미지 imgKey (프론트에서 관리)
-            List<String> contestImgsToDelete,
+            // 삭제할 이미지 id
+            List<Long> contestImgsToDelete,
 
-            // 삭제할 영상의 비디오 아이디
+            // 삭제할 영상의 비디오 id
             List<Long> contestVideoIdsToDelete
 
     ) {
@@ -55,6 +55,8 @@ public class ContestRecordUpdateDTO {
     @Builder
     public record Response(
             Long contestId,
+            List<ContestImgResponse> contestImgs,
+            List<ContestVideoResponse> contestVideos,
             LocalDateTime UpdatedAt
     ) {
     }

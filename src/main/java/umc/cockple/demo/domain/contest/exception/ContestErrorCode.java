@@ -14,6 +14,8 @@ public enum ContestErrorCode implements BaseErrorCode {
 
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST201", "존재하지 않는 회원입니다."),
     CONTEST_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST202", "존재하지 않는 대회기록입니다."),
+    CONTEST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST203", "존재하지 않는 대회 이미지입니다."),
+    CONTEST_VIDEO_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST204", "존재하지 않는 대회 영상입니다."),
 
     NO_DELETE_AUTHORITY(HttpStatus.FORBIDDEN, "CONTEST301", "권한이 없습니다."),
 

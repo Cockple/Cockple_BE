@@ -98,43 +98,39 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         contest.updateFromRequest(request);
 
         // 3. 이미지 삭제
-        if (request.contestImgsToDelete() != null) {
-            request.contestImgsToDelete().forEach(imgKey -> {
-                contest.getContestImgs().removeIf(img -> img.getImgKey().equals(imgKey));
-                imageService.delete(imgKey);
-            });
-        }
+        if (request.contestImgsToDelete() != null && !request.contestImgsToDelete().isEmpty()) {
+            for (Long imgId : request.contestImgsToDelete()) {
+                ContestImg targetImg = contest.getContestImgs().stream()
+                        .filter(img -> img.getId().equals(imgId))
+                        .findFirst()
+                        .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_IMAGE_NOT_FOUND));
 
-        // 4. 이미지 재정렬
-        List<ContestImg> imgs = contest.getContestImgs();
-        for (int i = 0; i < imgs.size(); i++) {
-            imgs.get(i).setImgOrder(i);
+                imageService.delete(targetImg.getImgKey());
+                contest.getContestImgs().remove(targetImg);
+            }
         }
 
         // 5. 이미지 추가
         if (request.contestImgs() != null) {
-            extractedImgs(request.contestImgs(), contest);
+            extractedImgsWithOrder(request.contestImgs(), contest);
         }
 
         // 6. 영상 삭제
-        if (request.contestVideoIdsToDelete() != null) {
-            request.contestVideoIdsToDelete().forEach(id ->
-                    contest.getContestVideos().removeIf(video -> video.getId().equals(id))
-            );
-        }
-
-        // 7. order 재정렬
-        List<ContestVideo> videos = contest.getContestVideos();
-        for (int i = 0; i < videos.size(); i++) {
-            videos.get(i).setVideoOrder(i);
+        if (request.contestVideoIdsToDelete() != null && !request.contestVideoIdsToDelete().isEmpty()) {
+            for (Long videoId : request.contestVideoIdsToDelete()) {
+                ContestVideo targetVideo = contest.getContestVideos().stream()
+                        .filter(video -> video.getId().equals(videoId))
+                        .findFirst()
+                        .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_VIDEO_NOT_FOUND));
+                contest.getContestVideos().remove(targetVideo);
+            }
         }
 
         // 8. 영상 추가
-        int maxOrder = contest.getContestVideos().stream()
-                .mapToInt(ContestVideo::getVideoOrder)
-                .max().orElse(-1);
         try {
-            extractedVideo(request.contestVideos(), contest, maxOrder + 1);
+            if (request.contestVideos() != null) {
+                extractedVideoWithOrder(request.contestVideos(), contest);
+            }
         } catch (Exception e) {
             log.error("영상 수정 중 오류 발생", e);
             throw new ContestException(ContestErrorCode.VIDEO_URL_SAVE_FAIL);
@@ -188,6 +184,18 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         }
     }
 
+    private void extractedImgsWithOrder(List<AddContestImgRequest> imgs, Contest contest) {
+        int total = contest.getContestImgs().size() + imgs.size();
+        if (total > 3) {
+            log.error("이미지 개수 초과: 기존 {}, 추가 {}", contest.getContestImgs().size(), imgs.size());
+            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
+        }
+        for (AddContestImgRequest img : imgs) {
+            ContestImg contestImg = ContestImg.of(contest, img.imgKey(), img.imgOrder());
+            contest.addContestImg(contestImg);
+        }
+    }
+
     private void extractedVideo(List<String> videoUrls, Contest contest, int startOrder) {
         if (videoUrls != null && !videoUrls.isEmpty()) {
             for (int i = 0; i < videoUrls.size(); i++) {
@@ -198,9 +206,17 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         }
     }
 
+    private void extractedVideoWithOrder(List<AddContestVideoRequest> videos, Contest contest) {
+        if (videos != null && !videos.isEmpty()) {
+            for (AddContestVideoRequest video : videos) {
+                ContestVideo contestVideo = ContestVideo.of(contest, video.videoKey(), video.videoOrder());
+                contest.getContestVideos().add(contestVideo);
+            }
+        }
+    }
+
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new ContestException(ContestErrorCode.MEMBER_NOT_FOUND));
     }
 }
-

@@ -3,8 +3,11 @@ package umc.cockple.demo.domain.contest.converter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.contest.domain.ContestImg;
+import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,8 +41,20 @@ public class ContestConverter {
 
     // 대회 기록 수정
     public ContestRecordUpdateDTO.Response toUpdateResponseDTO(Contest contest) {
+        List<ContestImgResponse> imgResponses = contest.getContestImgs().stream()
+                .sorted(Comparator.comparing(ContestImg::getImgOrder))
+                .map(img -> new ContestImgResponse(img.getId(), img.getImgKey(), img.getImgOrder()))
+                .collect(Collectors.toList());
+
+        List<ContestVideoResponse> videoResponses = contest.getContestVideos().stream()
+                .sorted(Comparator.comparingInt(ContestVideo::getVideoOrder))
+                .map(video -> new ContestVideoResponse(video.getId(), video.getVideoUrl(), video.getVideoOrder()))
+                .collect(Collectors.toList());
+
         return ContestRecordUpdateDTO.Response.builder()
                 .contestId(contest.getId())
+                .contestImgs(imgResponses)
+                .contestVideos(videoResponses)
                 .UpdatedAt(contest.getUpdatedAt())
                 .build();
     }
