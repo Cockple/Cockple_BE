@@ -21,7 +21,9 @@ public class ContestRecordDetailDTO {
             String content,
             Boolean contentIsOpen,
             Boolean videoIsOpen,
+            List<Long> contestImgIds,
             List<String> contestImgUrls,
+            List<Long> contestVideoIds,
             List<String> contestVideoUrls
     ) {
     }
