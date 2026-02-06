@@ -37,17 +37,12 @@ public class ContestRecordUpdateDTO {
 
             boolean videoIsOpen,
 
-            // 새로 추가할 영상 링크들
-            List<AddContestVideoRequest> contestVideos,
+            // 최종 상태의 이미지 목록 (기존 항목은 id 포함, 신규는 id null)
+            @Size(max = 3, message = "이미지는 3개까지 업로드 가능합니다.")
+            List<ContestImgUpdateRequest> contestImgs,
 
-            // 새로 추가할 이미지
-            List<AddContestImgRequest> contestImgs,
-
-            // 삭제할 이미지 id
-            List<Long> contestImgsToDelete,
-
-            // 삭제할 영상의 비디오 id
-            List<Long> contestVideoIdsToDelete
+            // 최종 상태의 영상 목록 (기존 항목은 id 포함, 신규는 id null)
+            List<ContestVideoUpdateRequest> contestVideos
 
     ) {
     }
