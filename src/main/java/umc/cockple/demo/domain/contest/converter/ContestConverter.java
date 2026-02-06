@@ -33,9 +33,19 @@ public class ContestConverter {
     }
 
     public ContestRecordCreateDTO.Response toCreateResponseDTO(Contest contest) {
+        List<Long> imgIds = contest.getContestImgs().stream()
+                .map(ContestImg::getId)
+                .collect(Collectors.toList());
+
+        List<Long> videoIds = contest.getContestVideos().stream()
+                .map(ContestVideo::getId)
+                .collect(Collectors.toList());
+
         return ContestRecordCreateDTO.Response.builder()
                 .contestId(contest.getId())
                 .createdAt(contest.getCreatedAt())
+                .contestImgIds(imgIds)
+                .contestVideoIds(videoIds)
                 .build();
     }
 

@@ -38,10 +38,10 @@ public class ContestRecordCreateDTO {
 
             Boolean videoIsOpen,
 
-            List<String> contestVideos,
+            List<AddContestVideoRequest> contestVideos,
 
             @Size(max = 3, message = "이미지는 3개까지 업로드 가능합니다.")
-            List<String> contestImgs
+            List<AddContestImgRequest> contestImgs
 
     ) {
     }
@@ -57,15 +57,17 @@ public class ContestRecordCreateDTO {
             String content,
             Boolean contentIsOpen,
             Boolean videoIsOpen,
-            List<String> contestVideos,
-            List<String> contestImgs
+            List<AddContestVideoRequest> contestVideos,
+            List<AddContestImgRequest> contestImgs
     ) {
     }
 
     @Builder
     public record Response(
             Long contestId,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            List<Long> contestImgIds,
+            List<Long> contestVideoIds
     ) {
     }
 }
