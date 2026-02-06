@@ -77,7 +77,7 @@ public class ContestConverter {
     }
 
     // 대회 기록 상세 조회
-    public ContestRecordDetailDTO.Response toDetailResponseDTO(Contest contest, List<String> imgUrls, List<String> videoUrls, String content) {
+    public ContestRecordDetailDTO.Response toDetailResponseDTO(Contest contest, List<Long> imgIds, List<String> imgUrls, List<Long> videoIds, List<String> videoUrls, String content) {
         return ContestRecordDetailDTO.Response.builder()
                 .contestId(contest.getId())
                 .contestName(contest.getContestName())
@@ -87,8 +87,10 @@ public class ContestConverter {
                 .level(contest.getLevel())
                 .contentIsOpen(contest.getContentIsOpen())
                 .content(content)
+                .contestImgIds(imgIds)
                 .contestImgUrls(imgUrls)
                 .videoIsOpen(contest.getVideoIsOpen())
+                .contestVideoIds(videoIds)
                 .contestVideoUrls(videoUrls)
                 .build();
     }

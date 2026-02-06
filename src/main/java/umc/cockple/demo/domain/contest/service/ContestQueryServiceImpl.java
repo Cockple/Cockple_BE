@@ -40,13 +40,15 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
         boolean isOwner = loginMemberId.equals(memberId);
 
+        List<Long> imgIds = getImageIds(contest);
         List<String> imgUrls = getImageUrls(contest);
+        List<Long> videoIds = getVideoIds(contest, isOwner);
         List<String> videoUrls = getVideoUrls(contest, isOwner);
         String content = getContent(contest, isOwner);
 
         log.info("대회 기록 상세조회 완료 - contestId: {}", contestId);
 
-        return contestConverter.toDetailResponseDTO(contest, imgUrls, videoUrls, content);
+        return contestConverter.toDetailResponseDTO(contest, imgIds, imgUrls, videoIds, videoUrls, content);
     }
 
     // 대회 기록 리스트 조회 (전체, 미입상)
@@ -92,12 +94,31 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
     }
 
+    // 이미지 ID 리스트 반환
+    private List<Long> getImageIds(Contest contest) {
+        return contest.getContestImgs().stream()
+                .sorted(Comparator.comparing(ContestImg::getImgOrder))
+                .map(ContestImg::getId)
+                .collect(Collectors.toList());
+    }
+
     // 이미지 URL 리스트 반환
     private List<String> getImageUrls(Contest contest) {
         return contest.getContestImgs().stream()
                 .sorted(Comparator.comparing(ContestImg::getImgOrder))
                 .map(img -> imageService.getUrlFromKey(img.getImgKey()))
                 .collect(Collectors.toList());
+    }
+
+    // 영상 ID 리스트 (공개 여부에 따라)
+    private List<Long> getVideoIds(Contest contest, boolean isOwner) {
+        if (contest.getVideoIsOpen() || isOwner) {
+            return contest.getContestVideos().stream()
+                    .sorted(Comparator.comparingInt(ContestVideo::getVideoOrder))
+                    .map(ContestVideo::getId)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
     }
 
     // 영상 URL 리스트 (공개 여부에 따라)
