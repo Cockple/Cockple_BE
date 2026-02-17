@@ -22,10 +22,14 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Make application.yml (test용)
+      - name: Make application.yml (브랜치별 분기 - 개발용, 운영용)
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION }}" > src/main/resources/application.yml
+          if [ "${{ github.base_ref }}" == "main" ]; then
+            echo "${{ secrets.APPLICATION }}" > src/main/resources/application.yml
+          else
+            echo "${{ secrets.APPLICATION_STAGING }}" > src/main/resources/application.yml
+          fi
 
       - name: Grant execute permission for Gradle
         run: chmod +x gradlew
