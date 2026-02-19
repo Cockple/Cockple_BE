@@ -63,6 +63,12 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
 
+    // testcontainers
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'com.redis:testcontainers-redis:2.2.4'
+
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
