@@ -137,14 +137,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
 
         //멤버별 마지막 운동일 조회
-        List<Long> memberIds = memberParties.stream().map(mp -> mp.getMember().getId()).toList();
-        Map<Long, LocalDate> lastExerciseDateMap = memberExerciseRepository
-                .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
-                .stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (LocalDate) row[1]
-                ));
+        Map<Long, LocalDate> lastExerciseDateMap = getLastExerciseDateMap(memberParties, partyId);
 
         log.info("모임 멤버 목록 조회 완료 - partyId: {}", partyId);
         return partyConverter.toPartyMemberDTO(memberParties, currentMemberId, lastExerciseDateMap);
@@ -227,6 +220,15 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    //멤버별 마지막 운동일 조회
+    private Map<Long, LocalDate> getLastExerciseDateMap(List<MemberParty> memberParties, Long partyId) {
+        List<Long> memberIds = memberParties.stream().map(mp -> mp.getMember().getId()).toList();
+        return memberExerciseRepository
+                .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
+                .stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDate) row[1]));
     }
 
     //운동 정보 조회
