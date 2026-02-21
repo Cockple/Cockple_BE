@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
@@ -30,6 +31,7 @@ import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.*;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -48,6 +50,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final MemberPartyRepository memberPartyRepository;
     private final MemberAddrRepository memberAddrRepository;
     private final ExerciseRepository exerciseRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
     private final PartyBookmarkRepository partyBookmarkRepository;
     private final ImageService imageService;
 
@@ -133,8 +136,11 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //모임 멤버 목록 조회
         List<MemberParty> memberParties = memberPartyRepository.findAllByPartyIdWithMember(partyId);
 
+        //멤버별 마지막 운동일 조회
+        Map<Long, LocalDate> lastExerciseDateMap = getLastExerciseDateMap(memberParties, partyId);
+
         log.info("모임 멤버 목록 조회 완료 - partyId: {}", partyId);
-        return partyConverter.toPartyMemberDTO(memberParties, currentMemberId);
+        return partyConverter.toPartyMemberDTO(memberParties, currentMemberId, lastExerciseDateMap);
     }
 
     @Override
@@ -214,6 +220,15 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private Member findMemberOrThrow(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    //멤버별 마지막 운동일 조회
+    private Map<Long, LocalDate> getLastExerciseDateMap(List<MemberParty> memberParties, Long partyId) {
+        List<Long> memberIds = memberParties.stream().map(mp -> mp.getMember().getId()).toList();
+        return memberExerciseRepository
+                .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
+                .stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDate) row[1]));
     }
 
     //운동 정보 조회
