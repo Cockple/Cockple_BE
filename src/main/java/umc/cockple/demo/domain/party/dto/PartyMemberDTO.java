@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.party.dto;
 
 import lombok.Builder;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class PartyMemberDTO {
@@ -26,6 +27,7 @@ public class PartyMemberDTO {
             String role,
             String gender,
             String level,
-            Boolean isMe
+            Boolean isMe,
+            LocalDate lastExerciseDate
     ) {}
 }

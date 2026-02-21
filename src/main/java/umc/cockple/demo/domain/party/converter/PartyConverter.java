@@ -13,9 +13,11 @@ import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -161,7 +163,7 @@ public class PartyConverter {
         return levelList.isEmpty() ? null : levelList;
     }
 
-    public PartyMemberDTO.Response toPartyMemberDTO(List<MemberParty> memberParties, Long currentMemberId) {
+    public PartyMemberDTO.Response toPartyMemberDTO(List<MemberParty> memberParties, Long currentMemberId, Map<Long, LocalDate> lastExerciseDateMap) {
         //멤버 리스트 생성
         List<PartyMemberDTO.MemberDetail> memberDetails = memberParties.stream()
                 .map(mp -> {
@@ -174,6 +176,7 @@ public class PartyConverter {
                             .gender(member.getGender().name())
                             .level(member.getLevel().getKoreanName())
                             .isMe(member.getId().equals(currentMemberId))
+                            .lastExerciseDate(lastExerciseDateMap.get(member.getId()))
                             .build();
                 })
                 //Role에 따라 정렬 (모임장, 부모임장이 위로 가도록 정렬)
