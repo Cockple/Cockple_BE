@@ -41,3 +41,9 @@ src/main/resources/application-dev.yml
 .env
 
 application-dev.yml
+
+### Terraform ###
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
