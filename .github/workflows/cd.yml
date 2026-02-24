@@ -54,8 +54,24 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.KEY }}
+          envs: >-
+            DB_PASSWORD,
+            S3_BUCKET,S3_ACCESS_KEY,S3_SECRET_KEY,
+            KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI_PROD,KAKAO_REDIRECT_URI_STAGING,KAKAO_ADMIN_KEY,
+            JWT_SECRET_KEY
           script: |
             chmod +x /home/ubuntu/cockple/scripts/deploy.sh
             bash /home/ubuntu/cockple/scripts/deploy.sh \
               ${{ secrets.DOCKER_REPO }} \
               ${{ github.ref_name }}
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REDIRECT_URI_PROD: ${{ secrets.KAKAO_REDIRECT_URI_PROD }}
+          KAKAO_REDIRECT_URI_STAGING: ${{ secrets.KAKAO_REDIRECT_URI_STAGING }}
+          KAKAO_ADMIN_KEY: ${{ secrets.KAKAO_ADMIN_KEY }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
