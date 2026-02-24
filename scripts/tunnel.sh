@@ -14,7 +14,7 @@ echo "  Redis  -> localhost:6379 -> cockple-redis:6379"
 echo "종료: Ctrl+C"
 
 ssh -N \
-  -L 3306:localhost:3306 \
-  -L 6379:localhost:6379 \
+  -L 3307:localhost:3306 \
+  -L 6380:localhost:6379 \
   -i ~/.ssh/cockple_gcp \
   ubuntu@$GCP_IP
