@@ -1,28 +1,6 @@
-resource "google_project_service" "servicenetworking" {
-  service            = "servicenetworking.googleapis.com"
-  disable_on_destroy = false
-}
-
 resource "google_compute_network" "cockple_vpc" {
   name                    = "cockple-vpc"
   auto_create_subnetworks = false
-}
-
-# Cloud SQL private IP를 위한 VPC peering
-resource "google_compute_global_address" "private_ip_range" {
-  name          = "cockple-private-ip-range"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.cockple_vpc.id
-}
-
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.cockple_vpc.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_range.name]
-
-  depends_on = [google_project_service.servicenetworking]
 }
 
 resource "google_compute_subnetwork" "prod" {
