@@ -29,6 +29,8 @@ services:
     image: redis:7-alpine
     container_name: cockple-redis
     restart: always
+    ports:
+      - "6379:6379"
     command:
       - redis-server
       - --appendonly
@@ -55,9 +57,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
       SPRING_PROFILES_ACTIVE: prod
       DB_PASSWORD: ${DB_PASSWORD}
-      S3_BUCKET: ${S3_BUCKET}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI_PROD}
@@ -79,9 +79,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
       DB_PASSWORD: ${DB_PASSWORD}
-      S3_BUCKET: ${S3_BUCKET}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI_STAGING}
