@@ -10,13 +10,6 @@ resource "google_compute_subnetwork" "prod" {
   network       = google_compute_network.cockple_vpc.id
 }
 
-resource "google_compute_subnetwork" "staging" {
-  name          = "cockple-subnet-staging"
-  ip_cidr_range = "10.0.2.0/24"
-  region        = "us-central1"
-  network       = google_compute_network.cockple_vpc.id
-}
-
 # Cloudflare IP 대역에서만 80 포트 허용 (origin IP 보호)
 resource "google_compute_firewall" "allow_http_cloudflare" {
   name    = "cockple-allow-http-cloudflare"
@@ -45,7 +38,7 @@ resource "google_compute_firewall" "allow_http_cloudflare" {
     "131.0.72.0/22",
   ]
 
-  target_tags = ["cockple-prod", "cockple-staging"]
+  target_tags = ["cockple-prod"]
 }
 
 resource "google_compute_firewall" "allow_ssh" {
@@ -58,5 +51,5 @@ resource "google_compute_firewall" "allow_ssh" {
   }
 
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["cockple-prod", "cockple-staging"]
+  target_tags   = ["cockple-prod"]
 }

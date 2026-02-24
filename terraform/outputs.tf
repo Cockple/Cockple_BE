@@ -1,11 +1,6 @@
 output "prod_ip" {
-  description = "Prod 서버 공인 IP"
+  description = "서버 공인 IP (prod + staging 공용)"
   value       = google_compute_address.prod.address
-}
-
-output "staging_ip" {
-  description = "Staging 서버 공인 IP"
-  value       = google_compute_address.staging.address
 }
 
 output "gcs_bucket_name" {

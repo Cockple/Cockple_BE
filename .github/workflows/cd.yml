@@ -23,25 +23,9 @@ jobs:
         id: vars
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "APP_SECRET=APPLICATION" >> $GITHUB_OUTPUT
             echo "DOCKER_TAG=latest" >> $GITHUB_OUTPUT
-            echo "COMPOSE_FILE=docker-compose.prod.yml" >> $GITHUB_OUTPUT
           else
-            echo "APP_SECRET=APPLICATION_STAGING" >> $GITHUB_OUTPUT
             echo "DOCKER_TAG=staging" >> $GITHUB_OUTPUT
-            echo "COMPOSE_FILE=docker-compose.staging.yml" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Remove existing application.yml
-        run: rm -f src/main/resources/application.yml
-
-      - name: Make application.yml
-        run: |
-          mkdir -p src/main/resources
-          if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "${{ secrets.APPLICATION }}" > src/main/resources/application.yml
-          else
-            echo "${{ secrets.APPLICATION_STAGING }}" > src/main/resources/application.yml
           fi
 
       - name: Build with Gradle
@@ -55,39 +39,39 @@ jobs:
           docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }}:${{ steps.vars.outputs.DOCKER_TAG }} .
           docker push ${{ secrets.DOCKER_REPO }}:${{ steps.vars.outputs.DOCKER_TAG }}
 
-      - name: Deploy_EC2
-        uses: appleboy/ssh-action@master
-        id: deploy
+      - name: Copy files to server
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.KEY }}
+          source: "docker-compose.yml,init-db.sql,nginx/,scripts/"
+          target: /home/ubuntu/cockple
+
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.KEY }}
+          envs: >-
+            DB_PASSWORD,
+            S3_BUCKET,S3_ACCESS_KEY,S3_SECRET_KEY,
+            KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI_PROD,KAKAO_REDIRECT_URI_STAGING,KAKAO_ADMIN_KEY,
+            JWT_SECRET_KEY
           script: |
-            cd /home/ubuntu/home/monitor
-            echo "=== 배포 전 상태 ==="
-            sudo docker ps
-            sudo docker image prune -f
-            sudo docker pull ${{ secrets.DOCKER_REPO }}:${{ steps.vars.outputs.DOCKER_TAG }}
-            
-            if [ "${{ github.ref_name }}" == "main" ]; then
-              sudo docker stop cockple-app || true
-              sudo docker rm -f cockple-app || true
-              if ! sudo docker ps | grep -q cockple-redis; then
-                echo "Redis(prod)가 죽었음, 재시작 중..."
-                sudo docker compose -f docker-compose.prod.yml up -d redis
-                sleep 10
-              fi
-              sudo docker compose -f docker-compose.prod.yml up -d cockple-app
-            else
-              sudo docker stop cockple-app-staging || true
-              sudo docker rm -f cockple-app-staging || true
-              if ! sudo docker ps | grep -q cockple-redis-staging; then
-                echo "Redis(staging)가 죽었음, 재시작 중..."
-                sudo docker compose -f docker-compose.staging.yml up -d redis-staging
-                sleep 10
-              fi
-              sudo docker compose -f docker-compose.staging.yml up -d cockple-app-staging
-            fi
-            
-            echo "=== 배포 후 상태 ==="
-            sudo docker ps
+            chmod +x /home/ubuntu/cockple/scripts/deploy.sh
+            bash /home/ubuntu/cockple/scripts/deploy.sh \
+              ${{ secrets.DOCKER_REPO }} \
+              ${{ github.ref_name }}
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REDIRECT_URI_PROD: ${{ secrets.KAKAO_REDIRECT_URI_PROD }}
+          KAKAO_REDIRECT_URI_STAGING: ${{ secrets.KAKAO_REDIRECT_URI_STAGING }}
+          KAKAO_ADMIN_KEY: ${{ secrets.KAKAO_ADMIN_KEY }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
