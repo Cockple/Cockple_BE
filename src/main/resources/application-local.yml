@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/cockple?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+
+  data:
+    redis:
+      host: localhost
+      database: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: update
