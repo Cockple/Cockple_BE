@@ -17,17 +17,8 @@ spring:
   cache:
     type: redis
 
-cloud:
-  aws:
-    s3:
-      bucket: test-bucket
-    credentials:
-      access-key: test-access-key
-      secret-key: test-secret-key
-    region:
-      static: ap-northeast-2
-    stack:
-      auto: false
+gcs:
+  bucket: test-bucket
 
 kakao:
   client-id: test-client-id
