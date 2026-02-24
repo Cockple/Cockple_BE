@@ -9,10 +9,11 @@ resource "google_compute_address" "staging" {
 }
 
 resource "google_compute_instance" "prod" {
-  name         = "cockple-prod"
-  machine_type = "e2-medium"  # 4GB RAM
-  zone         = "asia-northeast3-b"
-  tags         = ["cockple-prod"]
+  name                      = "cockple-prod"
+  machine_type              = "e2-medium"  # 4GB RAM
+  zone                      = "asia-northeast3-b"
+  tags                      = ["cockple-prod"]
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
@@ -50,10 +51,11 @@ resource "google_compute_instance" "prod" {
 }
 
 resource "google_compute_instance" "staging" {
-  name         = "cockple-staging"
-  machine_type = "e2-micro"  # 1GB RAM, 무료 티어
-  zone         = "us-central1-a"
-  tags         = ["cockple-staging"]
+  name                      = "cockple-staging"
+  machine_type              = "e2-micro"  # 1GB RAM, 무료 티어
+  zone                      = "us-central1-a"
+  tags                      = ["cockple-staging"]
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
