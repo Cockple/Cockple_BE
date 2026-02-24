@@ -11,25 +11,23 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   sql:
     init:
       mode: never
 
   jpa:
+    show_sql: false
     hibernate:
       ddl-auto: update
-    show_sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: false
         use_sql_comments: false
         default_batch_fetch_size: 1000
-        show_sql: false
-
 
   servlet:
     multipart:
@@ -40,6 +38,7 @@ spring:
     redis:
       host: localhost
       port: 6379
+      database: 0
       lettuce:
         pool:
           max-active: 8
@@ -52,6 +51,7 @@ spring:
       write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
+
   cache:
     type: redis
 
@@ -85,4 +85,3 @@ jwt:
 logging:
   level:
     org.hibernate.SQL: WARN
-
