@@ -40,3 +40,33 @@ sudo docker compose up -d $SERVICE
 
 echo "=== 배포 후 상태 ==="
 sudo docker ps
+
+echo "=== 헬스체크 ==="
+for container in cockple-mysql cockple-redis $SERVICE; do
+  for i in $(seq 1 12); do
+    STATUS=$(sudo docker inspect --format='{{.State.Status}}' $container 2>/dev/null)
+    HEALTH=$(sudo docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $container 2>/dev/null)
+
+    if [ "$STATUS" != "running" ]; then
+      echo "FAIL: $container 상태 이상 (status=$STATUS)"
+      sudo docker logs --tail 20 $container
+      exit 1
+    fi
+
+    if [ "$HEALTH" == "healthy" ] || [ "$HEALTH" == "none" ]; then
+      echo "OK: $container (status=$STATUS, health=$HEALTH)"
+      break
+    fi
+
+    if [ $i -eq 12 ]; then
+      echo "FAIL: $container 헬스체크 타임아웃 (health=$HEALTH)"
+      sudo docker logs --tail 20 $container
+      exit 1
+    fi
+
+    echo "대기 중: $container ($i/12, health=$HEALTH)..."
+    sleep 5
+  done
+done
+
+echo "=== 배포 성공 ==="
