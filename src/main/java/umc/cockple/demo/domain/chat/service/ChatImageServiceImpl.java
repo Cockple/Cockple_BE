@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.chat.service;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.google.cloud.storage.Blob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -66,9 +65,9 @@ public class ChatImageServiceImpl implements ChatImageService{
         //채팅 파일 조회
         ChatMessageImg chatImage = findChatImageOrThrow(imageId);
 
-        //S3에서 파일 객체 직접 가져오기
-        S3Object s3Object = imageService.downloadFile(chatImage.getImgKey());
-        ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatImage, s3Object);
+        //GCS에서 파일 객체 직접 가져오기
+        Blob blob = imageService.downloadFile(chatImage.getImgKey());
+        ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatImage, blob);
 
         log.info("이미지 다운로드 완료 - imageName: {}", chatImage.getOriginalFileName());
         return responseEntity;
@@ -96,12 +95,11 @@ public class ChatImageServiceImpl implements ChatImageService{
         downloadTokenRepository.delete(token);
     }
 
-    private ResponseEntity<Resource> createDownloadResponseEntity(ChatMessageImg chatMessageImg, S3Object s3Object) {
-        //S3 객체에서 직접 메타데이터를 가져오기
-        long contentLength = s3Object.getObjectMetadata().getContentLength();
-        String contentType = s3Object.getObjectMetadata().getContentType();
-        S3ObjectInputStream inputStream = s3Object.getObjectContent();
-        Resource resource = new InputStreamResource(inputStream);
+    private ResponseEntity<Resource> createDownloadResponseEntity(ChatMessageImg chatMessageImg, Blob blob) {
+        //GCS 객체에서 직접 메타데이터를 가져오기
+        long contentLength = blob.getSize();
+        String contentType = blob.getContentType();
+        Resource resource = new InputStreamResource(new java.io.ByteArrayInputStream(blob.getContent()));
 
         //헤더 생성
         ContentDisposition contentDisposition = ContentDisposition.builder("attachment")

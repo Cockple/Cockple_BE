@@ -1,10 +1,6 @@
 package umc.cockple.demo.domain.image.service;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.google.cloud.storage.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,11 +23,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ImageService {
 
-    @Value("${cloud.aws.s3.bucket}")
+    @Value("${gcs.bucket}")
     private String bucket;
 
-    private final AmazonS3 amazonS3;
-
+    private final Storage storage;
 
     public ImageUploadDTO.Response uploadImage(MultipartFile image, DomainType domainType) {
         if (image == null || image.isEmpty()) {
@@ -41,8 +36,8 @@ public class ImageService {
         log.info("[이미지 업로드 시작]");
 
         String originalFileName = image.getOriginalFilename();
-        String key = getFileKey(image, domainType); // 예: contest-images/uuid.jpg
-        String imgUrl = uploadToS3(image, key, false);
+        String key = getFileKey(image, domainType);
+        String imgUrl = uploadToGcs(image, key);
 
         log.info("[이미지 업로드 완료]");
         return ImageUploadDTO.Response.builder()
@@ -63,7 +58,7 @@ public class ImageService {
 
         String originalFileName = file.getOriginalFilename();
         String key = getFileKey(file, domainType);
-        String fileUrl = uploadToS3(file, key, false);
+        String fileUrl = uploadToGcs(file, key);
 
         log.info("[파일 업로드 완료]");
         return FileUploadDTO.Response.builder()
@@ -75,14 +70,9 @@ public class ImageService {
                 .build();
     }
 
-    /**
-     * 다중 이미지 업로드
-     * @param images MultipartFile 이미지 리스트
-     * @return 업로드된 이미지 URL 리스트
-     */
     public List<ImageUploadDTO.Response> uploadImages(List<MultipartFile> images, DomainType domainType) {
         if (images == null || images.isEmpty()) {
-            return List.of(); // 빈 리스트 반환
+            return List.of();
         }
 
         return images.stream()
@@ -92,31 +82,27 @@ public class ImageService {
 
     public void delete(String imgKey) {
         try {
-            amazonS3.deleteObject(bucket, imgKey);
-            log.info("[S3 삭제 성공] {}", imgKey);
+            storage.delete(BlobId.of(bucket, imgKey));
+            log.info("[GCS 삭제 성공] {}", imgKey);
         } catch (Exception e) {
-            log.error("[S3 삭제 실패] {}", e.getMessage());
+            log.error("[GCS 삭제 실패] {}", e.getMessage());
             throw new S3Exception(S3ErrorCode.IMAGE_DELETE_EXCEPTION);
         }
     }
 
-    private String uploadToS3(MultipartFile file, String key, boolean useMetadata) {
+    private String uploadToGcs(MultipartFile file, String key) {
         try {
-            if (useMetadata) {
-                ObjectMetadata metadata = new ObjectMetadata();
-                metadata.setContentLength(file.getSize());
-                metadata.setContentType(file.getContentType());
-                amazonS3.putObject(new PutObjectRequest(bucket, key, file.getInputStream(), metadata));
-            } else {
-                amazonS3.putObject(new PutObjectRequest(bucket, key, file.getInputStream(), null));
-            }
-            return amazonS3.getUrl(bucket, key).toString();
-        } catch (AmazonServiceException e) {
-            log.error("[S3 업로드 실패 - AWS 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucket, key)
+                    .setContentType(file.getContentType())
+                    .build();
+            storage.create(blobInfo, file.getBytes());
+            return String.format("https://storage.googleapis.com/%s/%s", bucket, key);
         } catch (IOException e) {
-            log.error("[S3 업로드 실패 - IO 예외] {}", e.getMessage());
+            log.error("[GCS 업로드 실패 - IO 예외] {}", e.getMessage());
             throw new S3Exception(S3ErrorCode.FILE_UPLOAD_IO_EXCEPTION);
+        } catch (StorageException e) {
+            log.error("[GCS 업로드 실패 - Storage 예외] {}", e.getMessage());
+            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
         }
     }
 
@@ -125,20 +111,22 @@ public class ImageService {
             return null;
         }
 
-        // 원본 파일명에서 확장자 추출
         String originalFilename = file.getOriginalFilename();
         String extension = StringUtils.getFilenameExtension(originalFilename);
-        // UUID 기반 유니크 키 생성
         String uuid = UUID.randomUUID().toString();
 
         return domainType.getDirectory() + "/" + uuid + "." + extension;
     }
 
     public String getUrlFromKey(String key) {
-        return amazonS3.getUrl(bucket, key).toString();
+        return String.format("https://storage.googleapis.com/%s/%s", bucket, key);
     }
 
-    public S3Object downloadFile(String fileKey) {
-        return amazonS3.getObject(bucket, fileKey);
+    public Blob downloadFile(String fileKey) {
+        Blob blob = storage.get(BlobId.of(bucket, fileKey));
+        if (blob == null) {
+            throw new S3Exception(S3ErrorCode.IMAGE_DELETE_EXCEPTION);
+        }
+        return blob;
     }
 }

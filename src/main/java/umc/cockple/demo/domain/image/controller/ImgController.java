@@ -26,7 +26,7 @@ public class ImgController {
     private final ImageService imageService;
 
     @PostMapping(value = "/s3/upload/img", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "이미지 업로드", description = "S3에 이미지를 업로드하고 이미지 URL과 imgKey를 반환합니다.")
+    @Operation(summary = "이미지 업로드", description = "GCS에 이미지를 업로드하고 이미지 URL과 imgKey를 반환합니다.")
     public BaseResponse<ImageUploadDTO.Response> imgUpload(@RequestPart("image") MultipartFile image,
                                                            @RequestParam("domainType") DomainType domainType) {
 
@@ -35,7 +35,7 @@ public class ImgController {
 
 
     @PostMapping(value = "/s3/upload/imgs", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "이미지 여러장 업로드", description = "S3에 이미지 여러장을 업로드하고 이미지 URL과 imgKey를 반환합니다.")
+    @Operation(summary = "이미지 여러장 업로드", description = "GCS에 이미지 여러장을 업로드하고 이미지 URL과 imgKey를 반환합니다.")
     public BaseResponse<List<ImageUploadDTO.Response>> imgUpload(@RequestPart("image") List<MultipartFile> images,
                                                                 @RequestParam("domainType") DomainType domainType) {
 
@@ -43,7 +43,7 @@ public class ImgController {
     }
 
     @PostMapping(value = "/s3/upload/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "파일 업로드", description = "S3에 파일을 업로드하고 파일정보를 반환합니다.")
+    @Operation(summary = "파일 업로드", description = "GCS에 파일을 업로드하고 파일정보를 반환합니다.")
     public BaseResponse<FileUploadDTO.Response> fileUpload(@RequestPart("file") MultipartFile file,
                                                   @RequestParam("domainType") DomainType domainType) {
 

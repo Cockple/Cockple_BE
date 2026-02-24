@@ -1,0 +1,114 @@
+name: cockple
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cockple-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  redis:
+    image: redis:7-alpine
+    container_name: cockple-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 200mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    mem_limit: 256m
+    memswap_limit: 384m
+
+  cockple-app:
+    container_name: cockple-app
+    image: kanghana1/cockple:latest
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
+      SPRING_PROFILES_ACTIVE: prod
+      DB_PASSWORD: ${DB_PASSWORD}
+      GCS_BUCKET: ${GCS_BUCKET}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI_PROD}
+      KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 1200m
+    memswap_limit: 1536m
+
+  cockple-app-staging:
+    container_name: cockple-app-staging
+    image: kanghana1/cockple:staging
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
+      SPRING_PROFILES_ACTIVE: staging
+      DB_PASSWORD: ${DB_PASSWORD}
+      GCS_BUCKET: ${GCS_BUCKET}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI_STAGING}
+      KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 1024m
+    memswap_limit: 1280m
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: cockple-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    mem_limit: 64m
+    memswap_limit: 128m
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  default:
+    name: cockple_network
