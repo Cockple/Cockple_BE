@@ -69,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cockple.store", "https://cockple-fe.vercel.app")); // 배포 시에는 도메인 지정 권장
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cockple.store", "https://staging.cockple.store", "https://cockple-fe.vercel.app")); // 배포 시에는 도메인 지정 권장
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
