@@ -2,8 +2,6 @@ name: COCKPLE_CD
 on:
   push:
     branches: [ "main", "develop" ]
-  pull_request:
-    branches: [ "develop"]
 
 permissions:
   contents: read
