@@ -32,6 +32,11 @@ resource "google_compute_instance" "prod" {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
   }
 
+  service_account {
+    email  = google_service_account.cockple_app.email
+    scopes = ["cloud-platform"]  # GCS 등 GCP 서비스 접근
+  }
+
   metadata_startup_script = <<-EOF
     #!/bin/bash
     apt-get update -y
@@ -66,6 +71,11 @@ resource "google_compute_instance" "staging" {
 
   metadata = {
     ssh-keys = "ubuntu:${var.ssh_public_key}"
+  }
+
+  service_account {
+    email  = google_service_account.cockple_app.email
+    scopes = ["cloud-platform"]
   }
 
   metadata_startup_script = <<-EOF
