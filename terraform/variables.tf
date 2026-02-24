@@ -24,3 +24,15 @@ variable "ssh_public_key" {
   description = "인스턴스 접속용 SSH 공개키"
   type        = string
 }
+
+variable "db_password" {
+  description = "Cloud SQL prod 유저 비밀번호"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_staging_password" {
+  description = "Cloud SQL staging 유저 비밀번호"
+  type        = string
+  sensitive   = true
+}
