@@ -16,7 +16,7 @@ resource "google_storage_bucket" "cockple_assets" {
   uniform_bucket_level_access = true
 
   cors {
-    origin          = ["https://cockple.shop", "https://staging.cockple.shop"]
+    origin          = ["https://cockple.store", "https://staging.cockple.store"]
     method          = ["GET", "PUT", "POST", "DELETE"]
     response_header = ["Content-Type"]
     max_age_seconds = 3600

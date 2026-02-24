@@ -16,7 +16,7 @@ variable "cloudflare_api_token" {
 }
 
 variable "cloudflare_zone_id" {
-  description = "cockple.shop Cloudflare Zone ID"
+  description = "cockple.store Cloudflare Zone ID"
   type        = string
 }
 
