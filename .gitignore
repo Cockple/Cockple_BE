@@ -20,6 +20,7 @@ bin/
 
 ### IntelliJ IDEA ###
 .idea
+src/main/generated/
 *.iws
 *.iml
 *.ipr
