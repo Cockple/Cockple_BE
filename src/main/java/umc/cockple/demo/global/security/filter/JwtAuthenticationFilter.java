@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,8 +18,6 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
-import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
-import umc.cockple.demo.global.security.domain.CustomUserDetails;
 
 import java.io.IOException;
 

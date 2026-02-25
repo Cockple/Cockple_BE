@@ -26,7 +26,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
     private final RestAuthenticationEntryPoint restEntryPoint;
 
 
@@ -47,7 +46,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(e -> e.authenticationEntryPoint(restEntryPoint))
                 .httpBasic(AbstractHttpConfigurer::disable)
