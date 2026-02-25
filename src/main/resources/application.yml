@@ -74,6 +74,5 @@ jwt:
 logging:
   level:
     org.hibernate.SQL: WARN
-    org.springframework.security: DEBUG
-    org.springframework.web.cors: DEBUG
+
 
