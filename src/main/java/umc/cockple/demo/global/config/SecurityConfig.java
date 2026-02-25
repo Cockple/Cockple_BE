@@ -13,9 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
-import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
 
 import java.util.List;
@@ -26,7 +24,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
     private final RestAuthenticationEntryPoint restEntryPoint;
 
 
@@ -47,7 +44,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(e -> e.authenticationEntryPoint(restEntryPoint))
                 .httpBasic(AbstractHttpConfigurer::disable)
