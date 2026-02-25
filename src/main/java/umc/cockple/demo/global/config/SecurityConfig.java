@@ -13,9 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
-import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
 
 import java.util.List;
