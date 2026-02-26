@@ -30,3 +30,9 @@ resource "google_storage_bucket_iam_member" "app_storage_admin" {
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.cockple_app.email}"
 }
+
+resource "google_storage_bucket_iam_member" "public_read" {
+  bucket = google_storage_bucket.cockple_assets.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
