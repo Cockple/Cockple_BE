@@ -83,9 +83,10 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 운동, 모임에서 나가기
+        // 참여중인 운동, 모임에서 나가기, keyword 삭제
         memberExerciseRepository.deleteAllByMember(member);
         memberPartyRepository.deleteAllByMember(member);
+        memberKeywordRepository.deleteAllByMember(member);
 
         // 카카오 연결 끊기
         kakaoOauthService.unlinkAccess(member);
