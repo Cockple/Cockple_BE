@@ -21,6 +21,7 @@ public class DirectChatRoomDTO {
             Long chatRoomId,
             String displayName,
             String profileImgUrl,
+            boolean isWithdrawn,
             int unreadCount,
             LastMessageInfo lastMessage
     ) {

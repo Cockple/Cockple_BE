@@ -73,6 +73,7 @@ public class ChatConverter {
 
     public DirectChatRoomDTO.ChatRoomInfo toDirectChatRoomInfo(ChatRoom chatRoom,
                                                                ChatRoomMember chatRoomMember,
+                                                               boolean isWithdrawn,
                                                                int unreadCount,
                                                                DirectChatRoomDTO.LastMessageInfo lastMessageInfo,
                                                                String imgUrl) {
@@ -80,6 +81,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoom.getId())
                 .displayName(chatRoomMember.getDisplayName())
                 .profileImgUrl(imgUrl)
+                .isWithdrawn(isWithdrawn)
                 .unreadCount(unreadCount)
                 .lastMessage(lastMessageInfo)
                 .build();
