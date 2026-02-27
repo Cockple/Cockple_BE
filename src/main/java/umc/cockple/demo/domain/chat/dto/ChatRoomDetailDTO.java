@@ -23,6 +23,7 @@ public class ChatRoomDetailDTO {
             ChatRoomType chatRoomType,
             String displayName,
             String profileImageUrl,
+            boolean isCounterPartWithdrawn,
             int memberCount,
             Long lastReadMessageId
     ) {

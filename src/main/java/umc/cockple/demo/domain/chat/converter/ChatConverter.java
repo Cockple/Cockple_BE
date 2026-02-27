@@ -154,6 +154,7 @@ public class ChatConverter {
             ChatRoom chatRoom,
             String displayName,
             String profileImageUrl,
+            boolean isCounterPartWithdrawn,
             int memberCount,
             Long lastReadMessageId) {
         return ChatRoomDetailDTO.ChatRoomInfo.builder()
@@ -161,6 +162,7 @@ public class ChatConverter {
                 .chatRoomType(chatRoom.getType())
                 .displayName(displayName)
                 .profileImageUrl(profileImageUrl)
+                .isCounterPartWithdrawn(isCounterPartWithdrawn)
                 .memberCount(memberCount)
                 .lastReadMessageId(lastReadMessageId)
                 .build();

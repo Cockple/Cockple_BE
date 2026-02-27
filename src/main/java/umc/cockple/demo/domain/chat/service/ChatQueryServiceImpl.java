@@ -262,6 +262,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {
         String displayName;
         String profileImageUrl = null;
+        boolean isCounterPartWithdrawn = false;
 
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
@@ -269,6 +270,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
             displayName = member.getMemberName();
             profileImageUrl = getImageUrl(member.getProfileImg());
+            isCounterPartWithdrawn = member.getIsActive() == MemberStatus.INACTIVE;
         } else {
             displayName = chatRoom.getParty().getPartyName();
             profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -281,6 +283,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 chatRoom,
                 displayName,
                 profileImageUrl,
+                isCounterPartWithdrawn,
                 memberCount,
                 lastReadMessageId);
     }
