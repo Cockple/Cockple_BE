@@ -73,6 +73,7 @@ public class ChatConverter {
 
     public DirectChatRoomDTO.ChatRoomInfo toDirectChatRoomInfo(ChatRoom chatRoom,
                                                                ChatRoomMember chatRoomMember,
+                                                               boolean isWithdrawn,
                                                                int unreadCount,
                                                                DirectChatRoomDTO.LastMessageInfo lastMessageInfo,
                                                                String imgUrl) {
@@ -80,6 +81,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoom.getId())
                 .displayName(chatRoomMember.getDisplayName())
                 .profileImgUrl(imgUrl)
+                .isWithdrawn(isWithdrawn)
                 .unreadCount(unreadCount)
                 .lastMessage(lastMessageInfo)
                 .build();
@@ -152,6 +154,7 @@ public class ChatConverter {
             ChatRoom chatRoom,
             String displayName,
             String profileImageUrl,
+            boolean isCounterPartWithdrawn,
             int memberCount,
             Long lastReadMessageId) {
         return ChatRoomDetailDTO.ChatRoomInfo.builder()
@@ -159,6 +162,7 @@ public class ChatConverter {
                 .chatRoomType(chatRoom.getType())
                 .displayName(displayName)
                 .profileImageUrl(profileImageUrl)
+                .isCounterPartWithdrawn(isCounterPartWithdrawn)
                 .memberCount(memberCount)
                 .lastReadMessageId(lastReadMessageId)
                 .build();
