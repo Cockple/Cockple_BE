@@ -202,26 +202,20 @@ public class PartyCommandServiceImpl implements PartyCommandService {
             memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)
                     .ifPresent(mp -> {
                         mp.changeRole(Role.party_MEMBER);
+                        createRoleNotification(partyId, NotificationTarget.PARTY_SUBOWNER_RELEASED, mp.getMember().getNickname());
                     });
         }
 
         // 역할 변경
         targetMemberParty.changeRole(newRole);
-        log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
-    }
 
-    // 모임 전체 멤버에게 알림 발송
-    private void sendRoleNotificationToAll(Long partyId, String subjectNickname, NotificationTarget target) {
-        List<MemberParty> allMembers = memberPartyRepository.findAllByPartyIdWithMember(partyId);
-        allMembers.forEach(mp -> {
-            CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
-                    .member(mp.getMember())
-                    .partyId(partyId)
-                    .target(target)
-                    .subjectName(subjectNickname)
-                    .build();
-            notificationCommandService.createNotification(dto);
-        });
+        // 알림 발송 (전체 멤버 대상)
+        NotificationTarget notifTarget = (newRole == Role.party_SUBMANAGER)
+                ? NotificationTarget.PARTY_SUBOWNER_ASSIGNED
+                : NotificationTarget.PARTY_SUBOWNER_RELEASED;
+        createRoleNotification(partyId, notifTarget, targetMember.getNickname());
+
+        log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
     }
 
     @Override
@@ -583,7 +577,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         notificationCommandService.createNotification(dto);
     }
 
-    //알림 생성 (INVITE 타입)
+    //알림 생성 (초대)
     private void createInviteNotification(Member member, Long partyId, NotificationTarget notificationTarget, Long inviteId) {
         CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                 .member(member)
@@ -594,6 +588,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         notificationCommandService.createNotification(dto);
     }
 
+    //알림 생성 (초대 수락)
     private void createInviteApprovedNotification(Member member, Long partyId, NotificationTarget notificationTarget, Member invitee) {
         CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                 .member(member)
@@ -602,5 +597,19 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                 .subjectName(invitee.getNickname())
                 .build();
         notificationCommandService.createNotification(dto);
+    }
+
+    //전체 알림 생성 (역할)
+    private void createRoleNotification(Long partyId, NotificationTarget notificationTarget, String subjectNickname) {
+        List<MemberParty> allMembers = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+        allMembers.forEach(mp -> {
+            CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                    .member(mp.getMember())
+                    .partyId(partyId)
+                    .target(notificationTarget)
+                    .subjectName(subjectNickname)
+                    .build();
+            notificationCommandService.createNotification(dto);
+        });
     }
 }
