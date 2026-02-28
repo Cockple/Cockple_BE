@@ -130,6 +130,8 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         validatePartyIsActive(party);
         //모임장인 경우, 탈퇴가 불가능하도록 검증
         validateIsNotOwner(party, memberId);
+        //부모임장인 경우, 탈퇴가 불가능하도록 검증
+        validateIsNotSubOwner(party, memberId);
         //해당 모임의 멤버인지 검증 및 조회
         MemberParty memberParty = findMemberPartyOrThrow(party, member);
 
@@ -180,7 +182,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         // 모임, 사용자 조회
         Party party = findPartyOrThrow(partyId);
-        Member currentMember = findMemberOrThrow(currentMemberId);
         Member targetMember = findMemberOrThrow(targetMemberId);
         MemberParty targetMemberParty = findMemberPartyOrThrow(party, targetMember);
 
@@ -202,7 +203,8 @@ public class PartyCommandServiceImpl implements PartyCommandService {
             memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)
                     .ifPresent(mp -> {
                         mp.changeRole(Role.party_MEMBER);
-                        createRoleNotification(partyId, NotificationTarget.PARTY_SUBOWNER_RELEASED, mp.getMember().getNickname());
+                        createRoleNotification(partyId, NotificationTarget.PARTY_SUBOWNER_RELEASED,
+                                mp.getMember().getNickname());
                     });
         }
 
@@ -381,6 +383,16 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         if (party.getOwnerId().equals(memberId)) {
             throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_OWNER);
         }
+    }
+
+    // 부모임장은 권한이 없음을 검증
+    private void validateIsNotSubOwner(Party party, Long memberId) {
+        memberPartyRepository.findByPartyIdAndRole(party.getId(), Role.party_SUBMANAGER)
+                .ifPresent(mp -> {
+                    if (mp.getMember().getId().equals(memberId)) {
+                        throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_SUBOWNER);
+                    }
+                });
     }
 
     //모임 생성 검증
