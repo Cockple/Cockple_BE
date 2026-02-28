@@ -170,6 +170,59 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         log.info("모임 멤버 삭제 완료 - partyId: {}, removed: {}", partyId, memberIdToRemove);
     }
 
+    @Override
+    public void updateMemberRole(Long partyId, Long targetMemberId, Long currentMemberId,
+                                 PartyMemberRoleDTO.Request request) {
+        log.info("멤버 역할 변경 시작 - partyId: {}, targetMemberId: {}, currentMemberId: {}", partyId, targetMemberId,
+                currentMemberId);
+
+        Role newRole = request.role();
+
+        // 모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member currentMember = findMemberOrThrow(currentMemberId);
+        Member targetMember = findMemberOrThrow(targetMemberId);
+        MemberParty targetMemberParty = findMemberPartyOrThrow(party, targetMember);
+
+        // 모임 활성화 검증
+        validatePartyIsActive(party);
+        // 모임장 권한 검증
+        validateOwnerPermission(party, currentMemberId);
+        // 대상이 모임장인 경우 변경 불가
+        if (targetMemberParty.getRole() == Role.party_MANAGER) {
+            throw new PartyException(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER);
+        }
+        // 이미 같은 역할인 경우
+        if (targetMemberParty.getRole() == newRole) {
+            throw new PartyException(PartyErrorCode.ALREADY_SAME_ROLE);
+        }
+
+        // SUBOWNER 지정 시, 기존 부모임장 자동 해제
+        if (newRole == Role.party_SUBMANAGER) {
+            memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)
+                    .ifPresent(mp -> {
+                        mp.changeRole(Role.party_MEMBER);
+                    });
+        }
+
+        // 역할 변경
+        targetMemberParty.changeRole(newRole);
+        log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
+    }
+
+    // 모임 전체 멤버에게 알림 발송
+    private void sendRoleNotificationToAll(Long partyId, String subjectNickname, NotificationTarget target) {
+        List<MemberParty> allMembers = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+        allMembers.forEach(mp -> {
+            CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                    .member(mp.getMember())
+                    .partyId(partyId)
+                    .target(target)
+                    .subjectName(subjectNickname)
+                    .build();
+            notificationCommandService.createNotification(dto);
+        });
+    }
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
