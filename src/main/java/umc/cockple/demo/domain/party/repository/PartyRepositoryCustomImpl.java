@@ -51,7 +51,6 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
                                         .where(memberParty.member.id.eq(memberId))
                         ),
                         //동적 필터 조건
-                        partyNameContains(filter.search()),
                         addr1Eq(filter.addr1()),
                         addr2Eq(filter.addr2()),
                         levelIn(filter.level()),
@@ -72,10 +71,6 @@ public class PartyRepositoryCustomImpl implements PartyRepositoryCustom {
         }
 
         return new SliceImpl<>(content, pageable, hasNext);
-    }
-
-    private BooleanExpression partyNameContains(String search) {
-        return StringUtils.hasText(search) ? party.partyName.contains(search) : null;
     }
 
     private BooleanExpression addr1Eq(String addr1) {

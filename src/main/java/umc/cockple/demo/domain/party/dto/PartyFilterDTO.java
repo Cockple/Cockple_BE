@@ -10,7 +10,6 @@ public class PartyFilterDTO {
     @Builder
     @Schema(name = "PartyFilterRequestDTO", description = "모임 추천 조회 요청")
     public record Request(
-            String search,
             String addr1,
             String addr2,
             List<String> level,

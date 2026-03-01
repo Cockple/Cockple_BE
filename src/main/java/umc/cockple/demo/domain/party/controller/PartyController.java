@@ -77,12 +77,11 @@ public class PartyController {
     }
 
     @GetMapping("/my/parties/suggestions")
-    @Operation(summary = "모임 추천 조회",
+    @Operation(summary = "추천 모임 조회",
             description = "사용자에게 추천되는 모임 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
-            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "true") boolean isCockpleRecommend,
             @RequestParam(required = false) String addr1,
             @RequestParam(required = false) String addr2,
@@ -97,7 +96,6 @@ public class PartyController {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
-                .search(search)
                 .addr1(addr1)
                 .addr2(addr2)
                 .level(level)

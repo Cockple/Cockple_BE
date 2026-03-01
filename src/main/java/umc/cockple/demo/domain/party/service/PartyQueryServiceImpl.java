@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -103,7 +102,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
         if (isCockpleRecommend) {
             //--- 콕플 추천 로직 실행 ---
-            partySlice = getCockpleRecommendedParties(memberId, filter.search(), pageable);
+            partySlice = getCockpleRecommendedParties(memberId, pageable);
         } else {
             //--- 필터 조회 로직 실행 ---
             Pageable sortedPageable = createSortedPageable(pageable, sort); //정렬 기준 문자 검증, Pageable 객체 생성
@@ -298,29 +297,18 @@ public class PartyQueryServiceImpl implements PartyQueryService{
 
     // ========== 비즈니스 로직 메서드 ==========
     //콕플 추천 로직을 처리
-    private Slice<Party> getCockpleRecommendedParties(Long memberId, String search, Pageable pageable) {
+    private Slice<Party> getCockpleRecommendedParties(Long memberId, Pageable pageable) {
         //추천의 기준이 되는 정보 조회
         RecommendedPartiesInfo partiesInfo = getRecommendedPartiesInfo(memberId);
         //지역, 나이대, 급수로 필터링 된 모임 목록 조회
         List<Party> filteredParties = findFilteredParties(partiesInfo);
 
-        //이름 검색 필터 적용
-        List<Party> searchedParties = filterByName(filteredParties, search);
         //키워드 일치 개수로 정렬
         List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
         //수동으로 페이징
         Slice<Party> partySlice = paginate(sortedParties, pageable);
 
         return partySlice;
-    }
-
-    // 이름으로 모임 필터링
-    private List<Party> filterByName(List<Party> parties, String search) {
-        if (!StringUtils.hasText(search))
-            return parties;
-        return parties.stream()
-                .filter(p -> p.getPartyName().contains(search))
-                .toList();
     }
 
     //정렬 로직 처리
