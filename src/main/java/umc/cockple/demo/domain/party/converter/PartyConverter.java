@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
@@ -217,7 +218,7 @@ public class PartyConverter {
         };
     }
 
-    private String getProfileUrl(umc.cockple.demo.domain.member.domain.ProfileImg profileImg) {
+    private String getProfileUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
             return imageService.getUrlFromKey(profileImg.getImgKey());
         }
