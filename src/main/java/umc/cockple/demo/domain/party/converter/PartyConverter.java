@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
@@ -23,6 +24,8 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class PartyConverter {
+
+    private final ImageService imageService;
 
     public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty, String imgUrl) {
         Party party = memberParty.getParty();
@@ -140,8 +143,8 @@ public class PartyConverter {
         Member member = request.getMember();
         // status가 PENDING이 아닐 경우에만 updatedAt 값을 설정
         LocalDateTime updatedAt = (request.getStatus() != RequestStatus.PENDING) ? request.getUpdatedAt() : null;
-        //이미지가 null인 경우 null을 전달
-        String imageUrl = (member.getProfileImg() != null) ? member.getProfileImg().getImgKey() : null;
+        // 이미지 키를 URL로 변환
+        String imageUrl = getProfileUrl(member.getProfileImg());
         return PartyJoinDTO.Response.builder()
                 .joinRequestId(request.getId())
                 .userId(member.getId())
@@ -171,7 +174,7 @@ public class PartyConverter {
                     return PartyMemberDTO.MemberDetail.builder()
                             .memberId(member.getId())
                             .nickname(member.getNickname())
-                            .profileImageUrl(member.getProfileImg() != null ? member.getProfileImg().getImgKey() : null)
+                            .profileImageUrl(getProfileUrl(member.getProfileImg()))
                             .role(mp.getRole().name())
                             .gender(member.getGender().name())
                             .level(member.getLevel().getKoreanName())
@@ -213,5 +216,12 @@ public class PartyConverter {
             case "party_MEMBER" -> 2; // 일반 멤버
             default -> 99;
         };
+    }
+
+    private String getProfileUrl(ProfileImg profileImg) {
+        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
+            return imageService.getUrlFromKey(profileImg.getImgKey());
+        }
+        return null;
     }
 }
