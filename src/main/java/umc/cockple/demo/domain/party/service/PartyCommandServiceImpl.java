@@ -195,7 +195,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         }
         // 이미 같은 역할인 경우
         if (targetMemberParty.getRole() == newRole) {
-            throw new PartyException(PartyErrorCode.ALREADY_SAME_ROLE);
+            return;
         }
 
         // SUBOWNER 지정 시, 기존 부모임장 자동 해제

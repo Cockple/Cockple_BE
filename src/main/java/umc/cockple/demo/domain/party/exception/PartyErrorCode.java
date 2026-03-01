@@ -47,8 +47,7 @@ public enum PartyErrorCode implements BaseErrorCode {
     CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "PARTY408", "자기 자신을 모임에서 삭제할 수 없습니다."),
     INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "PARTY409", "처리 대기중인 초대가 존재합니다."),
     INVITATION_ALREADY_ACTIONS(HttpStatus.CONFLICT, "PARTY410", "이미 처리된 모임 초대입니다."),
-    CANNOT_ASSIGN_TO_OWNER(HttpStatus.FORBIDDEN, "PARTY411", "모임장의 역할은 변경할 수 없습니다."),
-    ALREADY_SAME_ROLE(HttpStatus.CONFLICT, "PARTY412", "해당 멤버는 이미 요청한 역할을 가지고 있습니다.");
+    CANNOT_ASSIGN_TO_OWNER(HttpStatus.FORBIDDEN, "PARTY411", "모임장의 역할은 변경할 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
