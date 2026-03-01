@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.global.enums.Role;
 
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
@@ -282,6 +283,17 @@ public class MemberCommandService {
 
         if (isLeader) {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
+        }
+
+        // 활성화 된 모임의 부모임장인 경우 -> 탈퇴 불가
+        boolean isSubOwner = member.getMemberParties().stream()
+                .anyMatch(memberParty ->
+                        memberParty.getRole() == Role.party_SUBMANAGER
+                                && memberParty.getStatus() == MemberPartyStatus.ACTIVE
+                );
+
+        if (isSubOwner) {
+            throw new MemberException(MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
         }
     }
 }

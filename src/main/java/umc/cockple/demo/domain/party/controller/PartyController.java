@@ -213,6 +213,22 @@ public class PartyController {
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 
+    @PatchMapping("/parties/{partyId}/members/{memberId}/role")
+    @Operation(summary = "멤버 역할(부모임장) 설정", description = "모임장이 특정 멤버를 부모임장으로 지정하거나 해제합니다.")
+    @ApiResponse(responseCode = "200", description = "역할 변경 성공")
+    @ApiResponse(responseCode = "400", description = "유효하지 않은 역할 값")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음 또는 모임장 역할 변경 시도")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 멤버")
+    public BaseResponse<Void> updateMemberRole(
+            @PathVariable Long partyId,
+            @PathVariable Long memberId,
+            @RequestBody @Valid PartyMemberRoleDTO.Request request) {
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        partyCommandService.updateMemberRole(partyId, memberId, currentMemberId, request);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
     @PostMapping("/parties/{partyId}/join-requests")
     @Operation(summary = "모임 가입 신청",
             description = "사용자가 특정 모임에 가입을 신청합니다")

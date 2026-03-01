@@ -42,7 +42,6 @@ public class NotificationCommandService {
     private final NotificationMessageGenerator notificationMessageGenerator;
     private final ObjectMapper objectMapper;
 
-
     // 알림 타입 변경 (초대 수락, 거절에 사용)
     public Response markAsReadNotification(Long memberId, Long notificationId, NotificationType type) {
         Notification notification = findByNotificationId(notificationId);
@@ -96,7 +95,11 @@ public class NotificationCommandService {
                 title = "새로운 모임";
             } else if (dto.target() == NotificationTarget.PARTY_INVITE_APPROVED) {
                 content = notificationMessageGenerator.generateInviteApprovedMessage(dto.subjectName());
-            }else {
+            } else if (dto.target() == NotificationTarget.PARTY_SUBOWNER_ASSIGNED) {
+                content = notificationMessageGenerator.generateSubOwnerAssignedMessage(dto.subjectName());
+            } else if (dto.target() == NotificationTarget.PARTY_SUBOWNER_RELEASED) {
+                content = notificationMessageGenerator.generateSubOwnerReleasedMessage(dto.subjectName());
+            } else {
                 content = notificationMessageGenerator.generateJoinRequestApprovedMessage();
             }
 

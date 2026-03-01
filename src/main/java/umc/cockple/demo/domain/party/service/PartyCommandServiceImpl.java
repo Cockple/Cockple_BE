@@ -130,6 +130,8 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         validatePartyIsActive(party);
         //모임장인 경우, 탈퇴가 불가능하도록 검증
         validateIsNotOwner(party, memberId);
+        //부모임장인 경우, 탈퇴가 불가능하도록 검증
+        validateIsNotSubOwner(party, memberId);
         //해당 모임의 멤버인지 검증 및 조회
         MemberParty memberParty = findMemberPartyOrThrow(party, member);
 
@@ -170,6 +172,53 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         log.info("모임 멤버 삭제 완료 - partyId: {}, removed: {}", partyId, memberIdToRemove);
     }
 
+    @Override
+    public void updateMemberRole(Long partyId, Long targetMemberId, Long currentMemberId,
+                                 PartyMemberRoleDTO.Request request) {
+        log.info("멤버 역할 변경 시작 - partyId: {}, targetMemberId: {}, currentMemberId: {}", partyId, targetMemberId,
+                currentMemberId);
+
+        Role newRole = request.role();
+
+        // 모임, 사용자 조회
+        Party party = findPartyOrThrow(partyId);
+        Member targetMember = findMemberOrThrow(targetMemberId);
+        MemberParty targetMemberParty = findMemberPartyOrThrow(party, targetMember);
+
+        // 모임 활성화 검증
+        validatePartyIsActive(party);
+        // 모임장 권한 검증
+        validateOwnerPermission(party, currentMemberId);
+        // 대상이 모임장인 경우 변경 불가
+        if (targetMemberParty.getRole() == Role.party_MANAGER) {
+            throw new PartyException(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER);
+        }
+        // 이미 같은 역할인 경우
+        if (targetMemberParty.getRole() == newRole) {
+            return;
+        }
+
+        // SUBOWNER 지정 시, 기존 부모임장 자동 해제
+        if (newRole == Role.party_SUBMANAGER) {
+            memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)
+                    .ifPresent(mp -> {
+                        mp.changeRole(Role.party_MEMBER);
+                        createRoleNotification(partyId, NotificationTarget.PARTY_SUBOWNER_RELEASED,
+                                mp.getMember().getNickname());
+                    });
+        }
+
+        // 역할 변경
+        targetMemberParty.changeRole(newRole);
+
+        // 알림 발송 (전체 멤버 대상)
+        NotificationTarget notifTarget = (newRole == Role.party_SUBMANAGER)
+                ? NotificationTarget.PARTY_SUBOWNER_ASSIGNED
+                : NotificationTarget.PARTY_SUBOWNER_RELEASED;
+        createRoleNotification(partyId, notifTarget, targetMember.getNickname());
+
+        log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
+    }
 
     @Override
     public PartyJoinCreateDTO.Response createJoinRequest(Long partyId, Long memberId) {
@@ -334,6 +383,16 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         if (party.getOwnerId().equals(memberId)) {
             throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_OWNER);
         }
+    }
+
+    // 부모임장은 권한이 없음을 검증
+    private void validateIsNotSubOwner(Party party, Long memberId) {
+        memberPartyRepository.findByPartyIdAndRole(party.getId(), Role.party_SUBMANAGER)
+                .ifPresent(mp -> {
+                    if (mp.getMember().getId().equals(memberId)) {
+                        throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_SUBOWNER);
+                    }
+                });
     }
 
     //모임 생성 검증
@@ -530,7 +589,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         notificationCommandService.createNotification(dto);
     }
 
-    //알림 생성 (INVITE 타입)
+    //알림 생성 (초대)
     private void createInviteNotification(Member member, Long partyId, NotificationTarget notificationTarget, Long inviteId) {
         CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                 .member(member)
@@ -541,6 +600,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         notificationCommandService.createNotification(dto);
     }
 
+    //알림 생성 (초대 수락)
     private void createInviteApprovedNotification(Member member, Long partyId, NotificationTarget notificationTarget, Member invitee) {
         CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                 .member(member)
@@ -549,5 +609,19 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                 .subjectName(invitee.getNickname())
                 .build();
         notificationCommandService.createNotification(dto);
+    }
+
+    //전체 알림 생성 (역할)
+    private void createRoleNotification(Long partyId, NotificationTarget notificationTarget, String subjectNickname) {
+        List<MemberParty> allMembers = memberPartyRepository.findAllByPartyIdWithMember(partyId);
+        allMembers.forEach(mp -> {
+            CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                    .member(mp.getMember())
+                    .partyId(partyId)
+                    .target(notificationTarget)
+                    .subjectName(subjectNickname)
+                    .build();
+            notificationCommandService.createNotification(dto);
+        });
     }
 }

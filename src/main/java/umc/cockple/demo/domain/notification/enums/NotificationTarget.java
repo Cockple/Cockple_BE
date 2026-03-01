@@ -8,7 +8,9 @@ public enum NotificationTarget {
     PARTY_MODIFY(NotificationType.CHANGE),
     PARTY_INVITE(NotificationType.INVITE),
     PARTY_INVITE_APPROVED(NotificationType.SIMPLE),
-    PARTY_JOINREQUEST_APPROVED(NotificationType.CHANGE);
+    PARTY_JOINREQUEST_APPROVED(NotificationType.CHANGE),
+    PARTY_SUBOWNER_ASSIGNED(NotificationType.SIMPLE),
+    PARTY_SUBOWNER_RELEASED(NotificationType.SIMPLE);
 
     private final NotificationType defaultType;
 
