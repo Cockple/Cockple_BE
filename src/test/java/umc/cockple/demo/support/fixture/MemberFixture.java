@@ -18,6 +18,7 @@ public class MemberFixture {
 
     public static Member createMember(String nickname, Gender gender, Level level, Long socialId) {
         return Member.builder()
+                .memberName(nickname)
                 .nickname(nickname)
                 .gender(gender)
                 .level(level)
