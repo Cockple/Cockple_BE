@@ -24,6 +24,12 @@ import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.support.fixture.ExerciseFixture;
+
+import java.time.LocalDate;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -224,6 +230,82 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/exercises/{exerciseId} - 운동 삭제")
+    class DeleteExercise {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31)));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 모임장이 운동을 삭제하면 deletedExerciseId를 반환한다")
+            void owner_deleteExercise() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}", exercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.deletedExerciseId").value(exercise.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - 부모임장도 운동을 삭제할 수 있다")
+            void subManager_deleteExercise() throws Exception {
+                SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}", exercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.deletedExerciseId").value(exercise.getId()));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}", 999L))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void memberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}", exercise.getId()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 일반 멤버가 삭제 시 에러를 반환한다")
+            void normalMember_forbidden() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}", exercise.getId()))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getMessage()));
             }
         }
     }
