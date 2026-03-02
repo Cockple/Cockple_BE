@@ -38,7 +38,7 @@ public class ExerciseController {
 
     @PostMapping("/parties/{partyId}/exercises")
     @Operation(summary = "운동 생성",
-            description = "모임 내에서 새로운 운동을 생성합니다. 모임장만 생성 가능합니다.")
+            description = "모임 내에서 새로운 운동을 생성합니다. 모임장과 부모임장만 생성 가능합니다.")
     @ApiResponse(responseCode = "201", description = "운동 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
@@ -56,7 +56,7 @@ public class ExerciseController {
 
     @DeleteMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 삭제",
-            description = "모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
+            description = "모임장 또는 부모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "운동 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
@@ -73,7 +73,7 @@ public class ExerciseController {
 
     @PatchMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 수정",
-            description = "모임장이 생성한 운동의 정보를 수정합니다. 이미 시작된 운동은 수정할 수 없습니다.")
+            description = "모임장 또는 부모임장이 생성한 운동의 정보를 수정합니다. 이미 시작된 운동은 수정할 수 없습니다.")
     @ApiResponse(responseCode = "200", description = "운동 수정 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
