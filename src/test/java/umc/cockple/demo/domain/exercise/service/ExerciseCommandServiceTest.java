@@ -12,6 +12,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -215,6 +216,95 @@ class ExerciseCommandServiceTest {
 
                 assertThatThrownBy(() ->
                         exerciseCommandService.deleteExercise(exercise.getId(), 999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("updateExercise")
+    class UpdateExercise {
+
+        private Exercise exercise;
+        private ExerciseUpdateDTO.Request request;
+
+        @BeforeEach
+        void setUp() {
+            exercise = Exercise.builder()
+                    .date(LocalDate.of(2099, 12, 31))
+                    .startTime(LocalTime.of(10, 0))
+                    .endTime(LocalTime.of(12, 0))
+                    .maxCapacity(10)
+                    .partyGuestAccept(true)
+                    .outsideGuestAccept(false)
+                    .build();
+            ReflectionTestUtils.setField(exercise, "id", 100L);
+
+            request = new ExerciseUpdateDTO.Request(
+                    "2099-12-31",
+                    "수정된 체육관",
+                    "서울특별시 강남구 테헤란로 2",
+                    37.6,
+                    127.1,
+                    "11:00",
+                    "13:00",
+                    12,
+                    "공지사항"
+            );
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("Exercise, Member 조회 후 ExerciseLifecycleService에 위임한다")
+            void delegatesToLifecycleService() {
+                // given
+                ExerciseUpdateDTO.Response expectedResponse = ExerciseUpdateDTO.Response.builder()
+                        .exerciseId(100L)
+                        .build();
+
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId())).willReturn(Optional.of(manager));
+                given(exerciseLifecycleService.updateExercise(exercise, manager, request)).willReturn(expectedResponse);
+
+                // when
+                ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
+                        exercise.getId(), manager.getId(), request);
+
+                // then
+                assertThat(response.exerciseId()).isEqualTo(100L);
+                then(exerciseLifecycleService).should().updateExercise(exercise, manager, request);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 운동이면 ExerciseException(EXERCISE_NOT_FOUND)을 던진다")
+            void exerciseNotFound_throwsException() {
+                given(exerciseRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.updateExercise(999L, manager.getId(), request))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 ExerciseException(MEMBER_NOT_FOUND)을 던진다")
+            void memberNotFound_throwsException() {
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.updateExercise(exercise.getId(), 999L, request))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
