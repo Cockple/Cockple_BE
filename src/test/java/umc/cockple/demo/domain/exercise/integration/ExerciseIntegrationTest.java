@@ -5,10 +5,14 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -27,6 +31,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
+import umc.cockple.demo.support.fixture.GuestFixture;
 
 import java.time.LocalDate;
 
@@ -45,6 +50,8 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
+    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired GuestRepository guestRepository;
 
     private Member manager;
     private Member subManager;
@@ -67,6 +74,8 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        guestRepository.deleteAll();
+        memberExerciseRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -459,6 +468,152 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/exercises/{exerciseId}/participants/{participantId} - 특정 참여자 운동 취소")
+    class CancelParticipationByManager {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31)));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 모임장이 멤버 참여를 취소하면 memberName을 반환한다")
+            void owner_cancelMemberParticipation() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                memberExerciseRepository.save(
+                        MemberFixture.createMemberExercise(normalMember, exercise));
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                exercise.getId(), normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").isString());
+            }
+
+            @Test
+            @DisplayName("200 - 부모임장도 멤버 참여를 취소할 수 있다")
+            void subManager_cancelMemberParticipation() throws Exception {
+                SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
+
+                memberExerciseRepository.save(
+                        MemberFixture.createMemberExercise(normalMember, exercise));
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                exercise.getId(), normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").isString());
+            }
+
+            @Test
+            @DisplayName("200 - 모임장이 게스트 참여를 취소할 수 있다")
+            void owner_cancelGuestParticipation() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(exercise, manager.getId()));
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(true);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                exercise.getId(), guest.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").value("게스트"));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                999L, normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void managerNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                exercise.getId(), normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 일반 멤버가 취소 시 에러를 반환한다")
+            void normalMember_forbidden() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                exercise.getId(), normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 이미 시작된 운동이면 에러를 반환한다")
+            void alreadyStarted() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                Exercise startedExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1)));
+
+                memberExerciseRepository.save(
+                        MemberFixture.createMemberExercise(normalMember, startedExercise));
+
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/{participantId}",
+                                startedExercise.getId(), normalMember.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getMessage()));
             }
         }
     }
