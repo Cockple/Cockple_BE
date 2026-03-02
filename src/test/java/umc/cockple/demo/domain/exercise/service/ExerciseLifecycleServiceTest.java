@@ -11,6 +11,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -28,6 +29,9 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -224,6 +228,90 @@ class ExerciseLifecycleServiceTest {
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteExercise")
+    class DeleteExercise {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = Exercise.builder()
+                    .date(LocalDate.of(2099, 12, 31))
+                    .startTime(LocalTime.of(10, 0))
+                    .endTime(LocalTime.of(12, 0))
+                    .maxCapacity(10)
+                    .partyGuestAccept(true)
+                    .outsideGuestAccept(false)
+                    .build();
+            ReflectionTestUtils.setField(exercise, "id", 100L);
+            exercise.setParty(party);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("모임장이 운동을 삭제하면 deletedExerciseId를 반환한다")
+            void ownerDeletesExercise_success() {
+                // given: party.ownerId == manager.id 이므로 권한 통과
+
+                // when
+                ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(exercise, manager);
+
+                // then
+                assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                then(exerciseRepository).should().delete(exercise);
+                then(partyRepository).should().save(party);
+            }
+
+            @Test
+            @DisplayName("부모임장도 운동을 삭제할 수 있다")
+            void subManagerDeletesExercise_success() {
+                // given
+                Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
+                ReflectionTestUtils.setField(subManager, "id", 2L);
+
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_MANAGER))
+                        .willReturn(false);
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_SUBMANAGER))
+                        .willReturn(true);
+
+                // when
+                ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(exercise, subManager);
+
+                // then
+                assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                then(exerciseRepository).should().delete(exercise);
+                then(partyRepository).should().save(party);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("일반 멤버가 삭제 시 ExerciseException(INSUFFICIENT_PERMISSION)을 던진다")
+            void normalMember_throwsException() {
+                Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
+                ReflectionTestUtils.setField(normalMember, "id", 2L);
+
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_MANAGER))
+                        .willReturn(false);
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_SUBMANAGER))
+                        .willReturn(false);
+
+                assertThatThrownBy(() ->
+                        exerciseLifecycleService.deleteExercise(exercise, normalMember))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
             }
         }
     }
