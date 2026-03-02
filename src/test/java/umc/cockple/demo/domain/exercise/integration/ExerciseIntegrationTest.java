@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -30,6 +31,7 @@ import umc.cockple.demo.support.fixture.ExerciseFixture;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -306,6 +308,157 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isForbidden())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/exercises/{exerciseId} - 운동 수정")
+    class UpdateExercise {
+
+        private Exercise exercise;
+        private ExerciseUpdateDTO.Request validRequest;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31)));
+
+            validRequest = new ExerciseUpdateDTO.Request(
+                    "2099-12-31",
+                    "수정된 체육관",
+                    "서울특별시 강남구 테헤란로 2",
+                    37.6,
+                    127.1,
+                    "11:00",
+                    "13:00",
+                    12,
+                    "공지사항"
+            );
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 모임장이 운동을 수정하면 exerciseId를 반환한다")
+            void owner_updateExercise() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - 부모임장도 운동을 수정할 수 있다")
+            void subManager_updateExercise() throws Exception {
+                SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", 999L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void memberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 일반 멤버가 수정 시 에러를 반환한다")
+            void normalMember_forbidden() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 이미 시작된 운동이면 에러를 반환한다")
+            void alreadyStarted() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                Exercise startedExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1)));
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", startedExercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(validRequest)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 시작 시간이 종료 시간 이후면 에러를 반환한다")
+            void invalidTime() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                ExerciseUpdateDTO.Request invalidTimeRequest = new ExerciseUpdateDTO.Request(
+                        "2099-12-31", null, null, null, null,
+                        "13:00", "11:00", null, null
+                );
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidTimeRequest)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INVALID_EXERCISE_TIME.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INVALID_EXERCISE_TIME.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 과거 날짜로 수정 시 에러를 반환한다")
+            void pastDate() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                ExerciseUpdateDTO.Request pastDateRequest = new ExerciseUpdateDTO.Request(
+                        "2000-01-01", null, null, null, null,
+                        "10:00", "12:00", null, null
+                );
+
+                mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(pastDateRequest)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED.getMessage()));
             }
         }
     }
