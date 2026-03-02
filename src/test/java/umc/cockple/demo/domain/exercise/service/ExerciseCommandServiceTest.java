@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
@@ -305,6 +306,90 @@ class ExerciseCommandServiceTest {
 
                 assertThatThrownBy(() ->
                         exerciseCommandService.updateExercise(exercise.getId(), 999L, request))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelParticipationByManager")
+    class CancelParticipationByManager {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = Exercise.builder()
+                    .date(LocalDate.of(2099, 12, 31))
+                    .startTime(LocalTime.of(10, 0))
+                    .endTime(LocalTime.of(12, 0))
+                    .maxCapacity(10)
+                    .partyGuestAccept(true)
+                    .outsideGuestAccept(false)
+                    .build();
+            ReflectionTestUtils.setField(exercise, "id", 100L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("Exercise, Manager 조회 후 ExerciseParticipationService에 위임한다")
+            void delegatesToParticipationService() {
+                // given
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelDTO.Response expectedResponse = ExerciseCancelDTO.Response.builder()
+                        .memberName("참여자")
+                        .currentParticipants(0)
+                        .build();
+
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId())).willReturn(Optional.of(manager));
+                given(exerciseParticipationService.cancelParticipationByManager(exercise, 2L, manager, request))
+                        .willReturn(expectedResponse);
+
+                // when
+                ExerciseCancelDTO.Response response = exerciseCommandService
+                        .cancelParticipationByManager(exercise.getId(), 2L, manager.getId(), request);
+
+                // then
+                assertThat(response.memberName()).isEqualTo("참여자");
+                then(exerciseParticipationService).should()
+                        .cancelParticipationByManager(exercise, 2L, manager, request);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 운동이면 ExerciseException(EXERCISE_NOT_FOUND)을 던진다")
+            void exerciseNotFound_throwsException() {
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                given(exerciseRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.cancelParticipationByManager(999L, 2L, manager.getId(), request))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 매니저면 ExerciseException(MEMBER_NOT_FOUND)을 던진다")
+            void managerNotFound_throwsException() {
+                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.cancelParticipationByManager(exercise.getId(), 2L, 999L, request))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
