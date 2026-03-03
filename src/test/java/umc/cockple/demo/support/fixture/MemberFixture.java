@@ -27,6 +27,26 @@ public class MemberFixture {
                 .build();
     }
 
+    public static Member createMemberWithName(String memberName, String nickname, Gender gender, Level level, Long socialId) {
+        return Member.builder()
+                .memberName(memberName)
+                .nickname(nickname)
+                .gender(gender)
+                .level(level)
+                .isActive(MemberStatus.ACTIVE)
+                .socialId(socialId)
+                .build();
+    }
+
+    public static Member createWithdrawnMember(String memberName, String nickname, Long socialId) {
+        return Member.builder()
+                .memberName(memberName)
+                .nickname(nickname)
+                .isActive(MemberStatus.INACTIVE)
+                .socialId(socialId)
+                .build();
+    }
+
     public static MemberParty createMemberParty(Party party, Member member, Role role) {
         return MemberParty.builder()
                 .party(party)
