@@ -35,6 +35,7 @@ public class ChatRoomDetailDTO {
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
+            boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
             List<ChatCommonDTO.ImageInfo> images,
@@ -47,6 +48,7 @@ public class ChatRoomDetailDTO {
                     .senderId(common.senderId())
                     .senderName(common.senderName())
                     .senderProfileImageUrl(common.senderProfileImageUrl())
+                    .isSenderWithdrawn(common.isSenderWithdrawn())
                     .content(common.content())
                     .messageType(common.messageType())
                     .images(common.images())

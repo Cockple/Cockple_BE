@@ -172,13 +172,15 @@ public class ChatConverter {
             ChatMessage message,
             String senderProfileImageUrl,
             List<ChatCommonDTO.ImageInfo> processedImages,
-            boolean isMyMessage) {
+            boolean isMyMessage,
+            boolean isSenderWithdrawn) {
 
         return ChatCommonDTO.MessageInfo.builder()
                 .messageId(message.getId())
                 .senderId(message.getSender().getId())
                 .senderName(message.getSender().getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
+                .isSenderWithdrawn(isSenderWithdrawn)
                 .content(message.getContent())
                 .messageType(message.getType())
                 .images(processedImages)

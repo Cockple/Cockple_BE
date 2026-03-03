@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -102,8 +103,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
         Pageable pageable = PageRequest.of(0, 50);
         List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
-        Collections.reverse(recentMessages);
-        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, recentMessages);
+        List<ChatMessage> resultMessages = new ArrayList<>(recentMessages);
+        Collections.reverse(resultMessages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, resultMessages);
         List<ChatRoomDetailDTO.MessageInfo> messageInfos = chatConverter.toChatRoomDetailMessageInfos(commonMessages);
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);
@@ -126,18 +128,18 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, pageable);
 
         boolean hasNext = messages.size() > size;
-        if (hasNext) {
-            messages = messages.subList(0, size);
-        }
+        List<ChatMessage> resultMessages = hasNext
+                ? new ArrayList<>(messages.subList(0, size))
+                : new ArrayList<>(messages);
 
-        Collections.reverse(messages);
-        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, messages);
+        Collections.reverse(resultMessages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, resultMessages);
         List<ChatMessageDTO.MessageInfo> messageInfos = chatConverter.toChatMessageInfos(commonMessages);
 
-        Long nextCursor = hasNext && !messages.isEmpty()
-                ? messages.get(0).getId() : null;
+        Long nextCursor = hasNext && !resultMessages.isEmpty()
+                ? resultMessages.get(0).getId() : null;
 
-        log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", messages.size(), hasNext);
+        log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", resultMessages.size(), hasNext);
 
         return chatConverter.toChatMessageResponse(messageInfos, hasNext, nextCursor);
     }
