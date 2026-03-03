@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 
 import java.util.Comparator;
 import java.util.List;
@@ -33,7 +34,8 @@ public class ChatProcessor {
         String senderProfileImageUrl = generateProfileImageUrl(sender.getProfileImg());
         List<ChatCommonDTO.ImageInfo> processedImages = processMessageImages(message);
         boolean isMyMessage = isMyMessage(sender.getId(), memberId);
-        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedImages, isMyMessage);
+        boolean isSenderWithdrawn = sender.getIsActive() == MemberStatus.INACTIVE;
+        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedImages, isMyMessage, isSenderWithdrawn);
     }
 
     public String generateProfileImageUrl(ProfileImg profileImg) {
