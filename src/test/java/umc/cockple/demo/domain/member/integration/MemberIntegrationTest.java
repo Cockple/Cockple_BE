@@ -374,7 +374,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.memberAddrId").isNumber())
                         .andExpect(jsonPath("$.data.addr3").value("역삼동"))
                         .andExpect(jsonPath("$.data.streetAddr").value("테헤란로 123"))
-                        .andExpect(jsonPath("$.data.buildingName").value("테스트빌딩"));
+                        .andExpect(jsonPath("$.data.buildingName").value("ㅁㅁ빌딩"));
             }
         }
 
