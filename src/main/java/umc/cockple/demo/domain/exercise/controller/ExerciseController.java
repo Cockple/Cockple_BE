@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.exercise.dto.*;
@@ -38,11 +39,11 @@ public class ExerciseController {
 
     @PostMapping("/parties/{partyId}/exercises")
     @Operation(summary = "운동 생성",
-            description = "모임 내에서 새로운 운동을 생성합니다. 모임장만 생성 가능합니다.")
+            description = "모임 내에서 새로운 운동을 생성합니다. 모임장과 부모임장만 생성 가능합니다.")
     @ApiResponse(responseCode = "201", description = "운동 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
-    public BaseResponse<ExerciseCreateDTO.Response> createExercise(
+    public ResponseEntity<BaseResponse<ExerciseCreateDTO.Response>> createExercise(
             @PathVariable Long partyId,
             @Valid @RequestBody ExerciseCreateDTO.Request request
     ) {
@@ -51,16 +52,16 @@ public class ExerciseController {
         ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
                 partyId, memberId, request);
 
-        return BaseResponse.success(CommonSuccessCode.CREATED, response);
+        return BaseResponse.of(CommonSuccessCode.CREATED, response);
     }
 
     @DeleteMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 삭제",
-            description = "모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
+            description = "모임장 또는 부모임장이 운동을 삭제합니다. 삭제된 운동의 모든 참여자와 게스트도 함께 삭제됩니다.")
     @ApiResponse(responseCode = "200", description = "운동 삭제 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "운동을 찾을 수 없음")
-    public BaseResponse<ExerciseDeleteDTO.Response> deleteExercise(
+    public ResponseEntity<BaseResponse<ExerciseDeleteDTO.Response>> deleteExercise(
             @PathVariable Long exerciseId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
@@ -68,17 +69,17 @@ public class ExerciseController {
         ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
                 exerciseId, memberId);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @PatchMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 수정",
-            description = "모임장이 생성한 운동의 정보를 수정합니다. 이미 시작된 운동은 수정할 수 없습니다.")
+            description = "모임장 또는 부모임장이 생성한 운동의 정보를 수정합니다. 이미 시작된 운동은 수정할 수 없습니다.")
     @ApiResponse(responseCode = "200", description = "운동 수정 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseUpdateDTO.Response> updateExercise(
+    public ResponseEntity<BaseResponse<ExerciseUpdateDTO.Response>> updateExercise(
             @PathVariable Long exerciseId,
             @Valid @RequestBody ExerciseUpdateDTO.Request request
     ) {
@@ -87,7 +88,7 @@ public class ExerciseController {
         ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
                 exerciseId, memberId, request);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @PostMapping("/exercises/{exerciseId}/participants")
@@ -131,7 +132,7 @@ public class ExerciseController {
     @ApiResponse(responseCode = "400", description = "취소할 수 없는 상태 (이미 시작됨, 참여하지 않음 등)")
     @ApiResponse(responseCode = "403", description = "권한 없음 (매니저가 아님)")
     @ApiResponse(responseCode = "404", description = "운동 또는 참여 기록을 찾을 수 없음")
-    public BaseResponse<ExerciseCancelDTO.Response> cancelParticipationByManager(
+    public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelParticipationByManager(
             @PathVariable Long exerciseId,
             @PathVariable Long participantId,
             @Valid @RequestBody ExerciseCancelDTO.ByManagerRequest request
@@ -141,7 +142,7 @@ public class ExerciseController {
         ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(
                 exerciseId, participantId, memberId, request);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @PostMapping("/exercises/{exerciseId}/guests")

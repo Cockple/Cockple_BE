@@ -70,11 +70,11 @@ public class ExerciseValidator {
     }
 
     public void validateDeleteExercise(Exercise exercise, Long memberId) {
-        validateManagerPermission(memberId, exercise.getParty());
+        validateSubManagerPermission(memberId, exercise.getParty());
     }
 
     public void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
-        validateManagerPermission(member.getId(), exercise.getParty());
+        validateSubManagerPermission(member.getId(), exercise.getParty());
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
         validateUpdateTime(request, exercise);
     }
@@ -85,15 +85,6 @@ public class ExerciseValidator {
         if (party.getStatus() == PartyStatus.INACTIVE) {
             throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
         }
-    }
-
-    private void validateManagerPermission(Long memberId, Party party) {
-        boolean isOwner = party.getOwnerId().equals(memberId);
-        boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), memberId, Role.party_MANAGER);
-
-        if (!isOwner && !isManager)
-            throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
     }
 
     private void validateSubManagerPermission(Long memberId, Party party) {
