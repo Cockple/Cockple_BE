@@ -75,7 +75,6 @@ public class MemberCommandService {
 
     }
 
-
     public void withdrawMember(Long memberId) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
@@ -83,9 +82,10 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 운동, 모임에서 나가기
+        // 참여중인 운동, 모임에서 나가기, keyword 삭제
         memberExerciseRepository.deleteAllByMember(member);
         memberPartyRepository.deleteAllByMember(member);
+        memberKeywordRepository.deleteAllByMember(member);
 
         // 카카오 연결 끊기
         kakaoOauthService.unlinkAccess(member);
@@ -284,15 +284,14 @@ public class MemberCommandService {
         }
 
         // 활성화 된 모임의 부모임장인 경우 -> 탈퇴 불가
-        boolean isViceLeader = member.getMemberParties().stream()
+        boolean isSubOwner = member.getMemberParties().stream()
                 .anyMatch(memberParty ->
                         memberParty.isViceLeader()
                                 && memberParty.getStatus() == MemberPartyStatus.ACTIVE
                 );
 
-        if (isViceLeader) {
+        if (isSubOwner) {
             throw new MemberException(MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
         }
-
     }
 }
