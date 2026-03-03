@@ -52,6 +52,7 @@ public class KakaoOauthService {
 
         if (member.getIsActive() == MemberStatus.INACTIVE) {
             member.rejoin();
+            newMember = true;
         }
 
         // 4. jwt 발급

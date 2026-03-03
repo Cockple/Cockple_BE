@@ -54,4 +54,6 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
        WHERE mp.party.id = :partyId
        """)
     List<MemberParty> findAllByPartyIdWithMember(@Param("partyId") Long partyId);
+
+    Optional<MemberParty> findByPartyIdAndRole(Long partyId, Role role);
 }
