@@ -3,3 +3,5 @@
 *.jar binary
 *.tf text eol=lf
 *.sh text eol=lf
+# 모든 텍스트 파일은 LF로 정규화
+* text=auto eol=lf

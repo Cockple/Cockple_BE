@@ -173,5 +173,13 @@ public class Member extends BaseEntity {
 
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
+        initField();
+    }
+
+    public void initField() {
+        this.memberName = null;
+        this.gender = null;
+        this.birth = null;
+        this.level = null;
     }
 }

@@ -36,4 +36,12 @@ public class NotificationMessageGenerator {
     public String generateExerciseAttendChangedMessage() {
         return "운동 참석으로 변경되었어요!";
     }
+
+    public String generateSubOwnerAssignedMessage(String nickname) {
+        return String.format("'%s'님이 부모임장으로 지정되었습니다.", nickname);
+    }
+
+    public String generateSubOwnerReleasedMessage(String nickname) {
+        return String.format("'%s'님의 부모임장 권한이 해제되었습니다.", nickname);
+    }
 }
