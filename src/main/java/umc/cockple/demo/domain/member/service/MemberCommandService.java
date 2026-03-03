@@ -282,5 +282,17 @@ public class MemberCommandService {
         if (isLeader) {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
         }
+
+        // 활성화 된 모임의 부모임장인 경우 -> 탈퇴 불가
+        boolean isViceLeader = member.getMemberParties().stream()
+                .anyMatch(memberParty ->
+                        memberParty.isViceLeader()
+                                && memberParty.getStatus() == MemberPartyStatus.ACTIVE
+                );
+
+        if (isViceLeader) {
+            throw new MemberException(MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
+        }
+
     }
 }
