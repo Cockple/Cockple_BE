@@ -16,7 +16,6 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.image.service.ImageService;
-import umc.cockple.demo.global.enums.Role;
 
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
@@ -75,7 +74,6 @@ public class MemberCommandService {
         }
 
     }
-
 
     public void withdrawMember(Long memberId) {
         // 회원 찾기
@@ -288,7 +286,7 @@ public class MemberCommandService {
         // 활성화 된 모임의 부모임장인 경우 -> 탈퇴 불가
         boolean isSubOwner = member.getMemberParties().stream()
                 .anyMatch(memberParty ->
-                        memberParty.getRole() == Role.party_SUBMANAGER
+                        memberParty.isViceLeader()
                                 && memberParty.getStatus() == MemberPartyStatus.ACTIVE
                 );
 
