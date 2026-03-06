@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
@@ -20,7 +20,7 @@ import java.util.List;
 @Slf4j
 public class ChatProcessor {
 
-    private final ImageService imageService;
+    private final FileService fileService;
     private final ChatConverter chatConverter;
 
     public List<ChatCommonDTO.MessageInfo> processMessages(Long memberId, List<ChatMessage> recentMessages) {
@@ -40,7 +40,7 @@ public class ChatProcessor {
 
     public String generateProfileImageUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(profileImg.getImgKey());
+            return fileService.getUrlFromKey(profileImg.getImgKey());
         }
         return null;
     }
@@ -59,7 +59,7 @@ public class ChatProcessor {
 
     public String generateImageUrl(ChatMessageImg img) {
         if (img != null && img.getImgKey() != null && !img.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(img.getImgKey());
+            return fileService.getUrlFromKey(img.getImgKey());
         }
         return null;
     }

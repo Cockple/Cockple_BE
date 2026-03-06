@@ -20,7 +20,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatImageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.DownloadTokenRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -35,7 +35,7 @@ public class ChatImageServiceImpl implements ChatImageService{
     private final DownloadTokenRepository downloadTokenRepository;
     private final ChatConverter chatConverter;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
-    private final ImageService imageService;
+    private final FileService fileService;
     private static final int TOKEN_VALIDITY_SECONDS = 180;
 
     @Override
@@ -66,7 +66,7 @@ public class ChatImageServiceImpl implements ChatImageService{
         ChatMessageImg chatImage = findChatImageOrThrow(imageId);
 
         //GCS에서 파일 객체 직접 가져오기
-        Blob blob = imageService.downloadFile(chatImage.getImgKey());
+        Blob blob = fileService.downloadFile(chatImage.getImgKey());
         ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatImage, blob);
 
         log.info("이미지 다운로드 완료 - imageName: {}", chatImage.getOriginalFileName());

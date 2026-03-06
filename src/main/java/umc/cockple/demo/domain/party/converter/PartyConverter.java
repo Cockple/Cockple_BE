@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.party.converter;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -25,7 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PartyConverter {
 
-    private final ImageService imageService;
+    private final FileService fileService;
 
     public PartySimpleDTO.Response toPartySimpleDTO(MemberParty memberParty, String imgUrl) {
         Party party = memberParty.getParty();
@@ -220,7 +220,7 @@ public class PartyConverter {
 
     private String getProfileUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(profileImg.getImgKey());
+            return fileService.getUrlFromKey(profileImg.getImgKey());
         }
         return null;
     }
