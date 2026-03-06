@@ -753,6 +753,22 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.participants.list[0].name").value(normalMember.getMemberName()))
                         .andExpect(jsonPath("$.data.participants.list[1].name").value(subManager.getMemberName()));
             }
+
+            @Test
+            @DisplayName("남성과 여성 참가자가 있을 때 성별 카운트가 올바르게 반환된다")
+            void 남성과_여성_참가자가_있을_때_성별_카운트가_올바르게_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                // normalMember: MALE, subManager: FEMALE
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, exercise));
+
+                mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.participants.currentParticipantCount").value(2))
+                        .andExpect(jsonPath("$.data.participants.manCount").value(1))
+                        .andExpect(jsonPath("$.data.participants.womenCount").value(1));
+            }
         }
 
         @Nested
