@@ -9,7 +9,7 @@ import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -53,7 +53,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final ExerciseRepository exerciseRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final PartyBookmarkRepository partyBookmarkRepository;
-    private final ImageService imageService;
+    private final FileService fileService;
 
     @Override
     public Slice<PartySimpleDTO.Response> getSimpleMyParties(Long memberId, Pageable pageable) {
@@ -371,14 +371,14 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     //이미지 키를 이미지 url로 변환
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
+            return fileService.getUrlFromKey(partyImg.getImgKey());
         }
         return null;
     }
 
     private String getProfileUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(profileImg.getImgKey());
+            return fileService.getUrlFromKey(profileImg.getImgKey());
         }
         return null;
     }

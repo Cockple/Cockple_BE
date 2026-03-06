@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.global.enums.Gender;
@@ -40,7 +40,7 @@ class MemberCommandServiceTest {
     @Mock private MemberAddrRepository memberAddrRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private KakaoOauthService kakaoOauthService;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private Member normalMember;
 

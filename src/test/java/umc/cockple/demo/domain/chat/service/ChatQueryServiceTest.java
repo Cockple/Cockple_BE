@@ -22,7 +22,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -54,7 +54,7 @@ class ChatQueryServiceTest {
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
     @Mock private ChatRoomListCacheService chatRoomListCacheService;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
@@ -63,7 +63,7 @@ class ChatQueryServiceTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatProcessor = new ChatProcessor(imageService, chatConverter);
+        chatProcessor = new ChatProcessor(fileService, chatConverter);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
@@ -72,7 +72,7 @@ class ChatQueryServiceTest {
                 memberPartyRepository,
                 messageReadStatusRepository,
                 chatConverter,
-                imageService,
+                fileService,
                 chatProcessor,
                 chatRoomListCacheService
         );
