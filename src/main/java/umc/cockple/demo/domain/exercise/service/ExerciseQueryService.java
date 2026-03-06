@@ -26,7 +26,6 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
-import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -688,6 +687,7 @@ public class ExerciseQueryService {
                 .partyPosition(original.partyPosition())
                 .inviterName(original.inviterName())
                 .joinedAt(original.joinedAt())
+                .isWithdrawn(original.isWithdrawn())
                 .build();
     }
 
@@ -832,7 +832,7 @@ public class ExerciseQueryService {
     }
 
     private List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
-        return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId, MemberStatus.ACTIVE);
+        return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId);
     }
 
     private List<Guest> findGuests(Long exerciseId) {

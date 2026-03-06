@@ -54,7 +54,8 @@ public class ExerciseDetailDTO {
             String participantType,
             String partyPosition,
             String inviterName,
-            LocalDateTime joinedAt
+            LocalDateTime joinedAt,
+            boolean isWithdrawn
     ) {
     }
 }

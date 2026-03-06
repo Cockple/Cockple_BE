@@ -36,6 +36,7 @@ import umc.cockple.demo.support.fixture.GuestFixture;
 import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -615,6 +616,46 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getMessage()));
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/exercises/{exerciseId} - 운동 상세 조회")
+    class GetExerciseDetail {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1)));
+        }
+
+        @Test
+        @DisplayName("200 - 활성_회원_참가자는_isWithdrawn_false로_반환된다")
+        void 활성_회원_참가자는_isWithdrawn_false로_반환된다() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+
+            mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.participants.list[0].isWithdrawn").value(false));
+        }
+
+        @Test
+        @DisplayName("200 - 탈퇴_회원_참가자는_isWithdrawn_true로_반환된다")
+        void 탈퇴_회원_참가자는_isWithdrawn_true로_반환된다() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            Member withdrawnMember = memberRepository.save(
+                    MemberFixture.createWithdrawnMember("탈퇴회원", "탈퇴닉네임", 8888L));
+
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(withdrawnMember, exercise));
+
+            mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.participants.list[0].isWithdrawn").value(true));
         }
     }
 }
