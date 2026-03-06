@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import umc.cockple.demo.domain.file.dto.FileUploadDTO;
-import umc.cockple.demo.domain.file.exception.S3ErrorCode;
-import umc.cockple.demo.domain.file.exception.S3Exception;
+import umc.cockple.demo.domain.file.exception.GcsErrorCode;
+import umc.cockple.demo.domain.file.exception.GcsException;
 import umc.cockple.demo.global.enums.DomainType;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class FileService {
             log.info("[GCS 삭제 성공] {}", fileKey);
         } catch (Exception e) {
             log.error("[GCS 삭제 실패] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.IMAGE_DELETE_EXCEPTION);
+            throw new GcsException(GcsErrorCode.FILE_DELETE_EXCEPTION);
         }
     }
 
@@ -77,10 +77,10 @@ public class FileService {
             return String.format("https://storage.googleapis.com/%s/%s", bucket, key);
         } catch (IOException e) {
             log.error("[GCS 업로드 실패 - IO 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_IO_EXCEPTION);
+            throw new GcsException(GcsErrorCode.FILE_UPLOAD_IO_EXCEPTION);
         } catch (StorageException e) {
             log.error("[GCS 업로드 실패 - Storage 예외] {}", e.getMessage());
-            throw new S3Exception(S3ErrorCode.FILE_UPLOAD_AMAZON_EXCEPTION);
+            throw new GcsException(GcsErrorCode.FILE_UPLOAD_GCS_EXCEPTION);
         }
     }
 
@@ -103,7 +103,7 @@ public class FileService {
     public Blob downloadFile(String fileKey) {
         Blob blob = storage.get(BlobId.of(bucket, fileKey));
         if (blob == null) {
-            throw new S3Exception(S3ErrorCode.IMAGE_DELETE_EXCEPTION);
+            throw new GcsException(GcsErrorCode.FILE_DELETE_EXCEPTION);
         }
         return blob;
     }
