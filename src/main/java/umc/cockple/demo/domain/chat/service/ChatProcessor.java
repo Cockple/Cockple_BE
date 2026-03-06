@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -32,10 +32,10 @@ public class ChatProcessor {
     private ChatCommonDTO.MessageInfo processAndConvertMessage(ChatMessage message, Long memberId) {
         Member sender = message.getSender();
         String senderProfileImageUrl = generateProfileImageUrl(sender.getProfileImg());
-        List<ChatCommonDTO.ImageInfo> processedImages = processMessageImages(message);
+        List<ChatCommonDTO.FileInfo> processedFiles = processMessageFiles(message);
         boolean isMyMessage = isMyMessage(sender.getId(), memberId);
         boolean isSenderWithdrawn = sender.getIsActive() == MemberStatus.INACTIVE;
-        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedImages, isMyMessage, isSenderWithdrawn);
+        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedFiles, isMyMessage, isSenderWithdrawn);
     }
 
     public String generateProfileImageUrl(ProfileImg profileImg) {
@@ -45,21 +45,21 @@ public class ChatProcessor {
         return null;
     }
 
-    private List<ChatCommonDTO.ImageInfo> processMessageImages(ChatMessage message) {
-        return message.getChatMessageImgs().stream()
-                .sorted(Comparator.comparing(ChatMessageImg::getImgOrder))
-                .map(this::processSingleImage)
+    private List<ChatCommonDTO.FileInfo> processMessageFiles(ChatMessage message) {
+        return message.getChatMessageFiles().stream()
+                .sorted(Comparator.comparing(ChatMessageFile::getFileOrder))
+                .map(this::processSingleFile)
                 .toList();
     }
 
-    private ChatCommonDTO.ImageInfo processSingleImage(ChatMessageImg img) {
-        String imageUrl = generateImageUrl(img);
-        return chatConverter.toImageInfo(img, imageUrl);
+    private ChatCommonDTO.FileInfo processSingleFile(ChatMessageFile file) {
+        String imageUrl = generateFileUrl(file);
+        return chatConverter.toFileInfo(file, imageUrl);
     }
 
-    public String generateImageUrl(ChatMessageImg img) {
-        if (img != null && img.getImgKey() != null && !img.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(img.getImgKey());
+    public String generateFileUrl(ChatMessageFile file) {
+        if (file != null && file.getFileKey() != null && !file.getFileKey().isBlank()) {
+            return fileService.getUrlFromKey(file.getFileKey());
         }
         return null;
     }

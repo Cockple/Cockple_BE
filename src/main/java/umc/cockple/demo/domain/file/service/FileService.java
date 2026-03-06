@@ -54,7 +54,7 @@ public class FileService {
         }
 
         return files.stream()
-                .map(img -> uploadFile(img, domainType))
+                .map(file -> uploadFile(file, domainType))
                 .collect(Collectors.toList());
     }
 

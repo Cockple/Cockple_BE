@@ -36,7 +36,7 @@ public class ChatEventListener {
                 event.chatRoomId(), event.senderId());
         try {
             chatSendService
-                    .sendMessage(event.chatRoomId(), event.content(), event.files(), event.images(), event.senderId());
+                    .sendMessage(event.chatRoomId(), event.content(), event.files(), event.senderId());
         } catch (Exception e) {
             log.error("메시지 전송 이벤트 처리 중 오류 발생", e);
         }

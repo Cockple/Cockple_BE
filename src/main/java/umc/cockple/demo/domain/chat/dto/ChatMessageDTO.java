@@ -26,7 +26,7 @@ public class ChatMessageDTO {
             boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
-            List<ChatCommonDTO.ImageInfo> images,
+            List<ChatCommonDTO.FileInfo> files,
             LocalDateTime timestamp,
             boolean isMyMessage
     ) {
@@ -39,7 +39,7 @@ public class ChatMessageDTO {
                     .isSenderWithdrawn(common.isSenderWithdrawn())
                     .content(common.content())
                     .messageType(common.messageType())
-                    .images(common.images())
+                    .files(common.files())
                     .timestamp(common.timestamp())
                     .isMyMessage(common.isMyMessage())
                     .build();

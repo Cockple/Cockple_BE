@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -20,10 +19,10 @@ public class ChatValidator {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-    public void validateSendRequest(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
+    public void validateSendRequest(Long chatRoomId, String content, List<FileInfo> files, Long senderId) {
         validateChatRoom(chatRoomId);
         validateChatRoomMember(chatRoomId, senderId);
-        validateMessage(content, files, images);
+        validateMessage(content, files);
     }
 
     public void validateSubscriptionRequest(Long chatRoomId, Long senderId) {
@@ -63,12 +62,11 @@ public class ChatValidator {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
-    private void validateMessage(String content, List<FileInfo> files, List<ImageInfo> images) {
+    private void validateMessage(String content, List<FileInfo> files) {
         boolean hasContent = content != null && !content.trim().isEmpty();
         boolean hasFiles = files != null && !files.isEmpty();
-        boolean hasImages = images != null && !images.isEmpty();
 
-        if (!hasContent && !hasFiles && !hasImages) {
+        if (!hasContent && !hasFiles) {
             throw new ChatException(ChatErrorCode.EMPTY_MESSAGE_NOT_ALLOWED);
         }
 

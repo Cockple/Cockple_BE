@@ -130,11 +130,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
         try {
             chatValidator.validateSendRequest(
-                    request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
+                    request.chatRoomId(), request.content(), request.files(), memberId);
 
             ChatMessageSendEvent sendEvent =
                     ChatMessageSendEvent.create(
-                            request.chatRoomId(), request.content(), request.files(), request.images(), memberId);
+                            request.chatRoomId(), request.content(), request.files(), memberId);
             eventPublisher.publishEvent(sendEvent);
 
         } catch (ChatException e) {
