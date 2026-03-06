@@ -17,6 +17,8 @@ import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.image.service.ImageService;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
@@ -82,8 +84,8 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 운동, 모임에서 나가기, keyword 삭제
-        memberExerciseRepository.deleteAllByMember(member);
+        // 참여중인 미래 운동, 모임에서 나가기, keyword 삭제
+        memberExerciseRepository.deleteFutureExercisesByMember(member, LocalDate.now(), LocalTime.now());
         memberPartyRepository.deleteAllByMember(member);
         memberKeywordRepository.deleteAllByMember(member);
 
