@@ -386,6 +386,53 @@ class ExerciseQueryServiceTest {
             }
 
             @Test
+            @DisplayName("대기자_성별_카운트가_올바르게_계산된다")
+            void 대기자_성별_카운트가_올바르게_계산된다() {
+                // given
+                ReflectionTestUtils.setField(exercise, "maxCapacity", 1);
+
+                Member maleMember = MemberFixture.createMember("남성", Gender.MALE, Level.A, 6001L);
+                ReflectionTestUtils.setField(maleMember, "id", 11L);
+
+                Member femaleMember = MemberFixture.createMember("여성", Gender.FEMALE, Level.B, 6002L);
+                ReflectionTestUtils.setField(femaleMember, "id", 12L);
+
+                MemberExercise first = MemberFixture.createMemberExercise(maleMember, exercise);
+                ReflectionTestUtils.setField(first, "createdAt", LocalDateTime.now().minusMinutes(10));
+
+                MemberExercise second = MemberFixture.createMemberExercise(femaleMember, exercise);
+                ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
+
+                MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.party_MEMBER);
+                MemberParty femaleParty = MemberFixture.createMemberParty(party, femaleMember, Role.party_MEMBER);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId()))
+                        .willReturn(Optional.of(manager));
+                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of(first, second));
+                given(guestRepository.findByExerciseId(exercise.getId()))
+                        .willReturn(List.of());
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        .willReturn(true);
+                given(memberPartyRepository.findMemberRolesByPartyAndMembers(
+                        party.getId(), List.of(maleMember.getId(), femaleMember.getId())))
+                        .willReturn(List.of(maleParty, femaleParty));
+
+                // when
+                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                        exercise.getId(), manager.getId());
+
+                // then
+                assertThat(response.participants().manCount()).isEqualTo(1);
+                assertThat(response.participants().womenCount()).isZero();
+                assertThat(response.waiting().manCount()).isZero();
+                assertThat(response.waiting().womenCount()).isEqualTo(1);
+            }
+
+            @Test
             @DisplayName("참가자_성별_카운트가_올바르게_계산된다")
             void 참가자_성별_카운트가_올바르게_계산된다() {
                 // given

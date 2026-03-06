@@ -755,6 +755,28 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
             }
 
             @Test
+            @DisplayName("대기자의 성별 카운트가 올바르게 반환된다")
+            void 대기자의_성별_카운트가_올바르게_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                // 정원 1명짜리 운동: normalMember(MALE) 참가, subManager(FEMALE) 대기
+                Exercise smallExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1), 1));
+
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, smallExercise));
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, smallExercise));
+
+                mockMvc.perform(get("/api/exercises/{exerciseId}", smallExercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.participants.currentParticipantCount").value(1))
+                        .andExpect(jsonPath("$.data.participants.manCount").value(1))
+                        .andExpect(jsonPath("$.data.participants.womenCount").value(0))
+                        .andExpect(jsonPath("$.data.waiting.currentWaitingCount").value(1))
+                        .andExpect(jsonPath("$.data.waiting.manCount").value(0))
+                        .andExpect(jsonPath("$.data.waiting.womenCount").value(1));
+            }
+
+            @Test
             @DisplayName("남성과 여성 참가자가 있을 때 성별 카운트가 올바르게 반환된다")
             void 남성과_여성_참가자가_있을_때_성별_카운트가_올바르게_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
