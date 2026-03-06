@@ -341,7 +341,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
-        return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
+        return chatMessageRepository.findRecentMessagesWithFiles(roomId, pageable);
     }
 
     private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {

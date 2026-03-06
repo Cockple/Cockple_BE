@@ -105,7 +105,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -154,7 +154,7 @@ class ChatQueryServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
             given(chatRoomMemberRepository.findCounterPartWithMember(roomId, memberId)).willReturn(Optional.of(counterPartMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
 
             // when
@@ -197,7 +197,7 @@ class ChatQueryServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
             given(chatRoomMemberRepository.findCounterPartWithMember(roomId, memberId)).willReturn(Optional.of(withdrawnMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
 
             // when
@@ -236,7 +236,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(msg3, msg2, msg1));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(msg3, msg2, msg1));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -275,7 +275,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(myMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(myMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -319,7 +319,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(otherMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(otherMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership, otherMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
 
@@ -362,7 +362,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(withdrawnMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(withdrawnMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership, withdrawnMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
 

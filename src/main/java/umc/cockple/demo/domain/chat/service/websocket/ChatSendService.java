@@ -10,7 +10,6 @@ import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.ImageInfo;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
@@ -49,7 +48,7 @@ public class ChatSendService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void sendMessage(Long chatRoomId, String content, List<FileInfo> files, List<ImageInfo> images, Long senderId) {
+    public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
         ChatRoom chatRoom = findChatRoom(chatRoomId);
@@ -59,7 +58,6 @@ public class ChatSendService {
 
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         attachFiles(chatMessage, files);
-        attachImages(chatMessage, images);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
@@ -69,14 +67,12 @@ public class ChatSendService {
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
         int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
-        List<ChatCommonDTO.ImageInfo> responseImages =
-                createResponseImageInfos(savedMessage.getChatMessageImgs());
-        List<WebSocketMessageDTO.MessageResponse.FileInfo> responseFiles =
+        List<ChatCommonDTO.FileInfo> responseFiles =
                 createResponseFileInfos(savedMessage.getChatMessageFiles());
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
-                chatConverter.toSendMessageResponse(chatRoomId, content, responseImages, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
+                chatConverter.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
 
@@ -97,26 +93,14 @@ public class ChatSendService {
     }
 
     // ========== 비즈니스 메서드 ==========
-    private void attachFiles(ChatMessage message, List<FileInfo> files) {
+    private void attachFiles(ChatMessage message, List<WebSocketMessageDTO.Request.FileInfo> files) {
         if (files != null && !files.isEmpty()) {
             files.forEach(fileInfo -> {
                 ChatMessageFile messageFile = ChatMessageFile.create(
-                        message, fileInfo.originalFileName(),
-                        fileInfo.fileKey(), fileInfo.fileSize(), fileInfo.fileType()
+                        message, fileInfo.fileKey(), fileInfo.fileOrder(),
+                        fileInfo.originalFileName(), fileInfo.fileSize(), fileInfo.fileType()
                 );
                 message.getChatMessageFiles().add(messageFile);
-            });
-        }
-    }
-
-    private void attachImages(ChatMessage message, List<ImageInfo> images) {
-        if (images != null && !images.isEmpty()) {
-            images.forEach(imageInfo -> {
-                ChatMessageImg messageImg = ChatMessageImg.create(
-                        message, imageInfo.imgKey(), imageInfo.imgOrder(),
-                        imageInfo.originalFileName(), imageInfo.fileSize(), imageInfo.fileType()
-                );
-                message.getChatMessageImgs().add(messageImg);
             });
         }
     }
@@ -144,26 +128,14 @@ public class ChatSendService {
         }
     }
 
-    private List<ChatCommonDTO.ImageInfo> createResponseImageInfos(
-            List<ChatMessageImg> savedImages) {
-        return savedImages.stream()
-                .map(img -> ChatCommonDTO.ImageInfo.builder()
-                        .imageId(img.getId())
-                        .imageUrl(chatProcessor.generateImageUrl(img))
-                        .imgOrder(img.getImgOrder())
-                        .isEmoji(img.getIsEmoji())
-                        .originalFileName(img.getOriginalFileName())
-                        .fileSize(img.getFileSize())
-                        .fileType(img.getFileType())
-                        .build())
-                .toList();
-    }
-
-    private List<WebSocketMessageDTO.MessageResponse.FileInfo> createResponseFileInfos(
+    private List<ChatCommonDTO.FileInfo> createResponseFileInfos(
             List<ChatMessageFile> savedFiles) {
         return savedFiles.stream()
-                .map(file -> WebSocketMessageDTO.MessageResponse.FileInfo.builder()
+                .map(file -> ChatCommonDTO.FileInfo.builder()
                         .fileId(file.getId())
+                        .fileUrl(chatProcessor.generateFileUrl(file))
+                        .fileOrder(file.getFileOrder())
+                        .isEmoji(file.getIsEmoji())
                         .originalFileName(file.getOriginalFileName())
                         .fileSize(file.getFileSize())
                         .fileType(file.getFileType())
