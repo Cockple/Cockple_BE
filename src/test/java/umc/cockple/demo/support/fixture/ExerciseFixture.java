@@ -21,6 +21,10 @@ public class ExerciseFixture {
     }
 
     public static Exercise createExerciseWithAddr(Party party, LocalDate date) {
+        return createExerciseWithAddr(party, date, 10);
+    }
+
+    public static Exercise createExerciseWithAddr(Party party, LocalDate date, int maxCapacity) {
         ExerciseAddr addr = ExerciseAddr.builder()
                 .addr1("서울특별시")
                 .addr2("강남구")
@@ -34,7 +38,7 @@ public class ExerciseFixture {
                 .party(party)
                 .date(date)
                 .startTime(LocalTime.of(10, 0))
-                .maxCapacity(10)
+                .maxCapacity(maxCapacity)
                 .partyGuestAccept(true)
                 .outsideGuestAccept(false)
                 .exerciseAddr(addr)
