@@ -43,14 +43,10 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatFileService 단위 테스트")
 class ChatFileServiceTest {
-    @Mock
-    private ChatFileRepository chatFileRepository;
-    @Mock
-    private DownloadTokenRepository downloadTokenRepository;
-    @Mock
-    private ChatRoomMemberRepository chatRoomMemberRepository;
-    @Mock
-    private FileService fileService;
+    @Mock private ChatFileRepository chatFileRepository;
+    @Mock private DownloadTokenRepository downloadTokenRepository;
+    @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
+    @Mock private FileService fileService;
 
     private ChatFileService chatFileService;
 
