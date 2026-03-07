@@ -24,7 +24,7 @@ public class FileController {
 
     private final FileService fileService;
 
-    @PostMapping(value = "/s3/upload/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/gcs/upload/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "파일 업로드", description = "GCS에 파일을 업로드하고 파일 URL과 fileKey를 반환합니다.")
     public BaseResponse<FileUploadDTO.Response> fileUpload(@RequestPart("file") MultipartFile file,
                                                            @RequestParam("domainType") DomainType domainType) {
@@ -32,7 +32,7 @@ public class FileController {
         return BaseResponse.success(CommonSuccessCode.ACCEPTED, fileService.uploadFile(file, domainType));
     }
 
-    @PostMapping(value = "/s3/upload/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/gcs/upload/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "파일 여러장 업로드", description = "GCS에 파일 여러장을 업로드하고 파일 URL과 fileKey를 반환합니다.")
     public BaseResponse<List<FileUploadDTO.Response>> fileUpload(@RequestPart("file") List<MultipartFile> files,
                                                                  @RequestParam("domainType") DomainType domainType) {

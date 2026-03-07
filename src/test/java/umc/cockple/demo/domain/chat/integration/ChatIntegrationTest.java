@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -28,6 +29,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -460,6 +462,91 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED.getCode()))
                         .andExpect(jsonPath("$.message").value(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/chats/files/{fileId}/download-token - 파일 다운로드 토큰 발급")
+    class IssueDownloadToken {
+
+        private ChatMessageFile chatFile;
+
+        @BeforeEach
+        void setUpFile() {
+            chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+            ChatMessage message = chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "이미지 첨부"));
+            chatFile = ChatMessageFile.create(message, "test/key.webp", 1, "test.webp", 100L, "image/webp");
+            message.getChatMessageFiles().add(chatFile);
+            message = chatMessageRepository.saveAndFlush(message);
+            chatFile = message.getChatMessageFiles().get(0);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 채팅방 권한이 있는 멤버는 토큰을 성공적으로 발급받는다")
+            void success_issueToken() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/files/{fileId}/download-token", chatFile.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.downloadToken").isString())
+                        .andExpect(jsonPath("$.data.expiresAt").exists());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("400 - 채팅방에 참여하지 않은 사용자가 토큰을 요청하면 접근 거부 에러를 반환한다")
+            void fail_notRoomMember() throws Exception {
+                SecurityContextHelper.setAuthentication(otherMember.getId(), otherMember.getNickname());
+
+                mockMvc.perform(post("/api/chats/files/{fileId}/download-token", chatFile.getId()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED.getCode()));
+            }
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 파일 ID로 요청하면 파일 없음 에러를 반환한다")
+            void fail_fileNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/files/{fileId}/download-token", 99999L))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ChatErrorCode.FILE_NOT_FOUND.getCode()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/files/{fileId}/download - 실제 파일 다운로드")
+    class DownloadFile {
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("403 - 존재하지 않거나 유효하지 않은 토큰으로 접근하면 403 인증 에러 반환")
+            void fail_invalidToken() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                ChatMessage message = chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "테스트"));
+                ChatMessageFile chatFile = ChatMessageFile.create(message, "test/key.webp", 1, "test.webp", 100L, "image/webp");
+                message.getChatMessageFiles().add(chatFile);
+                message = chatMessageRepository.saveAndFlush(message);
+                chatFile = message.getChatMessageFiles().get(0);
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/files/{fileId}/download", chatFile.getId()).param("token", "invalid-fake-token"))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ChatErrorCode.INVALID_DOWNLOAD_TOKEN.getCode()));
             }
         }
     }

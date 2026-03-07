@@ -115,26 +115,26 @@ class ChatProcessorTest {
         }
     }
 
-    // ========== generateImageUrl ==========
+    // ========== generateFileUrl ==========
 
     @Nested
-    @DisplayName("generateImageUrl - 채팅 이미지 URL 생성")
-    class GenerateImageUrl {
+    @DisplayName("generateFileUrl - 채팅 파일 URL 생성")
+    class GenerateFileUrl {
 
         @Test
-        @DisplayName("img가 null이면 null을 반환한다")
-        void returnsNull_whenImgIsNull() {
+        @DisplayName("file이 null이면 null을 반환한다")
+        void returnsNull_whenFileIsNull() {
             String result = chatProcessor.generateFileUrl(null);
 
             assertThat(result).isNull();
         }
 
         @Test
-        @DisplayName("imgKey가 null이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsNull() {
+        @DisplayName("fileKey가 null이면 null을 반환하고 fileService를 호출하지 않는다")
+        void returnsNull_whenFileKeyIsNull() {
             ChatMessageFile img = ChatMessageFile.builder()
                     .fileKey(null)
-                    .imgOrder(1)
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(1024L)
                     .fileType("image/jpeg")
@@ -147,11 +147,11 @@ class ChatProcessorTest {
         }
 
         @Test
-        @DisplayName("imgKey가 공백 문자열이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsBlank() {
+        @DisplayName("fileKey가 공백 문자열이면 null을 반환하고 fileService를 호출하지 않는다")
+        void returnsNull_whenFileKeyIsBlank() {
             ChatMessageFile img = ChatMessageFile.builder()
                     .fileKey("  ")
-                    .imgOrder(1)
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(1024L)
                     .fileType("image/jpeg")
@@ -164,11 +164,11 @@ class ChatProcessorTest {
         }
 
         @Test
-        @DisplayName("유효한 imgKey가 있으면 imageService로 URL을 생성해서 반환한다")
-        void returnsUrl_whenImgKeyIsValid() {
+        @DisplayName("유효한 fileKey가 있으면 fileService로 URL을 생성해서 반환한다")
+        void returnsUrl_whenFileKeyIsValid() {
             ChatMessageFile img = ChatMessageFile.builder()
                     .fileKey("chat/img456.jpg")
-                    .imgOrder(1)
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(2048L)
                     .fileType("image/jpeg")
@@ -305,36 +305,36 @@ class ChatProcessorTest {
         }
 
         @Test
-        @DisplayName("이미지가 포함된 메시지는 imgOrder 오름차순으로 정렬된다")
-        void messageImages_areSortedByImgOrder() {
+        @DisplayName("이미지가 포함된 메시지는 fileOrder 오름차순으로 정렬된다")
+        void messageImages_areSortedByFileOrder() {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "이미지 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            // imgOrder 역순으로 삽입: 3 → 1 → 2
+            // fileOrder 역순으로 삽입: 3 → 1 → 2
             ChatMessageFile img3 = ChatMessageFile.builder()
                     .fileKey("img/third.jpg")
-                    .imgOrder(3)
+                    .fileOrder(3)
                     .originalFileName("third.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
             ChatMessageFile img1 = ChatMessageFile.builder()
                     .fileKey("img/first.jpg")
-                    .imgOrder(1)
+                    .fileOrder(1)
                     .originalFileName("first.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
             ChatMessageFile img2 = ChatMessageFile.builder()
                     .fileKey("img/second.jpg")
-                    .imgOrder(2)
+                    .fileOrder(2)
                     .originalFileName("second.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
 
-            // ChatMessage의 chatMessageImgs에 역순으로 세팅
-            ReflectionTestUtils.setField(message, "chatMessageImgs", List.of(img3, img1, img2));
+            // ChatMessage의 chatMessageFiles에 역순으로 세팅
+            ReflectionTestUtils.setField(message, "chatMessageFiles", List.of(img3, img1, img2));
 
             given(fileService.getUrlFromKey("img/first.jpg")).willReturn("https://cdn.example.com/first.jpg");
             given(fileService.getUrlFromKey("img/second.jpg")).willReturn("https://cdn.example.com/second.jpg");
