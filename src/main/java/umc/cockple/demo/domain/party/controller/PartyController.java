@@ -77,11 +77,12 @@ public class PartyController {
     }
 
     @GetMapping("/my/parties/suggestions")
-    @Operation(summary = "추천 모임 조회",
+    @Operation(summary = "모임 추천 조회",
             description = "사용자에게 추천되는 모임 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모임 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
     public BaseResponse<Slice<PartyDTO.Response>> getRecommendedParties(
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "true") boolean isCockpleRecommend,
             @RequestParam(required = false) String addr1,
             @RequestParam(required = false) String addr2,
@@ -96,6 +97,7 @@ public class PartyController {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
+                .search(search)
                 .addr1(addr1)
                 .addr2(addr2)
                 .level(level)
@@ -210,6 +212,22 @@ public class PartyController {
         Long currentMemberId = SecurityUtil.getCurrentMemberId();
 
         partyCommandService.removeMember(partyId, memberIdToRemove, currentMemberId);
+        return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+    @PatchMapping("/parties/{partyId}/members/{memberId}/role")
+    @Operation(summary = "멤버 역할(부모임장) 설정", description = "모임장이 특정 멤버를 부모임장으로 지정하거나 해제합니다.")
+    @ApiResponse(responseCode = "200", description = "역할 변경 성공")
+    @ApiResponse(responseCode = "400", description = "유효하지 않은 역할 값")
+    @ApiResponse(responseCode = "403", description = "모임장 권한 없음 또는 모임장 역할 변경 시도")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임 또는 멤버")
+    public BaseResponse<Void> updateMemberRole(
+            @PathVariable Long partyId,
+            @PathVariable Long memberId,
+            @RequestBody @Valid PartyMemberRoleDTO.Request request) {
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        partyCommandService.updateMemberRole(partyId, memberId, currentMemberId, request);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 

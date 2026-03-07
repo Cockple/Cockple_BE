@@ -67,4 +67,14 @@ public class MemberParty extends BaseEntity {
         if (this.role == Role.party_MANAGER) return true;
         return false;
     }
+
+
+    public boolean isViceLeader() {
+        if (this.role == Role.party_SUBMANAGER) return true;
+        return false;
+    }
+
+    public void changeRole(Role newRole) {
+        this.role = newRole;
+    }
 }

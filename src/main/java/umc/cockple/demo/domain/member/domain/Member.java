@@ -58,36 +58,46 @@ public class Member extends BaseEntity {
 
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Contest> contests = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Notification> notifications = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<MemberKeyword> keywords = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<MemberAddr> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<MemberParty> memberParties = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<MemberExercise> memberExercises = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<ExerciseBookmark> exerciseBookmarks = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<PartyBookmark> partyBookmarks = new ArrayList<>();
 
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
     private ProfileImg profileImg;
 
     @OneToMany(mappedBy = "sender")
+    @Builder.Default
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 
 
@@ -173,5 +183,13 @@ public class Member extends BaseEntity {
 
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
+        initField();
+    }
+
+    public void initField() {
+        this.memberName = null;
+        this.gender = null;
+        this.birth = null;
+        this.level = null;
     }
 }

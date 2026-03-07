@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -406,6 +407,7 @@ public class ExerciseConverter {
                 .partyPosition(role.name())
                 .inviterName(null)
                 .joinedAt(memberParticipant.getCreatedAt())
+                .isWithdrawn(member.getIsActive() == MemberStatus.INACTIVE)
                 .build();
     }
 
@@ -423,6 +425,7 @@ public class ExerciseConverter {
                 .partyPosition(null)
                 .inviterName(null)
                 .joinedAt(memberParticipant.getCreatedAt())
+                .isWithdrawn(member.getIsActive() == MemberStatus.INACTIVE)
                 .build();
     }
 
@@ -439,6 +442,7 @@ public class ExerciseConverter {
                 .partyPosition(null)
                 .inviterName(inviterName)
                 .joinedAt(guest.getCreatedAt())
+                .isWithdrawn(false)
                 .build();
     }
 

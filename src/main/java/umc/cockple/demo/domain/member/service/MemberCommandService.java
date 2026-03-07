@@ -17,6 +17,8 @@ import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.image.service.ImageService;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
@@ -75,7 +77,6 @@ public class MemberCommandService {
 
     }
 
-
     public void withdrawMember(Long memberId) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
@@ -83,9 +84,10 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 운동, 모임에서 나가기
-        memberExerciseRepository.deleteAllByMember(member);
+        // 참여중인 미래 운동, 모임에서 나가기, keyword 삭제
+        memberExerciseRepository.deleteFutureExercisesByMember(member, LocalDate.now(), LocalTime.now());
         memberPartyRepository.deleteAllByMember(member);
+        memberKeywordRepository.deleteAllByMember(member);
 
         // 카카오 연결 끊기
         kakaoOauthService.unlinkAccess(member);
@@ -281,6 +283,17 @@ public class MemberCommandService {
 
         if (isLeader) {
             throw new MemberException(MemberErrorCode.MANAGER_CANNOT_LEAVE);
+        }
+
+        // 활성화 된 모임의 부모임장인 경우 -> 탈퇴 불가
+        boolean isSubOwner = member.getMemberParties().stream()
+                .anyMatch(memberParty ->
+                        memberParty.isViceLeader()
+                                && memberParty.getStatus() == MemberPartyStatus.ACTIVE
+                );
+
+        if (isSubOwner) {
+            throw new MemberException(MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
         }
     }
 }

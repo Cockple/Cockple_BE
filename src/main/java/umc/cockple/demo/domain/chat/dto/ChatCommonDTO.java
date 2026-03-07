@@ -14,6 +14,7 @@ public class ChatCommonDTO {
             Long senderId,
             String senderName,
             String senderProfileImageUrl,
+            boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
             List<ImageInfo> images,

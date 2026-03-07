@@ -3,6 +3,7 @@ package umc.cockple.demo.global.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.http.ResponseEntity;
 import umc.cockple.demo.global.response.code.BaseCode;
 import umc.cockple.demo.global.response.code.BaseErrorCode;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -82,6 +83,25 @@ public class BaseResponse<T> {
                 .message(customMessage)
                 .errorReason(errorReason)
                 .build();
+    }
+
+    public static <T> ResponseEntity<BaseResponse<T>> of(BaseCode code) {
+        return of(code, null);
+    }
+
+    public static <T> ResponseEntity<BaseResponse<T>> of(BaseCode code, T data) {
+        ReasonDTO reason = code.getReason();
+        
+        BaseResponse<T> body = BaseResponse.<T>builder()
+                .isSuccess(reason.getHttpStatus().is2xxSuccessful())
+                .code(reason.getCode())
+                .message(reason.getMessage())
+                .data(data)
+                .build();
+        
+        return ResponseEntity
+                .status(reason.getHttpStatus())
+                .body(body);
     }
 
 }
