@@ -53,6 +53,7 @@ public class MemberController {
                 .path("/")
                 .maxAge(Duration.ofDays(7))
                 .sameSite("None")
+                .domain(".cockple.store")
                 .build()
                 ;
 
