@@ -26,19 +26,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("""
             SELECT m FROM ChatMessage m 
             JOIN FETCH m.sender
-            LEFT JOIN FETCH m.chatMessageImgs
+            LEFT JOIN FETCH m.chatMessageFiles
             WHERE m.chatRoom.id = :chatRoomId 
             AND m.isDeleted = false
             ORDER BY m.createdAt DESC
             """)
-    List<ChatMessage> findRecentMessagesWithImages(
+    List<ChatMessage> findRecentMessagesWithFiles(
             @Param("chatRoomId") Long chatRoomId,
             Pageable pageable);
 
     @Query("""
             SELECT m FROM ChatMessage m
             JOIN FETCH m.sender
-            LEFT JOIN FETCH m.chatMessageImgs
+            LEFT JOIN FETCH m.chatMessageFiles
             WHERE m.chatRoom.id = :chatRoomId
             AND m.id < :cursor
             ORDER BY m.createdAt DESC

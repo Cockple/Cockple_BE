@@ -7,7 +7,6 @@ import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.bookmark.dto.GetAllExerciseBookmarksResponseDTO;
 import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.image.service.ImageService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyLevel;
 import umc.cockple.demo.domain.party.enums.ActivityTime;

@@ -10,11 +10,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
-import umc.cockple.demo.domain.chat.domain.ChatMessageImg;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 class ChatProcessorTest {
 
     @Mock
-    private ImageService imageService;
+    private FileService fileService;
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
@@ -46,7 +46,7 @@ class ChatProcessorTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatProcessor = new ChatProcessor(imageService, chatConverter);
+        chatProcessor = new ChatProcessor(fileService, chatConverter);
 
         sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(sender, "id", 10L);
@@ -69,7 +69,7 @@ class ChatProcessorTest {
             String result = chatProcessor.generateProfileImageUrl(null);
 
             assertThat(result).isNull();
-            verify(imageService, never()).getUrlFromKey(null);
+            verify(fileService, never()).getUrlFromKey(null);
         }
 
         @Test
@@ -82,7 +82,7 @@ class ChatProcessorTest {
             String result = chatProcessor.generateProfileImageUrl(profileImg);
 
             assertThat(result).isNull();
-            verify(imageService, never()).getUrlFromKey(null);
+            verify(fileService, never()).getUrlFromKey(null);
         }
 
         @Test
@@ -95,7 +95,7 @@ class ChatProcessorTest {
             String result = chatProcessor.generateProfileImageUrl(profileImg);
 
             assertThat(result).isNull();
-            verify(imageService, never()).getUrlFromKey("   ");
+            verify(fileService, never()).getUrlFromKey("   ");
         }
 
         @Test
@@ -105,82 +105,82 @@ class ChatProcessorTest {
                     .imgKey("profile/key123.jpg")
                     .build();
 
-            given(imageService.getUrlFromKey("profile/key123.jpg"))
+            given(fileService.getUrlFromKey("profile/key123.jpg"))
                     .willReturn("https://cdn.example.com/profile/key123.jpg");
 
             String result = chatProcessor.generateProfileImageUrl(profileImg);
 
             assertThat(result).isEqualTo("https://cdn.example.com/profile/key123.jpg");
-            verify(imageService).getUrlFromKey("profile/key123.jpg");
+            verify(fileService).getUrlFromKey("profile/key123.jpg");
         }
     }
 
-    // ========== generateImageUrl ==========
+    // ========== generateFileUrl ==========
 
     @Nested
-    @DisplayName("generateImageUrl - 채팅 이미지 URL 생성")
-    class GenerateImageUrl {
+    @DisplayName("generateFileUrl - 채팅 파일 URL 생성")
+    class GenerateFileUrl {
 
         @Test
-        @DisplayName("img가 null이면 null을 반환한다")
-        void returnsNull_whenImgIsNull() {
-            String result = chatProcessor.generateImageUrl(null);
+        @DisplayName("file이 null이면 null을 반환한다")
+        void returnsNull_whenFileIsNull() {
+            String result = chatProcessor.generateFileUrl(null);
 
             assertThat(result).isNull();
         }
 
         @Test
-        @DisplayName("imgKey가 null이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsNull() {
-            ChatMessageImg img = ChatMessageImg.builder()
-                    .imgKey(null)
-                    .imgOrder(1)
+        @DisplayName("fileKey가 null이면 null을 반환하고 fileService를 호출하지 않는다")
+        void returnsNull_whenFileKeyIsNull() {
+            ChatMessageFile img = ChatMessageFile.builder()
+                    .fileKey(null)
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(1024L)
                     .fileType("image/jpeg")
                     .build();
 
-            String result = chatProcessor.generateImageUrl(img);
+            String result = chatProcessor.generateFileUrl(img);
 
             assertThat(result).isNull();
-            verify(imageService, never()).getUrlFromKey(null);
+            verify(fileService, never()).getUrlFromKey(null);
         }
 
         @Test
-        @DisplayName("imgKey가 공백 문자열이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsBlank() {
-            ChatMessageImg img = ChatMessageImg.builder()
-                    .imgKey("  ")
-                    .imgOrder(1)
+        @DisplayName("fileKey가 공백 문자열이면 null을 반환하고 fileService를 호출하지 않는다")
+        void returnsNull_whenFileKeyIsBlank() {
+            ChatMessageFile img = ChatMessageFile.builder()
+                    .fileKey("  ")
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(1024L)
                     .fileType("image/jpeg")
                     .build();
 
-            String result = chatProcessor.generateImageUrl(img);
+            String result = chatProcessor.generateFileUrl(img);
 
             assertThat(result).isNull();
-            verify(imageService, never()).getUrlFromKey("  ");
+            verify(fileService, never()).getUrlFromKey("  ");
         }
 
         @Test
-        @DisplayName("유효한 imgKey가 있으면 imageService로 URL을 생성해서 반환한다")
-        void returnsUrl_whenImgKeyIsValid() {
-            ChatMessageImg img = ChatMessageImg.builder()
-                    .imgKey("chat/img456.jpg")
-                    .imgOrder(1)
+        @DisplayName("유효한 fileKey가 있으면 fileService로 URL을 생성해서 반환한다")
+        void returnsUrl_whenFileKeyIsValid() {
+            ChatMessageFile img = ChatMessageFile.builder()
+                    .fileKey("chat/img456.jpg")
+                    .fileOrder(1)
                     .originalFileName("photo.jpg")
                     .fileSize(2048L)
                     .fileType("image/jpeg")
                     .build();
 
-            given(imageService.getUrlFromKey("chat/img456.jpg"))
+            given(fileService.getUrlFromKey("chat/img456.jpg"))
                     .willReturn("https://cdn.example.com/chat/img456.jpg");
 
-            String result = chatProcessor.generateImageUrl(img);
+            String result = chatProcessor.generateFileUrl(img);
 
             assertThat(result).isEqualTo("https://cdn.example.com/chat/img456.jpg");
-            verify(imageService).getUrlFromKey("chat/img456.jpg");
+            verify(fileService).getUrlFromKey("chat/img456.jpg");
         }
     }
 
@@ -277,7 +277,7 @@ class ChatProcessorTest {
             List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
 
             assertThat(result.get(0).senderProfileImageUrl()).isNull();
-            verify(imageService, never()).getUrlFromKey(null);
+            verify(fileService, never()).getUrlFromKey(null);
         }
 
         @Test
@@ -305,48 +305,48 @@ class ChatProcessorTest {
         }
 
         @Test
-        @DisplayName("이미지가 포함된 메시지는 imgOrder 오름차순으로 정렬된다")
-        void messageImages_areSortedByImgOrder() {
+        @DisplayName("이미지가 포함된 메시지는 fileOrder 오름차순으로 정렬된다")
+        void messageImages_areSortedByFileOrder() {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "이미지 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            // imgOrder 역순으로 삽입: 3 → 1 → 2
-            ChatMessageImg img3 = ChatMessageImg.builder()
-                    .imgKey("img/third.jpg")
-                    .imgOrder(3)
+            // fileOrder 역순으로 삽입: 3 → 1 → 2
+            ChatMessageFile img3 = ChatMessageFile.builder()
+                    .fileKey("img/third.jpg")
+                    .fileOrder(3)
                     .originalFileName("third.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
-            ChatMessageImg img1 = ChatMessageImg.builder()
-                    .imgKey("img/first.jpg")
-                    .imgOrder(1)
+            ChatMessageFile img1 = ChatMessageFile.builder()
+                    .fileKey("img/first.jpg")
+                    .fileOrder(1)
                     .originalFileName("first.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
-            ChatMessageImg img2 = ChatMessageImg.builder()
-                    .imgKey("img/second.jpg")
-                    .imgOrder(2)
+            ChatMessageFile img2 = ChatMessageFile.builder()
+                    .fileKey("img/second.jpg")
+                    .fileOrder(2)
                     .originalFileName("second.jpg")
                     .fileSize(100L)
                     .fileType("image/jpeg")
                     .build();
 
-            // ChatMessage의 chatMessageImgs에 역순으로 세팅
-            ReflectionTestUtils.setField(message, "chatMessageImgs", List.of(img3, img1, img2));
+            // ChatMessage의 chatMessageFiles에 역순으로 세팅
+            ReflectionTestUtils.setField(message, "chatMessageFiles", List.of(img3, img1, img2));
 
-            given(imageService.getUrlFromKey("img/first.jpg")).willReturn("https://cdn.example.com/first.jpg");
-            given(imageService.getUrlFromKey("img/second.jpg")).willReturn("https://cdn.example.com/second.jpg");
-            given(imageService.getUrlFromKey("img/third.jpg")).willReturn("https://cdn.example.com/third.jpg");
+            given(fileService.getUrlFromKey("img/first.jpg")).willReturn("https://cdn.example.com/first.jpg");
+            given(fileService.getUrlFromKey("img/second.jpg")).willReturn("https://cdn.example.com/second.jpg");
+            given(fileService.getUrlFromKey("img/third.jpg")).willReturn("https://cdn.example.com/third.jpg");
 
             List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
 
-            List<ChatCommonDTO.ImageInfo> images = result.get(0).images();
+            List<ChatCommonDTO.FileInfo> images = result.get(0).files();
             assertThat(images).hasSize(3);
-            assertThat(images.get(0).imgOrder()).isEqualTo(1);
-            assertThat(images.get(1).imgOrder()).isEqualTo(2);
-            assertThat(images.get(2).imgOrder()).isEqualTo(3);
+            assertThat(images.get(0).fileOrder()).isEqualTo(1);
+            assertThat(images.get(1).fileOrder()).isEqualTo(2);
+            assertThat(images.get(2).fileOrder()).isEqualTo(3);
         }
     }
 }

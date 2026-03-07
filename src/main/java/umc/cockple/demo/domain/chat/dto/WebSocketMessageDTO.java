@@ -14,22 +14,12 @@ public class WebSocketMessageDTO {
             List<Long> memberRooms,
             String content,
             List<FileInfo> files,
-            List<ImageInfo> images,
             Long lastReadMessageId
     ) {
         @Builder
         public record FileInfo(
                 String fileKey,
-                String originalFileName,
-                Long fileSize,
-                String fileType
-        ) {
-        }
-
-        @Builder
-        public record ImageInfo(
-                String imgKey,
-                Integer imgOrder,
+                Integer fileOrder,
                 String originalFileName,
                 Long fileSize,
                 String fileType
@@ -53,8 +43,7 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long messageId,
             String content,
-            List<FileInfo> files,
-            List<ChatCommonDTO.ImageInfo> images,
+            List<ChatCommonDTO.FileInfo> files,
             Long senderId,
             String senderName,
             String senderProfileImageUrl,

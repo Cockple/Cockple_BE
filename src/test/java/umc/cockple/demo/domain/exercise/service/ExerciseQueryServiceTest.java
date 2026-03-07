@@ -19,7 +19,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -62,7 +62,7 @@ class ExerciseQueryServiceTest {
     @Mock private GuestRepository guestRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private ExerciseConverter exerciseConverter;
 
@@ -72,7 +72,7 @@ class ExerciseQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        exerciseConverter = new ExerciseConverter(imageService);
+        exerciseConverter = new ExerciseConverter(fileService);
         ReflectionTestUtils.setField(exerciseQueryService, "exerciseConverter", exerciseConverter);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);

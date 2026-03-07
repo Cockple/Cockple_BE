@@ -20,7 +20,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
@@ -48,7 +48,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final MessageReadStatusRepository messageReadStatusRepository;
 
     private final ChatConverter chatConverter;
-    private final ImageService imageService;
+    private final FileService fileService;
     private final ChatProcessor chatProcessor;
     private final ChatRoomListCacheService chatRoomListCacheService;
 
@@ -305,7 +305,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
+            return fileService.getUrlFromKey(partyImg.getImgKey());
         }
         return null;
     }
@@ -314,7 +314,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (profileImg == null || profileImg.getImgKey() == null) {
             return null;
         }
-        return imageService.getUrlFromKey(profileImg.getImgKey());
+        return fileService.getUrlFromKey(profileImg.getImgKey());
     }
 
     // ========== 조회 메서드 ==========
@@ -341,7 +341,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
-        return chatMessageRepository.findRecentMessagesWithImages(roomId, pageable);
+        return chatMessageRepository.findRecentMessagesWithFiles(roomId, pageable);
     }
 
     private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {

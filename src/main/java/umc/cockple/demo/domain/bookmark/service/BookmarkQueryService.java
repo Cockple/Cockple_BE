@@ -12,7 +12,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -43,7 +43,7 @@ public class BookmarkQueryService {
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberRepository memberRepository;
     private final BookmarkConverter bookmarkConverter;
-    private final ImageService imageService;
+    private final FileService fileService;
 
     public List<GetAllExerciseBookmarksResponseDTO> getAllExerciseBookmarks(Long memberId, BookmarkedExerciseOrderType orderType) {
         // 회원 조회하기
@@ -133,7 +133,7 @@ public class BookmarkQueryService {
 
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
+            return fileService.getUrlFromKey(partyImg.getImgKey());
         }
         return null;
     }

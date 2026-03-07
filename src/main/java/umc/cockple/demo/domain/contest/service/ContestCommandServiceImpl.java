@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     private final ContestRepository contestRepository;
     private final MemberRepository memberRepository;
     private final ContestConverter contestConverter;
-    private final ImageService imageService;
+    private final FileService fileService;
 
 
 
@@ -142,7 +142,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 .toList();
 
         for (ContestImg img : imgsToRemove) {
-            imageService.delete(img.getImgKey());
+            fileService.delete(img.getImgKey());
             contest.getContestImgs().remove(img);
         }
 

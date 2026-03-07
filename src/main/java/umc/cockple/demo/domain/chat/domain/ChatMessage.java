@@ -40,10 +40,6 @@ public class ChatMessage extends BaseEntity {
 
     @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ChatMessageImg> chatMessageImgs = new ArrayList<>();
-
-    @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<ChatMessageFile> chatMessageFiles = new ArrayList<>();
 
     public static ChatMessage create(ChatRoom chatRoom, Member sender, String content, MessageType type) {
@@ -61,25 +57,17 @@ public class ChatMessage extends BaseEntity {
             return this.content;
         }
 
-        if (this.chatMessageImgs != null && !this.chatMessageImgs.isEmpty()) {
-            ChatMessageImg firstImg = this.chatMessageImgs.get(0);
-            int count = this.chatMessageImgs.size();
+        if (this.chatMessageFiles != null && !this.chatMessageFiles.isEmpty()) {
+            ChatMessageFile firstFile = this.chatMessageFiles.get(0);
+            int count = this.chatMessageFiles.size();
 
-            if (firstImg.getIsEmoji()) {
+            if (firstFile.getIsEmoji()) {
                 return "이모티콘을 보냈습니다.";
             } else {
                 return count > 1 ?
                         String.format("사진 %d장을 보냈습니다.", count) :
                         "사진을 보냈습니다.";
             }
-        }
-
-        // 파일이 있는 경우
-        if (this.chatMessageFiles != null && !this.chatMessageFiles.isEmpty()) {
-            int fileCount = this.chatMessageFiles.size();
-            return fileCount > 1 ?
-                    String.format("파일 %d개를 보냈습니다.", fileCount) :
-                    "파일을 보냈습니다.";
         }
 
         return "메시지";

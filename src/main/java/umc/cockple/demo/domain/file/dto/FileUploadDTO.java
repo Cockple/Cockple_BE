@@ -1,12 +1,12 @@
-package umc.cockple.demo.domain.image.dto;
+package umc.cockple.demo.domain.file.dto;
 
 import lombok.Builder;
 
-public class ImageUploadDTO{
+public class FileUploadDTO {
     @Builder
     public record Response(
-            String imgUrl,
-            String imgKey,
+            String fileKey,
+            String fileUrl,
             String originalFileName,
             Long fileSize,
             String fileType

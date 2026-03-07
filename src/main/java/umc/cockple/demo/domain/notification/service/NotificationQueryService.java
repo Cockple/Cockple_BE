@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.notification.controller.NotificationController;
 import umc.cockple.demo.domain.notification.converter.NotificationConverter;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
@@ -17,7 +16,6 @@ import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,7 +25,7 @@ public class NotificationQueryService {
 
     private final NotificationRepository notificationRepository;
     private final MemberRepository memberRepository;
-    private final ImageService imageService;
+    private final FileService fileService;
 
 
     public List<AllNotificationsResponseDTO> getAllNotifications(Long memberId) {
@@ -43,7 +41,7 @@ public class NotificationQueryService {
         // dto 매핑 및 반환
         return notifications.stream()
                 .map(notification -> {
-                    String url = imageService.getUrlFromKey(notification.getImageKey());
+                    String url = fileService.getUrlFromKey(notification.getImageKey());
                     return NotificationConverter.toAllNotificationResponseDTO(notification, url);
                 })
                 .toList();
