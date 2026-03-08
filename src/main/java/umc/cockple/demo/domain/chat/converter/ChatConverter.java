@@ -125,7 +125,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
                 .content(content)
-                .files(files)
+                .images(files)
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
@@ -181,7 +181,7 @@ public class ChatConverter {
                 .isSenderWithdrawn(isSenderWithdrawn)
                 .content(message.getContent())
                 .messageType(message.getType())
-                .files(processedFiles)
+                .images(processedFiles)
                 .timestamp(message.getCreatedAt())
                 .isMyMessage(isMyMessage)
                 .build();

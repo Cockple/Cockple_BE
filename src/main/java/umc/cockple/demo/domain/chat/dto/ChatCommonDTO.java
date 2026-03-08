@@ -17,7 +17,7 @@ public class ChatCommonDTO {
             boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
-            List<FileInfo> files,
+            List<FileInfo> images,
             LocalDateTime timestamp,
             boolean isMyMessage
     ) {

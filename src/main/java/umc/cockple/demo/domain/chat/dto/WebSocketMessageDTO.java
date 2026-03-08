@@ -43,7 +43,7 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long messageId,
             String content,
-            List<ChatCommonDTO.FileInfo> files,
+            List<ChatCommonDTO.FileInfo> images,
             Long senderId,
             String senderName,
             String senderProfileImageUrl,

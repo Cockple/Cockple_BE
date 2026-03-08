@@ -51,7 +51,7 @@ public class ChatRoomDetailDTO {
                     .isSenderWithdrawn(common.isSenderWithdrawn())
                     .content(common.content())
                     .messageType(common.messageType())
-                    .images(common.files())
+                    .images(common.images())
                     .timestamp(common.timestamp())
                     .isMyMessage(common.isMyMessage())
                     .build();

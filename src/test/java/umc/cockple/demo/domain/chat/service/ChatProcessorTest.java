@@ -342,7 +342,7 @@ class ChatProcessorTest {
 
             List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
 
-            List<ChatCommonDTO.FileInfo> images = result.get(0).files();
+            List<ChatCommonDTO.FileInfo> images = result.get(0).images();
             assertThat(images).hasSize(3);
             assertThat(images.get(0).fileOrder()).isEqualTo(1);
             assertThat(images.get(1).fileOrder()).isEqualTo(2);
