@@ -27,7 +27,7 @@ public class ChatCommonDTO {
     public record FileInfo(
             Long imageId,
             String imageUrl,
-            Integer imageOrder,
+            Integer imgOrder,
             Boolean isEmoji,
             String originalFileName,
             Long fileSize,

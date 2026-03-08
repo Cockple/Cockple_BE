@@ -191,7 +191,7 @@ public class ChatConverter {
         return ChatCommonDTO.FileInfo.builder()
                 .imageId(file.getId())
                 .imageUrl(fileUrl)
-                .imageOrder(file.getFileOrder())
+                .imgOrder(file.getFileOrder())
                 .isEmoji(file.getIsEmoji())
                 .originalFileName(file.getOriginalFileName())
                 .fileSize(file.getFileSize())

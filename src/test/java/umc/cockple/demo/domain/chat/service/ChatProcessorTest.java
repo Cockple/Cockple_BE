@@ -344,9 +344,9 @@ class ChatProcessorTest {
 
             List<ChatCommonDTO.FileInfo> images = result.get(0).images();
             assertThat(images).hasSize(3);
-            assertThat(images.get(0).imageOrder()).isEqualTo(1);
-            assertThat(images.get(1).imageOrder()).isEqualTo(2);
-            assertThat(images.get(2).imageOrder()).isEqualTo(3);
+            assertThat(images.get(0).imgOrder()).isEqualTo(1);
+            assertThat(images.get(1).imgOrder()).isEqualTo(2);
+            assertThat(images.get(2).imgOrder()).isEqualTo(3);
         }
     }
 }

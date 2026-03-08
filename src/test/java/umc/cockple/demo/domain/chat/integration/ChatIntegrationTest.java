@@ -257,12 +257,12 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.messages[0].messageType").value("TEXT"))
                         .andExpect(jsonPath("$.data.messages[0].images").isArray())
                         .andExpect(jsonPath("$.data.messages[0].images", hasSize(2)))
-                        .andExpect(jsonPath("$.data.messages[0].images[0].imageOrder").value(1))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].imgOrder").value(1))
                         .andExpect(jsonPath("$.data.messages[0].images[0].originalFileName").value("photo1.png"))
                         .andExpect(jsonPath("$.data.messages[0].images[0].fileSize").value(1024))
                         .andExpect(jsonPath("$.data.messages[0].images[0].fileType").value("image/png"))
                         .andExpect(jsonPath("$.data.messages[0].images[0].isEmoji").value(false))
-                        .andExpect(jsonPath("$.data.messages[0].images[1].imageOrder").value(2))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].imgOrder").value(2))
                         .andExpect(jsonPath("$.data.messages[0].images[1].originalFileName").value("photo2.png"));
             }
         }
@@ -502,12 +502,12 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.messages[0].messageType").value("TEXT"))
                         .andExpect(jsonPath("$.data.messages[0].images").isArray())
                         .andExpect(jsonPath("$.data.messages[0].images", hasSize(2)))
-                        .andExpect(jsonPath("$.data.messages[0].images[0].imageOrder").value(1))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].imgOrder").value(1))
                         .andExpect(jsonPath("$.data.messages[0].images[0].originalFileName").value("photo1.png"))
                         .andExpect(jsonPath("$.data.messages[0].images[0].fileSize").value(1024))
                         .andExpect(jsonPath("$.data.messages[0].images[0].fileType").value("image/png"))
                         .andExpect(jsonPath("$.data.messages[0].images[0].isEmoji").value(false))
-                        .andExpect(jsonPath("$.data.messages[0].images[1].imageOrder").value(2))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].imgOrder").value(2))
                         .andExpect(jsonPath("$.data.messages[0].images[1].originalFileName").value("photo2.png"));
             }
         }

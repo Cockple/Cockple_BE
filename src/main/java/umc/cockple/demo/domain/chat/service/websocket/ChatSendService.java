@@ -134,7 +134,7 @@ public class ChatSendService {
                 .map(file -> ChatCommonDTO.FileInfo.builder()
                         .imageId(file.getId())
                         .imageUrl(chatProcessor.generateFileUrl(file))
-                        .imageOrder(file.getFileOrder())
+                        .imgOrder(file.getFileOrder())
                         .isEmoji(file.getIsEmoji())
                         .originalFileName(file.getOriginalFileName())
                         .fileSize(file.getFileSize())
