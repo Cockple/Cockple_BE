@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseParticipationService;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -49,7 +49,7 @@ class ExerciseParticipationServiceTest {
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private GuestRepository guestRepository;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private ExerciseParticipationService exerciseParticipationService;
 
@@ -60,7 +60,7 @@ class ExerciseParticipationServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseConverter exerciseConverter = new ExerciseConverter(imageService);
+        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
         exerciseParticipationService = new ExerciseParticipationService(
                 exerciseRepository, memberRepository, memberPartyRepository,
                 memberExerciseRepository, guestRepository, exerciseValidator, exerciseConverter);

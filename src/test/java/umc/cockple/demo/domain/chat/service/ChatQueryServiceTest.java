@@ -10,11 +10,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -22,7 +24,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -54,7 +56,7 @@ class ChatQueryServiceTest {
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
     @Mock private ChatRoomListCacheService chatRoomListCacheService;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
@@ -63,7 +65,7 @@ class ChatQueryServiceTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatProcessor = new ChatProcessor(imageService, chatConverter);
+        chatProcessor = new ChatProcessor(fileService, chatConverter);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
@@ -72,7 +74,7 @@ class ChatQueryServiceTest {
                 memberPartyRepository,
                 messageReadStatusRepository,
                 chatConverter,
-                imageService,
+                fileService,
                 chatProcessor,
                 chatRoomListCacheService
         );
@@ -105,7 +107,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -154,7 +156,7 @@ class ChatQueryServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
             given(chatRoomMemberRepository.findCounterPartWithMember(roomId, memberId)).willReturn(Optional.of(counterPartMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
 
             // when
@@ -197,7 +199,7 @@ class ChatQueryServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
             given(chatRoomMemberRepository.findCounterPartWithMember(roomId, memberId)).willReturn(Optional.of(withdrawnMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of());
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
 
             // when
@@ -236,7 +238,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(msg3, msg2, msg1));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(msg3, msg2, msg1));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -275,7 +277,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(myMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(myMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
 
@@ -286,6 +288,7 @@ class ChatQueryServiceTest {
             assertThat(result.messages().get(0).isMyMessage()).isTrue();
             assertThat(result.messages().get(0).content()).isEqualTo("내 메시지");
             assertThat(result.messages().get(0).senderName()).isEqualTo("홍길동");
+            assertThat(result.messages().get(0).images()).isEmpty();
         }
 
         @Test
@@ -319,7 +322,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(otherMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(otherMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership, otherMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
 
@@ -362,7 +365,7 @@ class ChatQueryServiceTest {
 
             given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-            given(chatMessageRepository.findRecentMessagesWithImages(eq(roomId), any())).willReturn(List.of(withdrawnMessage));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(withdrawnMessage));
             given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership, withdrawnMembership));
             given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
 
@@ -371,6 +374,57 @@ class ChatQueryServiceTest {
 
             // then
             assertThat(result.messages().get(0).isSenderWithdrawn()).isTrue();
+        }
+
+        @Test
+        @DisplayName("이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
+        void imageMessage_containsFileInfo() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me);
+            ReflectionTestUtils.setField(myMembership, "id", 1L);
+
+            ChatMessage imageMessage = ChatFixture.createImageMessage(chatRoom, me, List.of());
+            ReflectionTestUtils.setField(imageMessage, "id", 1L);
+
+            ChatMessageFile file1 = ChatFixture.createChatMessageFile(imageMessage, "chat/img1.png", 1, "photo1.png");
+            ReflectionTestUtils.setField(file1, "id", 100L);
+            ChatMessageFile file2 = ChatFixture.createChatMessageFile(imageMessage, "chat/img2.png", 2, "photo2.png");
+            ReflectionTestUtils.setField(file2, "id", 101L);
+            imageMessage.getChatMessageFiles().addAll(List.of(file1, file2));
+
+            given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(imageMessage));
+            given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
+            given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
+            given(fileService.getUrlFromKey("chat/img1.png")).willReturn("https://storage.example.com/chat/img1.png");
+            given(fileService.getUrlFromKey("chat/img2.png")).willReturn("https://storage.example.com/chat/img2.png");
+
+            // when
+            ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+            // then
+            ChatRoomDetailDTO.MessageInfo message = result.messages().get(0);
+            assertThat(message.messageType()).isEqualTo(MessageType.TEXT);
+            assertThat(message.images()).hasSize(2);
+            assertThat(message.images().get(0).imageUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
+            assertThat(message.images().get(0).imgOrder()).isEqualTo(1);
+            assertThat(message.images().get(0).originalFileName()).isEqualTo("photo1.png");
+            assertThat(message.images().get(0).isEmoji()).isFalse();
+            assertThat(message.images().get(1).imageUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
+            assertThat(message.images().get(1).imgOrder()).isEqualTo(2);
         }
 
         @Test
@@ -563,6 +617,7 @@ class ChatQueryServiceTest {
 
             // then
             assertThat(result.messages().get(0).isMyMessage()).isTrue();
+            assertThat(result.messages().get(0).images()).isEmpty();
         }
 
         @Test
@@ -634,6 +689,53 @@ class ChatQueryServiceTest {
 
             // then
             assertThat(result.messages().get(0).isSenderWithdrawn()).isTrue();
+        }
+
+        @Test
+        @DisplayName("이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
+        void imageMessage_containsFileInfo() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+            Long cursor = 100L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatMessage imageMessage = ChatFixture.createImageMessage(chatRoom, me, List.of());
+            ReflectionTestUtils.setField(imageMessage, "id", 1L);
+
+            ChatMessageFile file1 = ChatFixture.createChatMessageFile(imageMessage, "chat/img1.png", 1, "photo1.png");
+            ReflectionTestUtils.setField(file1, "id", 100L);
+            ChatMessageFile file2 = ChatFixture.createChatMessageFile(imageMessage, "chat/img2.png", 2, "photo2.png");
+            ReflectionTestUtils.setField(file2, "id", 101L);
+            imageMessage.getChatMessageFiles().addAll(List.of(file1, file2));
+
+            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId)).willReturn(true);
+            given(chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(eq(roomId), eq(cursor), any()))
+                    .willReturn(List.of(imageMessage));
+            given(fileService.getUrlFromKey("chat/img1.png")).willReturn("https://storage.example.com/chat/img1.png");
+            given(fileService.getUrlFromKey("chat/img2.png")).willReturn("https://storage.example.com/chat/img2.png");
+
+            // when
+            ChatMessageDTO.Response result = chatQueryService.getChatMessages(roomId, memberId, cursor, 10);
+
+            // then
+            ChatMessageDTO.MessageInfo message = result.messages().get(0);
+            assertThat(message.messageType()).isEqualTo(MessageType.TEXT);
+            assertThat(message.images()).hasSize(2);
+            assertThat(message.images().get(0).imageUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
+            assertThat(message.images().get(0).imgOrder()).isEqualTo(1);
+            assertThat(message.images().get(0).originalFileName()).isEqualTo("photo1.png");
+            assertThat(message.images().get(0).isEmoji()).isFalse();
+            assertThat(message.images().get(1).imageUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
+            assertThat(message.images().get(1).imgOrder()).isEqualTo(2);
         }
 
         @Test
