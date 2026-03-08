@@ -127,6 +127,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.messages[0].timestamp").exists())
                         .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(true))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(false))
+                        .andExpect(jsonPath("$.data.messages[0].images").isArray())
+                        .andExpect(jsonPath("$.data.messages[0].images", hasSize(0)))
                         // 3. participants 리스트 및 첫 번째 참여자 필드 전수 검사
                         .andExpect(jsonPath("$.data.participants").isArray())
                         .andExpect(jsonPath("$.data.participants[0].memberId").value(member.getId()))
@@ -234,6 +236,35 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
             }
+
+            @Test
+            @DisplayName("200 - 이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
+            void imageMessage_containsFileInfo() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+
+                ChatMessage imageMessage = chatMessageRepository.save(
+                        ChatFixture.createImageMessage(partyChatRoom, member, java.util.List.of()));
+
+                ChatMessageFile file1 = ChatMessageFile.create(imageMessage, "chat/img1.png", 1, "photo1.png", 1024L, "image/png");
+                ChatMessageFile file2 = ChatMessageFile.create(imageMessage, "chat/img2.png", 2, "photo2.png", 2048L, "image/png");
+                imageMessage.getChatMessageFiles().addAll(java.util.List.of(file1, file2));
+                chatMessageRepository.saveAndFlush(imageMessage);
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}", partyChatRoom.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.messages[0].images").isArray())
+                        .andExpect(jsonPath("$.data.messages[0].images", hasSize(2)))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileOrder").value(1))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].originalFileName").value("photo1.png"))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileSize").value(1024))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileType").value("image/png"))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].isEmoji").value(false))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].fileOrder").value(2))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].originalFileName").value("photo2.png"));
+            }
         }
 
         @Nested
@@ -307,7 +338,9 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.messages[0].messageType").value("TEXT"))
                         .andExpect(jsonPath("$.data.messages[0].timestamp").exists())
                         .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(true))
-                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(false));
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(false))
+                        .andExpect(jsonPath("$.data.messages[0].images").isArray())
+                        .andExpect(jsonPath("$.data.messages[0].images", hasSize(0)));
             }
 
             @Test
@@ -443,6 +476,39 @@ class ChatIntegrationTest extends IntegrationTestBase {
                                 .param("cursor", cursor.toString()))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+            }
+
+            @Test
+            @DisplayName("200 - 이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
+            void imageMessage_containsFileInfo() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+
+                ChatMessage imageMessage = chatMessageRepository.save(
+                        ChatFixture.createImageMessage(partyChatRoom, member, java.util.List.of()));
+
+                ChatMessageFile file1 = ChatMessageFile.create(imageMessage, "chat/img1.png", 1, "photo1.png", 1024L, "image/png");
+                ChatMessageFile file2 = ChatMessageFile.create(imageMessage, "chat/img2.png", 2, "photo2.png", 2048L, "image/png");
+                imageMessage.getChatMessageFiles().addAll(java.util.List.of(file1, file2));
+                chatMessageRepository.saveAndFlush(imageMessage);
+
+                Long cursor = imageMessage.getId() + 1;
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}/messages/previous", partyChatRoom.getId())
+                                .param("cursor", cursor.toString())
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.messages[0].images").isArray())
+                        .andExpect(jsonPath("$.data.messages[0].images", hasSize(2)))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileOrder").value(1))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].originalFileName").value("photo1.png"))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileSize").value(1024))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].fileType").value("image/png"))
+                        .andExpect(jsonPath("$.data.messages[0].images[0].isEmoji").value(false))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].fileOrder").value(2))
+                        .andExpect(jsonPath("$.data.messages[0].images[1].originalFileName").value("photo2.png"));
             }
         }
 
