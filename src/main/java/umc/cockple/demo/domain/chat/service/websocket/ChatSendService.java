@@ -97,7 +97,7 @@ public class ChatSendService {
         if (files != null && !files.isEmpty()) {
             files.forEach(fileInfo -> {
                 ChatMessageFile messageFile = ChatMessageFile.create(
-                        message, fileInfo.fileKey(), fileInfo.fileOrder(),
+                        message, fileInfo.imgKey(), fileInfo.imgOrder(),
                         fileInfo.originalFileName(), fileInfo.fileSize(), fileInfo.fileType()
                 );
                 message.getChatMessageFiles().add(messageFile);
@@ -132,9 +132,9 @@ public class ChatSendService {
             List<ChatMessageFile> savedFiles) {
         return savedFiles.stream()
                 .map(file -> ChatCommonDTO.FileInfo.builder()
-                        .fileId(file.getId())
-                        .fileUrl(chatProcessor.generateFileUrl(file))
-                        .fileOrder(file.getFileOrder())
+                        .imageId(file.getId())
+                        .imageUrl(chatProcessor.generateFileUrl(file))
+                        .imageOrder(file.getFileOrder())
                         .isEmoji(file.getIsEmoji())
                         .originalFileName(file.getOriginalFileName())
                         .fileSize(file.getFileSize())

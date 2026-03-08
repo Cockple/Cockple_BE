@@ -419,12 +419,12 @@ class ChatQueryServiceTest {
             ChatRoomDetailDTO.MessageInfo message = result.messages().get(0);
             assertThat(message.messageType()).isEqualTo(MessageType.TEXT);
             assertThat(message.images()).hasSize(2);
-            assertThat(message.images().get(0).fileUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
-            assertThat(message.images().get(0).fileOrder()).isEqualTo(1);
+            assertThat(message.images().get(0).imageUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
+            assertThat(message.images().get(0).imageOrder()).isEqualTo(1);
             assertThat(message.images().get(0).originalFileName()).isEqualTo("photo1.png");
             assertThat(message.images().get(0).isEmoji()).isFalse();
-            assertThat(message.images().get(1).fileUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
-            assertThat(message.images().get(1).fileOrder()).isEqualTo(2);
+            assertThat(message.images().get(1).imageUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
+            assertThat(message.images().get(1).imageOrder()).isEqualTo(2);
         }
 
         @Test
@@ -730,12 +730,12 @@ class ChatQueryServiceTest {
             ChatMessageDTO.MessageInfo message = result.messages().get(0);
             assertThat(message.messageType()).isEqualTo(MessageType.TEXT);
             assertThat(message.images()).hasSize(2);
-            assertThat(message.images().get(0).fileUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
-            assertThat(message.images().get(0).fileOrder()).isEqualTo(1);
+            assertThat(message.images().get(0).imageUrl()).isEqualTo("https://storage.example.com/chat/img1.png");
+            assertThat(message.images().get(0).imageOrder()).isEqualTo(1);
             assertThat(message.images().get(0).originalFileName()).isEqualTo("photo1.png");
             assertThat(message.images().get(0).isEmoji()).isFalse();
-            assertThat(message.images().get(1).fileUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
-            assertThat(message.images().get(1).fileOrder()).isEqualTo(2);
+            assertThat(message.images().get(1).imageUrl()).isEqualTo("https://storage.example.com/chat/img2.png");
+            assertThat(message.images().get(1).imageOrder()).isEqualTo(2);
         }
 
         @Test
