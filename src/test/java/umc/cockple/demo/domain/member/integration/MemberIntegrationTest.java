@@ -6,18 +6,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.cockple.demo.domain.contest.domain.Contest;
+import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.member.domain.MemberKeyword;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
@@ -26,6 +38,8 @@ import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
+
+import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -44,6 +58,10 @@ class MemberIntegrationTest extends IntegrationTestBase {
     // withdrawMember에서 카카오 연결 끊기 API 호출을 막기 위해 Mock 처리
     @MockitoBean
     KakaoOauthService kakaoOauthService;
+
+    @Autowired ContestRepository contestRepository;
+    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired MemberKeywordRepository memberKeywordRepository;
 
     private Member member;
 
@@ -136,6 +154,79 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.gender").value("MALE"))
                         .andExpect(jsonPath("$.data.level").value("A"));
             }
+
+            @Test
+            @DisplayName("200 - 모든 필드가 정상 반환된다")
+            void getProfile_모든_필드가_정상_반환된다() throws Exception {
+                // given
+                Member freshMember = memberRepository.save(Member.builder()
+                        .memberName("홍길동")
+                        .nickname("홍길동")
+                        .gender(Gender.MALE)
+                        .birth(LocalDate.of(1990, 1, 1))
+                        .level(Level.A)
+                        .isActive(MemberStatus.ACTIVE)
+                        .socialId(9001L)
+                        .build());
+
+                // ProfileImg: Member cascade를 통해 저장
+                ProfileImg profileImg = ProfileImg.builder()
+                        .member(freshMember)
+                        .imgKey("profile/test-key.jpg")
+                        .build();
+                freshMember.updateProfileImg(profileImg);
+                memberRepository.save(freshMember);
+
+                // 금2, 은1, 동1
+                for (int i = 0; i < 2; i++) {
+                    contestRepository.save(Contest.builder()
+                            .member(freshMember)
+                            .contestName("금메달 대회")
+                            .medalType(MedalType.GOLD)
+                            .type(ParticipationType.SINGLE)
+                            .level(Level.A)
+                            .contentIsOpen(true)
+                            .videoIsOpen(false)
+                            .build());
+                }
+                contestRepository.save(Contest.builder()
+                        .member(freshMember)
+                        .contestName("은메달 대회")
+                        .medalType(MedalType.SILVER)
+                        .type(ParticipationType.SINGLE)
+                        .level(Level.A)
+                        .contentIsOpen(true)
+                        .videoIsOpen(false)
+                        .build());
+                contestRepository.save(Contest.builder()
+                        .member(freshMember)
+                        .contestName("동메달 대회")
+                        .medalType(MedalType.BRONZE)
+                        .type(ParticipationType.SINGLE)
+                        .level(Level.A)
+                        .contentIsOpen(true)
+                        .videoIsOpen(false)
+                        .build());
+
+                // 모임 2개
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+
+                SecurityContextHelper.setAuthentication(freshMember.getId(), freshMember.getNickname());
+
+                // when & then
+                mockMvc.perform(get("/api/profile/{memberId}", freshMember.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").value("홍길동"))
+                        .andExpect(jsonPath("$.data.birth").value("1990-01-01"))
+                        .andExpect(jsonPath("$.data.gender").value("MALE"))
+                        .andExpect(jsonPath("$.data.level").value("A"))
+                        .andExpect(jsonPath("$.data.profileImgUrl").value("https://storage.googleapis.com/test-bucket/profile/test-key.jpg"))
+                        .andExpect(jsonPath("$.data.myPartyCnt").value(2))
+                        .andExpect(jsonPath("$.data.myGoldMedalCnt").value(2))
+                        .andExpect(jsonPath("$.data.mySilverMedalCnt").value(1))
+                        .andExpect(jsonPath("$.data.myBronzeMedalCnt").value(1));
+            }
         }
 
         @Nested
@@ -175,6 +266,106 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.memberName").value("홍길동"))
                         .andExpect(jsonPath("$.data.addr3").value("역삼동"))
                         .andExpect(jsonPath("$.data.myExerciseCnt").value(0));
+            }
+
+            @Test
+            @DisplayName("200 - 모든 필드가 정상 반환된다")
+            void getMyProfile_모든_필드가_정상_반환된다() throws Exception {
+                // given
+                Member freshMember = memberRepository.save(Member.builder()
+                        .memberName("홍길동")
+                        .nickname("홍길동")
+                        .gender(Gender.MALE)
+                        .birth(LocalDate.of(1990, 1, 1))
+                        .level(Level.A)
+                        .isActive(MemberStatus.ACTIVE)
+                        .socialId(9002L)
+                        .build());
+
+                memberAddrRepository.save(MemberAddrFixture.createMainAddr(freshMember));
+
+                // ProfileImg: Member cascade를 통해 저장
+                ProfileImg profileImg = ProfileImg.builder()
+                        .member(freshMember)
+                        .imgKey("profile/test-key.jpg")
+                        .build();
+                freshMember.updateProfileImg(profileImg);
+                memberRepository.save(freshMember);
+
+                // 금2, 은1, 동1
+                for (int i = 0; i < 2; i++) {
+                    contestRepository.save(Contest.builder()
+                            .member(freshMember)
+                            .contestName("금메달 대회")
+                            .medalType(MedalType.GOLD)
+                            .type(ParticipationType.SINGLE)
+                            .level(Level.A)
+                            .contentIsOpen(true)
+                            .videoIsOpen(false)
+                            .build());
+                }
+                contestRepository.save(Contest.builder()
+                        .member(freshMember)
+                        .contestName("은메달 대회")
+                        .medalType(MedalType.SILVER)
+                        .type(ParticipationType.SINGLE)
+                        .level(Level.A)
+                        .contentIsOpen(true)
+                        .videoIsOpen(false)
+                        .build());
+                contestRepository.save(Contest.builder()
+                        .member(freshMember)
+                        .contestName("동메달 대회")
+                        .medalType(MedalType.BRONZE)
+                        .type(ParticipationType.SINGLE)
+                        .level(Level.A)
+                        .contentIsOpen(true)
+                        .videoIsOpen(false)
+                        .build());
+
+                // 모임 2개, 운동 2개, 키워드 2개
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+
+                memberExerciseRepository.save(MemberExercise.builder()
+                        .member(freshMember)
+                        .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
+                        .build());
+                memberExerciseRepository.save(MemberExercise.builder()
+                        .member(freshMember)
+                        .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
+                        .build());
+
+                memberKeywordRepository.save(MemberKeyword.builder()
+                        .member(freshMember)
+                        .keyword(Keyword.FRIENDSHIP)
+                        .build());
+                memberKeywordRepository.save(MemberKeyword.builder()
+                        .member(freshMember)
+                        .keyword(Keyword.FREE)
+                        .build());
+
+                SecurityContextHelper.setAuthentication(freshMember.getId(), freshMember.getNickname());
+
+                // when & then
+                mockMvc.perform(get("/api/my/profile"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").value("홍길동"))
+                        .andExpect(jsonPath("$.data.birth").value("1990-01-01"))
+                        .andExpect(jsonPath("$.data.gender").value("MALE"))
+                        .andExpect(jsonPath("$.data.level").value("A"))
+                        .andExpect(jsonPath("$.data.keywords", hasSize(2)))
+                        .andExpect(jsonPath("$.data.addr3").value("역삼동"))
+                        .andExpect(jsonPath("$.data.streetAddr").value("테헤란로 123"))
+                        .andExpect(jsonPath("$.data.buildingName").value("ㅁㅁ빌딩"))
+                        .andExpect(jsonPath("$.data.latitude").value(37.5))
+                        .andExpect(jsonPath("$.data.longitude").value(127.0))
+                        .andExpect(jsonPath("$.data.profileImgUrl").value("https://storage.googleapis.com/test-bucket/profile/test-key.jpg"))
+                        .andExpect(jsonPath("$.data.myPartyCnt").value(2))
+                        .andExpect(jsonPath("$.data.myExerciseCnt").value(2))
+                        .andExpect(jsonPath("$.data.myGoldMedalCnt").value(2))
+                        .andExpect(jsonPath("$.data.mySilverMedalCnt").value(1))
+                        .andExpect(jsonPath("$.data.myBronzeMedalCnt").value(1));
             }
         }
 
@@ -419,6 +610,28 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data", hasSize(2)))
                         .andExpect(jsonPath("$.data[0].isMainAddr").value(true))
                         .andExpect(jsonPath("$.data[1].isMainAddr").value(false));
+            }
+
+            @Test
+            @DisplayName("200 - 주소의 모든 필드가 정상 반환된다")
+            void getAllAddress_모든_필드가_정상_반환된다() throws Exception {
+                // given
+                MemberAddr mainAddr = memberAddrRepository.save(MemberAddrFixture.createMainAddr(member));
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when & then
+                mockMvc.perform(get("/api/my/profile/locations"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data", hasSize(1)))
+                        .andExpect(jsonPath("$.data[0].addrId").value(mainAddr.getId()))
+                        .andExpect(jsonPath("$.data[0].addr1").value("서울특별시"))
+                        .andExpect(jsonPath("$.data[0].addr2").value("강남구"))
+                        .andExpect(jsonPath("$.data[0].addr3").value("역삼동"))
+                        .andExpect(jsonPath("$.data[0].streetAddr").value("테헤란로 123"))
+                        .andExpect(jsonPath("$.data[0].buildingName").value("ㅁㅁ빌딩"))
+                        .andExpect(jsonPath("$.data[0].latitude").value(37.5))
+                        .andExpect(jsonPath("$.data[0].longitude").value(127.0))
+                        .andExpect(jsonPath("$.data[0].isMainAddr").value(true));
             }
         }
     }

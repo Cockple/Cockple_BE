@@ -50,10 +50,7 @@ class MemberCommandServiceTest {
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberKeywordRepository memberKeywordRepository;
-    @Mock private MemberAddrRepository memberAddrRepository;
-    @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private KakaoOauthService kakaoOauthService;
-    @Mock private FileService fileService;
 
     private Member normalMember;
 
@@ -195,7 +192,7 @@ class MemberCommandServiceTest {
         }
 
         @Nested
-        @DisplayName("성공 케이스")
+        @DisplayName("성공")
         class Success {
 
             @Test
@@ -248,7 +245,7 @@ class MemberCommandServiceTest {
         }
 
         @Nested
-        @DisplayName("실패 케이스")
+        @DisplayName("실패")
         class Failure {
 
             @Test
