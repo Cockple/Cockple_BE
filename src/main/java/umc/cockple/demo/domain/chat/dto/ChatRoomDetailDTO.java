@@ -38,7 +38,7 @@ public class ChatRoomDetailDTO {
             boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
-            List<ChatCommonDTO.ImageInfo> images,
+            List<ChatCommonDTO.FileInfo> images,
             LocalDateTime timestamp,
             boolean isMyMessage
     ) {

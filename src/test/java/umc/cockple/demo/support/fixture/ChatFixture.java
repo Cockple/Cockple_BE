@@ -1,6 +1,7 @@
 package umc.cockple.demo.support.fixture;
 
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
@@ -8,6 +9,8 @@ import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
+
+import java.util.List;
 
 public class ChatFixture {
 
@@ -39,5 +42,15 @@ public class ChatFixture {
 
     public static ChatMessage createTextMessage(ChatRoom chatRoom, Member sender, String content) {
         return ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
+    }
+
+    public static ChatMessage createImageMessage(ChatRoom chatRoom, Member sender, List<ChatMessageFile> files) {
+        ChatMessage message = ChatMessage.create(chatRoom, sender, null, MessageType.TEXT);
+        message.getChatMessageFiles().addAll(files);
+        return message;
+    }
+
+    public static ChatMessageFile createChatMessageFile(ChatMessage message, String fileKey, int fileOrder, String originalFileName) {
+        return ChatMessageFile.create(message, fileKey, fileOrder, originalFileName, 1024L, "image/png");
     }
 }

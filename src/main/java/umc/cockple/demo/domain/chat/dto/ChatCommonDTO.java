@@ -17,14 +17,14 @@ public class ChatCommonDTO {
             boolean isSenderWithdrawn,
             String content,
             MessageType messageType,
-            List<ImageInfo> images,
+            List<FileInfo> images,
             LocalDateTime timestamp,
             boolean isMyMessage
     ) {
     }
 
     @Builder
-    public record ImageInfo(
+    public record FileInfo(
             Long imageId,
             String imageUrl,
             Integer imgOrder,

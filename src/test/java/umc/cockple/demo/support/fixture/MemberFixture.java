@@ -42,6 +42,8 @@ public class MemberFixture {
         return Member.builder()
                 .memberName(memberName)
                 .nickname(nickname)
+                .gender(Gender.MALE)
+                .level(Level.C)
                 .isActive(MemberStatus.INACTIVE)
                 .socialId(socialId)
                 .build();

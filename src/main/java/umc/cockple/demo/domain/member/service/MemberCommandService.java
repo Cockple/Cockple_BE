@@ -15,8 +15,10 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
@@ -36,7 +38,7 @@ public class MemberCommandService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final KakaoOauthService kakaoOauthService;
-    private final ImageService imageService;
+    private final FileService fileService;
 
 
     // ==================== 회원 관련 ===================
@@ -82,8 +84,8 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 운동, 모임에서 나가기, keyword 삭제
-        memberExerciseRepository.deleteAllByMember(member);
+        // 참여중인 미래 운동, 모임에서 나가기, keyword 삭제
+        memberExerciseRepository.deleteFutureExercisesByMember(member, LocalDate.now(), LocalTime.now());
         memberPartyRepository.deleteAllByMember(member);
         memberKeywordRepository.deleteAllByMember(member);
 
@@ -136,7 +138,7 @@ public class MemberCommandService {
 
                 // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
                 if (!profile.getImgKey().equals(imgKey)) {
-                    imageService.delete(profile.getImgKey());
+                    fileService.delete(profile.getImgKey());
                     profile.updateProfile(imgKey);
                 }
 

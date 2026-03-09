@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.enums.MedalType;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -34,7 +34,7 @@ import static umc.cockple.demo.domain.member.converter.MemberConverter.*;
 public class MemberQueryService {
 
     private final MemberRepository memberRepository;
-    private final ImageService imageService;
+    private final FileService fileService;
 
     /*
      * 프로필 관련 조회 메서드
@@ -69,7 +69,7 @@ public class MemberQueryService {
         // 프로필 사진 null-safety
         String imgUrl = null;
         if (member.getProfileImg() != null) {
-            imgUrl = imageService.getUrlFromKey(member.getProfileImg().getImgKey());
+            imgUrl = fileService.getUrlFromKey(member.getProfileImg().getImgKey());
         }
 
         // 각 메달 개수 카운트

@@ -118,16 +118,14 @@ public class ChatConverter {
 
     public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
             Long chatRoomId, String content,
-            List<ChatCommonDTO.ImageInfo> images,
-            List<WebSocketMessageDTO.MessageResponse.FileInfo> files,
+            List<ChatCommonDTO.FileInfo> files,
             ChatMessage savedMessage, Member sender, String senderProfileImageUrl, int unreadCount) {
         return WebSocketMessageDTO.MessageResponse.builder()
                 .type(WebSocketMessageType.SEND)
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
                 .content(content)
-                .images(images)
-                .files(files)
+                .images(files)
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
                 .senderProfileImageUrl(senderProfileImageUrl)
@@ -171,7 +169,7 @@ public class ChatConverter {
     public ChatCommonDTO.MessageInfo toCommonMessageInfo(
             ChatMessage message,
             String senderProfileImageUrl,
-            List<ChatCommonDTO.ImageInfo> processedImages,
+            List<ChatCommonDTO.FileInfo> processedFiles,
             boolean isMyMessage,
             boolean isSenderWithdrawn) {
 
@@ -183,21 +181,21 @@ public class ChatConverter {
                 .isSenderWithdrawn(isSenderWithdrawn)
                 .content(message.getContent())
                 .messageType(message.getType())
-                .images(processedImages)
+                .images(processedFiles)
                 .timestamp(message.getCreatedAt())
                 .isMyMessage(isMyMessage)
                 .build();
     }
 
-    public ChatCommonDTO.ImageInfo toImageInfo(ChatMessageImg img, String imageUrl) {
-        return ChatCommonDTO.ImageInfo.builder()
-                .imageId(img.getId())
-                .imageUrl(imageUrl)
-                .imgOrder(img.getImgOrder())
-                .isEmoji(img.getIsEmoji())
-                .originalFileName(img.getOriginalFileName())
-                .fileSize(img.getFileSize())
-                .fileType(img.getFileType())
+    public ChatCommonDTO.FileInfo toFileInfo(ChatMessageFile file, String fileUrl) {
+        return ChatCommonDTO.FileInfo.builder()
+                .imageId(file.getId())
+                .imageUrl(fileUrl)
+                .imgOrder(file.getFileOrder())
+                .isEmoji(file.getIsEmoji())
+                .originalFileName(file.getOriginalFileName())
+                .fileSize(file.getFileSize())
+                .fileType(file.getFileType())
                 .build();
     }
 
