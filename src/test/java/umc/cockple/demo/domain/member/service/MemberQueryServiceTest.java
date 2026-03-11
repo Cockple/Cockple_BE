@@ -26,6 +26,7 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
 import java.util.List;
@@ -54,22 +55,6 @@ class MemberQueryServiceTest {
         member = MemberFixture.createMember("강와나", Gender.FEMALE, Level.A, 1001L);
         ReflectionTestUtils.setField(member, "id", 1L);
     }
-
-    // 테스트용 MemberAddr 생성 헬퍼
-    private MemberAddr createAddr(String addr3, boolean isMain) {
-        MemberAddr addr = MemberAddr.builder()
-                .addr1("서울특별시")
-                .addr2("강남구")
-                .addr3(addr3)
-                .streetAddr("서울특별시 강남구 테헤란로 1")
-                .buildingName("테스트 빌딩")
-                .latitude(37.5)
-                .longitude(127.0)
-                .isMain(isMain)
-                .build();
-        return addr;
-    }
-
 
     @Nested
     @DisplayName("getProfile")
@@ -184,7 +169,7 @@ class MemberQueryServiceTest {
             @DisplayName("대표주소_운동횟수_키워드가_포함된_내_프로필이_반환된다")
             void 대표주소_운동횟수_키워드가_포함된_내_프로필이_반환된다() {
                 // given
-                MemberAddr mainAddr = createAddr("역삼동", true);
+                MemberAddr mainAddr = MemberAddrFixture.createAddr(member, "역삼동", "서울특별시 강남구 테헤란로 1", true);
                 member.getAddresses().add(mainAddr);
 
                 MemberExercise exercise = MemberFixture.createMemberExercise(member, null);
@@ -223,7 +208,7 @@ class MemberQueryServiceTest {
             @DisplayName("대표주소를_반환한다")
             void 대표주소를_반환한다() {
                 // given
-                MemberAddr mainAddr = createAddr("역삼동", true);
+                MemberAddr mainAddr = MemberAddrFixture.createAddr(member, "역삼동", "서울특별시 강남구 테헤란로 1", true);
                 member.getAddresses().add(mainAddr);
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
@@ -257,7 +242,7 @@ class MemberQueryServiceTest {
             @DisplayName("대표주소가_없으면_MAIN_ADDRESS_NULL_예외를_던진다")
             void 대표주소가_없으면_MAIN_ADDRESS_NULL_예외를_던진다() {
                 // given: isMain=false인 주소만 존재
-                MemberAddr nonMainAddr = createAddr("삼성동", false);
+                MemberAddr nonMainAddr = MemberAddrFixture.createAddr(member, "삼성동", "서울특별시 강남구 테헤란로 1", false);
                 member.getAddresses().add(nonMainAddr);
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
@@ -283,8 +268,8 @@ class MemberQueryServiceTest {
             @DisplayName("대표주소가_목록_첫_번째로_반환된다")
             void 대표주소가_목록_첫_번째로_반환된다() {
                 // given
-                MemberAddr nonMain = createAddr("삼성동", false);
-                MemberAddr main = createAddr("역삼동", true);
+                MemberAddr nonMain = MemberAddrFixture.createAddr(member, "삼성동", "서울특별시 강남구 테헤란로 1", false);
+                MemberAddr main = MemberAddrFixture.createAddr(member, "역삼동", "서울특별시 강남구 테헤란로 1", true);
                 ReflectionTestUtils.setField(nonMain, "id", 1L);
                 ReflectionTestUtils.setField(main, "id", 2L);
 
@@ -305,9 +290,9 @@ class MemberQueryServiceTest {
             @DisplayName("대표주소_제외_나머지는_id_오름차순으로_정렬된다")
             void 대표주소_제외_나머지는_id_오름차순으로_정렬된다() {
                 // given
-                MemberAddr main = createAddr("역삼동", true);
-                MemberAddr non1 = createAddr("삼성동", false);
-                MemberAddr non2 = createAddr("청담동", false);
+                MemberAddr main = MemberAddrFixture.createAddr(member, "역삼동", "서울특별시 강남구 테헤란로 1", true);
+                MemberAddr non1 = MemberAddrFixture.createAddr(member, "삼성동", "서울특별시 강남구 테헤란로 1", false);
+                MemberAddr non2 = MemberAddrFixture.createAddr(member, "청담동", "서울특별시 강남구 테헤란로 1", false);
                 ReflectionTestUtils.setField(main, "id", 1L);
                 ReflectionTestUtils.setField(non1, "id", 2L);
                 ReflectionTestUtils.setField(non2, "id", 3L);

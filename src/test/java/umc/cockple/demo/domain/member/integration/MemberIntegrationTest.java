@@ -144,18 +144,6 @@ class MemberIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("200 - 프로필 조회 시 memberName, gender, level이 반환된다")
-            void getProfile_success() throws Exception {
-                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
-
-                mockMvc.perform(get("/api/profile/{memberId}", member.getId()))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data.memberName").value("홍길동"))
-                        .andExpect(jsonPath("$.data.gender").value("MALE"))
-                        .andExpect(jsonPath("$.data.level").value("A"));
-            }
-
-            @Test
             @DisplayName("200 - 모든 필드가 정상 반환된다")
             void getProfile_모든_필드가_정상_반환된다() throws Exception {
                 // given
