@@ -91,7 +91,7 @@ public class MemberController {
     @PostMapping("/my/details")
     @Operation(summary = "로그인 후 상세 정보 받기 API",
             description = "로그인 후 추가적인 상세 정보를 받습니다.")
-    public BaseResponse<String> memberDetailInfo(@RequestBody @Valid MemberDetailInfoRequestDTO requestDTO) {
+    public BaseResponse<String> registerMemberDetailInfo(@RequestBody @Valid MemberDetailInfoRequestDTO requestDTO) {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 

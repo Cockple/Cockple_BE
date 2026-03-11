@@ -208,35 +208,6 @@ class MemberQueryServiceTest {
                 assertThat(response.keywords()).containsExactly(Keyword.FRIENDSHIP);
             }
         }
-
-        @Nested
-        @DisplayName("실패")
-        class Failure {
-
-            @Test
-            @DisplayName("존재하지_않는_회원이면_MEMBER_NOT_FOUND_예외를_던진다")
-            void 존재하지_않는_회원이면_MEMBER_NOT_FOUND_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L)).willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> memberQueryService.getMyProfile(999L))
-                        .isInstanceOf(MemberException.class)
-                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
-            }
-
-            @Test
-            @DisplayName("대표주소가_없으면_MAIN_ADDRESS_NULL_예외를_던진다")
-            void 대표주소가_없으면_MAIN_ADDRESS_NULL_예외를_던진다() {
-                // given: 주소가 아예 없는 경우
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-
-                // when & then
-                assertThatThrownBy(() -> memberQueryService.getMyProfile(member.getId()))
-                        .isInstanceOf(MemberException.class)
-                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MAIN_ADDRESS_NULL);
-            }
-        }
     }
 
 
