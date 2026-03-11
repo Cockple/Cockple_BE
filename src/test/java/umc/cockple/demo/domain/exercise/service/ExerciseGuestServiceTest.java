@@ -166,4 +166,84 @@ class ExerciseGuestServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("cancelGuestInvitation")
+    class CancelGuestInvitation {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("초대자가 본인 게스트를 취소하면 Response를 반환한다")
+            void cancelGuestInvitation_success() {
+                // given
+                Guest guest = GuestFixture.createGuest(exercise, manager.getId());
+                ReflectionTestUtils.setField(guest, "id", 60L);
+
+                // when
+                ExerciseCancelDTO.Response response = exerciseGuestService
+                        .cancelGuestInvitation(exercise, guest, manager);
+
+                // then
+                assertThat(response.memberName()).isEqualTo("게스트");
+                assertThat(response.currentParticipants()).isNotNull();
+                then(guestRepository).should().delete(guest);
+                then(exerciseRepository).should().save(exercise);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_CANCEL)을 던진다")
+            void alreadyStarted_throwsException() {
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
+                ReflectionTestUtils.setField(startedExercise, "id", 200L);
+
+                Guest guest = GuestFixture.createGuest(startedExercise, manager.getId());
+                ReflectionTestUtils.setField(guest, "id", 60L);
+
+                assertThatThrownBy(() ->
+                        exerciseGuestService.cancelGuestInvitation(startedExercise, guest, manager))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL));
+            }
+
+            @Test
+            @DisplayName("게스트가 해당 운동에 속하지 않으면 ExerciseException(GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE)을 던진다")
+            void guestNotInExercise_throwsException() {
+                Exercise otherExercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                        LocalTime.of(12, 0), true, false);
+                ReflectionTestUtils.setField(otherExercise, "id", 201L);
+
+                Guest guest = GuestFixture.createGuest(otherExercise, manager.getId());
+                ReflectionTestUtils.setField(guest, "id", 60L);
+
+                assertThatThrownBy(() ->
+                        exerciseGuestService.cancelGuestInvitation(exercise, guest, manager))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE));
+            }
+
+            @Test
+            @DisplayName("본인이 초대하지 않은 게스트면 ExerciseException(GUEST_NOT_INVITED_BY_MEMBER)을 던진다")
+            void guestNotInvitedByMember_throwsException() {
+                Guest guest = GuestFixture.createGuest(exercise, 999L);
+                ReflectionTestUtils.setField(guest, "id", 60L);
+
+                assertThatThrownBy(() ->
+                        exerciseGuestService.cancelGuestInvitation(exercise, guest, manager))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER));
+            }
+        }
+    }
 }

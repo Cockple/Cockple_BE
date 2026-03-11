@@ -987,6 +987,116 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("DELETE /api/exercises/{exerciseId}/guests/{guestId} - 게스트 초대 취소")
+    class CancelGuestInvitation {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                            LocalTime.of(12, 0), true, false));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 초대자가 본인 게스트를 취소하면 memberName을 반환한다")
+            void cancelGuestInvitation_success() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(exercise, normalMember.getId()));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                exercise.getId(), guest.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").value("게스트"))
+                        .andExpect(jsonPath("$.data.currentParticipants").value(0));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(exercise, normalMember.getId()));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                999L, guest.getId()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void memberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(exercise, normalMember.getId()));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                exercise.getId(), guest.getId()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 이미 시작된 운동이면 에러를 반환한다")
+            void alreadyStarted() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Exercise startedExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                                LocalTime.of(12, 0), true, false));
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(startedExercise, normalMember.getId()));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                startedExercise.getId(), guest.getId()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 게스트면 에러를 반환한다")
+            void guestNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                exercise.getId(), 999L))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.GUEST_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.GUEST_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 본인이 초대하지 않은 게스트면 에러를 반환한다")
+            void guestNotInvitedByMember() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Guest guest = guestRepository.save(GuestFixture.createGuest(exercise, manager.getId()));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/guests/{guestId}",
+                                exercise.getId(), guest.getId()))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.GUEST_NOT_INVITED_BY_MEMBER.getMessage()));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/exercises/{exerciseId} - 운동 상세 조회")
     class GetExerciseDetail {
 

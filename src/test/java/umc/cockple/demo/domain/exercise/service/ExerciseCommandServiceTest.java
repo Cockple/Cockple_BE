@@ -602,4 +602,96 @@ class ExerciseCommandServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("cancelGuestInvitation")
+    class CancelGuestInvitation {
+
+        private Exercise exercise;
+        private Guest guest;
+
+        @BeforeEach
+        void setUp() {
+            exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                    LocalTime.of(12, 0), true, false);
+            ReflectionTestUtils.setField(exercise, "id", 100L);
+
+            guest = GuestFixture.createGuest(exercise, manager.getId());
+            ReflectionTestUtils.setField(guest, "id", 60L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("Exercise, Member, Guest 조회 후 ExerciseGuestService에 위임한다")
+            void delegatesToGuestService() {
+                // given
+                ExerciseCancelDTO.Response expectedResponse = ExerciseCancelDTO.Response.builder()
+                        .memberName("게스트")
+                        .currentParticipants(0)
+                        .build();
+
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId())).willReturn(Optional.of(manager));
+                given(guestRepository.findById(guest.getId())).willReturn(Optional.of(guest));
+                given(exerciseGuestService.cancelGuestInvitation(exercise, guest, manager))
+                        .willReturn(expectedResponse);
+
+                // when
+                ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
+                        exercise.getId(), guest.getId(), manager.getId());
+
+                // then
+                assertThat(response.memberName()).isEqualTo("게스트");
+                assertThat(response.currentParticipants()).isEqualTo(0);
+                then(exerciseGuestService).should().cancelGuestInvitation(exercise, guest, manager);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 운동이면 ExerciseException(EXERCISE_NOT_FOUND)을 던진다")
+            void exerciseNotFound_throwsException() {
+                given(exerciseRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.cancelGuestInvitation(999L, guest.getId(), manager.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 ExerciseException(MEMBER_NOT_FOUND)을 던진다")
+            void memberNotFound_throwsException() {
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.cancelGuestInvitation(exercise.getId(), guest.getId(), 999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 게스트면 ExerciseException(GUEST_NOT_FOUND)을 던진다")
+            void guestNotFound_throwsException() {
+                given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId())).willReturn(Optional.of(manager));
+                given(guestRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.cancelGuestInvitation(exercise.getId(), 999L, manager.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.GUEST_NOT_FOUND));
+            }
+        }
+    }
 }
