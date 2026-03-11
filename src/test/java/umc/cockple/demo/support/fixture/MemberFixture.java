@@ -12,6 +12,7 @@ import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class MemberFixture {
@@ -22,6 +23,18 @@ public class MemberFixture {
                 .nickname(nickname)
                 .gender(gender)
                 .level(level)
+                .isActive(MemberStatus.ACTIVE)
+                .socialId(socialId)
+                .build();
+    }
+
+    public static Member createMember(String nickname, Gender gender, Level level, Long socialId, LocalDate birth) {
+        return Member.builder()
+                .memberName(nickname)
+                .nickname(nickname)
+                .gender(gender)
+                .level(level)
+                .birth(birth)
                 .isActive(MemberStatus.ACTIVE)
                 .socialId(socialId)
                 .build();
