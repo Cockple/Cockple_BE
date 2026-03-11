@@ -619,6 +619,95 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("DELETE /api/exercises/{exerciseId}/participants/my - 운동 참여 취소")
+    class CancelParticipation {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                            LocalTime.of(12, 0), true, false));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 참여자가 본인 참여를 취소하면 memberName을 반환한다")
+            void cancelParticipation_success() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                memberExerciseRepository.save(
+                        MemberFixture.createMemberExercise(normalMember, exercise));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.memberName").value(normalMember.getMemberName()))
+                        .andExpect(jsonPath("$.data.currentParticipants").value(0));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", 999L))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void memberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 이미 시작된 운동이면 에러를 반환한다")
+            void alreadyStarted() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Exercise startedExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                                LocalTime.of(12, 0), true, false));
+
+                memberExerciseRepository.save(
+                        MemberFixture.createMemberExercise(normalMember, startedExercise));
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", startedExercise.getId()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - 참여 기록이 없으면 에러를 반환한다")
+            void memberExerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND.getMessage()));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("DELETE /api/exercises/{exerciseId}/participants/{participantId} - 특정 참여자 운동 취소")
     class CancelParticipationByManager {
 

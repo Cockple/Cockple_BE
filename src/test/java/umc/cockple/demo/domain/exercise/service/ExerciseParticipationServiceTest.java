@@ -211,6 +211,87 @@ class ExerciseParticipationServiceTest {
         }
     }
 
+
+
+
+    @Nested
+    @DisplayName("cancelParticipation")
+    class CancelParticipation {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("참여자가 본인 참여를 취소하면 Response를 반환한다")
+            void cancelParticipation_success() {
+                // given
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
+                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(exercise, participant))
+                        .willReturn(Optional.of(memberExercise));
+
+                // when
+                ExerciseCancelDTO.Response response = exerciseParticipationService
+                        .cancelParticipation(exercise, participant);
+
+                // then
+                assertThat(response.memberName()).isEqualTo(participant.getMemberName());
+                assertThat(response.currentParticipants()).isNotNull();
+                then(memberExerciseRepository).should().delete(memberExercise);
+                then(exerciseRepository).should().save(exercise);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_CANCEL)을 던진다")
+            void alreadyStarted_throwsException() {
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
+                ReflectionTestUtils.setField(startedExercise, "id", 200L);
+
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, startedExercise);
+                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(startedExercise, participant))
+                        .willReturn(Optional.of(memberExercise));
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.cancelParticipation(startedExercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL));
+            }
+
+            @Test
+            @DisplayName("참여 기록이 없으면 ExerciseException(MEMBER_EXERCISE_NOT_FOUND)을 던진다")
+            void memberExerciseNotFound_throwsException() {
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(exercise, participant))
+                        .willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.cancelParticipation(exercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+            }
+        }
+    }
+
     @Nested
     @DisplayName("cancelParticipationByManager")
     class CancelParticipationByManager {
