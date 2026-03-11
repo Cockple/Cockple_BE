@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -27,6 +28,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
@@ -37,6 +39,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -72,16 +75,9 @@ class ExerciseParticipationServiceTest {
                 PartyFixture.createPartyAddr("서울특별시", "강남구"));
         ReflectionTestUtils.setField(party, "id", 10L);
 
-        exercise = Exercise.builder()
-                .date(LocalDate.of(2099, 12, 31))
-                .startTime(LocalTime.of(10, 0))
-                .endTime(LocalTime.of(12, 0))
-                .maxCapacity(10)
-                .partyGuestAccept(true)
-                .outsideGuestAccept(false)
-                .build();
+        exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                LocalTime.of(12, 0), true, false);
         ReflectionTestUtils.setField(exercise, "id", 100L);
-        exercise.setParty(party);
     }
 
     @Nested
@@ -199,16 +195,9 @@ class ExerciseParticipationServiceTest {
             @Test
             @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_CANCEL)을 던진다")
             void alreadyStarted_throwsException() {
-                Exercise startedExercise = Exercise.builder()
-                        .date(LocalDate.of(2000, 1, 1))
-                        .startTime(LocalTime.of(10, 0))
-                        .endTime(LocalTime.of(12, 0))
-                        .maxCapacity(10)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
                 ReflectionTestUtils.setField(startedExercise, "id", 200L);
-                startedExercise.setParty(party);
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
