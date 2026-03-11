@@ -27,6 +27,12 @@ jobs:
           else
             echo "DOCKER_TAG=staging" >> $GITHUB_OUTPUT
           fi
+          
+      - name: Create Firebase Key File
+        run: |
+          mkdir -p src/main/resources/firebase
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > src/main/resources/firebase/cockple-fcm-firebase-adminsdk-fbsvc-5cac44bb029.json
+
 
       - name: Build with Gradle
         run: |
