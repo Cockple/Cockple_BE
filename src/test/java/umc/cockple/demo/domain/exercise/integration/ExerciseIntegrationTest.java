@@ -61,9 +61,9 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        manager = memberRepository.save(MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L));
-        subManager = memberRepository.save(MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L));
-        normalMember = memberRepository.save(MemberFixture.createMember("일반멤버", Gender.MALE, Level.C, 1003L));
+        manager = memberRepository.save(MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L, LocalDate.of(2000, 1, 1)));
+        subManager = memberRepository.save(MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L, LocalDate.of(2000, 1, 1)));
+        normalMember = memberRepository.save(MemberFixture.createMember("일반멤버", Gender.MALE, Level.C, 1003L, LocalDate.of(2000, 1, 1)));
 
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
         party = partyRepository.save(PartyFixture.createParty("테스트 모임", manager.getId(), addr));
