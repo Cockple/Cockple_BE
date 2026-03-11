@@ -501,19 +501,19 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("200 - 파티 멤버가 운동 신청하면 참여 정보를 반환한다")
+            @DisplayName("201 - 파티 멤버가 운동 신청하면 참여 정보를 반환한다")
             void partyMember_joinExercise() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
                 mockMvc.perform(post("/api/exercises/{exerciseId}/participants", exercise.getId()))
-                        .andExpect(status().isOk())
+                        .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.data.participantId").isNumber())
                         .andExpect(jsonPath("$.data.joinedAt").isString())
                         .andExpect(jsonPath("$.data.currentParticipants").value(1));
             }
 
             @Test
-            @DisplayName("200 - 파티 외부 멤버가 outsideGuestAccept=true 운동 신청하면 성공한다")
+            @DisplayName("201 - 파티 외부 멤버가 outsideGuestAccept=true 운동 신청하면 성공한다")
             void outsideMember_joinExercise() throws Exception {
                 Exercise outsideAcceptExercise = exerciseRepository.save(
                         ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
@@ -525,7 +525,7 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                 SecurityContextHelper.setAuthentication(outsideMember.getId(), outsideMember.getNickname());
 
                 mockMvc.perform(post("/api/exercises/{exerciseId}/participants", outsideAcceptExercise.getId()))
-                        .andExpect(status().isOk())
+                        .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.data.participantId").isNumber())
                         .andExpect(jsonPath("$.data.currentParticipants").value(1));
             }
