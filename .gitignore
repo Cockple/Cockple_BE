@@ -48,3 +48,6 @@ terraform/.terraform/
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
+
+### firebase ###
+src/main/resources/firebase/*.json
