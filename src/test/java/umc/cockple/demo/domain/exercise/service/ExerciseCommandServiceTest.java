@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -28,6 +29,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
@@ -156,14 +158,8 @@ class ExerciseCommandServiceTest {
 
         @BeforeEach
         void setUp() {
-            exercise = Exercise.builder()
-                    .date(LocalDate.of(2099, 12, 31))
-                    .startTime(LocalTime.of(10, 0))
-                    .endTime(LocalTime.of(12, 0))
-                    .maxCapacity(10)
-                    .partyGuestAccept(true)
-                    .outsideGuestAccept(false)
-                    .build();
+            exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                    LocalTime.of(12, 0), true, false);
             ReflectionTestUtils.setField(exercise, "id", 100L);
         }
 
@@ -233,14 +229,8 @@ class ExerciseCommandServiceTest {
 
         @BeforeEach
         void setUp() {
-            exercise = Exercise.builder()
-                    .date(LocalDate.of(2099, 12, 31))
-                    .startTime(LocalTime.of(10, 0))
-                    .endTime(LocalTime.of(12, 0))
-                    .maxCapacity(10)
-                    .partyGuestAccept(true)
-                    .outsideGuestAccept(false)
-                    .build();
+            exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                    LocalTime.of(12, 0), true, false);
             ReflectionTestUtils.setField(exercise, "id", 100L);
 
             request = new ExerciseUpdateDTO.Request(
@@ -321,14 +311,8 @@ class ExerciseCommandServiceTest {
 
         @BeforeEach
         void setUp() {
-            exercise = Exercise.builder()
-                    .date(LocalDate.of(2099, 12, 31))
-                    .startTime(LocalTime.of(10, 0))
-                    .endTime(LocalTime.of(12, 0))
-                    .maxCapacity(10)
-                    .partyGuestAccept(true)
-                    .outsideGuestAccept(false)
-                    .build();
+            exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                    LocalTime.of(12, 0), true, false);
             ReflectionTestUtils.setField(exercise, "id", 100L);
         }
 
