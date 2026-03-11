@@ -304,6 +304,78 @@ class ExerciseCommandServiceTest {
     }
 
     @Nested
+    @DisplayName("joinExercise")
+    class JoinExercise {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                    LocalTime.of(12, 0), true, false);
+            ReflectionTestUtils.setField(exercise, "id", 100L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("Exercise(WithPartyLevels), Member 조회 후 ExerciseParticipationService에 위임한다")
+            void delegatesToParticipationService() {
+                // given
+                ExerciseJoinDTO.Response expectedResponse = ExerciseJoinDTO.Response.builder()
+                        .participantId(50L)
+                        .currentParticipants(1)
+                        .build();
+
+                given(exerciseRepository.findByIdWithPartyLevels(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId())).willReturn(Optional.of(manager));
+                given(exerciseParticipationService.joinExercise(exercise, manager)).willReturn(expectedResponse);
+
+                // when
+                ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
+                        exercise.getId(), manager.getId());
+
+                // then
+                assertThat(response.participantId()).isEqualTo(50L);
+                assertThat(response.currentParticipants()).isEqualTo(1);
+                then(exerciseParticipationService).should().joinExercise(exercise, manager);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 운동이면 ExerciseException(EXERCISE_NOT_FOUND)을 던진다")
+            void exerciseNotFound_throwsException() {
+                given(exerciseRepository.findByIdWithPartyLevels(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.joinExercise(999L, manager.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 ExerciseException(MEMBER_NOT_FOUND)을 던진다")
+            void memberNotFound_throwsException() {
+                given(exerciseRepository.findByIdWithPartyLevels(exercise.getId())).willReturn(Optional.of(exercise));
+                given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseCommandService.joinExercise(exercise.getId(), 999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("cancelParticipationByManager")
     class CancelParticipationByManager {
 
