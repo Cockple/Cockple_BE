@@ -8,6 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -849,6 +850,138 @@ class ExerciseIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/exercises/{exerciseId}/guests - 게스트 초대")
+    class InviteGuest {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                            LocalTime.of(12, 0), true, false));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("201 - 파티 멤버가 게스트를 초대하면 guestId를 반환한다")
+            void partyMember_inviteGuest() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.data.guestId").isNumber())
+                        .andExpect(jsonPath("$.data.invitedAt").isString())
+                        .andExpect(jsonPath("$.data.currentParticipants").value(1));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 운동이면 에러를 반환한다")
+            void exerciseNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", 999L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("404 - SecurityContext의 멤버가 DB에 없으면 에러를 반환한다")
+            void memberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("400 - 이미 시작된 운동이면 에러를 반환한다")
+            void alreadyStarted() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Exercise startedExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                                LocalTime.of(12, 0), true, false));
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", startedExercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 파티 멤버가 아닌 사용자가 초대하면 에러를 반환한다")
+            void notPartyMember() throws Exception {
+                Member outsideMember = memberRepository.save(
+                        MemberFixture.createMember("외부인", Gender.MALE, Level.B, 3001L, LocalDate.of(2000, 1, 1)));
+
+                SecurityContextHelper.setAuthentication(outsideMember.getId(), outsideMember.getNickname());
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", exercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE.getMessage()));
+            }
+
+            @Test
+            @DisplayName("403 - 게스트 초대 정책 비허용이면 에러를 반환한다")
+            void guestPolicyNotAllowed() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                Exercise noGuestExercise = exerciseRepository.save(
+                        ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                                LocalTime.of(12, 0), false, false));
+
+                ExerciseGuestInviteDTO.Request request = new ExerciseGuestInviteDTO.Request(
+                        "테스트게스트", "남성", "B조");
+
+                mockMvc.perform(post("/api/exercises/{exerciseId}/guests", noGuestExercise.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED.getMessage()));
             }
         }
     }
