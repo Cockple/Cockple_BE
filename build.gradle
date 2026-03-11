@@ -95,6 +95,9 @@ dependencies {
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'io.lettuce:lettuce-core'
+
+    // firebase
+    implementation 'com.google.firebase:firebase-admin:9.7.1'
 }
 
 tasks.named('test') {
