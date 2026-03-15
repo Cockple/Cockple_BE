@@ -13,4 +13,4 @@ spring:
       ddl-auto: update
 
 firebase:
-  key-path: src/main/resources/firebase/cockple-1a83e-firebase-adminsdk-fbsvc-212ce01565.json
+  service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}
