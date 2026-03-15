@@ -10,3 +10,6 @@ spring:
     redis:
       host: cockple-redis
       database: 1
+
+firebase:
+  key-path: /app/firebase/firebase-service-account.json
