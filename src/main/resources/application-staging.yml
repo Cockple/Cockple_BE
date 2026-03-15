@@ -12,4 +12,4 @@ spring:
       database: 1
 
 firebase:
-  key-path: /app/firebase/firebase-service-account.json
+  service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}
