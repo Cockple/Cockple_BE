@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
+import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -41,6 +42,7 @@ public class NotificationCommandService {
     private final PartyRepository partyRepository;
     private final NotificationMessageGenerator notificationMessageGenerator;
     private final ObjectMapper objectMapper;
+    private final FcmService fcmService;
 
     // 알림 타입 변경 (초대 수락, 거절에 사용)
     public Response markAsReadNotification(Long memberId, Long notificationId, NotificationType type) {
@@ -117,6 +119,7 @@ public class NotificationCommandService {
                     .build();
 
             notificationRepository.save(notification);
+            fcmService.sendNotification(member, title, content);
 
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_DATA);
