@@ -119,7 +119,6 @@ public class NotificationCommandService {
                     .build();
 
             notificationRepository.save(notification);
-
             fcmService.sendNotification(member, title, content);
 
         } catch (JsonProcessingException e) {
