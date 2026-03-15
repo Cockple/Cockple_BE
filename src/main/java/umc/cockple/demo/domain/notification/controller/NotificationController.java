@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.notification.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -69,7 +70,7 @@ public class NotificationController {
     @PatchMapping("/notifications/fcm-token")
     @Operation(summary = "FCM 토큰 등록",
             description = "디바이스의 FCM 토큰을 등록하거나 갱신합니다. 알림 권한 거부 시 null을 전달해 토큰을 삭제합니다.")
-    public BaseResponse<Void> registerFcmToken(@RequestBody FcmTokenRequestDTO request) {
+    public BaseResponse<Void> registerFcmToken(@RequestBody @Valid FcmTokenRequestDTO request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         fcmService.registerFcmToken(memberId, request.fcmToken());
         return BaseResponse.success(CommonSuccessCode.OK, null);
