@@ -40,6 +40,16 @@ import org.springframework.data.domain.SliceImpl;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.party.dto.PartyDTO;
+import umc.cockple.demo.domain.party.dto.PartyFilterDTO;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
+import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
+
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,6 +78,12 @@ class PartyQueryServiceTest {
     private ExerciseRepository exerciseRepository;
     @Mock
     private PartyBookmarkRepository partyBookmarkRepository;
+    @Mock
+    private MemberAddrRepository memberAddrRepository;
+    @Mock
+    private FileService fileService;
+    @Mock
+    private PartyJoinRequestRepository partyJoinRequestRepository;
 
     @Nested
     @DisplayName("getPartyMembers")
@@ -295,6 +311,130 @@ class PartyQueryServiceTest {
                             ((umc.cockple.demo.domain.member.exception.MemberException) e)
                                     .getCode())
                             .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
+    }
+
+    @Nested
+    @DisplayName("getRecommendedParties")
+    class GetRecommendedParties {
+
+        @Test
+        @DisplayName("Cockple 추천 모드 시 유저 정보(주소, 생년월일, 키워드)를 기반으로 추천 목록을 반환한다")
+        void success_cockpleRecommend() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
+
+            Member member = MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L,
+                    LocalDate.of(1995, 1, 1));
+            ReflectionTestUtils.setField(member, "id", memberId);
+
+            MemberAddr addr = MemberAddr.builder()
+                    .member(member)
+                    .addr1("서울특별시")
+                    .isMain(true)
+                    .build();
+
+            Party suggestedParty = PartyFixture.createParty("추천 모임", 2L,
+                    PartyFixture.createPartyAddr("서울특별시", "강남구"));
+            ReflectionTestUtils.setField(suggestedParty, "id", 100L);
+
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(memberAddrRepository.findByMemberAndIsMain(member, true)).willReturn(Optional.of(addr));
+            given(partyRepository.findRecommendedParties(anyString(), anyInt(), any(), any(), anyLong()))
+                    .willReturn(List.of(suggestedParty));
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
+            given(partyConverter.toMyPartyDTO(eq(suggestedParty), any(), any(), any(), eq(false)))
+                    .willReturn(PartyDTO.Response.builder().partyId(100L).partyName("추천 모임")
+                            .build());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, true,
+                    filter, "최신순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).partyName()).isEqualTo("추천 모임");
+            verify(partyRepository).findRecommendedParties(eq("서울특별시"), eq(1995), eq(Gender.MALE),
+                    eq(Level.A), eq(memberId));
+        }
+
+        @Test
+        @DisplayName("필터 모드 시 설정한 필터 조건(addr1, addr2 등)에 맞는 모임 목록을 반환한다")
+        void success_filterMode() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
+                    .addr1("서울특별시")
+                    .addr2("강남구")
+                    .build();
+
+            Party filteredParty = PartyFixture.createParty("필터 모임", 2L,
+                    PartyFixture.createPartyAddr("서울특별시", "강남구"));
+            ReflectionTestUtils.setField(filteredParty, "id", 200L);
+            Slice<Party> partySlice = new SliceImpl<>(List.of(filteredParty), pageable, false);
+
+            given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
+            given(partyConverter.toMyPartyDTO(eq(filteredParty), any(), any(), any(), eq(false)))
+                    .willReturn(PartyDTO.Response.builder().partyId(200L).partyName("필터 모임")
+                            .build());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false,
+                    filter, "최신순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).partyName()).isEqualTo("필터 모임");
+            verify(partyRepository).searchParties(eq(memberId), eq(filter), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원 ID로 추천 요청 시 MEMBER_NOT_FOUND이 발생한다")
+        void fail_memberNotFound() {
+            // given
+            Long memberId = 999L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
+
+            given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getRecommendedParties(memberId, true, filter, "최신순",
+                    pageable))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(
+                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                                    .getCode())
+                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("대표 주소가 설정되지 않은 회원이 추천 요청 시 MAIN_ADDRESS_NULL이 발생한다")
+        void fail_mainAddressNotFound() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
+
+            Member member = MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(member, "id", memberId);
+
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(memberAddrRepository.findByMemberAndIsMain(member, true)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getRecommendedParties(memberId, true, filter, "최신순",
+                    pageable))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(
+                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                                    .getCode())
+                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MAIN_ADDRESS_NULL));
         }
     }
 }

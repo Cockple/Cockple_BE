@@ -6,6 +6,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -25,6 +27,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +48,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
     ExerciseRepository exerciseRepository;
     @Autowired
     MemberExerciseRepository memberExerciseRepository;
+    @Autowired
+    MemberAddrRepository memberAddrRepository;
 
     private Member manager;
     private Member normalMember;
@@ -52,7 +57,19 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        manager = memberRepository.save(MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L));
+        manager = memberRepository
+                .save(MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 1, 1)));
+        memberAddrRepository.save(MemberAddr.builder()
+                .member(manager)
+                .addr1("서울특별시")
+                .addr2("강남구")
+                .addr3("역삼동")
+                .streetAddr("테헤란로")
+                .latitude(37.5)
+                .longitude(127.0)
+                .isMain(true)
+                .build());
+
         normalMember = memberRepository.save(MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L));
 
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
@@ -60,6 +77,11 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
         memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
+
+        // 추천 조회용 모임 (manager가 가입하지 않은 모임)
+        Party suggestedParty = PartyFixture.createParty("추천 모임", normalMember.getId(), addr);
+        suggestedParty.addLevel(Gender.MALE, Level.A); // manager의 조건에 맞춤
+        partyRepository.save(suggestedParty);
 
         SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
     }
@@ -71,6 +93,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
+        memberAddrRepository.deleteAll();
         memberRepository.deleteAll();
     }
 
@@ -218,6 +241,75 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content").isEmpty())
                     .andExpect(jsonPath("$.data.empty").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/my/parties/suggestions - 모임 추천 조회")
+    class GetRecommendedParties {
+
+        @Test
+        @DisplayName("200 - Cockple 추천 모드 시 추천된 모임 목록을 반환한다")
+        void success_cockpleRecommend() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                    .param("isCockpleRecommend", "true")
+                    .param("sort", "최신순")
+                    .param("page", "0")
+                    .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].partyName").value("추천 모임"));
+        }
+
+        @Test
+        @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 반환한다")
+        void success_filterMode() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                    .param("isCockpleRecommend", "false")
+                    .param("addr1", "서울특별시")
+                    .param("addr2", "강남구")
+                    .param("sort", "최신순")
+                    .param("page", "0")
+                    .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].addr1").value("서울특별시"))
+                    .andExpect(jsonPath("$.data.content[0].addr2").value("강남구"));
+        }
+
+        @Test
+        @DisplayName("200 - 검색 모드 시 모임명으로 검색된 결과를 반환한다")
+        void success_searchMode() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                    .param("search", "추천")
+                    .param("isCockpleRecommend", "false")
+                    .param("page", "0")
+                    .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].partyName", containsString("추천")));
+        }
+
+        @Test
+        @DisplayName("400 - 유효하지 않은 정렬 기준 입력 시 INVALID_ORDER_TYPE 에러를 반환한다")
+        void fail_invalidOrderType() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                    .param("isCockpleRecommend", "false")
+                    .param("sort", "잘못된순"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("PARTY106"))
+                    .andExpect(jsonPath("$.message").value("유효하지 않은 정렬 기준입니다. (최신순, 오래된 순, 운동 많은 순 중 하나여야 합니다.)"));
+        }
+
+        @Test
+        @DisplayName("400 - isCockpleRecommend에 부적절한 타입 입력 시 400 에러를 반환한다")
+        void fail_invalidBooleanType() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                    .param("isCockpleRecommend", "not-boolean"))
+                    .andExpect(status().isBadRequest());
         }
     }
 }
