@@ -31,13 +31,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class PartyIntegrationTest extends IntegrationTestBase {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired MemberRepository memberRepository;
-    @Autowired PartyRepository partyRepository;
-    @Autowired MemberPartyRepository memberPartyRepository;
-    @Autowired PartyAddrRepository partyAddrRepository;
-    @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    MemberRepository memberRepository;
+    @Autowired
+    PartyRepository partyRepository;
+    @Autowired
+    MemberPartyRepository memberPartyRepository;
+    @Autowired
+    PartyAddrRepository partyAddrRepository;
+    @Autowired
+    ExerciseRepository exerciseRepository;
+    @Autowired
+    MemberExerciseRepository memberExerciseRepository;
 
     private Member manager;
     private Member normalMember;
@@ -125,6 +132,39 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()))
                     .andExpect(jsonPath("$.message").value(PartyErrorCode.PARTY_IS_DELETED.getMessage()));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/my/parties - 내 모임 조회")
+    class GetMyParties {
+
+        @Test
+        @DisplayName("200 - 사용자가 가입한 모임 목록을 페이징하여 반환한다")
+        void success_getMyParties() throws Exception {
+            mockMvc.perform(get("/api/my/parties")
+                    .param("created", "false")
+                    .param("sort", "최신순")
+                    .param("size", "10")
+                    .param("page", "0"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.message").value("성공입니다."))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content.length()").value(1))
+                    .andExpect(jsonPath("$.data.content[0].partyName").value("테스트 모임"))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
+                    .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
+                    .andExpect(jsonPath("$.data.hasNext").value(false));
+        }
+
+        @Test
+        @DisplayName("401 - 인증되지 않은 사용자 접근시 에러를 반환한다")
+        void fail_unauthorized() throws Exception {
+            SecurityContextHelper.clearAuthentication();
+
+            mockMvc.perform(get("/api/my/parties"))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }
