@@ -102,6 +102,27 @@ class PartyIntegrationTest extends IntegrationTestBase {
     class GetPartyMembers {
 
         @Test
+        @DisplayName("200 - 모임의 멤버들을 역할별로 성공적으로 조회한다.")
+        void success() throws Exception {
+            // 부모임장 추가
+            Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 1003L));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
+
+            // 모임장이 가입된 상태
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.summary.totalCount").value(3))
+                    .andExpect(jsonPath("$.data.members[0].role").value("party_MANAGER"))
+                    .andExpect(jsonPath("$.data.members[0].isMe").value(true))
+                    .andExpect(jsonPath("$.data.members[1].role").value("party_SUBMANAGER"))
+                    .andExpect(jsonPath("$.data.members[1].isMe").value(false))
+                    .andExpect(jsonPath("$.data.members[2].role").value("party_MEMBER"))
+                    .andExpect(jsonPath("$.data.members[2].isMe").value(false));
+        }
+
+        @Test
         @DisplayName("200 - 멤버 목록과 마지막 운동일을 정상 반환한다")
         void success_withLastExerciseDate() throws Exception {
             Exercise exercise = exerciseRepository.save(
