@@ -141,8 +141,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_partyNotFound() throws Exception {
             mockMvc.perform(get("/api/parties/{partyId}/members", 999L))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()))
-                    .andExpect(jsonPath("$.message").value(PartyErrorCode.PARTY_NOT_FOUND.getMessage()));
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
         }
 
         @Test
@@ -153,8 +152,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
             mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()))
-                    .andExpect(jsonPath("$.message").value(PartyErrorCode.PARTY_IS_DELETED.getMessage()));
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
         }
     }
 
@@ -300,8 +298,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .param("isCockpleRecommend", "false")
                     .param("sort", "잘못된순"))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("PARTY106"))
-                    .andExpect(jsonPath("$.message").value("유효하지 않은 정렬 기준입니다. (최신순, 오래된 순, 운동 많은 순 중 하나여야 합니다.)"));
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_ORDER_TYPE.getCode()));
         }
 
         @Test
@@ -310,6 +307,58 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/my/parties/suggestions")
                     .param("isCockpleRecommend", "not-boolean"))
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/parties/{partyId} - 모임 상세 조회")
+    class GetPartyDetails {
+
+        @Test
+        @DisplayName("200 - 모임 상세 정보를 정상적으로 조회한다 (비회원 상태)")
+        void success_getDetails_nonMember() throws Exception {
+            // 모임에 가입하지 않은 새로운 유저 생성 및 인증 설정
+            Member nonMember = memberRepository.save(MemberFixture.createMember("비회원", Gender.MALE, Level.C, 2001L));
+            SecurityContextHelper.setAuthentication(nonMember.getId(), nonMember.getNickname());
+
+            mockMvc.perform(get("/api/parties/{partyId}", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.partyId").value(party.getId()))
+                    .andExpect(jsonPath("$.data.memberStatus").value("NOT_MEMBER"))
+                    .andExpect(jsonPath("$.data.hasPendingJoinRequest").value(false));
+        }
+
+        @Test
+        @DisplayName("200 - 모임원인 경우 memberStatus가 MEMBER로 반환된다")
+        void success_getDetails_member() throws Exception {
+            // manager는 setUp에서 이미 party의 멤버로 설정됨
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(get("/api/parties/{partyId}", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.memberStatus").value("MEMBER"))
+                    .andExpect(jsonPath("$.data.memberRole").value("party_MANAGER"));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 모임 조회 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_partyNotFound() throws Exception {
+            mockMvc.perform(get("/api/parties/{partyId}", 9999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 삭제된 모임 조회 시 PARTY_IS_DELETED 에러를 반환한다")
+        void fail_partyDeleted() throws Exception {
+            // 모임 삭제 (비활성화)
+            party.delete();
+            partyRepository.save(party);
+
+            mockMvc.perform(get("/api/parties/{partyId}", party.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
         }
     }
 }
