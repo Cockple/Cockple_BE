@@ -12,10 +12,12 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.dto.PartyMemberDTO;
+import umc.cockple.demo.domain.party.dto.PartySimpleDTO;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
@@ -55,6 +57,8 @@ class PartyQueryServiceTest {
     @Mock
     private PartyRepository partyRepository;
     @Mock
+    private MemberRepository memberRepository;
+    @Mock
     private PartyConverter partyConverter;
     @Mock
     private MemberPartyRepository memberPartyRepository;
@@ -89,7 +93,7 @@ class PartyQueryServiceTest {
             List<MemberParty> memberParties = List.of(mp1, mp2);
 
             LocalDate lastDate = LocalDate.of(2025, 1, 10);
-            List<Object[]> rawResult = List.<Object[]>of(new Object[] { 20L, lastDate });
+            List<Object[]> rawResult = List.<Object[]>of(new Object[]{20L, lastDate});
 
             PartyMemberDTO.Response expected = PartyMemberDTO.Response.builder()
                     .summary(PartyMemberDTO.Summary.builder()
@@ -227,6 +231,70 @@ class PartyQueryServiceTest {
 
             verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
             verify(partyConverter).toMyPartyDTO(eq(party), any(), any(), any(), eq(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("getSimpleMyParties")
+    class GetSimpleMyParties {
+
+        @Test
+        @DisplayName("유효한 회원 ID가 주어지면 가입한 모임의 간략화된 목록을 반환한다")
+        void success() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Member member = MemberFixture.createMember("사용자", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(member, "id", memberId);
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party party = PartyFixture.createParty("테스트 모임", 10L, addr);
+            ReflectionTestUtils.setField(party, "id", 10L);
+
+            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.party_MEMBER);
+
+            Slice<MemberParty> memberPartySlice = new SliceImpl<>(List.of(memberParty), pageable, false);
+
+            PartySimpleDTO.Response expectedResponse = PartySimpleDTO.Response.builder()
+                    .partyId(10L)
+                    .partyName("테스트 모임")
+                    .build();
+
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(memberPartyRepository.findByMember(member, pageable)).willReturn(memberPartySlice);
+            // fileService.getUrlFromKey 의 경우 partyImg 가 없으므로 널이 전달됨
+            given(partyConverter.toPartySimpleDTO(eq(memberParty), any())).willReturn(expectedResponse);
+
+            // when
+            Slice<PartySimpleDTO.Response> result = partyQueryService.getSimpleMyParties(memberId,
+                    pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).partyName()).isEqualTo("테스트 모임");
+
+            verify(memberRepository).findById(memberId);
+            verify(memberPartyRepository).findByMember(member, pageable);
+            verify(partyConverter).toPartySimpleDTO(eq(memberParty), any());
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원일 경우 MemberException을 던진다")
+        void memberNotFound() {
+            // given
+            Long invalidMemberId = 999L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            given(memberRepository.findById(invalidMemberId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getSimpleMyParties(invalidMemberId, pageable))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(
+                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                                    .getCode())
+                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 }
