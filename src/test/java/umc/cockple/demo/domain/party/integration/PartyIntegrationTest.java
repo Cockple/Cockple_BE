@@ -149,22 +149,75 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .param("page", "0"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
-                    .andExpect(jsonPath("$.message").value("성공입니다."))
+                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content.length()").value(1))
                     .andExpect(jsonPath("$.data.content[0].partyName").value("테스트 모임"))
                     .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
                     .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
-                    .andExpect(jsonPath("$.data.hasNext").value(false));
+                    .andExpect(jsonPath("$.data.last").value(true));
         }
 
         @Test
-        @DisplayName("401 - 인증되지 않은 사용자 접근시 에러를 반환한다")
-        void fail_unauthorized() throws Exception {
-            SecurityContextHelper.clearAuthentication();
+        @DisplayName("200 - 가입한 모임이 없을 경우 빈 목록을 반환한다")
+        void success_emptyMyParties() throws Exception {
+            Member newMember = memberRepository.save(umc.cockple.demo.support.fixture.MemberFixture.createMember("뉴비",
+                    umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.BEGINNER, 3003L));
+            SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
 
-            mockMvc.perform(get("/api/my/parties"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/my/parties")
+                    .param("created", "false")
+                    .param("sort", "최신순")
+                    .param("size", "10")
+                    .param("page", "0"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content").isEmpty())
+                    .andExpect(jsonPath("$.data.empty").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/my/parties/simple - 내 모임 간략화 조회")
+    class GetSimpleMyParties {
+
+        @Test
+        @DisplayName("200 - 사용자가 가입한 모임의 간략화된 목록을 페이징하여 반환한다")
+        void success_getSimpleMyParties() throws Exception {
+            mockMvc.perform(get("/api/my/parties/simple")
+                    .param("page", "0")
+                    .param("size", "10")
+                    .param("sort", "createdAt,DESC"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content.length()").value(1))
+                    .andExpect(jsonPath("$.data.content[0].partyName").value("테스트 모임"))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
+                    .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
+                    .andExpect(jsonPath("$.data.last").value(true));
+        }
+
+        @Test
+        @DisplayName("200 - 가입한 모임이 없을 경우 빈 목록을 반환한다")
+        void success_emptySimpleMyParties() throws Exception {
+            Member newMember = memberRepository.save(umc.cockple.demo.support.fixture.MemberFixture.createMember("뉴비",
+                    umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.BEGINNER, 3003L));
+            SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
+
+            mockMvc.perform(get("/api/my/parties/simple")
+                    .param("page", "0")
+                    .param("size", "10")
+                    .param("sort", "createdAt,DESC"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content").isEmpty())
+                    .andExpect(jsonPath("$.data.empty").value(true));
         }
     }
 }
