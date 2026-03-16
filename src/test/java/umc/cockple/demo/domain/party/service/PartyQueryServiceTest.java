@@ -29,6 +29,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.party.dto.PartyDTO;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +60,10 @@ class PartyQueryServiceTest {
     private MemberPartyRepository memberPartyRepository;
     @Mock
     private MemberExerciseRepository memberExerciseRepository;
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
+    private PartyBookmarkRepository partyBookmarkRepository;
 
     @Nested
     @DisplayName("getPartyMembers")
@@ -76,7 +89,7 @@ class PartyQueryServiceTest {
             List<MemberParty> memberParties = List.of(mp1, mp2);
 
             LocalDate lastDate = LocalDate.of(2025, 1, 10);
-            List<Object[]> rawResult = List.<Object[]>of(new Object[]{20L, lastDate});
+            List<Object[]> rawResult = List.<Object[]>of(new Object[] { 20L, lastDate });
 
             PartyMemberDTO.Response expected = PartyMemberDTO.Response.builder()
                     .summary(PartyMemberDTO.Summary.builder()
@@ -101,8 +114,7 @@ class PartyQueryServiceTest {
             verify(partyConverter).toPartyMemberDTO(
                     eq(memberParties),
                     eq(currentMemberId),
-                    eq(Map.of(20L, lastDate))
-            );
+                    eq(Map.of(20L, lastDate)));
         }
 
         @Test
@@ -133,8 +145,7 @@ class PartyQueryServiceTest {
             verify(partyConverter).toPartyMemberDTO(
                     eq(memberParties),
                     eq(currentMemberId),
-                    eq(Map.of())
-            );
+                    eq(Map.of()));
         }
 
         @Test
@@ -146,7 +157,8 @@ class PartyQueryServiceTest {
             // when & then
             assertThatThrownBy(() -> partyQueryService.getPartyMembers(99L, 1L))
                     .isInstanceOf(PartyException.class)
-                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
+                    .satisfies(e -> assertThat(((PartyException) e).getCode())
+                            .isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
         }
 
         @Test
@@ -163,8 +175,58 @@ class PartyQueryServiceTest {
             // when & then
             assertThatThrownBy(() -> partyQueryService.getPartyMembers(1L, 1L))
                     .isInstanceOf(PartyException.class)
-                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
+                    .satisfies(e -> assertThat(((PartyException) e).getCode())
+                            .isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
         }
     }
 
+    @Nested
+    @DisplayName("getMyParties")
+    class GetMyParties {
+
+        @Test
+        @DisplayName("내 모임 목록과 부가 정보(운동 횟수, 다음 운동 정보, 북마크 여부)를 조합하여 반환한다")
+        void success() {
+            // given
+            Long memberId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party party = PartyFixture.createParty("테스트 모임", 10L, addr);
+            ReflectionTestUtils.setField(party, "id", 1L);
+
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party), pageable, false);
+
+            PartyDTO.Response expectedResponse = PartyDTO.Response.builder()
+                    .partyId(1L)
+                    .partyName("테스트 모임")
+                    .totalExerciseCount(5)
+                    .nextExerciseInfo("05.01 오전 운동")
+                    .isBookmarked(true)
+                    .build();
+
+            given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L)))
+                    .willReturn(List.of());
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L)))
+                    .willReturn(List.of());
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
+                    .willReturn(Set.of(1L));
+            given(partyConverter.toMyPartyDTO(eq(party), any(), any(), any(), eq(true)))
+                    .willReturn(expectedResponse);
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "최신순",
+                    pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).partyName()).isEqualTo("테스트 모임");
+            assertThat(result.getContent().get(0).isBookmarked()).isTrue();
+
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+            verify(partyConverter).toMyPartyDTO(eq(party), any(), any(), any(), eq(true));
+        }
+    }
 }
