@@ -307,7 +307,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
         //이름 검색 필터 적용
         List<Party> searchedParties = filterByName(filteredParties, search);
         //키워드 일치 개수로 정렬
-        List<Party> sortedParties = sortPartiesByKeywordMatch(filteredParties, partiesInfo.keywords());
+        List<Party> sortedParties = sortPartiesByKeywordMatch(searchedParties, partiesInfo.keywords());
         //수동으로 페이징
         Slice<Party> partySlice = paginate(sortedParties, pageable);
 
