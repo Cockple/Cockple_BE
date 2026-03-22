@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
@@ -158,9 +157,8 @@ public class MemberCommandService {
             }
         }
 
-        //chatRoomMember의 displayName도 같이 업데이트
-        List<ChatRoomMember> chatRoomMembers = chatRoomMemberRepository.findAllByMemberId(member.getId());
-        chatRoomMembers.forEach(crm -> crm.updateDisplayName(requestDto.memberName()));
+        chatRoomMemberRepository.findDirectChatCounterParts(member.getId())
+                .forEach(crm -> crm.updateDisplayName(requestDto.memberName()));
 
     }
 

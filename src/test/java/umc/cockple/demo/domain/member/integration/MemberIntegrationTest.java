@@ -6,25 +6,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.domain.member.domain.MemberKeyword;
-import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO;
+import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
@@ -35,15 +33,20 @@ import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
+import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class MemberIntegrationTest extends IntegrationTestBase {
 
@@ -55,13 +58,14 @@ class MemberIntegrationTest extends IntegrationTestBase {
     @Autowired PartyRepository partyRepository;
     @Autowired PartyAddrRepository partyAddrRepository;
 
-    // withdrawMember에서 카카오 연결 끊기 API 호출을 막기 위해 Mock 처리
-    @MockitoBean
-    KakaoOauthService kakaoOauthService;
+    @MockitoBean KakaoOauthService kakaoOauthService;
+    @MockitoBean FileService fileService;
 
     @Autowired ContestRepository contestRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired MemberKeywordRepository memberKeywordRepository;
+    @Autowired ChatRoomRepository chatRoomRepository;
+    @Autowired ChatRoomMemberRepository chatRoomMemberRepository;
 
     private Member member;
 
@@ -72,6 +76,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        chatRoomRepository.deleteAll(); // cascade: ChatRoomMember 함께 삭제
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
@@ -134,7 +139,6 @@ class MemberIntegrationTest extends IntegrationTestBase {
         }
     }
 
-
     @Nested
     @DisplayName("GET /api/profile/{memberId} - 타인 프로필 조회")
     class GetProfile {
@@ -147,6 +151,9 @@ class MemberIntegrationTest extends IntegrationTestBase {
             @DisplayName("200 - 모든 필드가 정상 반환된다")
             void getProfile_모든_필드가_정상_반환된다() throws Exception {
                 // given
+                given(fileService.getUrlFromKey("profile/test-key.jpg"))
+                        .willReturn("https://storage.googleapis.com/test-bucket/profile/test-key.jpg");
+
                 Member freshMember = memberRepository.save(Member.builder()
                         .memberName("홍길동")
                         .nickname("홍길동")
@@ -260,6 +267,9 @@ class MemberIntegrationTest extends IntegrationTestBase {
             @DisplayName("200 - 모든 필드가 정상 반환된다")
             void getMyProfile_모든_필드가_정상_반환된다() throws Exception {
                 // given
+                given(fileService.getUrlFromKey("profile/test-key.jpg"))
+                        .willReturn("https://storage.googleapis.com/test-bucket/profile/test-key.jpg");
+
                 Member freshMember = memberRepository.save(Member.builder()
                         .memberName("홍길동")
                         .nickname("홍길동")
@@ -374,6 +384,182 @@ class MemberIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Nested
+    @DisplayName("PATCH /api/my/profile - 프로필 수정")
+    class UpdateProfile {
+
+        @Nested
+        @DisplayName("성공")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 모든 필드가 정상 업데이트된다")
+            void 모든_필드가_정상_업데이트된다() throws Exception {
+                // given - 기존 키워드 등록
+                memberKeywordRepository.save(MemberKeyword.builder()
+                        .member(member).keyword(Keyword.FREE).build());
+
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1995, 6, 15), Level.B,
+                        List.of(Keyword.FRIENDSHIP, Keyword.MANAGER_MATCH), "profile/new-key.jpg");
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk());
+
+                // then - DB에서 모든 필드 검증
+                Member updated = memberRepository.findMemberWithProfileById(member.getId()).orElseThrow();
+                assertThat(updated.getMemberName()).isEqualTo("김길동");
+                assertThat(updated.getBirth()).isEqualTo(LocalDate.of(1995, 6, 15));
+                assertThat(updated.getLevel()).isEqualTo(Level.B);
+                assertThat(updated.getProfileImg()).isNotNull();
+                assertThat(updated.getProfileImg().getImgKey()).isEqualTo("profile/new-key.jpg");
+
+                List<MemberKeyword> keywords = memberKeywordRepository.findAllByMemberId(member.getId());
+                assertThat(keywords).hasSize(2);
+                assertThat(keywords.stream().map(MemberKeyword::getKeyword).toList())
+                        .containsExactlyInAnyOrder(Keyword.FRIENDSHIP, Keyword.MANAGER_MATCH);
+            }
+
+            @Test
+            @DisplayName("200 - imgKey가 없으면 이미지 없이 프로필이 업데이트된다")
+            void imgKey가_없으면_이미지_없이_프로필이_업데이트된다() throws Exception {
+                // given
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1990, 1, 1), Level.A,
+                        List.of(Keyword.FRIENDSHIP), null);
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk());
+
+                // then
+                Member updated = memberRepository.findMemberWithProfileById(member.getId()).orElseThrow();
+                assertThat(updated.getMemberName()).isEqualTo("김길동");
+                assertThat(updated.getProfileImg()).isNull();
+            }
+
+            @Test
+            @DisplayName("200 - 기존 이미지가 있고 imgKey가 다르면 이미지가 변경된다")
+            void 기존_이미지가_있고_imgKey가_다르면_이미지가_변경된다() throws Exception {
+                // given - 기존 프로필 이미지 설정
+                ProfileImg existingImg = ProfileImg.builder()
+                        .member(member).imgKey("profile/old-key.jpg").build();
+                member.updateProfileImg(existingImg);
+                memberRepository.save(member);
+
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1990, 1, 1), Level.A,
+                        List.of(Keyword.FRIENDSHIP), "profile/new-key.jpg");
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk());
+
+                // then
+                Member updated = memberRepository.findMemberWithProfileById(member.getId()).orElseThrow();
+                assertThat(updated.getProfileImg().getImgKey()).isEqualTo("profile/new-key.jpg");
+            }
+
+            @Test
+            @DisplayName("200 - DIRECT 채팅방 상대방의 displayName이 업데이트된다")
+            void DIRECT_채팅방_상대방의_displayName이_업데이트된다() throws Exception {
+                // given
+                Member counterPart = memberRepository.save(
+                        MemberFixture.createMember("상대방", Gender.FEMALE, Level.B, 2001L));
+
+                ChatRoom directRoom = ChatRoom.createDirectChatRoom();
+                directRoom.addChatRoomMember(
+                        ChatFixture.createJoinedMember(directRoom, member, "홍길동"));
+                directRoom.addChatRoomMember(
+                        ChatFixture.createJoinedMember(directRoom, counterPart, "홍길동"));
+                chatRoomRepository.save(directRoom);
+
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1990, 1, 1), Level.A,
+                        List.of(Keyword.FRIENDSHIP), null);
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk());
+
+                // then - 상대방의 ChatRoomMember displayName이 업데이트되었는지 검증
+                ChatRoomMember updatedCounterPart = chatRoomMemberRepository
+                        .findByChatRoomIdAndMemberId(directRoom.getId(), counterPart.getId())
+                        .orElseThrow();
+                assertThat(updatedCounterPart.getDisplayName()).isEqualTo("김길동");
+            }
+
+            @Test
+            @DisplayName("200 - PARTY 채팅방의 displayName은 변경되지 않는다")
+            void PARTY_채팅방의_displayName은_변경되지_않는다() throws Exception {
+                // given
+                PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
+                Party party = partyRepository.save(PartyFixture.createParty("테스트 모임", member.getId(), addr));
+
+                ChatRoom partyRoom = ChatRoom.createPartyChatRoom(party);
+                partyRoom.addChatRoomMember(
+                        ChatFixture.createJoinedMember(partyRoom, member, "홍길동"));
+                chatRoomRepository.save(partyRoom);
+
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1990, 1, 1), Level.A,
+                        List.of(Keyword.FRIENDSHIP), null);
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // when
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk());
+
+                // then - PARTY 채팅방의 ChatRoomMember displayName은 변경되지 않아야 한다
+                ChatRoomMember partyChatMember = chatRoomMemberRepository
+                        .findByChatRoomIdAndMemberId(partyRoom.getId(), member.getId())
+                        .orElseThrow();
+                assertThat(partyChatMember.getDisplayName()).isEqualTo("홍길동");
+            }
+        }
+
+        @Nested
+        @DisplayName("실패")
+        class Failure {
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 회원이면 MEMBER_NOT_FOUND 에러를 반환한다")
+            void 존재하지_않는_회원이면_MEMBER_NOT_FOUND_에러를_반환한다() throws Exception {
+                UpdateProfileRequestDTO request = new UpdateProfileRequestDTO(
+                        "김길동", LocalDate.of(1990, 1, 1), Level.A,
+                        List.of(Keyword.FRIENDSHIP), null);
+
+                SecurityContextHelper.setAuthentication(999L, "없는회원");
+
+                mockMvc.perform(patch("/api/my/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+        }
+    }
 
     @Nested
     @DisplayName("POST /api/my/profile/locations - 주소 추가")
