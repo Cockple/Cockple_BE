@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
@@ -25,8 +26,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     );
 
     List<ChatRoomMember> findByChatRoomId(Long id);
-
-    List<ChatRoomMember> findAllByMemberId(Long id);
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
@@ -62,5 +61,15 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query("SELECT crm.member.id FROM ChatRoomMember crm WHERE crm.chatRoom.id = :chatRoomId")
     List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
+
+    @Query("""
+            SELECT counterPart FROM ChatRoomMember counterPart
+            WHERE counterPart.chatRoom.type = 'DIRECT'
+            AND counterPart.member.id != :memberId
+            AND counterPart.chatRoom.id IN (
+                SELECT mine.chatRoom.id FROM ChatRoomMember mine WHERE mine.member.id = :memberId
+            )
+            """)
+    List<ChatRoomMember> findDirectChatCounterParts(@Param("memberId") Long memberId);
 }
 
