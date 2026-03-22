@@ -9,22 +9,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.domain.member.domain.MemberKeyword;
-import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberKeywordRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
@@ -42,8 +35,10 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class MemberIntegrationTest extends IntegrationTestBase {
 
@@ -55,9 +50,8 @@ class MemberIntegrationTest extends IntegrationTestBase {
     @Autowired PartyRepository partyRepository;
     @Autowired PartyAddrRepository partyAddrRepository;
 
-    // withdrawMember에서 카카오 연결 끊기 API 호출을 막기 위해 Mock 처리
-    @MockitoBean
-    KakaoOauthService kakaoOauthService;
+    @MockitoBean KakaoOauthService kakaoOauthService;
+    @MockitoBean FileService fileService;
 
     @Autowired ContestRepository contestRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
@@ -134,7 +128,6 @@ class MemberIntegrationTest extends IntegrationTestBase {
         }
     }
 
-
     @Nested
     @DisplayName("GET /api/profile/{memberId} - 타인 프로필 조회")
     class GetProfile {
@@ -147,6 +140,9 @@ class MemberIntegrationTest extends IntegrationTestBase {
             @DisplayName("200 - 모든 필드가 정상 반환된다")
             void getProfile_모든_필드가_정상_반환된다() throws Exception {
                 // given
+                given(fileService.getUrlFromKey("profile/test-key.jpg"))
+                        .willReturn("https://storage.googleapis.com/test-bucket/profile/test-key.jpg");
+
                 Member freshMember = memberRepository.save(Member.builder()
                         .memberName("홍길동")
                         .nickname("홍길동")
@@ -260,6 +256,9 @@ class MemberIntegrationTest extends IntegrationTestBase {
             @DisplayName("200 - 모든 필드가 정상 반환된다")
             void getMyProfile_모든_필드가_정상_반환된다() throws Exception {
                 // given
+                given(fileService.getUrlFromKey("profile/test-key.jpg"))
+                        .willReturn("https://storage.googleapis.com/test-bucket/profile/test-key.jpg");
+
                 Member freshMember = memberRepository.save(Member.builder()
                         .memberName("홍길동")
                         .nickname("홍길동")
@@ -373,7 +372,6 @@ class MemberIntegrationTest extends IntegrationTestBase {
             }
         }
     }
-
 
     @Nested
     @DisplayName("POST /api/my/profile/locations - 주소 추가")
