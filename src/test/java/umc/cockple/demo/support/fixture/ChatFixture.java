@@ -31,6 +31,12 @@ public class ChatFixture {
         return ChatRoomMember.create(chatRoom, member);
     }
 
+    public static ChatRoomMember createChatRoomMemberWithDisplayName(String displayName) {
+        return ChatRoomMember.builder()
+                .displayName(displayName)
+                .build();
+    }
+
     public static ChatRoomMember createJoinedMemberWithLastRead(ChatRoom chatRoom, Member member, Long lastReadMessageId) {
         return ChatRoomMember.builder()
                 .chatRoom(chatRoom)
