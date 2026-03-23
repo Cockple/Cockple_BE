@@ -51,3 +51,6 @@ terraform/terraform.tfvars
 
 ### firebase ###
 src/main/resources/firebase/*.json
+
+### local agent docs ###
+AGENTS.md
