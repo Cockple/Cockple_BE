@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.party.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -7,9 +8,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
+import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -20,6 +30,7 @@ import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -29,20 +40,8 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
-import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.file.service.FileService;
-import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,8 +59,9 @@ class PartyQueryServiceTest {
     private PartyRepository partyRepository;
     @Mock
     private MemberRepository memberRepository;
-    @Mock
+
     private PartyConverter partyConverter;
+
     @Mock
     private MemberPartyRepository memberPartyRepository;
     @Mock
@@ -76,6 +76,12 @@ class PartyQueryServiceTest {
     private FileService fileService;
     @Mock
     private PartyJoinRequestRepository partyJoinRequestRepository;
+
+    @BeforeEach
+    void setUp() {
+        partyConverter = new PartyConverter(fileService);
+        ReflectionTestUtils.setField(partyQueryService, "partyConverter", partyConverter);
+    }
 
     @Nested
     @DisplayName("getPartyMembers")
@@ -112,10 +118,13 @@ class PartyQueryServiceTest {
                     .willReturn(List.of());
 
             // when
-            partyQueryService.getPartyMembers(partyId, currentMemberId);
+            PartyMemberDTO.Response result = partyQueryService.getPartyMembers(partyId, currentMemberId);
 
             // then
-            verify(partyConverter).toPartyMemberDTO(eq(memberParties), eq(currentMemberId), anyMap());
+            assertThat(result.members()).hasSize(3);
+            assertThat(result.summary().totalCount()).isEqualTo(3);
+            assertThat(result.summary().maleCount()).isEqualTo(2);
+            assertThat(result.summary().femaleCount()).isEqualTo(1);
         }
 
         @Test
@@ -150,20 +159,18 @@ class PartyQueryServiceTest {
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(memberParties);
             given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(
                     List.of(10L, 20L), partyId)).willReturn(rawResult);
-            given(partyConverter.toPartyMemberDTO(eq(memberParties), eq(currentMemberId), any()))
-                    .willReturn(expected);
 
             // when
             PartyMemberDTO.Response result = partyQueryService.getPartyMembers(partyId, currentMemberId);
 
             // then
-            assertThat(result).isEqualTo(expected);
-            verify(memberExerciseRepository).findLastExerciseDateByMemberIdsAndPartyId(
-                    List.of(10L, 20L), partyId);
-            verify(partyConverter).toPartyMemberDTO(
-                    eq(memberParties),
-                    eq(currentMemberId),
-                    eq(Map.of(20L, lastDate)));
+            assertThat(result.summary().totalCount()).isEqualTo(2);
+            assertThat(result.members()).hasSize(2);
+            // 마지막 운동일 확인 (멤버1 id: 20L)
+            assertThat(result.members().stream()
+                    .filter(m -> m.memberId().equals(20L))
+                    .findFirst()
+                    .get().lastExerciseDate()).isEqualTo(lastDate);
         }
 
         @Test
@@ -185,16 +192,13 @@ class PartyQueryServiceTest {
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(memberParties);
             given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(
                     List.of(10L), partyId)).willReturn(List.of());
-            given(partyConverter.toPartyMemberDTO(any(), any(), any())).willReturn(null);
 
             // when
-            partyQueryService.getPartyMembers(partyId, currentMemberId);
+            PartyMemberDTO.Response result = partyQueryService.getPartyMembers(partyId, currentMemberId);
 
             // then
-            verify(partyConverter).toPartyMemberDTO(
-                    eq(memberParties),
-                    eq(currentMemberId),
-                    eq(Map.of()));
+            assertThat(result.members()).hasSize(1);
+            assertThat(result.members().get(0).lastExerciseDate()).isNull();
         }
 
         @Test
@@ -262,9 +266,6 @@ class PartyQueryServiceTest {
                     .willReturn(List.of());
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
                     .willReturn(Set.of(1L));
-            given(partyConverter.toMyPartyDTO(eq(party), any(), any(), any(), eq(true)))
-                    .willReturn(expectedResponse);
-
             // when
             Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "최신순",
                     pageable);
@@ -275,7 +276,6 @@ class PartyQueryServiceTest {
             assertThat(result.getContent().get(0).isBookmarked()).isTrue();
 
             verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
-            verify(partyConverter).toMyPartyDTO(eq(party), any(), any(), any(), eq(true));
         }
     }
 
@@ -308,8 +308,6 @@ class PartyQueryServiceTest {
 
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(memberPartyRepository.findByMember(member, pageable)).willReturn(memberPartySlice);
-            // fileService.getUrlFromKey 의 경우 partyImg 가 없으므로 널이 전달됨
-            given(partyConverter.toPartySimpleDTO(eq(memberParty), any())).willReturn(expectedResponse);
 
             // when
             Slice<PartySimpleDTO.Response> result = partyQueryService.getSimpleMyParties(memberId,
@@ -321,7 +319,6 @@ class PartyQueryServiceTest {
 
             verify(memberRepository).findById(memberId);
             verify(memberPartyRepository).findByMember(member, pageable);
-            verify(partyConverter).toPartySimpleDTO(eq(memberParty), any());
         }
 
         @Test
@@ -374,9 +371,6 @@ class PartyQueryServiceTest {
             given(partyRepository.findRecommendedParties(anyString(), anyInt(), any(), any(), anyLong()))
                     .willReturn(List.of(suggestedParty));
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
-            given(partyConverter.toMyPartyDTO(eq(suggestedParty), any(), any(), any(), eq(false)))
-                    .willReturn(PartyDTO.Response.builder().partyId(100L).partyName("추천 모임")
-                            .build());
 
             // when
             Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, true,
@@ -408,9 +402,6 @@ class PartyQueryServiceTest {
             given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
                     .willReturn(partySlice);
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
-            given(partyConverter.toMyPartyDTO(eq(filteredParty), any(), any(), any(), eq(false)))
-                    .willReturn(PartyDTO.Response.builder().partyId(200L).partyName("필터 모임")
-                            .build());
 
             // when
             Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false,
@@ -497,14 +488,15 @@ class PartyQueryServiceTest {
             given(partyBookmarkRepository.existsByMemberAndParty(member, party)).willReturn(false);
             given(partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, member,
                     RequestStatus.PENDING)).willReturn(false);
-            given(partyConverter.toPartyDetailResponseDTO(eq(party), any(), any(), eq(false), eq(false)))
-                    .willReturn(expected);
 
             // when
             PartyDetailDTO.Response result = partyQueryService.getPartyDetails(partyId, memberId);
 
             // then
-            assertThat(result).isEqualTo(expected);
+            assertThat(result.partyId()).isEqualTo(partyId);
+            assertThat(result.partyName()).isEqualTo("상세 모임");
+            assertThat(result.memberStatus()).isEqualTo("NOT_MEMBER");
+            assertThat(result.hasPendingJoinRequest()).isFalse();
             verify(partyRepository).findById(partyId);
         }
 
@@ -532,14 +524,13 @@ class PartyQueryServiceTest {
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(memberPartyRepository.findByPartyAndMember(party, member))
                     .willReturn(Optional.of(memberParty));
-            given(partyConverter.toPartyDetailResponseDTO(eq(party), any(), any(), eq(false), anyBoolean()))
-                    .willReturn(expected);
 
             // when
             PartyDetailDTO.Response result = partyQueryService.getPartyDetails(partyId, memberId);
 
             // then
             assertThat(result.memberStatus()).isEqualTo("MEMBER");
+            assertThat(result.memberRole()).isEqualTo("party_MEMBER");
         }
 
         @Test

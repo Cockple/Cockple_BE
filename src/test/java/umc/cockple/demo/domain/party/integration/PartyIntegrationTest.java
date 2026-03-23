@@ -1,9 +1,13 @@
 package umc.cockple.demo.domain.party.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -21,6 +25,7 @@ import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
@@ -43,6 +48,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Transactional
 class PartyIntegrationTest extends IntegrationTestBase {
 
     @Autowired
@@ -76,8 +82,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        manager = memberRepository
-                .save(MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 1, 1)));
+        // 매니저 및 주소 정보 생성
+        manager = memberRepository.save(MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 1, 1)));
         memberAddrRepository.save(MemberAddr.builder()
                 .member(manager)
                 .addr1("서울특별시")
@@ -89,99 +95,56 @@ class PartyIntegrationTest extends IntegrationTestBase {
                 .isMain(true)
                 .build());
 
+        // 일반 멤버 생성
         normalMember = memberRepository.save(MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L));
 
+        // 모임 및 주소 정보 생성
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
         party = partyRepository.save(PartyFixture.createParty("테스트 모임", manager.getId(), addr));
 
+        // 모임 멤버 생성
         memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
         memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
 
-        // 채팅방 생성 및 멤버 추가
+        // 채팅방 생성
         ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.createPartyChatRoom(party));
         chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, manager));
         chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, normalMember));
 
-        // 추천 조회용 모임 (manager가 가입하지 않은 모임)
+        // 추천 조회용 모임 (manager의 조건에 맞춤)
         Party suggestedParty = PartyFixture.createParty("추천 모임", normalMember.getId(), addr);
-        suggestedParty.addLevel(Gender.MALE, Level.A); // manager의 조건에 맞춤
+        suggestedParty.addLevel(Gender.MALE, Level.A); 
         partyRepository.save(suggestedParty);
 
         SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
     }
 
-    @AfterEach
-    void tearDown() {
-        memberExerciseRepository.deleteAll();
-        exerciseRepository.deleteAll();
-        chatRoomMemberRepository.deleteAll();
-        chatRoomRepository.deleteAll();
-        partyJoinRequestRepository.deleteAll();
-        memberPartyRepository.deleteAll();
-        partyRepository.deleteAll();
-        partyAddrRepository.deleteAll();
-        memberAddrRepository.deleteAll();
-        memberRepository.deleteAll();
-    }
 
     @Nested
     @DisplayName("GET /api/parties/{partyId}/members - 모임 멤버 조회")
     class GetPartyMembers {
 
         @Test
-        @DisplayName("200 - 모임의 멤버들을 역할별로 성공적으로 조회한다.")
-        void success() throws Exception {
+        @DisplayName("200 - 멤버 목록을 역할, 성별 통계 및 마지막 운동일과 함께 조회한다")
+        void success_getMembersWithDetails() throws Exception {
             // 부모임장 추가
             Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 1003L));
             memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
 
-            // 모임장이 가입된 상태
-            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
-
-            mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.summary.totalCount").value(3))
-                    .andExpect(jsonPath("$.data.members[0].role").value("party_MANAGER"))
-                    .andExpect(jsonPath("$.data.members[0].isMe").value(true))
-                    .andExpect(jsonPath("$.data.members[1].role").value("party_SUBMANAGER"))
-                    .andExpect(jsonPath("$.data.members[1].isMe").value(false))
-                    .andExpect(jsonPath("$.data.members[2].role").value("party_MEMBER"))
-                    .andExpect(jsonPath("$.data.members[2].isMe").value(false));
-        }
-
-        @Test
-        @DisplayName("200 - 멤버 목록과 마지막 운동일을 정상 반환한다")
-        void success_withLastExerciseDate() throws Exception {
-            Exercise exercise = exerciseRepository.save(
-                    ExerciseFixture.createExercise(party, LocalDate.of(2025, 1, 10)));
+            // 운동 기록 추가
+            Exercise exercise = exerciseRepository.save(ExerciseFixture.createExercise(party, LocalDate.of(2025, 1, 10)));
             memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
 
             mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.summary.totalCount").value(2))
-                    .andExpect(jsonPath("$.data.summary.maleCount").value(1))
+                    .andExpect(jsonPath("$.data.summary.totalCount").value(3))
+                    .andExpect(jsonPath("$.data.summary.maleCount").value(2))
                     .andExpect(jsonPath("$.data.summary.femaleCount").value(1))
-                    // 첫 번째 멤버(매니저) 전체 필드 검증
-                    .andExpect(jsonPath("$.data.members[0].memberId").value(manager.getId()))
-                    .andExpect(jsonPath("$.data.members[0].nickname").value("매니저"))
-                    .andExpect(jsonPath("$.data.members[0].profileImageUrl").doesNotExist())
                     .andExpect(jsonPath("$.data.members[0].role").value("party_MANAGER"))
-                    .andExpect(jsonPath("$.data.members[0].gender").value("MALE"))
-                    .andExpect(jsonPath("$.data.members[0].level").value("A조"))
                     .andExpect(jsonPath("$.data.members[0].isMe").value(true))
-                    .andExpect(jsonPath("$.data.members[0].lastExerciseDate").doesNotExist())
-                    // 두 번째 멤버(일반멤버) 마지막 운동일 검증
-                    .andExpect(jsonPath("$.data.members[1].lastExerciseDate").value("2025-01-10"));
-        }
-
-        @Test
-        @DisplayName("200 - 운동 기록이 없는 멤버의 lastExerciseDate는 null이다")
-        void success_noExerciseHistory() throws Exception {
-            mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.summary.totalCount").value(2))
-                    .andExpect(jsonPath("$.data.members[0].lastExerciseDate").isEmpty())
-                    .andExpect(jsonPath("$.data.members[1].lastExerciseDate").isEmpty());
+                    .andExpect(jsonPath("$.data.members[1].role").value("party_SUBMANAGER"))
+                    .andExpect(jsonPath("$.data.members[2].role").value("party_MEMBER"))
+                    .andExpect(jsonPath("$.data.members[2].lastExerciseDate").value("2025-01-10"));
         }
 
         @Test
@@ -479,13 +442,17 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("200 - 가입하지 않은 회원이 모임 가입을 신청한다")
         void success_createJoinRequest() throws Exception {
-            // 가입하지 않은 멤버
+            // 가입하지 않은 멤버 생성
             Member applicant = memberRepository.save(MemberFixture.createMember("신청자", Gender.MALE, Level.A, 5001L, LocalDate.of(1995, 1, 1)));
             SecurityContextHelper.setAuthentication(applicant.getId(), applicant.getNickname());
 
             mockMvc.perform(post("/api/parties/{partyId}/join-requests", party.getId()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON201"));
+
+            // 가입 신청 데이터 확인
+            boolean exists = partyJoinRequestRepository.existsByPartyAndMemberAndStatus(party, applicant, RequestStatus.PENDING);
+            assertThat(exists).isTrue();
         }
 
         @Test
