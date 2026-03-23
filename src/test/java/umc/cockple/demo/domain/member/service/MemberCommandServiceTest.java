@@ -9,7 +9,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -204,8 +206,6 @@ class MemberCommandServiceTest {
                 // given
                 given(memberRepository.findMemberWithProfileById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(chatRoomMemberRepository.findAllByMemberId(normalMember.getId()))
-                        .willReturn(List.of());
 
                 // when
                 memberCommandService.updateProfile(requestWithoutImg, normalMember.getId());
@@ -223,8 +223,6 @@ class MemberCommandServiceTest {
                 // given
                 given(memberRepository.findMemberWithProfileById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(chatRoomMemberRepository.findAllByMemberId(normalMember.getId()))
-                        .willReturn(List.of());
 
                 // when
                 memberCommandService.updateProfile(requestWithImg, normalMember.getId());
@@ -246,8 +244,6 @@ class MemberCommandServiceTest {
 
                 given(memberRepository.findMemberWithProfileById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(chatRoomMemberRepository.findAllByMemberId(normalMember.getId()))
-                        .willReturn(List.of());
 
                 // when
                 memberCommandService.updateProfile(requestWithImg, normalMember.getId());
@@ -272,8 +268,6 @@ class MemberCommandServiceTest {
 
                 given(memberRepository.findMemberWithProfileById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(chatRoomMemberRepository.findAllByMemberId(normalMember.getId()))
-                        .willReturn(List.of());
 
                 // when
                 memberCommandService.updateProfile(sameImgRequest, normalMember.getId());
@@ -288,8 +282,6 @@ class MemberCommandServiceTest {
                 // given
                 given(memberRepository.findMemberWithProfileById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(chatRoomMemberRepository.findAllByMemberId(normalMember.getId()))
-                        .willReturn(List.of());
 
                 // when
                 memberCommandService.updateProfile(requestWithImg, normalMember.getId());
@@ -298,6 +290,24 @@ class MemberCommandServiceTest {
                 then(memberKeywordRepository).should().deleteAllByMember(normalMember);
                 then(memberKeywordRepository).should().saveAll(any());
                 assertThat(normalMember.getKeywords()).hasSize(requestWithImg.keywords().size());
+            }
+
+            @Test
+            @DisplayName("프로필_수정_시_DIRECT_채팅방_상대방의_displayName이_업데이트된다")
+            void 프로필_수정_시_DIRECT_채팅방_상대방의_displayName이_업데이트된다() {
+                // given
+                ChatRoomMember counterPartCrm = ChatFixture.createChatRoomMemberWithDisplayName("홍길동");
+
+                given(memberRepository.findMemberWithProfileById(normalMember.getId()))
+                        .willReturn(Optional.of(normalMember));
+                given(chatRoomMemberRepository.findDirectChatCounterParts(normalMember.getId()))
+                        .willReturn(List.of(counterPartCrm));
+
+                // when
+                memberCommandService.updateProfile(requestWithoutImg, normalMember.getId());
+
+                // then
+                assertThat(counterPartCrm.getDisplayName()).isEqualTo(requestWithoutImg.memberName());
             }
         }
 
