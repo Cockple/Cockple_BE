@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
@@ -492,6 +493,80 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(post("/api/parties/{partyId}/join-requests", womenParty.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.GENDER_NOT_MATCH.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/parties/{partyId} - 모임 정보 수정")
+    class UpdateParty {
+
+        @Test
+        @DisplayName("200 - 모임장이 유효한 데이터로 모임 정보를 정상적으로 수정한다")
+        void success_updateParty() throws Exception {
+            // given
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityDay(List.of("월", "수"))
+                    .activityTime("오전")
+                    .designatedCock("수정된 콕")
+                    .joinPrice(2000)
+                    .price(15000)
+                    .content("수정된 내용입니다.")
+                    .build();
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}", party.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // DB 검증
+            Party updatedParty = partyRepository.findById(party.getId()).orElseThrow();
+            assertThat(updatedParty.getDesignatedCock()).isEqualTo("수정된 콕");
+            assertThat(updatedParty.getJoinPrice()).isEqualTo(2000);
+            assertThat(updatedParty.getPrice()).isEqualTo(15000);
+            assertThat(updatedParty.getContent()).isEqualTo("수정된 내용입니다.");
+        }
+
+        @Test
+        @DisplayName("400 - 필수 필드(activityDay, activityTime) 누락 시 에러를 반환한다")
+        void fail_updateParty_missingRequiredFields() throws Exception {
+            // given
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityDay(null)
+                    .activityTime("")
+                    .build();
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}", party.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("COMMON400_VALIDATION"));
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 일반 멤버가 수정을 시도하면 INSUFFICIENT_PERMISSION 에러를 반환한다")
+        void fail_updateParty_notOwner() throws Exception {
+            // given
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityDay(List.of("토", "일"))
+                    .activityTime("오후")
+                    .build();
+
+            // 일반 멤버로 세션 설정
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}", party.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
         }
     }
 
