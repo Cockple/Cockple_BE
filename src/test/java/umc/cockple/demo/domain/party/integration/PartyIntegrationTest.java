@@ -4,6 +4,10 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -27,7 +31,9 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +56,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
     MemberExerciseRepository memberExerciseRepository;
     @Autowired
     MemberAddrRepository memberAddrRepository;
+    @Autowired
+    ChatRoomRepository chatRoomRepository;
+    @Autowired
+    ChatRoomMemberRepository chatRoomMemberRepository;
 
     private Member manager;
     private Member normalMember;
@@ -78,6 +88,11 @@ class PartyIntegrationTest extends IntegrationTestBase {
         memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
         memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
 
+        // 채팅방 생성 및 멤버 추가
+        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.createPartyChatRoom(party));
+        chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, manager));
+        chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, normalMember));
+
         // 추천 조회용 모임 (manager가 가입하지 않은 모임)
         Party suggestedParty = PartyFixture.createParty("추천 모임", normalMember.getId(), addr);
         suggestedParty.addLevel(Gender.MALE, Level.A); // manager의 조건에 맞춤
@@ -90,6 +105,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
     void tearDown() {
         memberExerciseRepository.deleteAll();
         exerciseRepository.deleteAll();
+        chatRoomMemberRepository.deleteAll();
+        chatRoomRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
@@ -174,6 +191,70 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/parties/{partyId}/members/my - 모임 탈퇴")
+    class LeaveParty {
+
+        @Test
+        @DisplayName("200 - 일반 멤버가 모임을 성공적으로 탈퇴한다")
+        void success_leaveParty() throws Exception {
+            // DB에서 최신 정보 보장
+            Member member = memberRepository.findById(normalMember.getId()).orElseThrow();
+            Party targetParty = partyRepository.findById(party.getId()).orElseThrow();
+            
+            // normalMember 세션으로 설정
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(delete("/api/parties/{partyId}/members/my", targetParty.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // DB에서 제거되었는지 확인
+            boolean exists = memberPartyRepository.existsByPartyAndMember(targetParty, member);
+            assertThat(exists).isFalse();
+        }
+
+        @Test
+        @DisplayName("403 - 모임장은 탈퇴할 수 없다")
+        void fail_leaveParty_owner() throws Exception {
+            // manager(모임장) 세션으로 설정
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(delete("/api/parties/{partyId}/members/my", party.getId()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_ACTION_FOR_OWNER.getCode()));
+        }
+
+        @Test
+        @DisplayName("403 - 부모임장은 탈퇴할 수 없다")
+        void fail_leaveParty_subOwner() throws Exception {
+            // 부모임장 생성 및 가입
+            Member subManager = memberRepository
+                    .saveAndFlush(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 2001L));
+            memberPartyRepository
+                    .saveAndFlush(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
+
+            // 부모임장 세션으로 설정
+            SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
+
+            mockMvc.perform(delete("/api/parties/{partyId}/members/my", party.getId()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_ACTION_FOR_SUBOWNER.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 해당 모임의 멤버가 아니면 탈퇴할 수 없다")
+        void fail_leaveParty_notMember() throws Exception {
+            // 가입하지 않은 새로운 멤버 생성
+            Member nonMember = memberRepository.save(MemberFixture.createMember("외부인", Gender.MALE, Level.A, 3001L));
+            SecurityContextHelper.setAuthentication(nonMember.getId(), nonMember.getNickname());
+
+            mockMvc.perform(delete("/api/parties/{partyId}/members/my", party.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.NOT_MEMBER.getCode()));
         }
     }
 
