@@ -10,4 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+
+firebase:
+  service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}

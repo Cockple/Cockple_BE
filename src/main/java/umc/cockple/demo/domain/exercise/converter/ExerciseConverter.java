@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseConverter {
 
-    private final ImageService imageService;
+    private final FileService fileService;
 
     // ========== Command 변환 메서드들 ==========
     public ExerciseCreateDTO.Command toCreateCommand(ExerciseCreateDTO.Request request) {
@@ -496,14 +496,14 @@ public class ExerciseConverter {
 
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(partyImg.getImgKey());
+            return fileService.getUrlFromKey(partyImg.getImgKey());
         }
         return null;
     }
 
     private String getImageUrl(ProfileImg profileImg) {
         if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return imageService.getUrlFromKey(profileImg.getImgKey());
+            return fileService.getUrlFromKey(profileImg.getImgKey());
         }
         return null;
     }

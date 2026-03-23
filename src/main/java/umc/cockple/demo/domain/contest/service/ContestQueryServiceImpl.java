@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.contest.enums.MedalType;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,7 +27,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
     private final ContestRepository contestRepository;
     private final ContestConverter contestConverter;
-    private final ImageService imageService;
+    private final FileService fileService;
 
     // 대회 기록 상세 조회
     @Override
@@ -106,7 +106,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
     private List<String> getImageUrls(Contest contest) {
         return contest.getContestImgs().stream()
                 .sorted(Comparator.comparing(ContestImg::getImgOrder))
-                .map(img -> imageService.getUrlFromKey(img.getImgKey()))
+                .map(img -> fileService.getUrlFromKey(img.getImgKey()))
                 .collect(Collectors.toList());
     }
 
@@ -147,6 +147,6 @@ public class ContestQueryServiceImpl implements ContestQueryService {
             case BRONZE -> baseKey + "3f9778a5-479a-44cf-bfb0-bea187a839c5.svg";
             case NONE   -> baseKey + "84e4dd20-7989-4871-954b-7363213b941e.svg";
         };
-        return imageService.getUrlFromKey(key);
+        return fileService.getUrlFromKey(key);
     }
 }

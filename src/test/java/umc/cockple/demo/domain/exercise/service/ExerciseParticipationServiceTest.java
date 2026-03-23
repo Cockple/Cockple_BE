@@ -12,12 +12,13 @@ import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseParticipationService;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
@@ -27,6 +28,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
@@ -37,6 +39,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -49,7 +52,7 @@ class ExerciseParticipationServiceTest {
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private GuestRepository guestRepository;
-    @Mock private ImageService imageService;
+    @Mock private FileService fileService;
 
     private ExerciseParticipationService exerciseParticipationService;
 
@@ -60,7 +63,7 @@ class ExerciseParticipationServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseConverter exerciseConverter = new ExerciseConverter(imageService);
+        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
         exerciseParticipationService = new ExerciseParticipationService(
                 exerciseRepository, memberRepository, memberPartyRepository,
                 memberExerciseRepository, guestRepository, exerciseValidator, exerciseConverter);
@@ -72,16 +75,221 @@ class ExerciseParticipationServiceTest {
                 PartyFixture.createPartyAddr("서울특별시", "강남구"));
         ReflectionTestUtils.setField(party, "id", 10L);
 
-        exercise = Exercise.builder()
-                .date(LocalDate.of(2099, 12, 31))
-                .startTime(LocalTime.of(10, 0))
-                .endTime(LocalTime.of(12, 0))
-                .maxCapacity(10)
-                .partyGuestAccept(true)
-                .outsideGuestAccept(false)
-                .build();
+        exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                LocalTime.of(12, 0), true, false);
         ReflectionTestUtils.setField(exercise, "id", 100L);
-        exercise.setParty(party);
+    }
+
+    @Nested
+    @DisplayName("joinExercise")
+    class JoinExercise {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("파티 멤버가 운동 신청하면 Response를 반환한다")
+            void partyMember_joinExercise_success() {
+                // given
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
+                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                        .willAnswer(invocation -> {
+                            MemberExercise me = invocation.getArgument(0);
+                            ReflectionTestUtils.setField(me, "id", 50L);
+                            return me;
+                        });
+
+                // when
+                ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(exercise, participant);
+
+                // then
+                assertThat(response.participantId()).isEqualTo(50L);
+                assertThat(response.currentParticipants()).isNotNull();
+            }
+
+            @Test
+            @DisplayName("외부 참여자가 outsideGuestAccept=true 운동 신청하면 Response를 반환한다")
+            void outsideMember_joinExercise_success() {
+                // given
+                Exercise outsideAcceptExercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
+                        LocalTime.of(12, 0), true, true);
+                ReflectionTestUtils.setField(outsideAcceptExercise, "id", 101L);
+
+                Member outsideMember = MemberFixture.createMember("외부참여자", Gender.FEMALE, Level.C, 3001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(outsideMember, "id", 3L);
+
+                given(memberExerciseRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
+                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                        .willAnswer(invocation -> {
+                            MemberExercise me = invocation.getArgument(0);
+                            ReflectionTestUtils.setField(me, "id", 51L);
+                            return me;
+                        });
+
+                // when
+                ExerciseJoinDTO.Response response = exerciseParticipationService.joinExercise(outsideAcceptExercise, outsideMember);
+
+                // then
+                assertThat(response.participantId()).isEqualTo(51L);
+                assertThat(response.currentParticipants()).isNotNull();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_PARTICIPATION)을 던진다")
+            void alreadyStarted_throwsException() {
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
+                ReflectionTestUtils.setField(startedExercise, "id", 200L);
+
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.joinExercise(startedExercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_PARTICIPATION));
+            }
+
+            @Test
+            @DisplayName("이미 참여 신청한 운동이면 ExerciseException(ALREADY_JOINED_EXERCISE)을 던진다")
+            void alreadyJoined_throwsException() {
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(true);
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.joinExercise(exercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.ALREADY_JOINED_EXERCISE));
+            }
+
+            @Test
+            @DisplayName("파티 멤버가 아닌데 외부 참여 불가 운동이면 ExerciseException(NOT_PARTY_MEMBER)을 던진다")
+            void notPartyMember_outsideNotAccepted_throwsException() {
+                Member outsideMember = MemberFixture.createMember("외부인", Gender.MALE, Level.B, 3001L);
+                ReflectionTestUtils.setField(outsideMember, "id", 3L);
+
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, outsideMember)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.joinExercise(exercise, outsideMember))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.NOT_PARTY_MEMBER));
+            }
+
+            @Test
+            @DisplayName("나이 조건 불일치면 ExerciseException(MEMBER_AGE_NOT_ALLOWED)을 던진다")
+            void ageNotAllowed_throwsException() {
+                Member youngMember = MemberFixture.createMember("어린회원", Gender.MALE, Level.B, 4001L, LocalDate.of(2010, 1, 1));
+                ReflectionTestUtils.setField(youngMember, "id", 4L);
+
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, youngMember)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, youngMember)).willReturn(true);
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.joinExercise(exercise, youngMember))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_AGE_NOT_ALLOWED));
+            }
+        }
+    }
+
+
+
+
+    @Nested
+    @DisplayName("cancelParticipation")
+    class CancelParticipation {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("참여자가 본인 참여를 취소하면 Response를 반환한다")
+            void cancelParticipation_success() {
+                // given
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
+                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(exercise, participant))
+                        .willReturn(Optional.of(memberExercise));
+
+                // when
+                ExerciseCancelDTO.Response response = exerciseParticipationService
+                        .cancelParticipation(exercise, participant);
+
+                // then
+                assertThat(response.memberName()).isEqualTo(participant.getMemberName());
+                assertThat(response.currentParticipants()).isNotNull();
+                then(memberExerciseRepository).should().delete(memberExercise);
+                then(exerciseRepository).should().save(exercise);
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_CANCEL)을 던진다")
+            void alreadyStarted_throwsException() {
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
+                ReflectionTestUtils.setField(startedExercise, "id", 200L);
+
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, startedExercise);
+                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(startedExercise, participant))
+                        .willReturn(Optional.of(memberExercise));
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.cancelParticipation(startedExercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_CANCEL));
+            }
+
+            @Test
+            @DisplayName("참여 기록이 없으면 ExerciseException(MEMBER_EXERCISE_NOT_FOUND)을 던진다")
+            void memberExerciseNotFound_throwsException() {
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberExerciseRepository.findByExerciseAndMember(exercise, participant))
+                        .willReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        exerciseParticipationService.cancelParticipation(exercise, participant))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
+                                .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+            }
+        }
     }
 
     @Nested
@@ -199,16 +407,9 @@ class ExerciseParticipationServiceTest {
             @Test
             @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_CANCEL)을 던진다")
             void alreadyStarted_throwsException() {
-                Exercise startedExercise = Exercise.builder()
-                        .date(LocalDate.of(2000, 1, 1))
-                        .startTime(LocalTime.of(10, 0))
-                        .endTime(LocalTime.of(12, 0))
-                        .maxCapacity(10)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
+                Exercise startedExercise = ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
+                        LocalTime.of(12, 0), true, false);
                 ReflectionTestUtils.setField(startedExercise, "id", 200L);
-                startedExercise.setParty(party);
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 

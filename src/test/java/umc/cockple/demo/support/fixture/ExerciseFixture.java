@@ -20,6 +20,19 @@ public class ExerciseFixture {
                 .build();
     }
 
+    public static Exercise createExercise(Party party, LocalDate date, LocalTime endTime,
+                                             boolean partyGuestAccept, boolean outsideGuestAccept) {
+        return Exercise.builder()
+                .party(party)
+                .date(date)
+                .startTime(LocalTime.of(10, 0))
+                .endTime(endTime)
+                .maxCapacity(10)
+                .partyGuestAccept(partyGuestAccept)
+                .outsideGuestAccept(outsideGuestAccept)
+                .build();
+    }
+
     public static Exercise createExerciseWithAddr(Party party, LocalDate date) {
         return createExerciseWithAddr(party, date, 10);
     }

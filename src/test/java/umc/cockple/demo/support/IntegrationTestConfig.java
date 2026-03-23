@@ -1,11 +1,14 @@
 package umc.cockple.demo.support;
 
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import static org.mockito.Mockito.mock;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class IntegrationTestConfig {
@@ -31,5 +34,10 @@ public class IntegrationTestConfig {
     @ServiceConnection
     RedisContainer redisContainer() {
         return redis;
+    }
+
+    @Bean
+    FirebaseMessaging firebaseMessaging() {
+        return mock(FirebaseMessaging.class);
     }
 }

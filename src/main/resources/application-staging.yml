@@ -4,9 +4,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
   data:
     redis:
       host: cockple-redis
       database: 1
+
+firebase:
+  service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
@@ -15,7 +14,7 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
-import umc.cockple.demo.domain.image.service.ImageService;
+import umc.cockple.demo.domain.file.service.FileService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -38,7 +37,7 @@ public class MemberCommandService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final KakaoOauthService kakaoOauthService;
-    private final ImageService imageService;
+    private final FileService fileService;
 
 
     // ==================== 회원 관련 ===================
@@ -138,7 +137,7 @@ public class MemberCommandService {
 
                 // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
                 if (!profile.getImgKey().equals(imgKey)) {
-                    imageService.delete(profile.getImgKey());
+                    fileService.delete(profile.getImgKey());
                     profile.updateProfile(imgKey);
                 }
 
@@ -158,9 +157,8 @@ public class MemberCommandService {
             }
         }
 
-        //chatRoomMember의 displayName도 같이 업데이트
-        List<ChatRoomMember> chatRoomMembers = chatRoomMemberRepository.findAllByMemberId(member.getId());
-        chatRoomMembers.forEach(crm -> crm.updateDisplayName(requestDto.memberName()));
+        chatRoomMemberRepository.findDirectChatCounterParts(member.getId())
+                .forEach(crm -> crm.updateDisplayName(requestDto.memberName()));
 
     }
 

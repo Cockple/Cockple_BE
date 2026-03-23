@@ -18,11 +18,11 @@ public enum NotificationErrorCode implements BaseErrorCode {
      */
 
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION201", "해당 알림이 존재하지 않습니다."),
-
-
     NOTIFICATION_NOT_OWNED(HttpStatus.UNAUTHORIZED, "NOTIFICATION301", "해당 알림에 대한 권한이 없습니다."),
 
+
     INVALID_NOTIFICATION_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "NOTIFICATION501", "데이터 직렬화에 실패했습니다."),
+    FAIL_INIT_FIREBASE(HttpStatus.INTERNAL_SERVER_ERROR, "NOTIFICATION502", "Firebase 초기화에 실패했습니다.")
     ;
 
 

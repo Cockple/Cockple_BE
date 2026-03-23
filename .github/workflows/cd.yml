@@ -27,6 +27,7 @@ jobs:
           else
             echo "DOCKER_TAG=staging" >> $GITHUB_OUTPUT
           fi
+          
 
       - name: Build with Gradle
         run: |
@@ -71,7 +72,7 @@ jobs:
           envs: >-
             DB_PASSWORD,GCS_BUCKET,
             KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI_PROD,KAKAO_REDIRECT_URI_STAGING,KAKAO_ADMIN_KEY,
-            JWT_SECRET_KEY
+            JWT_SECRET_KEY,FIREBASE_SERVICE_ACCOUNT_KEY
           script: |
             chmod +x /home/ubuntu/cockple/scripts/deploy.sh
             bash /home/ubuntu/cockple/scripts/deploy.sh \
@@ -86,3 +87,4 @@ jobs:
           KAKAO_REDIRECT_URI_STAGING: ${{ secrets.KAKAO_REDIRECT_URI_STAGING }}
           KAKAO_ADMIN_KEY: ${{ secrets.KAKAO_ADMIN_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
