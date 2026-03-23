@@ -1,13 +1,14 @@
 package umc.cockple.demo.domain.party.integration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -17,8 +18,9 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
@@ -33,12 +35,11 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +67,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
     ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired
     PartyJoinRequestRepository partyJoinRequestRepository;
+    @Autowired
+    ObjectMapper objectMapper;
 
     private Member manager;
     private Member normalMember;
@@ -522,6 +525,113 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(post("/api/parties/{partyId}/join-requests", womenParty.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.GENDER_NOT_MATCH.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/parties - 모임 생성")
+    class CreateParty {
+
+        @Test
+        @DisplayName("200 - 모임을 성공적으로 생성하고 DB 저장 상태를 확인한다")
+        void success_createParty() throws Exception {
+            // given
+            PartyCreateDTO.Request request = PartyCreateDTO.Request.builder()
+                    .partyName("새로운 통합 모임")
+                    .partyType("혼복")
+                    .minBirthYear(1990)
+                    .maxBirthYear(2000)
+                    .activityTime("오전")
+                    .addr1("서울특별시")
+                    .addr2("강남구")
+                    .activityDay(List.of("월", "수"))
+                    .price(10000)
+                    .joinPrice(5000)
+                    .designatedCock("통합테스트콕")
+                    .maleLevel(List.of("A조"))
+                    .femaleLevel(List.of("B조"))
+                    .build();
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON201"))
+                    .andExpect(jsonPath("$.data.partyId").exists());
+
+            // DB 검증
+            List<Party> parties = partyRepository.findAll();
+            Party createdParty = parties.stream()
+                    .filter(p -> p.getPartyName().equals("새로운 통합 모임"))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertThat(createdParty.getOwnerId()).isEqualTo(manager.getId());
+            assertThat(createdParty.getDesignatedCock()).isEqualTo("통합테스트콕");
+        }
+
+        @Test
+        @DisplayName("400 - 본인의 나이가 모임 조건에 맞지 않을 때 에러를 반환한다")
+        void fail_createParty_invalidAgeRange() throws Exception {
+            // given
+            // manager는 1995년생. 모임 조건을 2000~2010으로 설정.
+            PartyCreateDTO.Request request = PartyCreateDTO.Request.builder()
+                    .partyName("청년 모임")
+                    .partyType("혼복")
+                    .minBirthYear(2000)
+                    .maxBirthYear(2010)
+                    .activityTime("오후")
+                    .activityDay(List.of("금"))
+                    .addr1("서울특별시")
+                    .addr2("강남구")
+                    .price(10000)
+                    .joinPrice(0)
+                    .femaleLevel(List.of("A조"))
+                    .maleLevel(List.of("A조"))
+                    .designatedCock("청년콕")
+                    .build();
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.AGE_NOT_MATCH.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 혼복 모임에서 남자 급수 정보가 누락되었을 때 에러를 반환한다")
+        void fail_createParty_missingMaleLevelInMixDoubles() throws Exception {
+            // given
+            PartyCreateDTO.Request request = PartyCreateDTO.Request.builder()
+                    .partyName("혼복 모임")
+                    .partyType("혼복")
+                    .minBirthYear(1990)
+                    .maxBirthYear(2005)
+                    .activityTime("오전")
+                    .activityDay(List.of("토"))
+                    .addr1("서울특별시")
+                    .addr2("강남구")
+                    .price(10000)
+                    .joinPrice(0)
+                    .designatedCock("혼복콕")
+                    .maleLevel(null)
+                    .femaleLevel(List.of("A조"))
+                    .build();
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.MALE_LEVEL_REQUIRED.getCode()));
         }
     }
 }
