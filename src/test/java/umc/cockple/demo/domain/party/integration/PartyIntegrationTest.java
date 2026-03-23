@@ -17,8 +17,11 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -35,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -60,6 +64,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
     ChatRoomRepository chatRoomRepository;
     @Autowired
     ChatRoomMemberRepository chatRoomMemberRepository;
+    @Autowired
+    PartyJoinRequestRepository partyJoinRequestRepository;
 
     private Member manager;
     private Member normalMember;
@@ -107,6 +113,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         exerciseRepository.deleteAll();
         chatRoomMemberRepository.deleteAll();
         chatRoomRepository.deleteAll();
+        partyJoinRequestRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
@@ -204,7 +211,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
             // DB에서 최신 정보 보장
             Member member = memberRepository.findById(normalMember.getId()).orElseThrow();
             Party targetParty = partyRepository.findById(party.getId()).orElseThrow();
-            
+
             // normalMember 세션으로 설정
             SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
@@ -232,10 +239,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("403 - 부모임장은 탈퇴할 수 없다")
         void fail_leaveParty_subOwner() throws Exception {
             // 부모임장 생성 및 가입
-            Member subManager = memberRepository
-                    .saveAndFlush(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 2001L));
-            memberPartyRepository
-                    .saveAndFlush(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
+            Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 3001L));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
 
             // 부모임장 세션으로 설정
             SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
@@ -249,7 +254,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("400 - 해당 모임의 멤버가 아니면 탈퇴할 수 없다")
         void fail_leaveParty_notMember() throws Exception {
             // 가입하지 않은 새로운 멤버 생성
-            Member nonMember = memberRepository.save(MemberFixture.createMember("외부인", Gender.MALE, Level.A, 3001L));
+            Member nonMember = memberRepository.save(MemberFixture.createMember("외부인", Gender.MALE, Level.A, 4002L));
             SecurityContextHelper.setAuthentication(nonMember.getId(), nonMember.getNickname());
 
             mockMvc.perform(delete("/api/parties/{partyId}/members/my", party.getId()))
@@ -266,10 +271,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - 사용자가 가입한 모임 목록을 페이징하여 반환한다")
         void success_getMyParties() throws Exception {
             mockMvc.perform(get("/api/my/parties")
-                    .param("created", "false")
-                    .param("sort", "최신순")
-                    .param("size", "10")
-                    .param("page", "0"))
+                            .param("created", "false")
+                            .param("sort", "최신순")
+                            .param("size", "10")
+                            .param("page", "0"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
@@ -289,10 +294,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
             SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
 
             mockMvc.perform(get("/api/my/parties")
-                    .param("created", "false")
-                    .param("sort", "최신순")
-                    .param("size", "10")
-                    .param("page", "0"))
+                            .param("created", "false")
+                            .param("sort", "최신순")
+                            .param("size", "10")
+                            .param("page", "0"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
@@ -310,9 +315,9 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - 사용자가 가입한 모임의 간략화된 목록을 페이징하여 반환한다")
         void success_getSimpleMyParties() throws Exception {
             mockMvc.perform(get("/api/my/parties/simple")
-                    .param("page", "0")
-                    .param("size", "10")
-                    .param("sort", "createdAt,DESC"))
+                            .param("page", "0")
+                            .param("size", "10")
+                            .param("sort", "createdAt,DESC"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
@@ -332,9 +337,9 @@ class PartyIntegrationTest extends IntegrationTestBase {
             SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
 
             mockMvc.perform(get("/api/my/parties/simple")
-                    .param("page", "0")
-                    .param("size", "10")
-                    .param("sort", "createdAt,DESC"))
+                            .param("page", "0")
+                            .param("size", "10")
+                            .param("sort", "createdAt,DESC"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
@@ -352,10 +357,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - Cockple 추천 모드 시 추천된 모임 목록을 반환한다")
         void success_cockpleRecommend() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                    .param("isCockpleRecommend", "true")
-                    .param("sort", "최신순")
-                    .param("page", "0")
-                    .param("size", "10"))
+                            .param("isCockpleRecommend", "true")
+                            .param("sort", "최신순")
+                            .param("page", "0")
+                            .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
@@ -366,12 +371,12 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 반환한다")
         void success_filterMode() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                    .param("isCockpleRecommend", "false")
-                    .param("addr1", "서울특별시")
-                    .param("addr2", "강남구")
-                    .param("sort", "최신순")
-                    .param("page", "0")
-                    .param("size", "10"))
+                            .param("isCockpleRecommend", "false")
+                            .param("addr1", "서울특별시")
+                            .param("addr2", "강남구")
+                            .param("sort", "최신순")
+                            .param("page", "0")
+                            .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
@@ -383,10 +388,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - 검색 모드 시 모임명으로 검색된 결과를 반환한다")
         void success_searchMode() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                    .param("search", "추천")
-                    .param("isCockpleRecommend", "false")
-                    .param("page", "0")
-                    .param("size", "10"))
+                            .param("search", "추천")
+                            .param("isCockpleRecommend", "false")
+                            .param("page", "0")
+                            .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
@@ -397,8 +402,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("400 - 유효하지 않은 정렬 기준 입력 시 INVALID_ORDER_TYPE 에러를 반환한다")
         void fail_invalidOrderType() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                    .param("isCockpleRecommend", "false")
-                    .param("sort", "잘못된순"))
+                            .param("isCockpleRecommend", "false")
+                            .param("sort", "잘못된순"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_ORDER_TYPE.getCode()));
         }
@@ -407,7 +412,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("400 - isCockpleRecommend에 부적절한 타입 입력 시 400 에러를 반환한다")
         void fail_invalidBooleanType() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                    .param("isCockpleRecommend", "not-boolean"))
+                            .param("isCockpleRecommend", "not-boolean"))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -461,6 +466,62 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/parties/{partyId}", party.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/parties/{partyId}/join-requests - 모임 가입 신청")
+    class CreateJoinRequest {
+
+        @Test
+        @DisplayName("200 - 가입하지 않은 회원이 모임 가입을 신청한다")
+        void success_createJoinRequest() throws Exception {
+            // 가입하지 않은 멤버
+            Member applicant = memberRepository.save(MemberFixture.createMember("신청자", Gender.MALE, Level.A, 5001L, LocalDate.of(1995, 1, 1)));
+            SecurityContextHelper.setAuthentication(applicant.getId(), applicant.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON201"));
+        }
+
+        @Test
+        @DisplayName("409 - 이미 가입된 회원이 다시 가입 신청을 한다")
+        void fail_createJoinRequest_alreadyMember() throws Exception {
+            // 이미 가입된 normalMember 사용
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", party.getId()))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.ALREADY_MEMBER.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 성별 조건이 맞지 않는 모임에 신청한다")
+        void fail_createJoinRequest_genderMismatch() throws Exception {
+            // 여복 모임 생성
+            PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울", "강남"));
+            Party womenParty = partyRepository.save(Party.builder()
+                    .partyName("여복 전용 모임")
+                    .partyType(ParticipationType.WOMEN_DOUBLES)
+                    .status(umc.cockple.demo.domain.party.enums.PartyStatus.ACTIVE)
+                    .ownerId(manager.getId())
+                    .partyAddr(addr)
+                    .minBirthYear(1900)
+                    .maxBirthYear(2099)
+                    .activityTime(ActivityTime.MORNING)
+                    .designatedCock("테스트콕")
+                    .exerciseCount(0)
+                    .price(0)
+                    .joinPrice(0)
+                    .build());
+
+            // 남성 사용자로 신청 시도
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", womenParty.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.GENDER_NOT_MATCH.getCode()));
         }
     }
 }
