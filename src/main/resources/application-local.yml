@@ -5,12 +5,12 @@ spring:
   data:
     redis:
       host: localhost
-      port: 6380
+      port: 6379
       database: 0
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
 firebase:
   service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}
