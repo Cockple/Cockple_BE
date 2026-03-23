@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
+import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
@@ -57,6 +58,8 @@ class PartyCommandServiceTest {
     private PartyRepository partyRepository;
     @Mock
     private MemberRepository memberRepository;
+    @Mock
+    private NotificationCommandService notificationCommandService;
     @Mock
     private PartyAddrRepository partyAddrRepository;
     @Mock
@@ -519,6 +522,95 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.createParty(memberId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.AGE_NOT_MATCH);
+        }
+    }
+
+    @Nested
+    @DisplayName("updateParty")
+    class UpdateParty {
+
+        @Test
+        @DisplayName("성공 - 모임장이 모임 정보를 정상적으로 수정한다")
+        void success_updateParty() {
+            // given
+            Long partyId = 1L;
+            Long memberId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1L);
+            ReflectionTestUtils.setField(owner, "id", memberId);
+
+            Party party = PartyFixture.createParty("기존 모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityDay(List.of("토", "일"))
+                    .activityTime("오전")
+                    .designatedCock("새 콕")
+                    .joinPrice(0)
+                    .price(10000)
+                    .content("새로운 내용")
+                    .build();
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
+
+            // when
+            partyCommandService.updateParty(partyId, memberId, request);
+
+            // then
+            assertThat(party.getDesignatedCock()).isEqualTo("새 콕");
+            assertThat(party.getActiveDays().size()).isEqualTo(2); // 토, 일
+            assertThat(party.getJoinPrice()).isEqualTo(0);
+            assertThat(party.getPrice()).isEqualTo(10000);
+            assertThat(party.getContent()).isEqualTo("새로운 내용");
+            
+            verify(notificationCommandService, times(1)).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("실패 - 조회된 모임이 없는 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_updateParty_partyNotFound() {
+            // given
+            Long partyId = 99L;
+            Long memberId = 1L;
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder().build();
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.empty());
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class, 
+                    () -> partyCommandService.updateParty(partyId, memberId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 사용자가 수정을 시도할 경우 INSUFFICIENT_PERMISSION 예외 발생")
+        void fail_updateParty_insufficientPermission() {
+            // given
+            Long partyId = 1L;
+            Long memberId = 10L; // 일반 멤버 (ownerId=1 과 다름)
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1L);
+            ReflectionTestUtils.setField(owner, "id", 1L);
+            
+            Member normalMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, 2L);
+            ReflectionTestUtils.setField(normalMember, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityTime("오전").build();
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(normalMember));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class, 
+                    () -> partyCommandService.updateParty(partyId, memberId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
     }
 }
