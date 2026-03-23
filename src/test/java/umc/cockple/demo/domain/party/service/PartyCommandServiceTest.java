@@ -1,5 +1,6 @@
 package umc.cockple.demo.domain.party.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.service.ChatRoomService;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -18,9 +20,7 @@ import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.enums.ActiveDay;
-import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -68,7 +68,15 @@ class PartyCommandServiceTest {
     @Mock
     private PartyJoinRequestRepository partyJoinRequestRepository;
     @Mock
+    private FileService fileService;
+
     private PartyConverter partyConverter;
+
+    @BeforeEach
+    void setUp() {
+        partyConverter = new PartyConverter(fileService);
+        ReflectionTestUtils.setField(partyCommandService, "partyConverter", partyConverter);
+    }
 
     @Nested
     @DisplayName("leaveParty")
@@ -240,11 +248,11 @@ class PartyCommandServiceTest {
             given(partyJoinRequestRepository.save(any(PartyJoinRequest.class))).willAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            partyCommandService.createJoinRequest(partyId, memberId);
+            PartyJoinCreateDTO.Response response = partyCommandService.createJoinRequest(partyId, memberId);
 
             // then
+            assertThat(response).isNotNull();
             verify(partyJoinRequestRepository).save(any(PartyJoinRequest.class));
-            verify(partyConverter).toJoinResponseDTO(any(PartyJoinRequest.class));
         }
 
         @Test
@@ -380,31 +388,9 @@ class PartyCommandServiceTest {
             PartyAddr partyAddr = PartyAddr.builder().id(1L).build();
             Party savedParty = Party.builder().id(1L).partyName("테스트 모임").build();
 
-            PartyCreateDTO.Command command = PartyCreateDTO.Command.builder()
-                    .partyName(request.partyName())
-                    .partyType(ParticipationType.fromKorean(request.partyType()))
-                    .femaleLevel(List.of(Level.B))
-                    .maleLevel(List.of(Level.A))
-                    .activityDay(List.of(ActiveDay.MONDAY, ActiveDay.WEDNESDAY))
-                    .activityTime(ActivityTime.MORNING)
-                    .price(10000)
-                    .joinPrice(5000)
-                    .designatedCock("테스트콕")
-                    .minBirthYear(request.minBirthYear())
-                    .maxBirthYear(request.maxBirthYear())
-                    .build();
-
-            PartyCreateDTO.AddrCommand addrCommand = PartyCreateDTO.AddrCommand.builder()
-                    .addr1(request.addr1())
-                    .addr2(request.addr2())
-                    .build();
-
             given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
-            given(partyConverter.toCreateCommand(any())).willReturn(command);
-            given(partyConverter.toAddrCreateCommand(any())).willReturn(addrCommand);
             given(partyAddrRepository.findByAddr1AndAddr2(anyString(), anyString())).willReturn(Optional.of(partyAddr));
             given(partyRepository.save(any(Party.class))).willReturn(savedParty);
-            given(partyConverter.toCreateResponseDTO(any())).willReturn(PartyCreateDTO.Response.builder().partyId(1L).build());
 
             // when
             PartyCreateDTO.Response response = partyCommandService.createParty(memberId, request);
@@ -438,19 +424,7 @@ class PartyCommandServiceTest {
                     .birth(LocalDate.of(1995, 1, 1))
                     .build();
 
-            PartyCreateDTO.Command command = PartyCreateDTO.Command.builder()
-                    .partyType(ParticipationType.MIX_DOUBLES)
-                    .maleLevel(null)
-                    .femaleLevel(List.of(Level.A))
-                    .activityDay(List.of(ActiveDay.MONDAY))
-                    .minBirthYear(1990)
-                    .maxBirthYear(2000)
-                    .build();
-            PartyCreateDTO.AddrCommand addrCommand = PartyCreateDTO.AddrCommand.builder().addr1("서울").addr2("강남").build();
-
             given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
-            given(partyConverter.toCreateCommand(any())).willReturn(command);
-            given(partyConverter.toAddrCreateCommand(any())).willReturn(addrCommand);
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -480,19 +454,7 @@ class PartyCommandServiceTest {
                     .birth(LocalDate.of(2000, 1, 1))
                     .build();
 
-            PartyCreateDTO.Command command = PartyCreateDTO.Command.builder()
-                    .partyType(ParticipationType.WOMEN_DOUBLES)
-                    .maleLevel(List.of(Level.A))
-                    .femaleLevel(List.of(Level.A))
-                    .activityDay(List.of(ActiveDay.MONDAY))
-                    .minBirthYear(1990)
-                    .maxBirthYear(2010)
-                    .build();
-            PartyCreateDTO.AddrCommand addrCommand = PartyCreateDTO.AddrCommand.builder().addr1("서울").addr2("강남").build();
-
             given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
-            given(partyConverter.toCreateCommand(any())).willReturn(command);
-            given(partyConverter.toAddrCreateCommand(any())).willReturn(addrCommand);
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -521,18 +483,7 @@ class PartyCommandServiceTest {
                     .birth(LocalDate.of(2000, 1, 1))
                     .build();
 
-            PartyCreateDTO.Command command = PartyCreateDTO.Command.builder()
-                    .partyType(ParticipationType.WOMEN_DOUBLES)
-                    .femaleLevel(List.of(Level.A))
-                    .activityDay(List.of(ActiveDay.MONDAY))
-                    .minBirthYear(1990)
-                    .maxBirthYear(2010)
-                    .build();
-            PartyCreateDTO.AddrCommand addrCommand = PartyCreateDTO.AddrCommand.builder().addr1("서울").addr2("강남").build();
-
             given(memberRepository.findById(memberId)).willReturn(Optional.of(maleOwner));
-            given(partyConverter.toCreateCommand(any())).willReturn(command);
-            given(partyConverter.toAddrCreateCommand(any())).willReturn(addrCommand);
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -562,19 +513,7 @@ class PartyCommandServiceTest {
                     .birth(LocalDate.of(1980, 1, 1)) // 80년생이 00~10년생 모임 생성 시도
                     .build();
 
-            PartyCreateDTO.Command command = PartyCreateDTO.Command.builder()
-                    .partyType(ParticipationType.MIX_DOUBLES)
-                    .femaleLevel(List.of(Level.A))
-                    .maleLevel(List.of(Level.A))
-                    .activityDay(List.of(ActiveDay.MONDAY))
-                    .minBirthYear(2000)
-                    .maxBirthYear(2010)
-                    .build();
-            PartyCreateDTO.AddrCommand addrCommand = PartyCreateDTO.AddrCommand.builder().addr1("서울").addr2("강남").build();
-
             given(memberRepository.findById(memberId)).willReturn(Optional.of(oldOwner));
-            given(partyConverter.toCreateCommand(any())).willReturn(command);
-            given(partyConverter.toAddrCreateCommand(any())).willReturn(addrCommand);
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
