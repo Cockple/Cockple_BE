@@ -12,9 +12,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -23,7 +23,6 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
-import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -39,12 +38,14 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -85,15 +86,7 @@ class ExerciseQueryServiceTest {
         exercise = ExerciseFixture.createExercise(party, LocalDate.now().minusDays(1));
         ReflectionTestUtils.setField(exercise, "id", 100L);
 
-        ExerciseAddr exerciseAddr = ExerciseAddr.builder()
-                .addr1("서울특별시")
-                .addr2("강남구")
-                .streetAddr("서울특별시 강남구 테헤란로 1")
-                .buildingName("테스트 체육관")
-                .latitude(37.5)
-                .longitude(127.0)
-                .build();
-        ReflectionTestUtils.setField(exercise, "exerciseAddr", exerciseAddr);
+        ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
 
     @Nested
@@ -129,8 +122,35 @@ class ExerciseQueryServiceTest {
             }
 
             @Test
-            @DisplayName("일반_멤버면_isManager_false로_반환된다")
-            void 일반_멤버면_isManager_false로_반환된다() {
+            @DisplayName("부모임장이_조회하면_isManager_false로_반환된다")
+            void 부모임장이_조회하면_isManager_false로_반환된다() {
+                // given
+                Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 2003L);
+                ReflectionTestUtils.setField(subManager, "id", 21L);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(subManager.getId()))
+                        .willReturn(Optional.of(subManager));
+                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of());
+                given(guestRepository.findByExerciseId(exercise.getId()))
+                        .willReturn(List.of());
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), subManager.getId(), Role.party_MANAGER))
+                        .willReturn(false);
+
+                // when
+                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                        exercise.getId(), subManager.getId());
+
+                // then
+                assertThat(response.isManager()).isFalse();
+            }
+
+            @Test
+            @DisplayName("모임_일반_멤버여도_isManager_false로_반환된다")
+            void 모임_일반_멤버여도_isManager_false로_반환된다() {
                 // given
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 2002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
@@ -156,21 +176,41 @@ class ExerciseQueryServiceTest {
             }
 
             @Test
+            @DisplayName("모임_외부_회원도_상세_조회에_성공하고_isManager_false로_반환된다")
+            void 모임_외부_회원도_상세_조회에_성공하고_isManager_false로_반환된다() {
+                // given
+                Member outsider = MemberFixture.createMember("외부회원", Gender.MALE, Level.C, 3003L);
+                ReflectionTestUtils.setField(outsider, "id", 3L);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(outsider.getId()))
+                        .willReturn(Optional.of(outsider));
+                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of());
+                given(guestRepository.findByExerciseId(exercise.getId()))
+                        .willReturn(List.of());
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), outsider.getId(), Role.party_MANAGER))
+                        .willReturn(false);
+
+                // when
+                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                        exercise.getId(), outsider.getId());
+
+                // then
+                assertThat(response.isManager()).isFalse();
+                assertThat(response.info().buildingName()).isEqualTo("테스트 체육관");
+            }
+
+            @Test
             @DisplayName("탈퇴_회원은_isWithdrawn_true로_반환된다")
             void 탈퇴_회원은_isWithdrawn_true로_반환된다() {
                 // given
-                Member withdrawnMember = Member.builder()
-                        .memberName("탈퇴회원")
-                        .nickname("탈퇴닉네임")
-                        .gender(Gender.MALE)
-                        .level(Level.C)
-                        .isActive(MemberStatus.INACTIVE)
-                        .socialId(9999L)
-                        .build();
+                Member withdrawnMember = MemberFixture.createWithdrawnMember("탈퇴회원", "탈퇴닉네임", 9999L);
                 ReflectionTestUtils.setField(withdrawnMember, "id", 99L);
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(withdrawnMember, exercise);
-                ReflectionTestUtils.setField(memberExercise, "createdAt", LocalDateTime.now());
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -205,7 +245,6 @@ class ExerciseQueryServiceTest {
                 ReflectionTestUtils.setField(activeMember, "id", 2L);
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(activeMember, exercise);
-                ReflectionTestUtils.setField(memberExercise, "createdAt", LocalDateTime.now());
 
                 MemberParty memberParty = MemberFixture.createMemberParty(party, activeMember, Role.party_MEMBER);
 
@@ -238,6 +277,9 @@ class ExerciseQueryServiceTest {
             @DisplayName("게스트는_isWithdrawn_false로_반환된다")
             void 게스트는_isWithdrawn_false로_반환된다() {
                 // given
+                Guest guest = GuestFixture.createGuest(exercise, manager.getId());
+                ReflectionTestUtils.setField(guest, "id", 70L);
+
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
@@ -245,10 +287,12 @@ class ExerciseQueryServiceTest {
                 given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
-                        .willReturn(List.of());
+                        .willReturn(List.of(guest));
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
                         party.getId(), manager.getId(), Role.party_MANAGER))
                         .willReturn(true);
+                given(memberRepository.findMemberNamesByIds(any()))
+                        .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
                 ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
@@ -256,7 +300,78 @@ class ExerciseQueryServiceTest {
 
                 // then
                 List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
-                assertThat(participants).isEmpty();
+                assertThat(participants).hasSize(1);
+                assertThat(participants.get(0).isWithdrawn()).isFalse();
+                assertThat(participants.get(0).partyPosition()).isNull();
+            }
+
+            @Test
+            @DisplayName("참가자_유형별_partyPosition이_올바르게_반환된다")
+            void 참가자_유형별_partyPosition이_올바르게_반환된다() {
+                // given
+                Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 5003L);
+                ReflectionTestUtils.setField(subManager, "id", 31L);
+
+                Member normalMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.C, 5004L);
+                ReflectionTestUtils.setField(normalMember, "id", 32L);
+
+                Member outsider = MemberFixture.createMember("외부회원", Gender.FEMALE, Level.B, 5005L);
+                ReflectionTestUtils.setField(outsider, "id", 33L);
+
+                MemberExercise managerExercise = MemberFixture.createMemberExercise(manager, exercise);
+                ReflectionTestUtils.setField(managerExercise, "createdAt", LocalDateTime.now().minusMinutes(5));
+
+                MemberExercise subManagerExercise = MemberFixture.createMemberExercise(subManager, exercise);
+                ReflectionTestUtils.setField(subManagerExercise, "createdAt", LocalDateTime.now().minusMinutes(4));
+
+                MemberExercise normalMemberExercise = MemberFixture.createMemberExercise(normalMember, exercise);
+                ReflectionTestUtils.setField(normalMemberExercise, "createdAt", LocalDateTime.now().minusMinutes(3));
+
+                MemberExercise outsiderExercise = MemberFixture.createExternalMemberExercise(outsider, exercise);
+                ReflectionTestUtils.setField(outsiderExercise, "createdAt", LocalDateTime.now().minusMinutes(2));
+
+                Guest guest = GuestFixture.createGuest(exercise, manager.getId());
+                ReflectionTestUtils.setField(guest, "id", 71L);
+                ReflectionTestUtils.setField(guest, "createdAt", LocalDateTime.now().minusMinutes(1));
+
+                MemberParty managerParty = MemberFixture.createMemberParty(party, manager, Role.party_MANAGER);
+                MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
+                MemberParty memberParty = MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId()))
+                        .willReturn(Optional.of(manager));
+                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of(managerExercise, subManagerExercise, normalMemberExercise, outsiderExercise));
+                given(guestRepository.findByExerciseId(exercise.getId()))
+                        .willReturn(List.of(guest));
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        .willReturn(true);
+                given(memberPartyRepository.findMemberRolesByPartyAndMembers(
+                        party.getId(), List.of(manager.getId(), subManager.getId(), normalMember.getId(), outsider.getId())))
+                        .willReturn(List.of(managerParty, subManagerParty, memberParty));
+                given(memberRepository.findMemberNamesByIds(any()))
+                        .willReturn(Map.of(manager.getId(), "모임장"));
+
+                // when
+                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                        exercise.getId(), manager.getId());
+
+                // then
+                assertThat(response.participants().list())
+                        .extracting(
+                                ExerciseDetailDTO.ParticipantInfo::name,
+                                ExerciseDetailDTO.ParticipantInfo::participantType,
+                                ExerciseDetailDTO.ParticipantInfo::partyPosition)
+                        .containsExactly(
+                                tuple("모임장", "PARTY_MEMBER", "party_MANAGER"),
+                                tuple("부모임장", "PARTY_MEMBER", "party_SUBMANAGER"),
+                                tuple("일반멤버", "PARTY_MEMBER", "party_MEMBER"),
+                                tuple("외부회원", "EXTERNAL_PARTICIPANT", null),
+                                tuple("게스트", "GUEST", null)
+                        );
             }
 
             @Test
@@ -311,7 +426,6 @@ class ExerciseQueryServiceTest {
                 // given
                 Guest guest = GuestFixture.createGuest(exercise, manager.getId());
                 ReflectionTestUtils.setField(guest, "id", 50L);
-                ReflectionTestUtils.setField(guest, "createdAt", LocalDateTime.now());
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));

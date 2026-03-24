@@ -9,6 +9,21 @@ import java.time.LocalTime;
 
 public class ExerciseFixture {
 
+    public static ExerciseAddr createExerciseAddr() {
+        return createExerciseAddr("테스트 체육관", "서울특별시 강남구 테헤란로 1");
+    }
+
+    public static ExerciseAddr createExerciseAddr(String buildingName, String streetAddr) {
+        return ExerciseAddr.builder()
+                .addr1("서울특별시")
+                .addr2("강남구")
+                .streetAddr(streetAddr)
+                .buildingName(buildingName)
+                .latitude(37.5)
+                .longitude(127.0)
+                .build();
+    }
+
     public static Exercise createExercise(Party party, LocalDate date) {
         return Exercise.builder()
                 .party(party)
@@ -21,7 +36,7 @@ public class ExerciseFixture {
     }
 
     public static Exercise createExercise(Party party, LocalDate date, LocalTime endTime,
-                                             boolean partyGuestAccept, boolean outsideGuestAccept) {
+                                          boolean partyGuestAccept, boolean outsideGuestAccept) {
         return Exercise.builder()
                 .party(party)
                 .date(date)
@@ -38,15 +53,6 @@ public class ExerciseFixture {
     }
 
     public static Exercise createExerciseWithAddr(Party party, LocalDate date, int maxCapacity) {
-        ExerciseAddr addr = ExerciseAddr.builder()
-                .addr1("서울특별시")
-                .addr2("강남구")
-                .streetAddr("서울특별시 강남구 테헤란로 1")
-                .buildingName("테스트 체육관")
-                .latitude(37.5)
-                .longitude(127.0)
-                .build();
-
         return Exercise.builder()
                 .party(party)
                 .date(date)
@@ -54,7 +60,7 @@ public class ExerciseFixture {
                 .maxCapacity(maxCapacity)
                 .partyGuestAccept(true)
                 .outsideGuestAccept(false)
-                .exerciseAddr(addr)
+                .exerciseAddr(createExerciseAddr())
                 .build();
     }
 }

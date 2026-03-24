@@ -79,4 +79,12 @@ public class MemberFixture {
                 .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
                 .build();
     }
+
+    public static MemberExercise createExternalMemberExercise(Member member, Exercise exercise) {
+        return MemberExercise.builder()
+                .member(member)
+                .exercise(exercise)
+                .exerciseMemberShipStatus(ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT)
+                .build();
+    }
 }
