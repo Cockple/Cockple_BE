@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -28,6 +29,9 @@ import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -796,6 +800,149 @@ class ExerciseQueryServiceTest {
                 assertThatThrownBy(() -> exerciseQueryService.getMyInvitedGuests(exercise.getId(), 999L))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("getPartyExerciseCalendar")
+    class GetPartyExerciseCalendar {
+
+        private Member partyMember;
+        private Member outsiderMember;
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        @BeforeEach
+        void setUp() {
+            partyMember = MemberFixture.createMember("파티멤버", Gender.FEMALE, Level.B, 3001L);
+            ReflectionTestUtils.setField(partyMember, "id", 2L);
+
+            outsiderMember = MemberFixture.createMember("외부멤버", Gender.MALE, Level.C, 3002L);
+            ReflectionTestUtils.setField(outsiderMember, "id", 3L);
+
+            party.addLevel(Gender.FEMALE, Level.B);
+            party.addLevel(Gender.MALE, Level.A);
+
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 3, 29);
+
+            ReflectionTestUtils.setField(exercise, "date", LocalDate.of(2026, 3, 24));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("모임 운동 캘린더를 주차별_일자별로 반환한다")
+            void 모임_운동_캘린더를_주차별_일자별로_반환한다() {
+                // given
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+                given(memberPartyRepository.existsByPartyAndMember(party, partyMember))
+                        .willReturn(true);
+                given(exerciseRepository.findByPartyIdAndDateRange(party.getId(), startDate, endDate))
+                        .willReturn(List.of(exercise));
+                given(exerciseRepository.findExerciseParticipantCounts(party.getId(), startDate, endDate))
+                        .willReturn(java.util.Collections.singletonList(new Object[]{exercise.getId(), 2}));
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        partyMember.getId(), List.of(exercise.getId())))
+                        .willReturn(List.of(exercise.getId()));
+                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(
+                        partyMember.getId(), List.of(exercise.getId())))
+                        .willReturn(List.of(exercise.getId()));
+
+                // when
+                PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), partyMember.getId(), startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.isMember()).isTrue();
+                assertThat(response.partyName()).isEqualTo(party.getPartyName());
+                assertThat(response.weeks()).hasSize(1);
+                assertThat(response.weeks().get(0).weekStartDate()).isEqualTo(startDate);
+                assertThat(response.weeks().get(0).weekEndDate()).isEqualTo(endDate);
+                assertThat(response.weeks().get(0).days()).hasSize(7);
+                assertThat(response.weeks().get(0).days().get(1).date())
+                        .isEqualTo(LocalDate.of(2026, 3, 24));
+                assertThat(response.weeks().get(0).days().get(1).exercises())
+                        .extracting(
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::exerciseId,
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::isBookmarked,
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::buildingName,
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::currentParticipants,
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::maxCapacity,
+                                PartyExerciseCalendarDTO.ExerciseCalendarItem::isParticipating)
+                        .containsExactly(tuple(exercise.getId(), true, "테스트 체육관", 2, 10, true));
+            }
+
+            @Test
+            @DisplayName("기간 내 운동이 없으면 빈 캘린더를 반환한다")
+            void 기간_내_운동이_없으면_빈_캘린더를_반환한다() {
+                // given
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(outsiderMember.getId()))
+                        .willReturn(Optional.of(outsiderMember));
+                given(memberPartyRepository.existsByPartyAndMember(party, outsiderMember))
+                        .willReturn(false);
+                given(exerciseRepository.findByPartyIdAndDateRange(party.getId(), startDate, endDate))
+                        .willReturn(List.of());
+
+                // when
+                PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), outsiderMember.getId(), startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.isMember()).isFalse();
+                assertThat(response.partyName()).isEqualTo(party.getPartyName());
+                assertThat(response.weeks()).isEmpty();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("시작일과 종료일이 함께 오지 않으면 예외를 던진다")
+            void 시작일과_종료일이_함께_오지_않으면_예외를_던진다() {
+                // given
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), partyMember.getId(), startDate, null))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INCOMPLETE_DATE_RANGE);
+            }
+
+            @Test
+            @DisplayName("삭제된 모임이면 예외를 던진다")
+            void 삭제된_모임이면_예외를_던진다() {
+                // given
+                ReflectionTestUtils.setField(party, "status", PartyStatus.INACTIVE);
+
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), partyMember.getId(), startDate, endDate))
+                        .isInstanceOf(PartyException.class)
+                        .hasFieldOrPropertyWithValue("code", PartyErrorCode.PARTY_IS_DELETED);
             }
         }
     }
