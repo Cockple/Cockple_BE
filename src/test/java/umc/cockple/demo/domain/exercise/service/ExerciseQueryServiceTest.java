@@ -975,4 +975,152 @@ class ExerciseQueryServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("getMyExerciseCalendar")
+    class GetMyExerciseCalendar {
+
+        private Member calendarMember;
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private Exercise myExercise;
+
+        @BeforeEach
+        void setUp() {
+            calendarMember = MemberFixture.createMember("캘린더멤버", Gender.FEMALE, Level.B, 4001L);
+            ReflectionTestUtils.setField(calendarMember, "id", 4L);
+
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 3, 29);
+
+            myExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 3, 25));
+            ReflectionTestUtils.setField(myExercise, "id", 200L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("내 운동 캘린더를 주차별_일자별로 반환한다")
+            void 내_운동_캘린더를_주차별_일자별로_반환한다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), startDate, endDate))
+                        .willReturn(List.of(myExercise));
+
+                // when
+                MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
+                        calendarMember.getId(), startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.weeks()).hasSize(1);
+                assertThat(response.weeks().get(0).weekStartDate()).isEqualTo(startDate);
+                assertThat(response.weeks().get(0).weekEndDate()).isEqualTo(endDate);
+                assertThat(response.weeks().get(0).days()).hasSize(7);
+                assertThat(response.weeks().get(0).days().get(2).date())
+                        .isEqualTo(LocalDate.of(2026, 3, 25));
+                assertThat(response.weeks().get(0).days().get(2).exercises())
+                        .extracting(
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::exerciseId,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::partyId,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::partyName,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::buildingName,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::startTime,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::endTime,
+                                MyExerciseCalendarDTO.ExerciseCalendarItem::profileImageUrl)
+                        .containsExactly(tuple(200L, 10L, "테스트 모임", "테스트 체육관", LocalTime.of(10, 0), null, null));
+            }
+
+            @Test
+            @DisplayName("기간 내 참여 운동이 없으면 빈 캘린더를 반환한다")
+            void 기간_내_참여_운동이_없으면_빈_캘린더를_반환한다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), startDate, endDate))
+                        .willReturn(List.of());
+
+                // when
+                MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
+                        calendarMember.getId(), startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.weeks()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() {
+                // given
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate expectedEnd = ExerciseCalendarTestHelper.expectedDefaultEndDate();
+
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), expectedStart, expectedEnd))
+                        .willReturn(List.of());
+
+                // when
+                MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
+                        calendarMember.getId(), null, null);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(expectedStart);
+                assertThat(response.endDate()).isEqualTo(expectedEnd);
+                assertThat(response.weeks()).isEmpty();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyExerciseCalendar(999L, startDate, endDate))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+            }
+
+            @Test
+            @DisplayName("시작일과 종료일이 함께 오지 않으면 예외를 던진다")
+            void 시작일과_종료일이_함께_오지_않으면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyExerciseCalendar(
+                        calendarMember.getId(), startDate, null))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INCOMPLETE_DATE_RANGE);
+            }
+
+            @Test
+            @DisplayName("시작일이 종료일과 같거나 늦으면 예외를 던진다")
+            void 시작일이_종료일과_같거나_늦으면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyExerciseCalendar(
+                        calendarMember.getId(), endDate, startDate))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INVALID_DATE_RANGE);
+            }
+        }
+    }
 }

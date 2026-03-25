@@ -1,10 +1,6 @@
 package umc.cockple.demo.domain.exercise.integration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +29,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -579,6 +576,108 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
                 mockMvc.perform(get("/api/parties/{partyId}/exercises/calender", party.getId())
+                                .param("startDate", startDate.toString()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INCOMPLETE_DATE_RANGE.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INCOMPLETE_DATE_RANGE.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/exercises/my/calender - 내 운동 캘린더 조회")
+    class GetMyExerciseCalendar {
+
+        private Exercise exercise;
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        @BeforeEach
+        void setUp() {
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 3, 29);
+
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 3, 25)));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("요청한 기간의 내 운동 캘린더가 반환된다")
+            void 요청한_기간의_내_운동_캘린더가_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+
+                mockMvc.perform(get("/api/exercises/my/calender")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks[0].weekStartDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.weeks[0].weekEndDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].date").value("2026-03-25"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].dayOfWeek").value("WEDNESDAY"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(exercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].buildingName").value("테스트 체육관"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].startTime").value("10:00:00"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].endTime").value(nullValue()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].profileImageUrl").value(nullValue()));
+            }
+
+            @Test
+            @DisplayName("기간 내 참여 운동이 없으면 빈 캘린더를 반환한다")
+            void 기간_내_참여_운동이_없으면_빈_캘린더를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(outsider.getId(), outsider.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my/calender")
+                                .param("startDate", "2026-03-30")
+                                .param("endDate", "2026-04-05"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-30"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-04-05"))
+                        .andExpect(jsonPath("$.data.weeks").isEmpty());
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() throws Exception {
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate defaultExerciseDate = expectedStart.plusDays(8);
+                int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
+                int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
+
+                Exercise defaultExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, defaultExerciseDate));
+
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, defaultExercise));
+
+                mockMvc.perform(get("/api/exercises/my/calender"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value(expectedStart.toString()))
+                        .andExpect(jsonPath("$.data.endDate").value(ExerciseCalendarTestHelper.expectedDefaultEndDate().toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].date").value(defaultExerciseDate.toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].exerciseId").value(defaultExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].partyId").value(party.getId()));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("시작일과 종료일이 함께 오지 않으면 에러를 반환한다")
+            void 시작일과_종료일이_함께_오지_않으면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my/calender")
                                 .param("startDate", startDate.toString()))
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INCOMPLETE_DATE_RANGE.getCode()))
