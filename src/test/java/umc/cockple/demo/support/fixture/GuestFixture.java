@@ -8,9 +8,13 @@ import umc.cockple.demo.global.enums.Level;
 public class GuestFixture {
 
     public static Guest createGuest(Exercise exercise, Long inviterId) {
+        return createGuest(exercise, inviterId, "게스트", Gender.MALE);
+    }
+
+    public static Guest createGuest(Exercise exercise, Long inviterId, String guestName, Gender gender) {
         Guest guest = Guest.builder()
-                .guestName("게스트")
-                .gender(Gender.MALE)
+                .guestName(guestName)
+                .gender(gender)
                 .level(Level.B)
                 .inviterId(inviterId)
                 .build();

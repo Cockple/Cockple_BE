@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -677,6 +678,124 @@ class ExerciseQueryServiceTest {
                 assertThatThrownBy(() -> exerciseQueryService.getExerciseForEdit(999L, manager.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyInvitedGuests")
+    class GetMyInvitedGuests {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("내가_초대한_게스트만_참가번호와_대기상태와_함께_반환된다")
+            void 내가_초대한_게스트만_참가번호와_대기상태와_함께_반환된다() {
+                // given
+                ReflectionTestUtils.setField(exercise, "maxCapacity", 1);
+
+                Guest myFirstGuest = GuestFixture.createGuest(exercise, manager.getId(), "내게스트1", Gender.MALE);
+                ReflectionTestUtils.setField(myFirstGuest, "id", 201L);
+                ReflectionTestUtils.setField(myFirstGuest, "createdAt", LocalDateTime.now().minusMinutes(3));
+
+                Guest otherInvitedGuest = GuestFixture.createGuest(exercise, 2L, "다른사람게스트", Gender.MALE);
+                ReflectionTestUtils.setField(otherInvitedGuest, "id", 202L);
+                ReflectionTestUtils.setField(otherInvitedGuest, "createdAt", LocalDateTime.now().minusMinutes(2));
+
+                Guest mySecondGuest = GuestFixture.createGuest(exercise, manager.getId(), "내게스트2", Gender.FEMALE);
+                ReflectionTestUtils.setField(mySecondGuest, "id", 203L);
+                ReflectionTestUtils.setField(mySecondGuest, "createdAt", LocalDateTime.now().minusMinutes(1));
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId()))
+                        .willReturn(Optional.of(manager));
+                given(guestRepository.findByExerciseIdAndInviterId(exercise.getId(), manager.getId()))
+                        .willReturn(List.of(myFirstGuest, mySecondGuest));
+                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of());
+                given(guestRepository.findByExerciseId(exercise.getId()))
+                        .willReturn(List.of(myFirstGuest, otherInvitedGuest, mySecondGuest));
+
+                // when
+                ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
+                        exercise.getId(), manager.getId());
+
+                // then
+                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.maleCount()).isEqualTo(1);
+                assertThat(response.femaleCount()).isEqualTo(1);
+                assertThat(response.list())
+                        .extracting(
+                                ExerciseMyGuestListDTO.GuestInfo::guestId,
+                                ExerciseMyGuestListDTO.GuestInfo::isWaiting,
+                                ExerciseMyGuestListDTO.GuestInfo::participantNumber,
+                                ExerciseMyGuestListDTO.GuestInfo::name,
+                                ExerciseMyGuestListDTO.GuestInfo::gender,
+                                ExerciseMyGuestListDTO.GuestInfo::level,
+                                ExerciseMyGuestListDTO.GuestInfo::inviterName
+                        )
+                        .containsExactly(
+                                tuple(201L, false, 1, "내게스트1", Gender.MALE, Level.B, manager.getMemberName()),
+                                tuple(203L, true, 2, "내게스트2", Gender.FEMALE, Level.B, manager.getMemberName())
+                        );
+            }
+
+            @Test
+            @DisplayName("초대한_게스트가_없으면_빈_응답을_반환한다")
+            void 초대한_게스트가_없으면_빈_응답을_반환한다() {
+                // given
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(manager.getId()))
+                        .willReturn(Optional.of(manager));
+                given(guestRepository.findByExerciseIdAndInviterId(exercise.getId(), manager.getId()))
+                        .willReturn(List.of());
+
+                // when
+                ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
+                        exercise.getId(), manager.getId());
+
+                // then
+                assertThat(response.totalCount()).isZero();
+                assertThat(response.maleCount()).isZero();
+                assertThat(response.femaleCount()).isZero();
+                assertThat(response.list()).isEmpty();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지_않는_운동이면_예외를_던진다")
+            void 존재하지_않는_운동이면_예외를_던진다() {
+                // given
+                given(exerciseRepository.findExerciseWithBasicInfo(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyInvitedGuests(999L, manager.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
+            }
+
+            @Test
+            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
+                        .willReturn(Optional.of(exercise));
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyInvitedGuests(exercise.getId(), 999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
         }
     }
