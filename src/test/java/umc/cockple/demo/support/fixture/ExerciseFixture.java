@@ -63,4 +63,18 @@ public class ExerciseFixture {
                 .exerciseAddr(createExerciseAddr())
                 .build();
     }
+
+    public static Exercise createExerciseForEdit(Party party, LocalDate date) {
+        return Exercise.builder()
+                .party(party)
+                .date(date)
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(12, 30))
+                .maxCapacity(18)
+                .partyGuestAccept(true)
+                .outsideGuestAccept(false)
+                .notice("수정 공지사항")
+                .exerciseAddr(createExerciseAddr())
+                .build();
+    }
 }

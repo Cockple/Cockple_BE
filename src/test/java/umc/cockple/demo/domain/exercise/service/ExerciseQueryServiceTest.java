@@ -623,4 +623,61 @@ class ExerciseQueryServiceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("getExerciseForEdit")
+    class GetExerciseForEdit {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("운동 수정용 상세 정보의 모든 필드가 올바르게 반환된다")
+            void 운동_수정용_상세_정보의_모든_필드가_올바르게_반환된다() {
+                // given
+                LocalDate targetDate = LocalDate.of(2026, 3, 24);
+                Exercise exerciseForEdit = ExerciseFixture.createExerciseForEdit(party, targetDate);
+                ReflectionTestUtils.setField(exerciseForEdit, "id", 101L);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exerciseForEdit.getId()))
+                        .willReturn(Optional.of(exerciseForEdit));
+
+                // when
+                ExerciseEditDetailDTO.Response response = exerciseQueryService.getExerciseForEdit(
+                        exerciseForEdit.getId(), manager.getId());
+
+                // then
+                assertThat(response.date()).isEqualTo(targetDate);
+                assertThat(response.buildingName()).isEqualTo("테스트 체육관");
+                assertThat(response.roadAddress()).isEqualTo("서울특별시 강남구 테헤란로 1");
+                assertThat(response.latitude()).isEqualTo(37.5);
+                assertThat(response.longitude()).isEqualTo(127.0);
+                assertThat(response.startTime()).isEqualTo(LocalTime.of(10, 0));
+                assertThat(response.endTime()).isEqualTo(LocalTime.of(12, 30));
+                assertThat(response.maxCapacity()).isEqualTo(18);
+                assertThat(response.allowMemberGuestsInvitation()).isTrue();
+                assertThat(response.allowExternalGuests()).isFalse();
+                assertThat(response.notice()).isEqualTo("수정 공지사항");
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지_않는_운동이면_예외를_던진다")
+            void 존재하지_않는_운동이면_예외를_던진다() {
+                // given
+                given(exerciseRepository.findExerciseWithBasicInfo(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getExerciseForEdit(999L, manager.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
+            }
+        }
+    }
 }

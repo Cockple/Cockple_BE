@@ -344,4 +344,61 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             }
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/exercises/{exerciseId}/for-edit - 운동 수정용 상세 조회")
+    class GetExerciseForEdit {
+
+        private Exercise exercise;
+
+        @BeforeEach
+        void setUp() {
+            Exercise exerciseForEdit = ExerciseFixture.createExerciseWithAddr(
+                    party, LocalDate.of(2026, 3, 24), 18);
+            ReflectionTestUtils.setField(exerciseForEdit, "endTime", LocalTime.of(12, 30));
+            ReflectionTestUtils.setField(exerciseForEdit, "notice", "수정 공지사항");
+            exercise = exerciseRepository.save(exerciseForEdit);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("응답의 모든 수정용 필드가 올바르게 반환된다")
+            void 응답의_모든_수정용_필드가_올바르게_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(get("/api/exercises/{exerciseId}/for-edit", exercise.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.date").value("2026-03-24"))
+                        .andExpect(jsonPath("$.data.buildingName").value("테스트 체육관"))
+                        .andExpect(jsonPath("$.data.roadAddress").value("서울특별시 강남구 테헤란로 1"))
+                        .andExpect(jsonPath("$.data.latitude").value(37.5))
+                        .andExpect(jsonPath("$.data.longitude").value(127.0))
+                        .andExpect(jsonPath("$.data.startTime").value("10:00:00"))
+                        .andExpect(jsonPath("$.data.endTime").value("12:30:00"))
+                        .andExpect(jsonPath("$.data.maxCapacity").value(18))
+                        .andExpect(jsonPath("$.data.allowMemberGuestsInvitation").value(true))
+                        .andExpect(jsonPath("$.data.allowExternalGuests").value(false))
+                        .andExpect(jsonPath("$.data.notice").value("수정 공지사항"));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 운동이면 에러를 반환한다")
+            void 존재하지_않는_운동이면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+                mockMvc.perform(get("/api/exercises/{exerciseId}/for-edit", 999L))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
+            }
+        }
+    }
 }
