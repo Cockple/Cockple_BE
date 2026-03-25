@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.exercise.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -29,6 +30,9 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
+
+import javax.sql.DataSource;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,6 +49,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired GuestRepository guestRepository;
+    @Autowired DataSource dataSource;
 
     private Member manager;
     private Member subManager;
@@ -682,6 +687,87 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INCOMPLETE_DATE_RANGE.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INCOMPLETE_DATE_RANGE.getMessage()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/exercises/parties/my - 내 모임 운동 조회")
+    class GetMyPartyExercise {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("시작한 운동은 제외하고 내가 속한 모임의 예정된 운동을 최대 6개까지 시간순으로 반환한다")
+            void 시작한_운동은_제외하고_내가_속한_모임의_예정된_운동을_최대_6개까지_시간순으로_반환한다() throws Exception {
+                PartyAddr otherAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party otherParty = partyRepository.save(PartyFixture.createParty("다른 모임", outsider.getId(), otherAddr));
+
+                Exercise pastExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1)));
+                Exercise startedTodayExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.now());
+                ReflectionTestUtils.setField(startedTodayExercise, "startTime", LocalTime.now().minusMinutes(30));
+                startedTodayExercise = exerciseRepository.save(startedTodayExercise);
+                Exercise firstExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(1)));
+                Exercise secondExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(2)));
+                Exercise thirdExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(3)));
+                Exercise fourthExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(4)));
+                Exercise fifthExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(5)));
+                Exercise sixthExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(6)));
+                exerciseRepository.save(ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(7)));
+                exerciseRepository.save(ExerciseFixture.createExerciseWithAddr(otherParty, LocalDate.now().plusDays(1)));
+
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalExercises").value(6))
+                        .andExpect(jsonPath("$.data.exercises.length()").value(6))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(firstExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[1].exerciseId").value(secondExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[2].exerciseId").value(thirdExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[3].exerciseId").value(fourthExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[4].exerciseId").value(fifthExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[5].exerciseId").value(sixthExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.exercises[0].buildingName").value("테스트 체육관"))
+                        .andExpect(jsonPath("$.data.exercises[0].profileImageUrl").value(nullValue()));
+            }
+
+            @Test
+            @DisplayName("속한 모임이 없으면 빈 응답을 반환한다")
+            void 속한_모임이_없으면_빈_응답을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(outsider.getId(), outsider.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalExercises").value(0))
+                        .andExpect(jsonPath("$.data.exercises").isEmpty());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/exercises/parties/my"))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
         }
     }

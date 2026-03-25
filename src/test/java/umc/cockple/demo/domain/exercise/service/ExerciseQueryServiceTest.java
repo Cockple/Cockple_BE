@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -54,7 +55,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseQueryService")
@@ -1120,6 +1125,101 @@ class ExerciseQueryServiceTest {
                         calendarMember.getId(), endDate, startDate))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INVALID_DATE_RANGE);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyPartyExercise")
+    class GetMyPartyExercise {
+
+        private Member partyMember;
+        private Exercise firstUpcomingExercise;
+        private Exercise secondUpcomingExercise;
+
+        @BeforeEach
+        void setUp() {
+            partyMember = MemberFixture.createMember("내모임멤버", Gender.MALE, Level.B, 5001L);
+            ReflectionTestUtils.setField(partyMember, "id", 5L);
+
+            firstUpcomingExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 4, 1));
+            ReflectionTestUtils.setField(firstUpcomingExercise, "id", 301L);
+
+            secondUpcomingExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 4, 2));
+            ReflectionTestUtils.setField(secondUpcomingExercise, "id", 302L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("내 모임의 예정된 운동 목록을 반환한다")
+            void 내_모임의_예정된_운동_목록을_반환한다() {
+                // given
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(partyMember.getId()))
+                        .willReturn(List.of(party.getId()));
+                given(exerciseRepository.findRecentExercisesByPartyIds(eq(List.of(party.getId())), argThat(
+                        (org.springframework.data.domain.Pageable pageable) -> pageable.getPageNumber() == 0 && pageable.getPageSize() == 6)))
+                        .willReturn(List.of(firstUpcomingExercise, secondUpcomingExercise));
+
+                // when
+                MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(partyMember.getId());
+
+                // then
+                assertThat(response.totalExercises()).isEqualTo(2);
+                assertThat(response.exercises())
+                        .extracting(
+                                MyPartyExerciseDTO.Exercises::exerciseId,
+                                MyPartyExerciseDTO.Exercises::partyId,
+                                MyPartyExerciseDTO.Exercises::partyName,
+                                MyPartyExerciseDTO.Exercises::buildingName,
+                                MyPartyExerciseDTO.Exercises::date,
+                                MyPartyExerciseDTO.Exercises::dayOfWeek,
+                                MyPartyExerciseDTO.Exercises::startTime,
+                                MyPartyExerciseDTO.Exercises::profileImageUrl)
+                        .containsExactly(
+                                tuple(301L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 1), "WEDNESDAY", LocalTime.of(10, 0), null),
+                                tuple(302L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 2), "THURSDAY", LocalTime.of(10, 0), null)
+                        );
+            }
+
+            @Test
+            @DisplayName("속한 모임이 없으면 빈 응답을 반환한다")
+            void 속한_모임이_없으면_빈_응답을_반환한다() {
+                // given
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(partyMember.getId()))
+                        .willReturn(List.of());
+
+                // when
+                MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(partyMember.getId());
+
+                // then
+                assertThat(response.totalExercises()).isZero();
+                assertThat(response.exercises()).isEmpty();
+                verify(exerciseRepository, never()).findRecentExercisesByPartyIds(any(), any());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyPartyExercise(999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
         }
     }
