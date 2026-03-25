@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -36,6 +37,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -903,6 +905,33 @@ class ExerciseQueryServiceTest {
                 assertThat(response.endDate()).isEqualTo(endDate);
                 assertThat(response.isMember()).isFalse();
                 assertThat(response.partyName()).isEqualTo(party.getPartyName());
+                assertThat(response.weeks()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() {
+                // given
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate expectedEnd = ExerciseCalendarTestHelper.expectedDefaultEndDate();
+
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(partyMember.getId()))
+                        .willReturn(Optional.of(partyMember));
+                given(memberPartyRepository.existsByPartyAndMember(party, partyMember))
+                        .willReturn(true);
+                given(exerciseRepository.findByPartyIdAndDateRange(party.getId(), expectedStart, expectedEnd))
+                        .willReturn(List.of());
+
+                // when
+                PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), partyMember.getId(), null, null);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(expectedStart);
+                assertThat(response.endDate()).isEqualTo(expectedEnd);
+                assertThat(response.isMember()).isTrue();
                 assertThat(response.weeks()).isEmpty();
             }
         }

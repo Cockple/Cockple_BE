@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
@@ -32,7 +33,6 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -543,6 +543,29 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.isMember").value(false))
                         .andExpect(jsonPath("$.data.partyName").value("테스트 모임"))
                         .andExpect(jsonPath("$.data.weeks").isEmpty());
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() throws Exception {
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate defaultExerciseDate = expectedStart.plusDays(8);
+                int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
+                int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
+
+                Exercise defaultExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, defaultExerciseDate));
+
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, defaultExercise));
+
+                mockMvc.perform(get("/api/parties/{partyId}/exercises/calender", party.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value(expectedStart.toString()))
+                        .andExpect(jsonPath("$.data.endDate").value(ExerciseCalendarTestHelper.expectedDefaultEndDate().toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].date").value(defaultExerciseDate.toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].exerciseId").value(defaultExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].isParticipating").value(true));
             }
         }
 
