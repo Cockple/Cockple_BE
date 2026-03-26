@@ -772,4 +772,133 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/exercises/parties/my/calendar - 내 모임 운동 캘린더 조회")
+    class GetMyPartyExerciseCalendar {
+
+        private Exercise exercise;
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        @BeforeEach
+        void setUp() {
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 3, 29);
+
+            exercise = exerciseRepository.save(
+                    ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 3, 25)));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("요청한 기간의 내 모임 운동 캘린더가 반환된다")
+            void 요청한_기간의_내_모임_운동_캘린더가_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks[0].weekStartDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.weeks[0].weekEndDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].date").value("2026-03-25"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].dayOfWeek").value("WEDNESDAY"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(exercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].buildingName").value("테스트 체육관"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].isBookmarked").value(false))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].nowCapacity").value(0));
+            }
+
+            @Test
+            @DisplayName("속한 모임이 없으면 빈 캘린더를 반환한다")
+            void 속한_모임이_없으면_빈_캘린더를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(outsider.getId(), outsider.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks").isEmpty());
+            }
+
+            @Test
+            @DisplayName("기간 내 내 모임 운동이 없으면 빈 캘린더를 반환한다")
+            void 기간_내_내_모임_운동이_없으면_빈_캘린더를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar")
+                                .param("startDate", "2026-03-30")
+                                .param("endDate", "2026-04-05"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-30"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-04-05"))
+                        .andExpect(jsonPath("$.data.weeks").isEmpty());
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() throws Exception {
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate defaultExerciseDate = expectedStart.plusDays(8);
+                int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
+                int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
+
+                Exercise defaultExercise = exerciseRepository.save(
+                        ExerciseFixture.createExerciseWithAddr(party, defaultExerciseDate));
+
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value(expectedStart.toString()))
+                        .andExpect(jsonPath("$.data.endDate").value(ExerciseCalendarTestHelper.expectedDefaultEndDate().toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].date").value(defaultExerciseDate.toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].exerciseId").value(defaultExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].partyId").value(party.getId()));
+            }
+
+            @Test
+            @DisplayName("POPULARITY 정렬 옵션으로 조회 시 정상 반환된다")
+            void POPULARITY_정렬_옵션으로_조회_시_정상_반환된다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar")
+                                .param("orderType", "POPULARITY")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-03-29"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(exercise.getId()));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/exercises/parties/my/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+        }
+    }
+
 }

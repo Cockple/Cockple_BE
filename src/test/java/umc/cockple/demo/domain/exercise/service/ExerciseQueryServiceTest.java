@@ -17,8 +17,10 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -47,6 +49,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1218,6 +1221,183 @@ class ExerciseQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseQueryService.getMyPartyExercise(999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyPartyExerciseCalendar")
+    class GetMyPartyExerciseCalendar {
+
+        private Member calendarMember;
+        private Exercise calendarExercise;
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        @BeforeEach
+        void setUp() {
+            calendarMember = MemberFixture.createMember("내모임캘린더멤버", Gender.FEMALE, Level.B, 6001L);
+            ReflectionTestUtils.setField(calendarMember, "id", 6L);
+
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 3, 29);
+
+            calendarExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 3, 25));
+            ReflectionTestUtils.setField(calendarExercise, "id", 400L);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("내 모임 운동 캘린더를 주차별_일자별로 반환한다")
+            void 내_모임_운동_캘린더를_주차별_일자별로_반환한다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
+                        .willReturn(List.of(party.getId()));
+                given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
+                        .willReturn(List.of(calendarExercise));
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        calendarMember.getId(), List.of(calendarExercise.getId())))
+                        .willReturn(List.of());
+                given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                        List.of(calendarExercise.getId()), startDate, endDate))
+                        .willReturn(Collections.singletonList(new Object[]{calendarExercise.getId(), 3}));
+
+                // when
+                MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                        calendarMember.getId(), MyPartyExerciseOrderType.LATEST, startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.weeks()).hasSize(1);
+                assertThat(response.weeks().get(0).weekStartDate()).isEqualTo(startDate);
+                assertThat(response.weeks().get(0).weekEndDate()).isEqualTo(endDate);
+                assertThat(response.weeks().get(0).days()).hasSize(7);
+                assertThat(response.weeks().get(0).days().get(2).date())
+                        .isEqualTo(LocalDate.of(2026, 3, 25));
+                assertThat(response.weeks().get(0).days().get(2).exercises())
+                        .extracting(
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::exerciseId,
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::partyId,
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::partyName,
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::buildingName,
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::isBookmarked,
+                                MyPartyExerciseCalendarDTO.ExerciseCalendarItem::nowCapacity)
+                        .containsExactly(tuple(400L, 10L, "테스트 모임", "테스트 체육관", false, 3));
+            }
+
+            @Test
+            @DisplayName("북마크한 운동은 isBookmarked가 true로 반환된다")
+            void 북마크한_운동은_isBookmarked가_true로_반환된다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
+                        .willReturn(List.of(party.getId()));
+                given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
+                        .willReturn(List.of(calendarExercise));
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        calendarMember.getId(), List.of(calendarExercise.getId())))
+                        .willReturn(List.of(calendarExercise.getId()));
+                given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                        List.of(calendarExercise.getId()), startDate, endDate))
+                        .willReturn(List.of());
+
+                // when
+                MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                        calendarMember.getId(), MyPartyExerciseOrderType.LATEST, startDate, endDate);
+
+                // then
+                assertThat(response.weeks().get(0).days().get(2).exercises().get(0).isBookmarked()).isTrue();
+            }
+
+            @Test
+            @DisplayName("속한 모임이 없으면 빈 캘린더를 반환한다")
+            void 속한_모임이_없으면_빈_캘린더를_반환한다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
+                        .willReturn(List.of());
+
+                // when
+                MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                        calendarMember.getId(), MyPartyExerciseOrderType.LATEST, startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.weeks()).isEmpty();
+                verify(exerciseRepository, never()).findByPartyIdsAndDateRange(any(), any(), any());
+            }
+
+            @Test
+            @DisplayName("기간 내 내 모임 운동이 없으면 빈 캘린더를 반환한다")
+            void 기간_내_내_모임_운동이_없으면_빈_캘린더를_반환한다() {
+                // given
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
+                        .willReturn(List.of(party.getId()));
+                given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
+                        .willReturn(List.of());
+
+                // when
+                MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                        calendarMember.getId(), MyPartyExerciseOrderType.LATEST, startDate, endDate);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(startDate);
+                assertThat(response.endDate()).isEqualTo(endDate);
+                assertThat(response.weeks()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
+            void 시작일과_종료일이_없으면_기본_기간이_적용된다() {
+                // given
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate expectedEnd = ExerciseCalendarTestHelper.expectedDefaultEndDate();
+
+                given(memberRepository.findById(calendarMember.getId()))
+                        .willReturn(Optional.of(calendarMember));
+                given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
+                        .willReturn(List.of(party.getId()));
+                given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), expectedStart, expectedEnd))
+                        .willReturn(List.of());
+
+                // when
+                MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+                        calendarMember.getId(), MyPartyExerciseOrderType.LATEST, null, null);
+
+                // then
+                assertThat(response.startDate()).isEqualTo(expectedStart);
+                assertThat(response.endDate()).isEqualTo(expectedEnd);
+                assertThat(response.weeks()).isEmpty();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyPartyExerciseCalendar(
+                        999L, MyPartyExerciseOrderType.LATEST, startDate, endDate))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
