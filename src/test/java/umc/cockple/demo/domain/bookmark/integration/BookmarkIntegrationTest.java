@@ -323,12 +323,40 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
     @DisplayName("GET /api/exercises/bookmarks - 찜한 운동 전체 조회")
     class GetAllExerciseBookmarks {
 
+        private Exercise newExercise;
+
         @BeforeEach
         void setUp() {
+            // 먼저 저장 = 오래된 북마크
             memberExerciseRepository.save(MemberFixture.createMemberExercise(member, bookmarkExercise));
             exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                     .member(member)
                     .exercise(bookmarkExercise)
+                    .build());
+
+            // 나중에 저장 = 최신 북마크
+            newExercise = exerciseRepository.save(Exercise.builder()
+                    .party(bookmarkParty)
+                    .date(LocalDate.of(2027, 6, 30))
+                    .startTime(LocalTime.of(14, 0))
+                    .endTime(LocalTime.of(16, 0))
+                    .maxCapacity(8)
+                    .partyGuestAccept(true)
+                    .outsideGuestAccept(false)
+                    .exerciseAddr(ExerciseAddr.builder()
+                            .addr1("경기도")
+                            .addr2("안산시")
+                            .streetAddr("경기도 안산시 한양대학로 1")
+                            .buildingName("테스트 체육관")
+                            .latitude(37.5)
+                            .longitude(127.0)
+                            .build())
+                    .build());
+
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(member, newExercise));
+            exerciseBookmarkRepository.save(ExerciseBookmark.builder()
+                    .member(member)
+                    .exercise(newExercise)
                     .build());
         }
 
@@ -337,38 +365,41 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("200 - LATEST 정렬로 찜한 운동을 전체 조회하면 모든 필드를 반환한다")
+            @DisplayName("200 - LATEST 정렬로 찜한 운동을 전체 조회하면 최신순으로 반환한다")
             void getAllExerciseBookmarks_latest_allFields() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
                 mockMvc.perform(get("/api/exercises/bookmarks")
                                 .param("orderType", BookmarkedExerciseOrderType.LATEST.name()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)))
-                        .andExpect(jsonPath("$.data[0].exerciseId").isNumber())
+                        .andExpect(jsonPath("$.data", hasSize(2)))
+                        .andExpect(jsonPath("$.data[0].exerciseId").value(newExercise.getId()))
+                        .andExpect(jsonPath("$.data[1].exerciseId").value(bookmarkExercise.getId()))
                         .andExpect(jsonPath("$.data[0].partyName").value("테스트 모임"))
                         .andExpect(jsonPath("$.data[0].buildingName").value("테스트 체육관"))
                         .andExpect(jsonPath("$.data[0].streetAddr").value("경기도 안산시 한양대학로 1"))
                         .andExpect(jsonPath("$.data[0].femaleLevel").isArray())
                         .andExpect(jsonPath("$.data[0].maleLevel").isArray())
-                        .andExpect(jsonPath("$.data[0].date").value("2026-12-31"))
-                        .andExpect(jsonPath("$.data[0].startExerciseTime").value("10:00:00"))
-                        .andExpect(jsonPath("$.data[0].endExerciseTime").value("12:00:00"))
-                        .andExpect(jsonPath("$.data[0].maxMemberCnt").value(10))
+                        .andExpect(jsonPath("$.data[0].date").value("2027-06-30"))
+                        .andExpect(jsonPath("$.data[0].startExerciseTime").value("14:00:00"))
+                        .andExpect(jsonPath("$.data[0].endExerciseTime").value("16:00:00"))
+                        .andExpect(jsonPath("$.data[0].maxMemberCnt").value(8))
                         .andExpect(jsonPath("$.data[0].nowMemberCnt").isNumber())
                         .andExpect(jsonPath("$.data[0].includeParty").value(true))
                         .andExpect(jsonPath("$.data[0].includeExercise").value(true));
             }
 
             @Test
-            @DisplayName("200 - EARLIEST 정렬로 찜한 운동 전체 조회 시 성공한다")
+            @DisplayName("200 - EARLIEST 정렬로 찜한 운동을 전체 조회하면 오래된순으로 반환한다")
             void getAllExerciseBookmarks_earliest() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
                 mockMvc.perform(get("/api/exercises/bookmarks")
                                 .param("orderType", BookmarkedExerciseOrderType.EARLIEST.name()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)));
+                        .andExpect(jsonPath("$.data", hasSize(2)))
+                        .andExpect(jsonPath("$.data[0].exerciseId").value(bookmarkExercise.getId()))
+                        .andExpect(jsonPath("$.data[1].exerciseId").value(newExercise.getId()));
             }
 
             @Test
@@ -394,10 +425,23 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
     @DisplayName("GET /api/parties/bookmarks - 찜한 모임 전체 조회")
     class GetAllPartyBookmarks {
 
+        private Party newParty;
+
         @BeforeEach
         void setUp() {
+            // 먼저 저장 = 오래된 북마크
             partyBookmarkRepository.save(PartyBookmark.builder()
                     .party(bookmarkParty)
+                    .member(member)
+                    .orderType(PartyOrderType.LATEST)
+                    .build());
+
+            // 나중에 저장 = 최신 북마크
+            PartyAddr newAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
+            newParty = partyRepository.save(PartyFixture.createParty("새 테스트 모임", member.getId(), newAddr));
+
+            partyBookmarkRepository.save(PartyBookmark.builder()
+                    .party(newParty)
                     .member(member)
                     .orderType(PartyOrderType.LATEST)
                     .build());
@@ -408,24 +452,25 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("200 - LATEST 정렬로 찜한 모임을 전체 조회하면 모든 필드를 반환한다")
+            @DisplayName("200 - LATEST 정렬로 찜한 모임을 전체 조회하면 최신순으로 반환한다")
             void getAllPartyBookmarks_latest_allFields() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
                 mockMvc.perform(get("/api/parties/bookmarks")
                                 .param("orderType", PartyOrderType.LATEST.name()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)))
-                        .andExpect(jsonPath("$.data[0].partyId").isNumber())
-                        .andExpect(jsonPath("$.data[0].partyName").value("테스트 모임"))
-                        .andExpect(jsonPath("$.data[0].addr1").value("경기도"))
-                        .andExpect(jsonPath("$.data[0].addr2").value("안산시"))
-                        .andExpect(jsonPath("$.data[0].maleLevel").isArray())
-                        .andExpect(jsonPath("$.data[0].femaleLevel").isArray())
-                        .andExpect(jsonPath("$.data[0].latestExerciseDate").value("2026-12-31"))
-                        .andExpect(jsonPath("$.data[0].latestExerciseTime").value("MORNING"))
-                        .andExpect(jsonPath("$.data[0].exerciseCnt").isNumber())
-                        .andExpect(jsonPath("$.data[0].profileImgUrl").value(nullValue()));
+                        .andExpect(jsonPath("$.data", hasSize(2)))
+                        .andExpect(jsonPath("$.data[0].partyId").value(newParty.getId()))
+                        .andExpect(jsonPath("$.data[1].partyId").value(bookmarkParty.getId()))
+                        .andExpect(jsonPath("$.data[1].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data[1].addr1").value("경기도"))
+                        .andExpect(jsonPath("$.data[1].addr2").value("안산시"))
+                        .andExpect(jsonPath("$.data[1].maleLevel").isArray())
+                        .andExpect(jsonPath("$.data[1].femaleLevel").isArray())
+                        .andExpect(jsonPath("$.data[1].latestExerciseDate").value("2026-12-31"))
+                        .andExpect(jsonPath("$.data[1].latestExerciseTime").value("MORNING"))
+                        .andExpect(jsonPath("$.data[1].exerciseCnt").isNumber())
+                        .andExpect(jsonPath("$.data[1].profileImgUrl").value(nullValue()));
             }
 
             @Test
@@ -436,18 +481,20 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/parties/bookmarks")
                                 .param("orderType", PartyOrderType.EXERCISE_COUNT.name()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)));
+                        .andExpect(jsonPath("$.data", hasSize(2)));
             }
 
             @Test
-            @DisplayName("200 - OLDEST 정렬로 찜한 모임 전체 조회 시 성공한다")
+            @DisplayName("200 - OLDEST 정렬로 찜한 모임을 전체 조회하면 오래된순으로 반환한다")
             void getAllPartyBookmarks_oldest() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
                 mockMvc.perform(get("/api/parties/bookmarks")
                                 .param("orderType", PartyOrderType.OLDEST.name()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)));
+                        .andExpect(jsonPath("$.data", hasSize(2)))
+                        .andExpect(jsonPath("$.data[0].partyId").value(bookmarkParty.getId()))
+                        .andExpect(jsonPath("$.data[1].partyId").value(newParty.getId()));
             }
 
             @Test
