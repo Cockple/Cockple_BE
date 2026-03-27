@@ -14,13 +14,18 @@ public class ExerciseFixture {
     }
 
     public static ExerciseAddr createExerciseAddr(String buildingName, String streetAddr) {
+        return createExerciseAddr(buildingName, streetAddr, 37.5, 127.0);
+    }
+
+    public static ExerciseAddr createExerciseAddr(String buildingName, String streetAddr,
+                                                  double latitude, double longitude) {
         return ExerciseAddr.builder()
                 .addr1("서울특별시")
                 .addr2("강남구")
                 .streetAddr(streetAddr)
                 .buildingName(buildingName)
-                .latitude(37.5)
-                .longitude(127.0)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 
@@ -61,6 +66,21 @@ public class ExerciseFixture {
                 .partyGuestAccept(true)
                 .outsideGuestAccept(false)
                 .exerciseAddr(createExerciseAddr())
+                .build();
+    }
+
+    public static Exercise createRecommendableExercise(Party party, LocalDate date,
+                                                       double latitude, double longitude,
+                                                       String buildingName) {
+        return Exercise.builder()
+                .party(party)
+                .date(date)
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(12, 0))
+                .maxCapacity(10)
+                .partyGuestAccept(true)
+                .outsideGuestAccept(true)
+                .exerciseAddr(createExerciseAddr(buildingName, "테헤란로 1", latitude, longitude))
                 .build();
     }
 
