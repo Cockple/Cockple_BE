@@ -12,6 +12,8 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -38,6 +40,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,6 +50,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
+    @Autowired MemberAddrRepository memberAddrRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
@@ -86,6 +90,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
+        memberAddrRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
     }
@@ -1260,6 +1265,205 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             ReflectionTestUtils.setField(buildingExercise, "startTime", startTime);
             ReflectionTestUtils.setField(buildingExercise, "endTime", endTime);
             return exerciseRepository.save(buildingExercise);
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/buildings/map/monthly - 월간 운동 건물 지도 데이터 조회")
+    class GetMonthlyExerciseBuildings {
+
+        private final LocalDate targetDate = LocalDate.of(2026, 4, 15);
+        private Member memberWithoutMainAddr;
+
+        @BeforeEach
+        void setUp() {
+            saveMemberAddr(normalMember, "서울특별시", "강남구", "역삼동",
+                    "서울특별시 강남구 테헤란로 1", "대표주소", 37.5, 127.0, true);
+
+            memberWithoutMainAddr = memberRepository.save(
+                    MemberFixture.createMember("대표주소없음", Gender.FEMALE, Level.B, 1010L, LocalDate.of(2000, 1, 1)));
+            saveMemberAddr(memberWithoutMainAddr, "서울특별시", "송파구", "잠실동",
+                    "서울특별시 송파구 올림픽로 1", "보조주소", 37.514, 127.102, false);
+
+            saveMapExercise(LocalDate.of(2026, 4, 3), "A빌딩", "서울특별시 강남구 테헤란로 10",
+                    37.5005, 127.0005, LocalTime.of(9, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 3), "A빌딩", "서울특별시 강남구 테헤란로 10",
+                    37.5005, 127.0005, LocalTime.of(19, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 3), "B빌딩", "서울특별시 강남구 테헤란로 20",
+                    37.501, 127.001, LocalTime.of(13, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 4), "A빌딩", "서울특별시 강남구 테헤란로 10",
+                    37.5005, 127.0005, LocalTime.of(10, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 5), "반경밖빌딩", "부산광역시 해운대구 센텀로 1",
+                    35.17, 129.13, LocalTime.of(12, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 6), "부산빌딩", "부산광역시 해운대구 센텀로 2",
+                    35.1705, 129.1305, LocalTime.of(14, 0));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("기본 요청은 현재 월과 대표주소 중심 좌표를 사용한다")
+            void 기본_요청은_현재_월과_대표주소_중심_좌표를_사용한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.year").value(LocalDate.now().getYear()))
+                        .andExpect(jsonPath("$.data.month").value(LocalDate.now().getMonthValue()))
+                        .andExpect(jsonPath("$.data.centerLatitude").value(37.5))
+                        .andExpect(jsonPath("$.data.centerLongitude").value(127.0))
+                        .andExpect(jsonPath("$.data.radiusKm").value(3.0))
+                        .andExpect(jsonPath("$.data.buildings").isMap());
+            }
+
+            @Test
+            @DisplayName("명시 날짜와 좌표로 조회하면 날짜별 건물 지도를 dedupe하여 반환한다")
+            void 명시_날짜와_좌표로_조회하면_날짜별_건물_지도를_dedupe하여_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "3.9"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.year").value(2026))
+                        .andExpect(jsonPath("$.data.month").value(4))
+                        .andExpect(jsonPath("$.data.centerLatitude").value(37.5))
+                        .andExpect(jsonPath("$.data.centerLongitude").value(127.0))
+                        .andExpect(jsonPath("$.data.radiusKm").value(3.9))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-03'].length()").value(2))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-03'][*].buildingName", containsInAnyOrder("A빌딩", "B빌딩")))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-04'].length()").value(1))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-04'][0].buildingName").value("A빌딩"))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-05']").doesNotExist());
+            }
+
+            @Test
+            @DisplayName("명시 좌표는 대표주소 대신 응답 중심 좌표로 반영된다")
+            void 명시_좌표는_대표주소_대신_응답_중심_좌표로_반영된다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "35.17")
+                                .param("longitude", "129.13")
+                                .param("radiusKm", "5.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.centerLatitude").value(35.17))
+                        .andExpect(jsonPath("$.data.centerLongitude").value(129.13))
+                        .andExpect(jsonPath("$.data.radiusKm").value(5.0))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-06'][0].buildingName").value("부산빌딩"));
+            }
+
+            @Test
+            @DisplayName("반경 내 운동이 없으면 빈 buildings를 반환한다")
+            void 반경_내_운동이_없으면_빈_buildings를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "36.0")
+                                .param("longitude", "128.0")
+                                .param("radiusKm", "1.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.year").value(2026))
+                        .andExpect(jsonPath("$.data.month").value(4))
+                        .andExpect(jsonPath("$.data.buildings").isEmpty());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("대표주소가 없으면 에러를 반환한다")
+            void 대표주소가_없으면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(memberWithoutMainAddr.getId(), memberWithoutMainAddr.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+            }
+
+            @Test
+            @DisplayName("대표주소가 없으면 명시 좌표가 있어도 에러를 반환한다")
+            void 대표주소가_없으면_명시_좌표가_있어도_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(memberWithoutMainAddr.getId(), memberWithoutMainAddr.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+            }
+
+            @Test
+            @DisplayName("위도만 주면 에러를 반환한다")
+            void 위도만_주면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO.getMessage()));
+            }
+
+            @Test
+            @DisplayName("날짜 형식이 잘못되면 400을 반환한다")
+            void 날짜_형식이_잘못되면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", "invalid-date"))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        private MemberAddr saveMemberAddr(Member member, String addr1, String addr2, String addr3,
+                                          String streetAddr, String buildingName,
+                                          double latitude, double longitude, boolean isMain) {
+            return memberAddrRepository.save(MemberAddr.builder()
+                    .member(member)
+                    .addr1(addr1)
+                    .addr2(addr2)
+                    .addr3(addr3)
+                    .streetAddr(streetAddr)
+                    .buildingName(buildingName)
+                    .latitude(latitude)
+                    .longitude(longitude)
+                    .isMain(isMain)
+                    .build());
+        }
+
+        private Exercise saveMapExercise(LocalDate date, String buildingName, String streetAddr,
+                                         double latitude, double longitude, LocalTime startTime) {
+            Exercise exercise = ExerciseFixture.createExerciseWithAddr(party, date, 12);
+            ReflectionTestUtils.setField(exercise, "exerciseAddr",
+                    ExerciseFixture.createExerciseAddr(buildingName, streetAddr, latitude, longitude));
+            ReflectionTestUtils.setField(exercise, "startTime", startTime);
+            return exerciseRepository.save(exercise);
         }
     }
 
