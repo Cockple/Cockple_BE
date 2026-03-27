@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
+import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -30,6 +32,8 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -49,6 +53,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired GuestRepository guestRepository;
+    @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Autowired DataSource dataSource;
 
     private Member manager;
@@ -75,6 +80,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
+        exerciseBookmarkRepository.deleteAll();
         memberExerciseRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
@@ -551,7 +557,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             @DisplayName("시작일과_종료일이_없으면_기본_기간이_적용된다")
             void 시작일과_종료일이_없으면_기본_기간이_적용된다() throws Exception {
                 LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
-                LocalDate defaultExerciseDate = expectedStart.plusDays(8);
+                LocalDate defaultExerciseDate = expectedStart.plusDays(9);
                 int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
                 int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
 
