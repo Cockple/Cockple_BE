@@ -907,4 +907,226 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/exercises/my - 내 참여 운동 조회")
+    class GetMyExercises {
+
+        private final List<Exercise> upcomingExercises = new ArrayList<>();
+        private final List<Exercise> completedExercises = new ArrayList<>();
+
+        @BeforeEach
+        void setUp() {
+            party.addLevel(Gender.FEMALE, Level.B);
+            party.addLevel(Gender.MALE, Level.A);
+            partyRepository.save(party);
+
+            for (int day = 1; day <= 10; day++) {
+                Exercise exercise = saveParticipatedExercise(LocalDate.of(2099, 1, day), LocalTime.of(10, 0), 10, true);
+                upcomingExercises.add(exercise);
+            }
+
+            Exercise featuredUpcomingExercise = upcomingExercises.get(9);
+            ReflectionTestUtils.setField(featuredUpcomingExercise, "startTime", LocalTime.of(7, 30));
+            ReflectionTestUtils.setField(featuredUpcomingExercise, "endTime", LocalTime.of(9, 0));
+            ReflectionTestUtils.setField(featuredUpcomingExercise, "maxCapacity", 20);
+            ReflectionTestUtils.setField(featuredUpcomingExercise, "partyGuestAccept", false);
+            featuredUpcomingExercise = exerciseRepository.save(featuredUpcomingExercise);
+            upcomingExercises.set(9, featuredUpcomingExercise);
+
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, featuredUpcomingExercise));
+            guestRepository.save(GuestFixture.createGuest(featuredUpcomingExercise, manager.getId()));
+            exerciseBookmarkRepository.save(ExerciseBookmark.builder()
+                    .member(normalMember)
+                    .exercise(featuredUpcomingExercise)
+                    .build());
+
+            for (int day = 1; day <= 8; day++) {
+                Exercise exercise = saveParticipatedExercise(LocalDate.of(2024, 1, day), LocalTime.of(10, 0), 10, true);
+                completedExercises.add(exercise);
+            }
+
+            exerciseRepository.save(ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2099, 2, 1)));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("파라미터 없이 호출하면 ALL 최신순 기본값과 15개 페이징이 적용된다")
+            void 파라미터_없이_호출하면_ALL_최신순_기본값과_15개_페이징이_적용된다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(15))
+                        .andExpect(jsonPath("$.data.hasNext").value(true))
+                        .andExpect(jsonPath("$.data.exercises.length()").value(15))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(upcomingExercises.get(9).getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.exercises[0].isBookmarked").value(true))
+                        .andExpect(jsonPath("$.data.exercises[0].date").value("2099-01-10"))
+                        .andExpect(jsonPath("$.data.exercises[0].dayOfWeek").value("SATURDAY"))
+                        .andExpect(jsonPath("$.data.exercises[0].buildingName").value("테스트 체육관"))
+                        .andExpect(jsonPath("$.data.exercises[0].startTime").value("07:30:00"))
+                        .andExpect(jsonPath("$.data.exercises[0].endTime").value("09:00:00"))
+                        .andExpect(jsonPath("$.data.exercises[0].femaleLevel[0]").value("B조"))
+                        .andExpect(jsonPath("$.data.exercises[0].maleLevel[0]").value("A조"))
+                        .andExpect(jsonPath("$.data.exercises[0].currentParticipants").value(3))
+                        .andExpect(jsonPath("$.data.exercises[0].maxCapacity").value(20))
+                        .andExpect(jsonPath("$.data.exercises[0].isCompleted").value(false))
+                        .andExpect(jsonPath("$.data.exercises[0].partyGuestInviteAccept").value(false))
+                        .andExpect(jsonPath("$.data.exercises[14].exerciseId").value(completedExercises.get(3).getId()));
+            }
+
+            @Test
+            @DisplayName("두 번째 페이지를 조회하면 남은 3개 운동과 hasNext false를 반환한다")
+            void 두_번째_페이지를_조회하면_남은_3개_운동과_hasNext_false를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("page", "1"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(3))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.exercises.length()").value(3))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(completedExercises.get(2).getId()))
+                        .andExpect(jsonPath("$.data.exercises[2].exerciseId").value(completedExercises.get(0).getId()));
+            }
+
+            @Test
+            @DisplayName("UPCOMING 필터는 예정 운동만 최신순 기본정렬로 반환한다")
+            void UPCOMING_필터는_예정_운동만_최신순_기본정렬로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("filterType", "UPCOMING"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(10))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(upcomingExercises.get(0).getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].isCompleted").value(false))
+                        .andExpect(jsonPath("$.data.exercises[9].exerciseId").value(upcomingExercises.get(9).getId()))
+                        .andExpect(jsonPath("$.data.exercises[9].date").value("2099-01-10"));
+            }
+
+            @Test
+            @DisplayName("UPCOMING 필터에 OLDEST 정렬을 주면 반대 순서로 반환한다")
+            void UPCOMING_필터에_OLDEST_정렬을_주면_반대_순서로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("filterType", "UPCOMING")
+                                .param("orderType", "OLDEST"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(10))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(upcomingExercises.get(9).getId()))
+                        .andExpect(jsonPath("$.data.exercises[9].exerciseId").value(upcomingExercises.get(0).getId()));
+            }
+
+            @Test
+            @DisplayName("COMPLETED 필터는 완료 운동만 최신순 기본정렬로 반환한다")
+            void COMPLETED_필터는_완료_운동만_최신순_기본정렬로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("filterType", "COMPLETED"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(8))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(completedExercises.get(7).getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].isCompleted").value(true))
+                        .andExpect(jsonPath("$.data.exercises[7].exerciseId").value(completedExercises.get(0).getId()));
+            }
+
+            @Test
+            @DisplayName("COMPLETED 필터에 OLDEST 정렬을 주면 반대 순서로 반환한다")
+            void COMPLETED_필터에_OLDEST_정렬을_주면_반대_순서로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("filterType", "COMPLETED")
+                                .param("orderType", "OLDEST"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(8))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(completedExercises.get(0).getId()))
+                        .andExpect(jsonPath("$.data.exercises[7].exerciseId").value(completedExercises.get(7).getId()));
+            }
+
+            @Test
+            @DisplayName("ALL 필터에 OLDEST 정렬을 주면 가장 오래된 완료 운동부터 반환한다")
+            void ALL_필터에_OLDEST_정렬을_주면_가장_오래된_완료_운동부터_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("orderType", "OLDEST"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(15))
+                        .andExpect(jsonPath("$.data.hasNext").value(true))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(completedExercises.get(0).getId()))
+                        .andExpect(jsonPath("$.data.exercises[14].exerciseId").value(upcomingExercises.get(6).getId()));
+            }
+
+            @Test
+            @DisplayName("참여한 운동이 없으면 빈 응답을 반환한다")
+            void 참여한_운동이_없으면_빈_응답을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(outsider.getId(), outsider.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.totalCount").value(0))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.exercises").isEmpty());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/exercises/my"))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("잘못된 필터 타입이면 400을 반환한다")
+            void 잘못된_필터_타입이면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("filterType", "INVALID"))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("잘못된 정렬 타입이면 400을 반환한다")
+            void 잘못된_정렬_타입이면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/my")
+                                .param("orderType", "INVALID"))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        private Exercise saveParticipatedExercise(LocalDate date, LocalTime startTime,
+                                                  int maxCapacity, boolean partyGuestAccept) {
+            Exercise exercise = ExerciseFixture.createExerciseWithAddr(party, date, maxCapacity);
+            ReflectionTestUtils.setField(exercise, "startTime", startTime);
+            ReflectionTestUtils.setField(exercise, "partyGuestAccept", partyGuestAccept);
+
+            Exercise savedExercise = exerciseRepository.save(exercise);
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, savedExercise));
+            return savedExercise;
+        }
+    }
+
 }

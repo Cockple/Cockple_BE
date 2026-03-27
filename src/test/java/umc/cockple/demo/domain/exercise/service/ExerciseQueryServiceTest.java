@@ -8,6 +8,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
@@ -17,9 +22,12 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
+import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -1401,6 +1409,309 @@ class ExerciseQueryServiceTest {
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyExercises")
+    class GetMyExercises {
+
+        private Member myExerciseMember;
+        private Exercise completedExercise;
+        private Exercise upcomingExercise;
+        private Exercise futureLatestExercise;
+        private Pageable firstPage;
+
+        @BeforeEach
+        void setUp() {
+            myExerciseMember = MemberFixture.createMember("내참여운동멤버", Gender.MALE, Level.B, 7001L,
+                    LocalDate.of(2000, 1, 1));
+            ReflectionTestUtils.setField(myExerciseMember, "id", 7L);
+
+            party.addLevel(Gender.FEMALE, Level.B);
+            party.addLevel(Gender.MALE, Level.A);
+
+            completedExercise = createMyExercise(701L, LocalDate.of(2024, 1, 5),
+                    LocalTime.of(9, 0), LocalTime.of(11, 0), 18, false);
+            upcomingExercise = createMyExercise(702L, LocalDate.of(2099, 1, 3),
+                    LocalTime.of(18, 0), null, 12, true);
+            futureLatestExercise = createMyExercise(703L, LocalDate.of(2099, 1, 10),
+                    LocalTime.of(7, 30), LocalTime.of(9, 0), 20, true);
+            firstPage = PageRequest.of(0, 2);
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("ALL 최신순은 전체 운동 리포지토리를 날짜 내림차순으로 호출한다")
+            void ALL_최신순은_전체_운동_리포지토리를_날짜_내림차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, firstPage);
+
+                // then
+                assertThat(response.totalCount()).isZero();
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.exercises()).isEmpty();
+                verify(exerciseRepository).findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+                verify(exerciseRepository, never()).findMyUpcomingExercisesWithPaging(any(), any());
+                verify(exerciseRepository, never()).findMyCompletedExercisesWithPaging(any(), any());
+            }
+
+            @Test
+            @DisplayName("UPCOMING 최신순은 예정 운동 리포지토리를 날짜 오름차순으로 호출한다")
+            void UPCOMING_최신순은_예정_운동_리포지토리를_날짜_오름차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.UPCOMING, MyExerciseOrderType.LATEST, firstPage);
+
+                // then
+                verify(exerciseRepository, never()).findMyExercisesWithPaging(any(), any());
+                verify(exerciseRepository).findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+                verify(exerciseRepository, never()).findMyCompletedExercisesWithPaging(any(), any());
+            }
+
+            @Test
+            @DisplayName("COMPLETED 최신순은 완료 운동 리포지토리를 날짜 내림차순으로 호출한다")
+            void COMPLETED_최신순은_완료_운동_리포지토리를_날짜_내림차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.COMPLETED, MyExerciseOrderType.LATEST, firstPage);
+
+                // then
+                verify(exerciseRepository, never()).findMyExercisesWithPaging(any(), any());
+                verify(exerciseRepository, never()).findMyUpcomingExercisesWithPaging(any(), any());
+                verify(exerciseRepository).findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+            }
+
+            @Test
+            @DisplayName("ALL 오래된순은 전체 운동 리포지토리를 날짜 오름차순으로 호출한다")
+            void ALL_오래된순은_전체_운동_리포지토리를_날짜_오름차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.ALL, MyExerciseOrderType.OLDEST, firstPage);
+
+                // then
+                verify(exerciseRepository).findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+            }
+
+            @Test
+            @DisplayName("UPCOMING 오래된순은 예정 운동 리포지토리를 날짜 내림차순으로 호출한다")
+            void UPCOMING_오래된순은_예정_운동_리포지토리를_날짜_내림차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.UPCOMING, MyExerciseOrderType.OLDEST, firstPage);
+
+                // then
+                verify(exerciseRepository).findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+            }
+
+            @Test
+            @DisplayName("COMPLETED 오래된순은 완료 운동 리포지토리를 날짜 오름차순으로 호출한다")
+            void COMPLETED_오래된순은_완료_운동_리포지토리를_날짜_오름차순으로_호출한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
+                        pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.COMPLETED, MyExerciseOrderType.OLDEST, firstPage);
+
+                // then
+                verify(exerciseRepository).findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class));
+            }
+
+            @Test
+            @DisplayName("조회된 운동이 없으면 빈 응답을 반환한다")
+            void 조회된_운동이_없으면_빈_응답을_반환한다() {
+                // given
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
+                        .willReturn(emptySlice(firstPage));
+
+                // when
+                MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, firstPage);
+
+                // then
+                assertThat(response.totalCount()).isZero();
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.exercises()).isEmpty();
+                verify(exerciseRepository, never()).findExerciseParticipantCountsByExerciseIds(any());
+                verify(exerciseBookmarkRepository, never()).findAllExerciseIdsByMemberIdAndExerciseIds(any(), any());
+            }
+
+            @Test
+            @DisplayName("조회 결과를 DTO 필드와 hasNext true로 매핑한다")
+            void 조회_결과를_DTO_필드와_hasNext_true로_매핑한다() {
+                // given
+                Slice<Exercise> exerciseSlice = sliceOf(List.of(futureLatestExercise, completedExercise), true, firstPage);
+
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
+                        .willReturn(exerciseSlice);
+                given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(
+                        List.of(futureLatestExercise.getId(), completedExercise.getId())))
+                        .willReturn(List.of(
+                                new Object[]{futureLatestExercise.getId(), 3},
+                                new Object[]{completedExercise.getId(), 1}
+                        ));
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        myExerciseMember.getId(), List.of(futureLatestExercise.getId(), completedExercise.getId())))
+                        .willReturn(List.of(futureLatestExercise.getId()));
+
+                // when
+                MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, firstPage);
+
+                // then
+                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.hasNext()).isTrue();
+                assertThat(response.exercises())
+                        .extracting(
+                                MyExerciseListDTO.ExerciseItem::exerciseId,
+                                MyExerciseListDTO.ExerciseItem::partyId,
+                                MyExerciseListDTO.ExerciseItem::partyName,
+                                MyExerciseListDTO.ExerciseItem::isBookmarked,
+                                MyExerciseListDTO.ExerciseItem::date,
+                                MyExerciseListDTO.ExerciseItem::dayOfWeek,
+                                MyExerciseListDTO.ExerciseItem::buildingName,
+                                MyExerciseListDTO.ExerciseItem::startTime,
+                                MyExerciseListDTO.ExerciseItem::endTime,
+                                MyExerciseListDTO.ExerciseItem::currentParticipants,
+                                MyExerciseListDTO.ExerciseItem::maxCapacity,
+                                MyExerciseListDTO.ExerciseItem::isCompleted,
+                                MyExerciseListDTO.ExerciseItem::partyGuestInviteAccept
+                        )
+                        .containsExactly(
+                                tuple(703L, 10L, "테스트 모임", true,
+                                        LocalDate.of(2099, 1, 10), "SATURDAY", "테스트 체육관",
+                                        LocalTime.of(7, 30), LocalTime.of(9, 0), 3, 20, false, true),
+                                tuple(701L, 10L, "테스트 모임", false,
+                                        LocalDate.of(2024, 1, 5), "FRIDAY", "테스트 체육관",
+                                        LocalTime.of(9, 0), LocalTime.of(11, 0), 1, 18, true, false)
+                        );
+            }
+
+            @Test
+            @DisplayName("조회 결과를 hasNext false로 매핑한다")
+            void 조회_결과를_hasNext_false로_매핑한다() {
+                // given
+                Pageable secondPage = PageRequest.of(1, 1);
+                Slice<Exercise> exerciseSlice = sliceOf(List.of(upcomingExercise), false, secondPage);
+
+                given(memberRepository.findById(myExerciseMember.getId()))
+                        .willReturn(Optional.of(myExerciseMember));
+                given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
+                        .willReturn(exerciseSlice);
+                given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(List.of(upcomingExercise.getId())))
+                        .willReturn(List.of());
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        myExerciseMember.getId(), List.of(upcomingExercise.getId())))
+                        .willReturn(List.of());
+
+                // when
+                MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+                        myExerciseMember.getId(), MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, secondPage);
+
+                // then
+                assertThat(response.totalCount()).isEqualTo(1);
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.exercises().get(0).exerciseId()).isEqualTo(upcomingExercise.getId());
+                assertThat(response.exercises().get(0).isCompleted()).isFalse();
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 예외를 던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getMyExercises(
+                        999L, MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, firstPage))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+            }
+        }
+
+        private Exercise createMyExercise(long id, LocalDate date, LocalTime startTime,
+                                          LocalTime endTime, int maxCapacity, boolean partyGuestAccept) {
+            Exercise createdExercise = ExerciseFixture.createExerciseWithAddr(party, date, maxCapacity);
+            ReflectionTestUtils.setField(createdExercise, "id", id);
+            ReflectionTestUtils.setField(createdExercise, "startTime", startTime);
+            ReflectionTestUtils.setField(createdExercise, "endTime", endTime);
+            ReflectionTestUtils.setField(createdExercise, "partyGuestAccept", partyGuestAccept);
+            return createdExercise;
+        }
+
+        private Slice<Exercise> emptySlice(Pageable pageable) {
+            return new SliceImpl<>(List.of(), pageable, false);
+        }
+
+        private Slice<Exercise> sliceOf(List<Exercise> exercises, boolean hasNext, Pageable pageable) {
+            return new SliceImpl<>(exercises, pageable, hasNext);
+        }
+
+        private boolean matchesSort(Pageable pageable, Sort.Direction dateDirection, Sort.Direction timeDirection) {
+            if (pageable.getPageNumber() != firstPage.getPageNumber() || pageable.getPageSize() != firstPage.getPageSize()) {
+                return false;
+            }
+
+            List<Sort.Order> orders = pageable.getSort().stream().toList();
+            return orders.size() == 2
+                   && orders.get(0).getProperty().equals("date")
+                   && orders.get(0).getDirection() == dateDirection
+                   && orders.get(1).getProperty().equals("startTime")
+                   && orders.get(1).getDirection() == timeDirection;
         }
     }
 }
