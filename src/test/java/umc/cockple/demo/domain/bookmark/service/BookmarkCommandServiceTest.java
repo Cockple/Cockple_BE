@@ -89,7 +89,7 @@ class BookmarkCommandServiceTest {
             @DisplayName("모임을 찜하면 저장된 북마크 id를 반환한다")
             void createPartyBookmark_returnsBookmarkId() {
                 // given
-                umc.cockple.demo.domain.bookmark.domain.PartyBookmark savedBookmark = umc.cockple.demo.domain.bookmark.domain.PartyBookmark.builder()
+                PartyBookmark savedBookmark = PartyBookmark.builder()
                         .member(member)
                         .party(party)
                         .orderType(PartyOrderType.LATEST)

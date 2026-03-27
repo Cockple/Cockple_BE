@@ -287,12 +287,12 @@ class BookmarkQueryServiceTest {
 
                 PartyBookmark bookmarkOld = PartyBookmark.builder()
                         .member(member).party(partyA)
-                        .orderType(umc.cockple.demo.domain.party.enums.PartyOrderType.LATEST).build();
+                        .orderType(PartyOrderType.LATEST).build();
                 ReflectionTestUtils.setField(bookmarkOld, "createdAt", LocalDateTime.now().minusDays(2));
 
                 PartyBookmark bookmarkNew = PartyBookmark.builder()
                         .member(member).party(partyB)
-                        .orderType(umc.cockple.demo.domain.party.enums.PartyOrderType.LATEST).build();
+                        .orderType(PartyOrderType.LATEST).build();
                 ReflectionTestUtils.setField(bookmarkNew, "createdAt", LocalDateTime.now().minusDays(1));
 
                 GetAllPartyBookmarkResponseDTO dtoA = GetAllPartyBookmarkResponseDTO.builder()
@@ -319,6 +319,51 @@ class BookmarkQueryServiceTest {
             }
 
             @Test
+            @DisplayName("OLDEST 정렬 시 오래된 순으로 반환한다")
+            void oldestOrder_returnsOldestFirst() {
+                // given
+                Party partyA = PartyFixture.createParty("모임A", member.getId(),
+                        PartyFixture.createPartyAddr("서울특별시", "강남구"));
+                ReflectionTestUtils.setField(partyA, "id", 11L);
+
+                Party partyB = PartyFixture.createParty("모임B", member.getId(),
+                        PartyFixture.createPartyAddr("서울특별시", "종로구"));
+                ReflectionTestUtils.setField(partyB, "id", 12L);
+
+                PartyBookmark bookmarkOld = PartyBookmark.builder()
+                        .member(member).party(partyA)
+                        .orderType(PartyOrderType.OLDEST).build();
+                ReflectionTestUtils.setField(bookmarkOld, "createdAt", LocalDateTime.now().minusDays(2));
+
+                PartyBookmark bookmarkNew = PartyBookmark.builder()
+                        .member(member).party(partyB)
+                        .orderType(PartyOrderType.OLDEST).build();
+                ReflectionTestUtils.setField(bookmarkNew, "createdAt", LocalDateTime.now().minusDays(1));
+
+                GetAllPartyBookmarkResponseDTO dtoA = GetAllPartyBookmarkResponseDTO.builder()
+                        .partyId(11L).partyName("모임A").build();
+                GetAllPartyBookmarkResponseDTO dtoB = GetAllPartyBookmarkResponseDTO.builder()
+                        .partyId(12L).partyName("모임B").build();
+
+                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(partyBookmarkRepository.findAllByMemberWithParty(member))
+                        .willReturn(new ArrayList<>(List.of(bookmarkNew, bookmarkOld)));
+                given(bookmarkConverter.partyBookmarkToDTO(eq(bookmarkOld), any(), any(), any()))
+                        .willReturn(dtoA);
+                given(bookmarkConverter.partyBookmarkToDTO(eq(bookmarkNew), any(), any(), any()))
+                        .willReturn(dtoB);
+
+                // when
+                List<GetAllPartyBookmarkResponseDTO> result =
+                        bookmarkQueryService.getAllPartyBookmarks(member.getId(), PartyOrderType.OLDEST);
+
+                // then
+                assertThat(result).hasSize(2);
+                assertThat(result.get(0).partyId()).isEqualTo(11L); // 오래된 것이 먼저
+                assertThat(result.get(1).partyId()).isEqualTo(12L);
+            }
+
+            @Test
             @DisplayName("EXERCISE_COUNT 정렬 시 운동 횟수 많은 순으로 반환한다")
             void exerciseCountOrder_returnsMostExercisedFirst() {
                 // given
@@ -334,12 +379,12 @@ class BookmarkQueryServiceTest {
 
                 PartyBookmark bookmarkLow = PartyBookmark.builder()
                         .member(member).party(partyLow)
-                        .orderType(umc.cockple.demo.domain.party.enums.PartyOrderType.EXERCISE_COUNT).build();
+                        .orderType(PartyOrderType.EXERCISE_COUNT).build();
                 ReflectionTestUtils.setField(bookmarkLow, "createdAt", LocalDateTime.now().minusDays(1));
 
                 PartyBookmark bookmarkHigh = PartyBookmark.builder()
                         .member(member).party(partyHigh)
-                        .orderType(umc.cockple.demo.domain.party.enums.PartyOrderType.EXERCISE_COUNT).build();
+                        .orderType(PartyOrderType.EXERCISE_COUNT).build();
                 ReflectionTestUtils.setField(bookmarkHigh, "createdAt", LocalDateTime.now().minusDays(2));
 
                 GetAllPartyBookmarkResponseDTO dtoLow = GetAllPartyBookmarkResponseDTO.builder()
