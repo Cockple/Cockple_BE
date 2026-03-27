@@ -1129,4 +1129,138 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/buildings/exercises/{date} - 건물 운동 상세 조회")
+    class GetBuildingExerciseDetails {
+
+        private final LocalDate targetDate = LocalDate.of(2026, 5, 10);
+        private final String targetBuildingName = "콕플 타워";
+        private final String targetStreetAddr = "서울특별시 강남구 테헤란로 10";
+        private Exercise morningExercise;
+        private Exercise eveningExercise;
+
+        @BeforeEach
+        void setUp() {
+            eveningExercise = saveBuildingExercise(targetBuildingName, targetStreetAddr,
+                    targetDate, LocalTime.of(19, 0), LocalTime.of(21, 0));
+            morningExercise = saveBuildingExercise(targetBuildingName, targetStreetAddr,
+                    targetDate, LocalTime.of(9, 0), LocalTime.of(11, 0));
+
+            exerciseBookmarkRepository.save(ExerciseBookmark.builder()
+                    .member(normalMember)
+                    .exercise(eveningExercise)
+                    .build());
+
+            saveBuildingExercise("다른 건물", targetStreetAddr,
+                    targetDate, LocalTime.of(13, 0), LocalTime.of(15, 0));
+            saveBuildingExercise(targetBuildingName, "서울특별시 강남구 테헤란로 99",
+                    targetDate, LocalTime.of(16, 0), LocalTime.of(18, 0));
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("같은 건물과 주소의 운동만 시작시간 오름차순으로 반환한다")
+            void 같은_건물과_주소의_운동만_시작시간_오름차순으로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
+                                .param("buildingName", targetBuildingName)
+                                .param("streetAddr", targetStreetAddr))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.date").value("2026-05-10"))
+                        .andExpect(jsonPath("$.data.dayOfWeek").value("SUNDAY"))
+                        .andExpect(jsonPath("$.data.buildingName").value(targetBuildingName))
+                        .andExpect(jsonPath("$.data.exercises.length()").value(2))
+                        .andExpect(jsonPath("$.data.exercises[0].exerciseId").value(morningExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.exercises[0].partyName").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.exercises[0].profileImageUrl").isEmpty())
+                        .andExpect(jsonPath("$.data.exercises[0].isBookmarked").value(false))
+                        .andExpect(jsonPath("$.data.exercises[0].startTime").value("09:00:00"))
+                        .andExpect(jsonPath("$.data.exercises[0].endTime").value("11:00:00"))
+                        .andExpect(jsonPath("$.data.exercises[1].exerciseId").value(eveningExercise.getId()))
+                        .andExpect(jsonPath("$.data.exercises[1].isBookmarked").value(true))
+                        .andExpect(jsonPath("$.data.exercises[1].startTime").value("19:00:00"))
+                        .andExpect(jsonPath("$.data.exercises[1].endTime").value("21:00:00"));
+            }
+
+            @Test
+            @DisplayName("해당 건물 운동이 없으면 메타데이터가 포함된 빈 응답을 반환한다")
+            void 해당_건물_운동이_없으면_메타데이터가_포함된_빈_응답을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
+                                .param("buildingName", "없는 건물")
+                                .param("streetAddr", targetStreetAddr))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.date").value("2026-05-10"))
+                        .andExpect(jsonPath("$.data.dayOfWeek").value("SUNDAY"))
+                        .andExpect(jsonPath("$.data.buildingName").value("없는 건물"))
+                        .andExpect(jsonPath("$.data.exercises").isEmpty());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
+                                .param("buildingName", targetBuildingName)
+                                .param("streetAddr", targetStreetAddr))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("buildingName이 없으면 400을 반환한다")
+            void buildingName이_없으면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
+                                .param("streetAddr", targetStreetAddr))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("streetAddr이 없으면 400을 반환한다")
+            void streetAddr이_없으면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
+                                .param("buildingName", targetBuildingName))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("날짜 형식이 잘못되면 400을 반환한다")
+            void 날짜_형식이_잘못되면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/exercises/{date}", "invalid-date")
+                                .param("buildingName", targetBuildingName)
+                                .param("streetAddr", targetStreetAddr))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        private Exercise saveBuildingExercise(String buildingName, String streetAddr,
+                                              LocalDate date, LocalTime startTime, LocalTime endTime) {
+            Exercise buildingExercise = ExerciseFixture.createExerciseWithAddr(party, date, 12);
+            ReflectionTestUtils.setField(buildingExercise, "exerciseAddr",
+                    ExerciseFixture.createExerciseAddr(buildingName, streetAddr));
+            ReflectionTestUtils.setField(buildingExercise, "startTime", startTime);
+            ReflectionTestUtils.setField(buildingExercise, "endTime", endTime);
+            return exerciseRepository.save(buildingExercise);
+        }
+    }
+
 }

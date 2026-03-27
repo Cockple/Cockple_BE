@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
@@ -1712,6 +1713,125 @@ class ExerciseQueryServiceTest {
                    && orders.get(0).getDirection() == dateDirection
                    && orders.get(1).getProperty().equals("startTime")
                    && orders.get(1).getDirection() == timeDirection;
+        }
+    }
+
+    @Nested
+    @DisplayName("getBuildingExerciseDetails")
+    class GetBuildingExerciseDetails {
+
+        private Member buildingMember;
+        private LocalDate targetDate;
+        private String buildingName;
+        private String streetAddr;
+
+        @BeforeEach
+        void setUp() {
+            buildingMember = MemberFixture.createMember("건물상세멤버", Gender.FEMALE, Level.B, 8001L,
+                    LocalDate.of(2000, 1, 1));
+            ReflectionTestUtils.setField(buildingMember, "id", 8L);
+
+            targetDate = LocalDate.of(2026, 5, 10);
+            buildingName = "콕플 타워";
+            streetAddr = "서울특별시 강남구 테헤란로 10";
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("해당 건물 운동이 없으면 메타데이터가 포함된 빈 응답을 반환한다")
+            void 해당_건물_운동이_없으면_메타데이터가_포함된_빈_응답을_반환한다() {
+                // given
+                given(memberRepository.findById(buildingMember.getId()))
+                        .willReturn(Optional.of(buildingMember));
+                given(exerciseRepository.findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate))
+                        .willReturn(List.of());
+
+                // when
+                ExerciseBuildingDetailDTO.Response response = exerciseQueryService.getBuildingExerciseDetails(
+                        buildingName, streetAddr, targetDate, buildingMember.getId());
+
+                // then
+                assertThat(response.date()).isEqualTo(targetDate);
+                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
+                assertThat(response.buildingName()).isEqualTo(buildingName);
+                assertThat(response.exercises()).isEmpty();
+                verify(exerciseRepository).findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate);
+                verify(exerciseBookmarkRepository, never()).findAllExerciseIdsByMemberIdAndExerciseIds(any(), any());
+            }
+
+            @Test
+            @DisplayName("운동 목록을 순서와 북마크 상태를 유지해 DTO로 반환한다")
+            void 운동_목록을_순서와_북마크_상태를_유지해_DTO로_반환한다() {
+                // given
+                Exercise morningExercise = createBuildingExercise(801L, LocalTime.of(9, 0), LocalTime.of(11, 0));
+                Exercise eveningExercise = createBuildingExercise(802L, LocalTime.of(19, 0), LocalTime.of(21, 0));
+
+                given(memberRepository.findById(buildingMember.getId()))
+                        .willReturn(Optional.of(buildingMember));
+                given(exerciseRepository.findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate))
+                        .willReturn(List.of(morningExercise, eveningExercise));
+                given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
+                        buildingMember.getId(), List.of(morningExercise.getId(), eveningExercise.getId())))
+                        .willReturn(List.of(eveningExercise.getId()));
+
+                // when
+                ExerciseBuildingDetailDTO.Response response = exerciseQueryService.getBuildingExerciseDetails(
+                        buildingName, streetAddr, targetDate, buildingMember.getId());
+
+                // then
+                assertThat(response.date()).isEqualTo(targetDate);
+                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
+                assertThat(response.buildingName()).isEqualTo(buildingName);
+                assertThat(response.exercises())
+                        .extracting(
+                                ExerciseBuildingDetailDTO.ExerciseItem::exerciseId,
+                                ExerciseBuildingDetailDTO.ExerciseItem::partyId,
+                                ExerciseBuildingDetailDTO.ExerciseItem::partyName,
+                                ExerciseBuildingDetailDTO.ExerciseItem::profileImageUrl,
+                                ExerciseBuildingDetailDTO.ExerciseItem::isBookmarked,
+                                ExerciseBuildingDetailDTO.ExerciseItem::startTime,
+                                ExerciseBuildingDetailDTO.ExerciseItem::endTime
+                        )
+                        .containsExactly(
+                                tuple(801L, 10L, "테스트 모임", null, false, LocalTime.of(9, 0), LocalTime.of(11, 0)),
+                                tuple(802L, 10L, "테스트 모임", null, true, LocalTime.of(19, 0), LocalTime.of(21, 0))
+                        );
+                verify(exerciseRepository).findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate);
+                verify(exerciseBookmarkRepository).findAllExerciseIdsByMemberIdAndExerciseIds(
+                        buildingMember.getId(), List.of(morningExercise.getId(), eveningExercise.getId()));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 예외를 던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> exerciseQueryService.getBuildingExerciseDetails(
+                        buildingName, streetAddr, targetDate, 999L))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+            }
+        }
+
+        private Exercise createBuildingExercise(long id, LocalTime startTime, LocalTime endTime) {
+            Exercise buildingExercise = ExerciseFixture.createExerciseWithAddr(party, targetDate, 12);
+            ReflectionTestUtils.setField(buildingExercise, "id", id);
+            ReflectionTestUtils.setField(buildingExercise, "startTime", startTime);
+            ReflectionTestUtils.setField(buildingExercise, "endTime", endTime);
+            ReflectionTestUtils.setField(buildingExercise, "exerciseAddr",
+                    ExerciseFixture.createExerciseAddr(buildingName, streetAddr));
+            return buildingExercise;
         }
     }
 }
