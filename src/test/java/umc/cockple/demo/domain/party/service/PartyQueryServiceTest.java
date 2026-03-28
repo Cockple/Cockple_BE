@@ -46,6 +46,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -700,6 +701,57 @@ class PartyQueryServiceTest {
             assertThatThrownBy(() -> partyQueryService.getJoinRequests(partyId, ownerId, invalidStatus, pageable))
                     .isInstanceOf(PartyException.class)
                     .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.INVALID_REQUEST_STATUS));
+        }
+    }
+
+    @Nested
+    @DisplayName("getRecommendedMembers")
+    class GetRecommendedMembers {
+
+        @Test
+        @DisplayName("성공 - 조건에 맞는 추천 멤버 목록을 정상적으로 조회한다")
+        void success_getRecommendedMembers() {
+            // given
+            Long partyId = 1L;
+            String levelSearch = "B";
+            Pageable pageable = PageRequest.of(0, 10);
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", 1L, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member suggestedMember = MemberFixture.createMember("추천회원", Gender.MALE, Level.B, 20L);
+            ReflectionTestUtils.setField(suggestedMember, "id", 20L);
+
+            Slice<Member> membersSlice = new SliceImpl<>(List.of(suggestedMember), pageable, false);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findRecommendedMembers(party, levelSearch, pageable))
+                    .willReturn(membersSlice);
+
+            // when
+            Slice<PartyMemberSuggestionDTO.Response> result = partyQueryService.getRecommendedMembers(partyId, levelSearch, pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).userId()).isEqualTo(20L);
+            verify(memberRepository).findRecommendedMembers(party, levelSearch, pageable);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 모임의 추천 멤버를 조회하면 PARTY_NOT_FOUND 발생")
+        void fail_getRecommendedMembers_partyNotFound() {
+            // given
+            Long partyId = 999L;
+            String levelSearch = null;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.empty());
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyQueryService.getRecommendedMembers(partyId, levelSearch, pageable));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND);
         }
     }
 }
