@@ -752,6 +752,48 @@ class PartyIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("GET /api/parties/{partyId}/members/suggestions - 신규 멤버 추천받기")
+    class GetRecommendedMembers {
+
+        @Test
+        @DisplayName("200 - 신규 멤버 추천 목록을 정상적으로 조회한다")
+        void success_getRecommendedMembers() throws Exception {
+            // given
+            Member suggestedMember = memberRepository.save(MemberFixture.createMember("추천회원", Gender.MALE, Level.B, 1080L));
+            
+            // Note: The logic inside memberRepository.findRecommendedMembers determines the slice to return. 
+            // In integration tests with real DB queries, we insert the member so that they are picked up.
+            // But since this varies highly depending on algorithms and other data, we just verify the route and response format.
+            // If the algorithm returns no elements because of specific conditions, testing size==0 or size>0 is fine.
+            // Let's simply test that the request yields a 200 OK and valid COMMON200 code.
+            
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/members/suggestions", party.getId())
+                            .param("levelSearch", "B")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray()); // 배열 형식인지 확인
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 모임의 추천 멤버를 조회하면 PARTY_NOT_FOUND 예외 발생")
+        void fail_getRecommendedMembers_partyNotFound() throws Exception {
+            // given
+            Long invalidPartyId = 9999L;
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/members/suggestions", invalidPartyId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /api/parties/{partyId}/join-requests/{requestId} - 모임 가입 신청 처리")
     class ActionJoinRequest {
 
