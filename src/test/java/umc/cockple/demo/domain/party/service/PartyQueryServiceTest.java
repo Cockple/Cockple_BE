@@ -612,6 +612,45 @@ class PartyQueryServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 모임장이 가입 승인된 멤버 목록(APPROVED)을 정상적으로 조회한다")
+        void success_getJoinRequests_approved() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+            String status = "APPROVED";
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.APPROVED)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", 101L);
+
+            Slice<PartyJoinRequest> requestSlice = new SliceImpl<>(List.of(joinRequest), pageable, false);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+            given(partyJoinRequestRepository.findByPartyAndStatus(party, RequestStatus.APPROVED, pageable))
+                    .willReturn(requestSlice);
+
+            // when
+            Slice<PartyJoinDTO.Response> result = partyQueryService.getJoinRequests(partyId, ownerId, status, pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).joinRequestId()).isEqualTo(101L);
+            verify(partyJoinRequestRepository).findByPartyAndStatus(party, RequestStatus.APPROVED, pageable);
+        }
+
+        @Test
         @DisplayName("실패 - 모임장이 아닌 사용자가 조회하면 INSUFFICIENT_PERMISSION 발생")
         void fail_getJoinRequests_notOwner() {
             // given
