@@ -129,7 +129,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 멤버 목록을 역할, 성별 통계 및 마지막 운동일과 함께 조회한다")
-        void success_getMembersWithDetails() throws Exception {
+        void success_getPartyMembers() throws Exception {
             // 부모임장 추가
             Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 1003L));
             memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
@@ -152,7 +152,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("404 - 존재하지 않는 파티면 에러를 반환한다")
-        void fail_partyNotFound() throws Exception {
+        void fail_getPartyMembers_partyNotFound() throws Exception {
             mockMvc.perform(get("/api/parties/{partyId}/members", 999L))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
@@ -160,7 +160,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("400 - 비활성화된 파티면 에러를 반환한다")
-        void fail_partyInactive() throws Exception {
+        void fail_getPartyMembers_partyInactive() throws Exception {
             party.delete();
             partyRepository.save(party);
 
@@ -324,7 +324,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - Cockple 추천 모드 시 추천된 모임 목록을 반환한다")
-        void success_cockpleRecommend() throws Exception {
+        void success_getRecommendedParties_cockpleRecommend() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "true")
                             .param("sort", "최신순")
@@ -338,7 +338,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 반환한다")
-        void success_filterMode() throws Exception {
+        void success_getRecommendedParties_filterMode() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "false")
                             .param("addr1", "서울특별시")
@@ -355,7 +355,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 검색 모드 시 모임명으로 검색된 결과를 반환한다")
-        void success_searchMode() throws Exception {
+        void success_getRecommendedParties_searchMode() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("search", "추천")
                             .param("isCockpleRecommend", "false")
@@ -369,7 +369,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("400 - 유효하지 않은 정렬 기준 입력 시 INVALID_ORDER_TYPE 에러를 반환한다")
-        void fail_invalidOrderType() throws Exception {
+        void fail_getRecommendedParties_invalidOrderType() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "false")
                             .param("sort", "잘못된순"))
@@ -379,7 +379,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("400 - isCockpleRecommend에 부적절한 타입 입력 시 400 에러를 반환한다")
-        void fail_invalidBooleanType() throws Exception {
+        void fail_getRecommendedParties_invalidBooleanType() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "not-boolean"))
                     .andExpect(status().isBadRequest());
@@ -392,7 +392,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 모임 상세 정보를 정상적으로 조회한다 (비회원 상태)")
-        void success_getDetails_nonMember() throws Exception {
+        void success_getPartyDetails_nonMember() throws Exception {
             // 모임에 가입하지 않은 새로운 유저 생성 및 인증 설정
             Member nonMember = memberRepository.save(MemberFixture.createMember("비회원", Gender.MALE, Level.C, 2001L));
             SecurityContextHelper.setAuthentication(nonMember.getId(), nonMember.getNickname());
@@ -407,7 +407,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 모임원인 경우 memberStatus가 MEMBER로 반환된다")
-        void success_getDetails_member() throws Exception {
+        void success_getPartyDetails_member() throws Exception {
             // manager는 setUp에서 이미 party의 멤버로 설정됨
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
@@ -419,7 +419,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("404 - 존재하지 않는 모임 조회 시 PARTY_NOT_FOUND 에러를 반환한다")
-        void fail_partyNotFound() throws Exception {
+        void fail_getPartyDetails_partyNotFound() throws Exception {
             mockMvc.perform(get("/api/parties/{partyId}", 9999L))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
@@ -427,7 +427,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("400 - 삭제된 모임 조회 시 PARTY_IS_DELETED 에러를 반환한다")
-        void fail_partyDeleted() throws Exception {
+        void fail_getPartyDetails_partyDeleted() throws Exception {
             // 모임 삭제 (비활성화)
             party.delete();
             partyRepository.save(party);
@@ -685,7 +685,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("200 - 모임장이 일반 멤버를 부모임장으로 성공적으로 임명한다")
-        void success_assignSubManager() throws Exception {
+        void success_updateMemberRole() throws Exception {
             // given
             PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
@@ -704,7 +704,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("403 - 모임장이 아닌 멤버가 역할 수정을 시도하면 INSUFFICIENT_PERMISSION 예외를 반환한다")
-        void fail_assignSubManager_notOwner() throws Exception {
+        void fail_updateMemberRole_notOwner() throws Exception {
             // given
             PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
             // 일반 멤버가 권한 변경 시도
@@ -720,7 +720,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         @Test
         @DisplayName("403 - 대상자가 모임장인 경우 권한 변경은 실패하며 CANNOT_ASSIGN_TO_OWNER 예외를 반환한다")
-        void fail_assignSubManager_targetIsOwner() throws Exception {
+        void fail_updateMemberRole_targetIsOwner() throws Exception {
             // given
             PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_MEMBER);
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());

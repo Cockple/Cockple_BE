@@ -89,7 +89,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 모임의 멤버들을 역할별로 성공적으로 조회한다.")
-        void success() {
+        void success_getPartyMembers() {
             // given
             Long partyId = 1L;
             Long currentMemberId = 10L;
@@ -129,7 +129,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 멤버 목록과 마지막 운동일을 함께 반환한다")
-        void success_withExerciseHistory() {
+        void success_getPartyMembers_withExerciseHistory() {
             // given
             Long partyId = 1L;
             Long currentMemberId = 10L;
@@ -175,7 +175,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 운동 기록이 없는 멤버는 빈 Map이 converter에 전달된다")
-        void noExerciseHistory() {
+        void success_getPartyMembers_noExerciseHistory() {
             // given
             Long partyId = 1L;
             Long currentMemberId = 10L;
@@ -203,7 +203,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 존재하지 않는 파티면 PartyException을 던진다")
-        void partyNotFound() {
+        void fail_getPartyMembers_partyNotFound() {
             // given
             given(partyRepository.findById(99L)).willReturn(Optional.empty());
 
@@ -216,7 +216,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 비활성화된 파티면 PartyException을 던진다")
-        void partyInactive() {
+        void fail_getPartyMembers_partyInactive() {
             // given
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
             Party inactiveParty = PartyFixture.createParty("테스트 모임", 10L, addr);
@@ -239,7 +239,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 내 모임 목록과 부가 정보(운동 횟수, 다음 운동 정보, 북마크 여부)를 조합하여 반환한다")
-        void success() {
+        void success_getMyParties() {
             // given
             Long memberId = 10L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -285,7 +285,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 유효한 회원 ID가 주어지면 가입한 모임의 간략화된 목록을 반환한다")
-        void success() {
+        void success_getSimpleMyParties() {
             // given
             Long memberId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -323,7 +323,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 존재하지 않는 회원일 경우 MemberException을 던진다")
-        void memberNotFound() {
+        void fail_getSimpleMyParties_memberNotFound() {
             // given
             Long invalidMemberId = 999L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -346,7 +346,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - Cockple 추천 모드 시 유저 정보(주소, 생년월일, 키워드)를 기반으로 추천 목록을 반환한다")
-        void success_cockpleRecommend() {
+        void success_getRecommendedParties_cockpleRecommend() {
             // given
             Long memberId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -385,7 +385,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 필터 모드 시 설정한 필터 조건(addr1, addr2 등)에 맞는 모임 목록을 반환한다")
-        void success_filterMode() {
+        void success_getRecommendedParties_filterMode() {
             // given
             Long memberId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -415,7 +415,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 존재하지 않는 회원 ID로 추천 요청 시 MEMBER_NOT_FOUND이 발생한다")
-        void fail_memberNotFound() {
+        void fail_getRecommendedParties_memberNotFound() {
             // given
             Long memberId = 999L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -435,7 +435,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 대표 주소가 설정되지 않은 회원이 추천 요청 시 MAIN_ADDRESS_NULL이 발생한다")
-        void fail_mainAddressNotFound() {
+        void fail_getRecommendedParties_mainAddressNotFound() {
             // given
             Long memberId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
@@ -464,7 +464,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 모임 상세 정보를 정상적으로 조회한다 (비회원, 신청 전)")
-        void success_nonMember() {
+        void success_getPartyDetails_nonMember() {
             // given
             Long partyId = 1L;
             Long memberId = 10L;
@@ -502,7 +502,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("성공 - 모임원인 경우 memberStatus가 MEMBER로 반환된다")
-        void success_member() {
+        void success_getPartyDetails_member() {
             // given
             Long partyId = 1L;
             Long memberId = 10L;
@@ -535,7 +535,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 존재하지 않는 모임 조회 시 PARTY_NOT_FOUND이 발생한다")
-        void fail_partyNotFound() {
+        void fail_getPartyDetails_partyNotFound() {
             // given
             given(partyRepository.findById(999L)).willReturn(Optional.empty());
 
@@ -548,7 +548,7 @@ class PartyQueryServiceTest {
 
         @Test
         @DisplayName("실패 - 삭제된 모임 조회 시 PARTY_IS_DELETED이 발생한다")
-        void fail_partyDeleted() {
+        void fail_getPartyDetails_partyDeleted() {
             // given
             PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
             Party party = PartyFixture.createParty("삭제된 모임", 11L, addr);
