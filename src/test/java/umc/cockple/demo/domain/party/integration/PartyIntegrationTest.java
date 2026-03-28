@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -23,6 +24,7 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -674,6 +676,61 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.MALE_LEVEL_REQUIRED.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/parties/{partyId}/members/{memberId}/role - 멤버 역할(부모임장) 설정")
+    class UpdateMemberRole {
+
+        @Test
+        @DisplayName("200 - 모임장이 일반 멤버를 부모임장으로 성공적으로 임명한다")
+        void success_assignSubManager() throws Exception {
+            // given
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/members/{memberId}/role", party.getId(), normalMember.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            MemberParty targetMemberParty = memberPartyRepository.findByPartyAndMember(party, normalMember).orElseThrow();
+            assertThat(targetMemberParty.getRole()).isEqualTo(Role.party_SUBMANAGER);
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 멤버가 역할 수정을 시도하면 INSUFFICIENT_PERMISSION 예외를 반환한다")
+        void fail_assignSubManager_notOwner() throws Exception {
+            // given
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            // 일반 멤버가 권한 변경 시도
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/members/{memberId}/role", party.getId(), normalMember.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("403 - 대상자가 모임장인 경우 권한 변경은 실패하며 CANNOT_ASSIGN_TO_OWNER 예외를 반환한다")
+        void fail_assignSubManager_targetIsOwner() throws Exception {
+            // given
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_MEMBER);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/members/{memberId}/role", party.getId(), manager.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER.getCode()));
         }
     }
 }

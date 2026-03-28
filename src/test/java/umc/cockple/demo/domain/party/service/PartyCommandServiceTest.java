@@ -613,4 +613,109 @@ class PartyCommandServiceTest {
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
     }
+
+    @Nested
+    @DisplayName("updateMemberRole")
+    class UpdateMemberRole {
+
+        @Test
+        @DisplayName("성공 - 모임장이 일반 멤버를 부모임장으로 지정하고 알림을 발생시킨다")
+        void success_updateMemberRole() {
+            // given
+            Long partyId = 1L;
+            Long currentOwnerId = 1L;
+            Long targetMemberId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, currentOwnerId);
+            ReflectionTestUtils.setField(owner, "id", currentOwnerId);
+
+            Member targetMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, targetMemberId);
+            ReflectionTestUtils.setField(targetMember, "id", targetMemberId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty memberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
+            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(memberParty));
+            // 만약 기존 부모임장이 있으면 해제하는 로직에 대한 빈 Optional 반환
+            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)).willReturn(Optional.empty());
+            // 알림 발송 시 파티 내 전체 멤버를 조회
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(memberParty));
+
+            // when
+            partyCommandService.updateMemberRole(partyId, targetMemberId, currentOwnerId, request);
+
+            // then
+            assertThat(memberParty.getRole()).isEqualTo(Role.party_SUBMANAGER);
+            verify(notificationCommandService, times(1)).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("실패 - 대상 멤버가 이미 모임장인 경우 권한을 변경하려 하면 CANNOT_ASSIGN_TO_OWNER 발생")
+        void fail_updateMemberRole_targetIsOwner() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            // 타겟이 이미 모임장 권한을 가짐
+            MemberParty memberParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(memberParty));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class, 
+                    () -> partyCommandService.updateMemberRole(partyId, ownerId, ownerId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER);
+        }
+
+        @Test
+        @DisplayName("실패 - 현재 사용자가 모임장이 아닐 경우 INSUFFICIENT_PERMISSION 발생")
+        void fail_updateMemberRole_notOwner() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+            Long notOwnerId = 2L;
+            Long targetId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            
+            Member notOwner = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, notOwnerId);
+            ReflectionTestUtils.setField(notOwner, "id", notOwnerId);
+
+            Member targetMember = MemberFixture.createMember("타겟", Gender.MALE, Level.A, targetId);
+            ReflectionTestUtils.setField(targetMember, "id", targetId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(targetId)).willReturn(Optional.of(targetMember));
+            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+
+            // when & then (notOwnerId를 currentMemberId로 전달하여 실행)
+            PartyException exception = assertThrows(PartyException.class, 
+                    () -> partyCommandService.updateMemberRole(partyId, targetId, notOwnerId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+    }
 }
