@@ -26,6 +26,7 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -562,6 +563,104 @@ class PartyQueryServiceTest {
                     .isInstanceOf(PartyException.class)
                     .satisfies(e -> assertThat(((PartyException) e).getCode())
                             .isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
+        }
+    }
+
+    @Nested
+    @DisplayName("getJoinRequests")
+    class GetJoinRequests {
+
+        @Test
+        @DisplayName("성공 - 모임장이 가입 신청 목록을 정상적으로 조회한다")
+        void success_getJoinRequests() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+            String status = "PENDING";
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", 100L);
+
+            Slice<PartyJoinRequest> requestSlice = new SliceImpl<>(List.of(joinRequest), pageable, false);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+            given(partyJoinRequestRepository.findByPartyAndStatus(party, RequestStatus.PENDING, pageable))
+                    .willReturn(requestSlice);
+
+            // when
+            Slice<PartyJoinDTO.Response> result = partyQueryService.getJoinRequests(partyId, ownerId, status, pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).joinRequestId()).isEqualTo(100L);
+            verify(partyJoinRequestRepository).findByPartyAndStatus(party, RequestStatus.PENDING, pageable);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 사용자가 조회하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_getJoinRequests_notOwner() {
+            // given
+            Long partyId = 1L;
+            Long nonOwnerId = 20L;
+            Pageable pageable = PageRequest.of(0, 10);
+            String status = "PENDING";
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", 10L, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member nonOwner = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, nonOwnerId);
+            ReflectionTestUtils.setField(nonOwner, "id", nonOwnerId);
+            MemberParty nonOwnerParty = MemberFixture.createMemberParty(party, nonOwner, Role.party_MEMBER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getJoinRequests(partyId, nonOwnerId, status, pageable))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION));
+        }
+
+        @Test
+        @DisplayName("실패 - 잘못된 상태값을 입력하면 INVALID_REQUEST_STATUS 발생")
+        void fail_getJoinRequests_invalidStatus() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+            String invalidStatus = "UNKNOWN";
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getJoinRequests(partyId, ownerId, invalidStatus, pageable))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.INVALID_REQUEST_STATUS));
         }
     }
 }
