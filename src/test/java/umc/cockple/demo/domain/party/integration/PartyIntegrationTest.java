@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
@@ -664,6 +665,62 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), manager.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_REMOVE_SELF.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/parties/{partyId}/join-requests - 모임 가입 신청 조회")
+    class GetJoinRequests {
+
+        @Test
+        @DisplayName("200 - 모임장이 가입 신청 목록을 정상적으로 조회한다")
+        void success_getJoinRequests() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("가입희망자", Gender.FEMALE, Level.B, 1010L));
+            
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            partyJoinRequestRepository.save(joinRequest);
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/join-requests", party.getId())
+                            .param("status", "PENDING")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content[0].userId").value(applicant.getId()));
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 사용자가 조회하면 INSUFFICIENT_PERMISSION 예외가 반환된다")
+        void fail_getJoinRequests_notOwner() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/join-requests", party.getId())
+                            .param("status", "PENDING"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 잘못된 상태값을 전달하면 INVALID_REQUEST_STATUS 예외가 반환된다")
+        void fail_getJoinRequests_invalidStatus() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/join-requests", party.getId())
+                            .param("status", "UNKNOWN_STATUS"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_REQUEST_STATUS.getCode()));
         }
     }
 
