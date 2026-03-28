@@ -811,4 +811,101 @@ class PartyCommandServiceTest {
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
     }
+
+    @Nested
+    @DisplayName("removeMember")
+    class RemoveMember {
+
+        @Test
+        @DisplayName("성공 - 모임장이 일반 멤버를 성공적으로 강퇴한다")
+        void success_removeMember() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+            Long targetMemberId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member targetMember = MemberFixture.createMember("타겟", Gender.MALE, Level.A, targetMemberId);
+            ReflectionTestUtils.setField(targetMember, "id", targetMemberId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
+            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
+            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+
+            // when
+            partyCommandService.removeMember(partyId, targetMemberId, ownerId);
+
+            // then
+            verify(memberPartyRepository, times(1)).delete(targetMemberParty);
+            verify(chatRoomService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+        }
+
+        @Test
+        @DisplayName("실패 - 권한이 없는 멤버가 타인을 강퇴하려 하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_removeMember_insufficientPermission() {
+            // given
+            Long partyId = 1L;
+            Long subManagerId = 2L;
+            Long targetOwnerId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, targetOwnerId);
+            ReflectionTestUtils.setField(owner, "id", targetOwnerId);
+            Member subManager = MemberFixture.createMember("부모임장", Gender.MALE, Level.A, subManagerId);
+            ReflectionTestUtils.setField(subManager, "id", subManagerId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+            MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
+            given(memberRepository.findById(targetOwnerId)).willReturn(Optional.of(owner));
+            given(memberPartyRepository.findByPartyAndMember(party, subManager)).willReturn(Optional.of(subManagerParty));
+            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.removeMember(partyId, targetOwnerId, subManagerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 자신을 강퇴하려 할 경우 CANNOT_REMOVE_SELF 발생")
+        void fail_removeMember_cannotRemoveSelf() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.removeMember(partyId, ownerId, ownerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.CANNOT_REMOVE_SELF);
+        }
+    }
 }
