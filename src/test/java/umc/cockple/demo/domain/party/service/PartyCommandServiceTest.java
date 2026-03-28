@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
+import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -30,6 +31,7 @@ import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
+import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -72,6 +74,8 @@ class PartyCommandServiceTest {
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
     private PartyJoinRequestRepository partyJoinRequestRepository;
+    @Mock
+    private PartyInvitationRepository partyInvitationRepository;
     @Mock
     private FileService fileService;
 
@@ -1065,6 +1069,126 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
+        }
+    }
+
+    @Nested
+    @DisplayName("createInvitation")
+    class CreateInvitation {
+
+        @Test
+        @DisplayName("성공 - 모임장이 새로운 멤버를 초대하고 invitationId를 반환한다")
+        void success_createInvitation() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(false);
+            given(partyInvitationRepository.existsByPartyAndInviteeAndStatus(party, invitee, RequestStatus.PENDING)).willReturn(false);
+
+            PartyInvitation savedInvitation = PartyInvitation.create(party, owner, invitee);
+            ReflectionTestUtils.setField(savedInvitation, "id", 100L);
+            given(partyInvitationRepository.save(any())).willReturn(savedInvitation);
+
+            // when
+            PartyInviteCreateDTO.Response response = partyCommandService.createInvitation(partyId, inviteeId, ownerId);
+
+            // then
+            assertThat(response.invitationId()).isEqualTo(100L);
+            verify(notificationCommandService).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 사용자가 초대하려 하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_createInvitation_notOwner() {
+            // given
+            Long partyId = 1L;
+            Long nonOwnerId = 99L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member nonOwner = MemberFixture.createMember("일반멤버", Gender.MALE, Level.B, nonOwnerId);
+            ReflectionTestUtils.setField(nonOwner, "id", nonOwnerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", 10L, addr); // ownerId = 10L
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(nonOwnerId)).willReturn(Optional.of(nonOwner));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.createInvitation(partyId, inviteeId, nonOwnerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 모임에 가입한 멤버를 초대하면 ALREADY_MEMBER 발생")
+        void fail_createInvitation_alreadyMember() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("대상멤버", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(true); // 이미 멤버
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.createInvitation(partyId, inviteeId, ownerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.ALREADY_MEMBER);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 대기 중인 초대가 있는 멤버를 중복 초대하면 INVITATION_ALREADY_EXISTS 발생")
+        void fail_createInvitation_duplicateInvitation() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("대상멤버", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(false);
+            given(partyInvitationRepository.existsByPartyAndInviteeAndStatus(party, invitee, RequestStatus.PENDING)).willReturn(true); // 이미 대기중 초대
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.createInvitation(partyId, inviteeId, ownerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_EXISTS);
         }
     }
 }
