@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -47,6 +48,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class PartyCommandServiceTest {
@@ -906,6 +908,163 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.removeMember(partyId, ownerId, ownerId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.CANNOT_REMOVE_SELF);
+        }
+    }
+
+    @Nested
+    @DisplayName("actionJoinRequest")
+    class ActionJoinRequest {
+
+        @Test
+        @DisplayName("성공 - 모임장이 가입 신청을 승인하고 알림과 채팅방 진입, 이벤트를 발생시킨다")
+        void success_actionJoinRequest_approve() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(false);
+
+            // when
+            partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId);
+
+            // then
+            assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
+            verify(chatRoomService).joinPartyChatRoom(partyId, applicant);
+            verify(applicationEventPublisher).publishEvent(any(umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent.class));
+            verify(notificationCommandService).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 모임장이 가입 신청을 거절하면 상태만 REJECTED로 바뀌고 다른 사이드이펙트가 발생하지 않는다")
+        void success_actionJoinRequest_reject() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.REJECT);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(false);
+
+            // when
+            partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId);
+
+            // then
+            assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
+            verifyNoInteractions(chatRoomService);
+            verifyNoInteractions(applicationEventPublisher);
+            verifyNoInteractions(notificationCommandService);
+        }
+
+        @Test
+        @DisplayName("실패 - 대상자가 이미 모임 멤버인 경우 ALREADY_MEMBER 검증 에러가 발생한다")
+        void fail_actionJoinRequest_alreadyMember() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(true); // 이미 멤버
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.ALREADY_MEMBER);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 처리된 가입 신청을 다시 처리하려 할 때 JOIN_REQUEST_ALREADY_ACTIONS 발생")
+        void fail_actionJoinRequest_alreadyActions() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.APPROVED) // 이미 승인됨
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.REJECT);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(false);
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
         }
     }
 }

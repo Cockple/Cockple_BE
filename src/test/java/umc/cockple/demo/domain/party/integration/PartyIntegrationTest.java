@@ -25,10 +25,12 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -45,6 +47,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -490,7 +493,6 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .joinPrice(0)
                     .build());
 
-            // 남성 사용자로 신청 시도
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
             mockMvc.perform(post("/api/parties/{partyId}/join-requests", womenParty.getId()))
@@ -525,7 +527,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"));
 
-            // DB 검증
+            // 검증
             Party updatedParty = partyRepository.findById(party.getId()).orElseThrow();
             assertThat(updatedParty.getDesignatedCock()).isEqualTo("수정된 콕");
             assertThat(updatedParty.getJoinPrice()).isEqualTo(2000);
@@ -725,6 +727,115 @@ class PartyIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("PATCH /api/parties/{partyId}/join-requests/{requestId} - 모임 가입 신청 처리")
+    class ActionJoinRequest {
+
+        @Test
+        @DisplayName("200 - 모임장이 가입 신청을 성공적으로 승인한다")
+        void success_actionJoinRequest_approve() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1020L));
+            
+            PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build());
+
+            PartyJoinActionDTO.Request actionRequest = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/join-requests/{requestId}", party.getId(), joinRequest.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(actionRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            PartyJoinRequest updatedRequest = partyJoinRequestRepository.findById(joinRequest.getId()).orElseThrow();
+            assertThat(updatedRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
+            boolean isMember = memberPartyRepository.existsByPartyAndMember(party, applicant);
+            assertThat(isMember).isTrue();
+        }
+
+        @Test
+        @DisplayName("200 - 모임장이 가입 신청을 성공적으로 거절한다")
+        void success_actionJoinRequest_reject() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("탈락자", Gender.FEMALE, Level.B, 1030L));
+            
+            PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build());
+
+            PartyJoinActionDTO.Request actionRequest = new PartyJoinActionDTO.Request(RequestAction.REJECT);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/join-requests/{requestId}", party.getId(), joinRequest.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(actionRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            PartyJoinRequest updatedRequest = partyJoinRequestRepository.findById(joinRequest.getId()).orElseThrow();
+            assertThat(updatedRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
+            boolean isMember = memberPartyRepository.existsByPartyAndMember(party, applicant);
+            assertThat(isMember).isFalse();
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 사용자가 가입 신청을 처리하려 하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_actionJoinRequest_notOwner() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1040L));
+            
+            PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build());
+
+            PartyJoinActionDTO.Request actionRequest = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/join-requests/{requestId}", party.getId(), joinRequest.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(actionRequest)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("409 - 이미 처리된 가입 신청을 다시 처리하려 할 때 JOIN_REQUEST_ALREADY_ACTIONS 상태 반환")
+        void fail_actionJoinRequest_alreadyHandled() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1050L));
+            
+            PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.APPROVED)
+                    .build());
+
+            PartyJoinActionDTO.Request actionRequest = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/join-requests/{requestId}", party.getId(), joinRequest.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(actionRequest)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS.getCode()));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/parties - 모임 생성")
     class CreateParty {
 
@@ -758,7 +869,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.code").value("COMMON201"))
                     .andExpect(jsonPath("$.data.partyId").exists());
 
-            // DB 검증
+            // 검증
             List<Party> parties = partyRepository.findAll();
             Party createdParty = parties.stream()
                     .filter(p -> p.getPartyName().equals("새로운 통합 모임"))
