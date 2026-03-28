@@ -23,8 +23,10 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
@@ -34,6 +36,7 @@ import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
+import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
@@ -80,6 +83,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
     ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired
     PartyJoinRequestRepository partyJoinRequestRepository;
+    @Autowired
+    PartyInvitationRepository partyInvitationRepository;
     @Autowired
     ObjectMapper objectMapper;
 
@@ -756,27 +761,39 @@ class PartyIntegrationTest extends IntegrationTestBase {
     class GetRecommendedMembers {
 
         @Test
-        @DisplayName("200 - 신규 멤버 추천 목록을 정상적으로 조회한다")
+        @DisplayName("200 - 추천 조건(지역/나이/급수)에 맞는 멤버가 추천 목록에 포함된다")
         void success_getRecommendedMembers() throws Exception {
             // given
-            Member suggestedMember = memberRepository.save(MemberFixture.createMember("추천회원", Gender.MALE, Level.B, 1080L));
-            
-            // Note: The logic inside memberRepository.findRecommendedMembers determines the slice to return. 
-            // In integration tests with real DB queries, we insert the member so that they are picked up.
-            // But since this varies highly depending on algorithms and other data, we just verify the route and response format.
-            // If the algorithm returns no elements because of specific conditions, testing size==0 or size>0 is fine.
-            // Let's simply test that the request yields a 200 OK and valid COMMON200 code.
-            
+            // party의 추천 조건: addr1=서울특별시, minBirthYear=1990, maxBirthYear=2005
+            // party에 남성 A급 레벨 추가
+            party.addLevel(Gender.MALE, Level.A);
+            partyRepository.save(party);
+
+            // 추천 조건을 모두 만족하는 멤버: 남성, A급, 생년 1995, 서울특별시 주소(isMain=true)
+            Member suggestedMember = memberRepository.save(
+                    MemberFixture.createMember("추천회원", Gender.MALE, Level.A, 1080L, LocalDate.of(1995, 6, 1))
+            );
+            memberAddrRepository.save(MemberAddr.builder()
+                    .member(suggestedMember)
+                    .addr1("서울특별시")
+                    .addr2("강남구")
+                    .addr3("역삼동")
+                    .streetAddr("테헤란로")
+                    .latitude(37.5)
+                    .longitude(127.0)
+                    .isMain(true)
+                    .build());
+
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
             // when & then
             mockMvc.perform(get("/api/parties/{partyId}/members/suggestions", party.getId())
-                            .param("levelSearch", "B")
                             .param("page", "0")
                             .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
-                    .andExpect(jsonPath("$.data.content").isArray()); // 배열 형식인지 확인
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].userId").value(suggestedMember.getId()));
         }
 
         @Test
@@ -790,6 +807,77 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/parties/{partyId}/members/suggestions", invalidPartyId))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/parties/{partyId}/invitations - 신규 멤버 초대 보내기")
+    class CreateInvitation {
+
+        @Test
+        @DisplayName("200 - 모임장이 새로운 멤버를 초대하고 invitationId를 반환한다")
+        void success_createInvitation() throws Exception {
+            // given
+            Member newMember = memberRepository.save(MemberFixture.createMember("새멤버", Gender.FEMALE, Level.B, 1090L));
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(newMember.getId());
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON201"))
+                    .andExpect(jsonPath("$.data.invitationId").exists());
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 사용자가 초대하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_createInvitation_notOwner() throws Exception {
+            // given
+            Member newMember = memberRepository.save(MemberFixture.createMember("새멤버", Gender.FEMALE, Level.B, 1091L));
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(newMember.getId());
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("409 - 이미 모임 멤버인 사람을 초대하면 ALREADY_MEMBER 발생")
+        void fail_createInvitation_alreadyMember() throws Exception {
+            // given - normalMember는 setUp()에서 이미 모임 멤버로 추가된 상태
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(normalMember.getId());
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.ALREADY_MEMBER.getCode()));
+        }
+
+        @Test
+        @DisplayName("409 - 이미 대기 중인 초대가 있는 멤버를 중복 초대하면 INVITATION_ALREADY_EXISTS 발생")
+        void fail_createInvitation_duplicateInvitation() throws Exception {
+            // given
+            Member newMember = memberRepository.save(MemberFixture.createMember("새멤버", Gender.FEMALE, Level.B, 1092L));
+            partyInvitationRepository.save(PartyInvitation.create(party, manager, newMember));
+
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(newMember.getId());
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVITATION_ALREADY_EXISTS.getCode()));
         }
     }
 
