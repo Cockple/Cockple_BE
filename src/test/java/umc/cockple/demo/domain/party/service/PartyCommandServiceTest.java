@@ -615,6 +615,99 @@ class PartyCommandServiceTest {
     }
 
     @Nested
+    @DisplayName("deleteParty")
+    class DeleteParty {
+
+        @Test
+        @DisplayName("성공 - 모임장이 모임을 정상적으로 삭제(비활성화)한다")
+        void success_deleteParty() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Party party = PartyFixture.createParty("삭제할 모임", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+
+            // when
+            partyCommandService.deleteParty(partyId, ownerId);
+
+            // then
+            assertThat(party.getStatus()).isEqualTo(umc.cockple.demo.domain.party.enums.PartyStatus.INACTIVE);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 멤버가 모임 삭제를 시도할 경우 INSUFFICIENT_PERMISSION 발생")
+        void fail_deleteParty_notOwner() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+            Long notOwnerId = 2L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Member notOwner = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, notOwnerId);
+            ReflectionTestUtils.setField(notOwner, "id", notOwnerId);
+
+            Party party = PartyFixture.createParty("삭제할 모임", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(notOwnerId)).willReturn(Optional.of(notOwner));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.deleteParty(partyId, notOwnerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 삭제된 모임을 삭제하려고 시도할 경우 PARTY_IS_DELETED 발생")
+        void fail_deleteParty_partyDeleted() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Party party = PartyFixture.createParty("이미 삭제된 모임", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+            party.delete(); // 상태를 INACTIVE로 변경
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.deleteParty(partyId, ownerId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_IS_DELETED);
+        }
+
+        @Test
+        @DisplayName("실패 - 조회된 모임이 존재하지 않을 경우 PARTY_NOT_FOUND 발생")
+        void fail_deleteParty_partyNotFound() {
+            // given
+            Long invalidId = 999L;
+            given(partyRepository.findById(invalidId)).willReturn(Optional.empty());
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.deleteParty(invalidId, 1L));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND);
+        }
+    }
+
+    @Nested
     @DisplayName("updateMemberRole")
     class UpdateMemberRole {
 
