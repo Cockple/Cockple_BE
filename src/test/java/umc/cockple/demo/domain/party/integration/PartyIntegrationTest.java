@@ -573,6 +573,54 @@ class PartyIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("PATCH /api/parties/{partyId}/status - 모임 삭제")
+    class DeleteParty {
+
+        @Test
+        @DisplayName("200 - 모임장이 모임을 성공적으로 삭제(비활성화)한다")
+        void success_deleteParty() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/status", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            Party deletedParty = partyRepository.findById(party.getId()).orElseThrow();
+            assertThat(deletedParty.getStatus()).isEqualTo(umc.cockple.demo.domain.party.enums.PartyStatus.INACTIVE);
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 멤버가 삭제를 시도하면 INSUFFICIENT_PERMISSION 예외를 반환한다")
+        void fail_deleteParty_notOwner() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/status", party.getId()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 이미 삭제된 모임을 다시 삭제 시도하면 PARTY_IS_DELETED 예외를 반환한다")
+        void fail_deleteParty_partyDeleted() throws Exception {
+            // given
+            party.delete(); // 상태 INACTIVE 변경
+            partyRepository.save(party);
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/status", party.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/parties - 모임 생성")
     class CreateParty {
 
