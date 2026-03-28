@@ -621,6 +621,53 @@ class PartyIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("DELETE /api/parties/{partyId}/members/{memberId} - 모임 멤버 삭제")
+    class RemoveMember {
+
+        @Test
+        @DisplayName("200 - 모임장이 일반 멤버를 성공적으로 강퇴한다")
+        void success_removeMember() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), normalMember.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            boolean exists = memberPartyRepository.existsByPartyAndMember(party, normalMember);
+            assertThat(exists).isFalse();
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 멤버가 삭제를 시도하면 INSUFFICIENT_PERMISSION 에러를 반환한다")
+        void fail_removeMember_notOwner() throws Exception {
+            // given
+            Member someoneElse = memberRepository.save(MemberFixture.createMember("다른멤버", Gender.MALE, Level.B, 1010L));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, someoneElse, Role.party_MEMBER));
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), someoneElse.getId()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 모임장이 자기 자신을 강퇴하려 할 경우 CANNOT_REMOVE_SELF 에러를 반환한다")
+        void fail_removeMember_selfAsManager() throws Exception {
+            // given
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), manager.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_REMOVE_SELF.getCode()));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/parties - 모임 생성")
     class CreateParty {
 
