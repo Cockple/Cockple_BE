@@ -700,6 +700,31 @@ class PartyIntegrationTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("200 - 모임장이 가입 승인된 멤버 목록(APPROVED)을 정상적으로 조회한다")
+        void success_getJoinRequests_approved() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("승인된멤버", Gender.MALE, Level.C, 1015L));
+            
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.APPROVED)
+                    .build();
+            partyJoinRequestRepository.save(joinRequest);
+
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(get("/api/parties/{partyId}/join-requests", party.getId())
+                            .param("status", "APPROVED")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content[0].userId").value(applicant.getId()));
+        }
+
+        @Test
         @DisplayName("403 - 모임장이 아닌 사용자가 조회하면 INSUFFICIENT_PERMISSION 예외가 반환된다")
         void fail_getJoinRequests_notOwner() throws Exception {
             // given
