@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyInviteActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
+import umc.cockple.demo.domain.party.dto.PartyKeywordDTO;
 import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
@@ -1253,6 +1254,62 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/parties/{partyId}/keywords - 키워드 추가")
+    class AddKeyword {
+
+        @Test
+        @DisplayName("200 - 모임장이 유효한 키워드를 정상적으로 추가한다")
+        void success_addKeyword() throws Exception {
+            // given
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(
+                    List.of("친목", "가입비 무료")
+            );
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/keywords", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증 - DB에 키워드가 실제로 저장됐는지 확인
+            Party updatedParty = partyRepository.findById(party.getId()).orElseThrow();
+            assertThat(updatedParty.getKeywords()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("403 - 모임장이 아닌 사용자가 키워드를 추가하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_addKeyword_notOwner() throws Exception {
+            // given
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("친목"));
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/keywords", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 유효하지 않은 키워드 문자열을 전달하면 INVALID_KEYWORD 발생")
+        void fail_addKeyword_invalidKeyword() throws Exception {
+            // given
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("존재하지않는키워드"));
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(post("/api/parties/{partyId}/keywords", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_KEYWORD.getCode()));
         }
     }
 }
