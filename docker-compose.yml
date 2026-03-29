@@ -13,7 +13,7 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-      - --innodb-buffer-pool-size=256M
+      - --innodb-buffer-pool-size=512M
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
@@ -22,8 +22,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    mem_limit: 512m
-    memswap_limit: 768m
+    mem_limit: 1g
+    memswap_limit: 1536m
 
   redis:
     image: redis:7-alpine

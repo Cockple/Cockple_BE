@@ -24,10 +24,18 @@ spring:
     init:
       mode: never
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    encoding: UTF-8
+    baseline-version: 2026.03.23.00.00
+    baseline-on-migrate: true
+    out-of-order: false
+
   jpa:
     show_sql: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect

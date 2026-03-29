@@ -98,6 +98,10 @@ dependencies {
 
     // firebase
     implementation 'com.google.firebase:firebase-admin:9.7.1'
+
+    // flyway
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
 }
 
 tasks.named('test') {
