@@ -190,7 +190,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         // 모임장 권한 검증
         validateOwnerPermission(party, currentMemberId);
         // 대상이 모임장인 경우 변경 불가
-        if (targetMemberParty.getRole() == Role.party_MANAGER) {
+        if (targetMemberParty.getRole() == Role.PARTY_MANAGER) {
             throw new PartyException(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER);
         }
         // 이미 같은 역할인 경우
@@ -199,10 +199,10 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         }
 
         // SUBOWNER 지정 시, 기존 부모임장 자동 해제
-        if (newRole == Role.party_SUBMANAGER) {
-            memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)
+        if (newRole == Role.PARTY_SUBMANAGER) {
+            memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)
                     .ifPresent(mp -> {
-                        mp.changeRole(Role.party_MEMBER);
+                        mp.changeRole(Role.PARTY_MEMBER);
                         createRoleNotification(partyId, NotificationTarget.PARTY_SUBOWNER_RELEASED,
                                 mp.getMember().getNickname());
                     });
@@ -212,7 +212,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         targetMemberParty.changeRole(newRole);
 
         // 알림 발송 (전체 멤버 대상)
-        NotificationTarget notifTarget = (newRole == Role.party_SUBMANAGER)
+        NotificationTarget notifTarget = (newRole == Role.PARTY_SUBMANAGER)
                 ? NotificationTarget.PARTY_SUBOWNER_ASSIGNED
                 : NotificationTarget.PARTY_SUBOWNER_RELEASED;
         createRoleNotification(partyId, notifTarget, targetMember.getNickname());
@@ -387,7 +387,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
     // 부모임장은 권한이 없음을 검증
     private void validateIsNotSubOwner(Party party, Long memberId) {
-        memberPartyRepository.findByPartyIdAndRole(party.getId(), Role.party_SUBMANAGER)
+        memberPartyRepository.findByPartyIdAndRole(party.getId(), Role.PARTY_SUBMANAGER)
                 .ifPresent(mp -> {
                     if (mp.getMember().getId().equals(memberId)) {
                         throw new PartyException(PartyErrorCode.INVALID_ACTION_FOR_SUBOWNER);
@@ -427,7 +427,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         if (remover.getId().equals(memberPartyToRemove.getMember().getId())) {
             //부모임장인 경우에만 가능
             MemberParty removerMemberParty = findMemberPartyOrThrow(party, remover);
-            if (removerMemberParty.getRole() == Role.party_SUBMANAGER) {
+            if (removerMemberParty.getRole() == Role.PARTY_SUBMANAGER) {
                 return;
             } else {
                 throw new PartyException(PartyErrorCode.CANNOT_REMOVE_SELF);
@@ -439,11 +439,11 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         Role removerRole = removerMemberParty.getRole();
         Role targetRole = memberPartyToRemove.getRole();
         //모임장은 모두 삭제 가능
-        if (removerRole == Role.party_MANAGER) {
+        if (removerRole == Role.PARTY_MANAGER) {
             return;
         }
         //부모임장은 일반 멤버만 삭제 가능 (모임장을 삭제하려할 경우 권한 없음)
-        if (removerRole == Role.party_SUBMANAGER && targetRole == Role.party_MEMBER) {
+        if (removerRole == Role.PARTY_SUBMANAGER && targetRole == Role.PARTY_MEMBER) {
             return;
         }
         //일반 멤버는 권한 없음

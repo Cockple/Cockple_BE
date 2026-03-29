@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.exercise.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
@@ -39,7 +38,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -79,9 +77,9 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
         party = partyRepository.save(PartyFixture.createParty("테스트 모임", manager.getId(), addr));
 
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.PARTY_MEMBER));
     }
 
     @AfterEach
@@ -139,7 +137,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.participants.list[0].gender").value("MALE"))
                         .andExpect(jsonPath("$.data.participants.list[0].level").isString())
                         .andExpect(jsonPath("$.data.participants.list[0].participantType").value("PARTY_MEMBER"))
-                        .andExpect(jsonPath("$.data.participants.list[0].partyPosition").value("party_MEMBER"))
+                        .andExpect(jsonPath("$.data.participants.list[0].partyPosition").value("PARTY_MEMBER"))
                         .andExpect(jsonPath("$.data.participants.list[0].isWithdrawn").value(false))
                         .andExpect(jsonPath("$.data.waiting.currentWaitingCount").value(1))
                         .andExpect(jsonPath("$.data.waiting.manCount").value(0))
@@ -147,7 +145,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.waiting.list[0].name").value(subManager.getMemberName()))
                         .andExpect(jsonPath("$.data.waiting.list[0].gender").value("FEMALE"))
                         .andExpect(jsonPath("$.data.waiting.list[0].participantType").value("PARTY_MEMBER"))
-                        .andExpect(jsonPath("$.data.waiting.list[0].partyPosition").value("party_SUBMANAGER"))
+                        .andExpect(jsonPath("$.data.waiting.list[0].partyPosition").value("PARTY_SUBMANAGER"))
                         .andExpect(jsonPath("$.data.waiting.list[0].isWithdrawn").value(false));
             }
 
@@ -277,13 +275,13 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.participants.list[0].name").value(manager.getMemberName()))
                         .andExpect(jsonPath("$.data.participants.list[0].participantType").value("PARTY_MEMBER"))
-                        .andExpect(jsonPath("$.data.participants.list[0].partyPosition").value("party_MANAGER"))
+                        .andExpect(jsonPath("$.data.participants.list[0].partyPosition").value("PARTY_MANAGER"))
                         .andExpect(jsonPath("$.data.participants.list[1].name").value(subManager.getMemberName()))
                         .andExpect(jsonPath("$.data.participants.list[1].participantType").value("PARTY_MEMBER"))
-                        .andExpect(jsonPath("$.data.participants.list[1].partyPosition").value("party_SUBMANAGER"))
+                        .andExpect(jsonPath("$.data.participants.list[1].partyPosition").value("PARTY_SUBMANAGER"))
                         .andExpect(jsonPath("$.data.participants.list[2].name").value(normalMember.getMemberName()))
                         .andExpect(jsonPath("$.data.participants.list[2].participantType").value("PARTY_MEMBER"))
-                        .andExpect(jsonPath("$.data.participants.list[2].partyPosition").value("party_MEMBER"))
+                        .andExpect(jsonPath("$.data.participants.list[2].partyPosition").value("PARTY_MEMBER"))
                         .andExpect(jsonPath("$.data.participants.list[3].name").value(outsider.getMemberName()))
                         .andExpect(jsonPath("$.data.participants.list[3].participantType").value("EXTERNAL_PARTICIPANT"))
                         .andExpect(jsonPath("$.data.participants.list[3].partyPosition").value(nullValue()))
@@ -1501,7 +1499,7 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             filteredParty = partyRepository.save(filteredParty);
             filteredParty.addLevel(Gender.MALE, Level.B);
             filteredParty = partyRepository.save(filteredParty);
-            memberPartyRepository.save(MemberFixture.createMemberParty(filteredParty, manager, Role.party_MANAGER));
+            memberPartyRepository.save(MemberFixture.createMemberParty(filteredParty, manager, Role.PARTY_MANAGER));
 
             startDate = LocalDate.of(2026, 3, 23);
             endDate = LocalDate.of(2026, 4, 5);

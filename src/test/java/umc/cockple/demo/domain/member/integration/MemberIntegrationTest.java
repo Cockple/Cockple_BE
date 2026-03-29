@@ -112,7 +112,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
             void manager_cannotWithdraw() throws Exception {
                 PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
                 Party party = partyRepository.save(PartyFixture.createParty("테스트 모임", member.getId(), addr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.PARTY_MANAGER));
 
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
@@ -127,7 +127,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
             void subManager_cannotWithdraw() throws Exception {
                 PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
                 Party party = partyRepository.save(PartyFixture.createParty("테스트 모임", member.getId(), addr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.party_SUBMANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.PARTY_SUBMANAGER));
 
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
@@ -204,8 +204,8 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .build());
 
                 // 모임 2개
-                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
-                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
 
                 SecurityContextHelper.setAuthentication(freshMember.getId(), freshMember.getNickname());
 
@@ -322,8 +322,8 @@ class MemberIntegrationTest extends IntegrationTestBase {
                         .build());
 
                 // 모임 2개, 운동 2개, 키워드 2개
-                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
-                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
 
                 memberExerciseRepository.save(MemberExercise.builder()
                         .member(freshMember)

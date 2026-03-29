@@ -117,8 +117,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
         party = partyRepository.save(PartyFixture.createParty("테스트 모임", manager.getId(), addr));
 
         // 모임 멤버 생성
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.PARTY_MEMBER));
 
         // 채팅방 생성
         ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.createPartyChatRoom(party));
@@ -143,7 +143,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_getPartyMembers() throws Exception {
             // 부모임장 추가
             Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 1003L));
-            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER));
 
             // 운동 기록 추가
             Exercise exercise = exerciseRepository.save(ExerciseFixture.createExercise(party, LocalDate.of(2025, 1, 10)));
@@ -154,10 +154,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.data.summary.totalCount").value(3))
                     .andExpect(jsonPath("$.data.summary.maleCount").value(2))
                     .andExpect(jsonPath("$.data.summary.femaleCount").value(1))
-                    .andExpect(jsonPath("$.data.members[0].role").value("party_MANAGER"))
+                    .andExpect(jsonPath("$.data.members[0].role").value("PARTY_MANAGER"))
                     .andExpect(jsonPath("$.data.members[0].isMe").value(true))
-                    .andExpect(jsonPath("$.data.members[1].role").value("party_SUBMANAGER"))
-                    .andExpect(jsonPath("$.data.members[2].role").value("party_MEMBER"))
+                    .andExpect(jsonPath("$.data.members[1].role").value("PARTY_SUBMANAGER"))
+                    .andExpect(jsonPath("$.data.members[2].role").value("PARTY_MEMBER"))
                     .andExpect(jsonPath("$.data.members[2].lastExerciseDate").value("2025-01-10"));
         }
 
@@ -220,7 +220,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_leaveParty_subOwner() throws Exception {
             // 부모임장 생성 및 가입
             Member subManager = memberRepository.save(MemberFixture.createMember("부매니저", Gender.MALE, Level.A, 3001L));
-            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER));
 
             // 부모임장 세션으로 설정
             SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
@@ -425,7 +425,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/parties/{partyId}", party.getId()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.memberStatus").value("MEMBER"))
-                    .andExpect(jsonPath("$.data.memberRole").value("party_MANAGER"));
+                    .andExpect(jsonPath("$.data.memberRole").value("PARTY_MANAGER"));
         }
 
         @Test
@@ -655,7 +655,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_removeMember_notOwner() throws Exception {
             // given
             Member someoneElse = memberRepository.save(MemberFixture.createMember("다른멤버", Gender.MALE, Level.B, 1010L));
-            memberPartyRepository.save(MemberFixture.createMemberParty(party, someoneElse, Role.party_MEMBER));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party, someoneElse, Role.PARTY_MEMBER));
             SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
             // when & then
@@ -1210,7 +1210,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("200 - 모임장이 일반 멤버를 부모임장으로 성공적으로 임명한다")
         void success_updateMemberRole() throws Exception {
             // given
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
             // when & then
@@ -1222,14 +1222,14 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
             // 검증
             MemberParty targetMemberParty = memberPartyRepository.findByPartyAndMember(party, normalMember).orElseThrow();
-            assertThat(targetMemberParty.getRole()).isEqualTo(Role.party_SUBMANAGER);
+            assertThat(targetMemberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
         }
 
         @Test
         @DisplayName("403 - 모임장이 아닌 멤버가 역할 수정을 시도하면 INSUFFICIENT_PERMISSION 예외를 반환한다")
         void fail_updateMemberRole_notOwner() throws Exception {
             // given
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
             // 일반 멤버가 권한 변경 시도
             SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
@@ -1245,7 +1245,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @DisplayName("403 - 대상자가 모임장인 경우 권한 변경은 실패하며 CANNOT_ASSIGN_TO_OWNER 예외를 반환한다")
         void fail_updateMemberRole_targetIsOwner() throws Exception {
             // given
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_MEMBER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_MEMBER);
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
             // when & then

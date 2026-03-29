@@ -108,9 +108,9 @@ class PartyQueryServiceTest {
             ReflectionTestUtils.setField(subManager, "id", 20L);
             ReflectionTestUtils.setField(normalMember, "id", 30L);
 
-            MemberParty mp1 = MemberFixture.createMemberParty(party, manager, Role.party_MANAGER);
-            MemberParty mp2 = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
-            MemberParty mp3 = MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER);
+            MemberParty mp1 = MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER);
+            MemberParty mp2 = MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER);
+            MemberParty mp3 = MemberFixture.createMemberParty(party, normalMember, Role.PARTY_MEMBER);
             List<MemberParty> memberParties = List.of(mp1, mp2, mp3);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
@@ -144,8 +144,8 @@ class PartyQueryServiceTest {
             ReflectionTestUtils.setField(manager, "id", 10L);
             ReflectionTestUtils.setField(member1, "id", 20L);
 
-            MemberParty mp1 = MemberFixture.createMemberParty(party, manager, Role.party_MANAGER);
-            MemberParty mp2 = MemberFixture.createMemberParty(party, member1, Role.party_MEMBER);
+            MemberParty mp1 = MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER);
+            MemberParty mp2 = MemberFixture.createMemberParty(party, member1, Role.PARTY_MEMBER);
             List<MemberParty> memberParties = List.of(mp1, mp2);
 
             LocalDate lastDate = LocalDate.of(2025, 1, 10);
@@ -187,7 +187,7 @@ class PartyQueryServiceTest {
             ReflectionTestUtils.setField(party, "id", partyId);
             Member manager = MemberFixture.createMember("매니저", Gender.MALE, Level.A, 1001L);
             ReflectionTestUtils.setField(manager, "id", 10L);
-            MemberParty mp = MemberFixture.createMemberParty(party, manager, Role.party_MANAGER);
+            MemberParty mp = MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER);
             List<MemberParty> memberParties = List.of(mp);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
@@ -299,7 +299,7 @@ class PartyQueryServiceTest {
             Party party = PartyFixture.createParty("테스트 모임", 10L, addr);
             ReflectionTestUtils.setField(party, "id", 10L);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.party_MEMBER);
+            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
 
             Slice<MemberParty> memberPartySlice = new SliceImpl<>(List.of(memberParty), pageable, false);
 
@@ -515,11 +515,11 @@ class PartyQueryServiceTest {
             Member member = MemberFixture.createMember("사용자", Gender.MALE, Level.A, 1000L);
             ReflectionTestUtils.setField(member, "id", memberId);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.party_MEMBER);
+            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
             PartyDetailDTO.Response expected = PartyDetailDTO.Response.builder()
                     .partyId(partyId)
                     .memberStatus("MEMBER")
-                    .memberRole("party_MEMBER")
+                    .memberRole("PARTY_MEMBER")
                     .build();
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
@@ -532,7 +532,7 @@ class PartyQueryServiceTest {
 
             // then
             assertThat(result.memberStatus()).isEqualTo("MEMBER");
-            assertThat(result.memberRole()).isEqualTo("party_MEMBER");
+            assertThat(result.memberRole()).isEqualTo("PARTY_MEMBER");
         }
 
         @Test
@@ -666,7 +666,7 @@ class PartyQueryServiceTest {
 
             Member nonOwner = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, nonOwnerId);
             ReflectionTestUtils.setField(nonOwner, "id", nonOwnerId);
-            MemberParty nonOwnerParty = MemberFixture.createMemberParty(party, nonOwner, Role.party_MEMBER);
+            MemberParty nonOwnerParty = MemberFixture.createMemberParty(party, nonOwner, Role.PARTY_MEMBER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
 
@@ -692,7 +692,7 @@ class PartyQueryServiceTest {
 
             Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
             ReflectionTestUtils.setField(owner, "id", ownerId);
-            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.PARTY_MANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
 

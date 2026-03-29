@@ -47,7 +47,7 @@ public class MemberParty extends BaseEntity {
         return MemberParty.builder()
                 .member(member)
                 .party(party)
-                .role(Role.party_MANAGER)
+                .role(Role.PARTY_MANAGER)
                 .joinedAt(LocalDateTime.now())
                 .status(ACTIVE)
                 .build();
@@ -57,20 +57,20 @@ public class MemberParty extends BaseEntity {
         return MemberParty.builder()
                 .member(member)
                 .party(party)
-                .role(Role.party_MEMBER)
+                .role(Role.PARTY_MEMBER)
                 .joinedAt(LocalDateTime.now())
                 .status(ACTIVE)
                 .build();
     }
 
     public boolean isLeader() {
-        if (this.role == Role.party_MANAGER) return true;
+        if (this.role == Role.PARTY_MANAGER) return true;
         return false;
     }
 
 
     public boolean isViceLeader() {
-        if (this.role == Role.party_SUBMANAGER) return true;
+        if (this.role == Role.PARTY_SUBMANAGER) return true;
         return false;
     }
 
