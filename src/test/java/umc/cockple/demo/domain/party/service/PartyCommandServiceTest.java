@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.dto.PartyInviteActionDTO;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
@@ -1189,6 +1190,147 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.createInvitation(partyId, inviteeId, ownerId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_EXISTS);
+        }
+    }
+
+    @Nested
+    @DisplayName("actionInvitation")
+    class ActionInvitation {
+
+        @Test
+        @DisplayName("성공 - 초대받은 멤버가 승인하면 모임 멤버로 추가되고 알림이 발생한다")
+        void success_actionInvitation_approve() {
+            // given
+            Long invitationId = 100L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", 1L);
+
+            PartyInvitation invitation = PartyInvitation.create(party, owner, invitee);
+            ReflectionTestUtils.setField(invitation, "id", invitationId);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyInvitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(false);
+
+            // when
+            partyCommandService.actionInvitation(inviteeId, request, invitationId);
+
+            // then
+            assertThat(invitation.getStatus()).isEqualTo(RequestStatus.APPROVED);
+            verify(chatRoomService).joinPartyChatRoom(party.getId(), invitee);
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
+            verify(notificationCommandService).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 초대받은 멤버가 거절하면 상태만 REJECTED로 바뀌고 사이드이펙트가 없다")
+        void success_actionInvitation_reject() {
+            // given
+            Long invitationId = 100L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", 1L);
+
+            PartyInvitation invitation = PartyInvitation.create(party, owner, invitee);
+            ReflectionTestUtils.setField(invitation, "id", invitationId);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.REJECT);
+
+            given(partyInvitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(false);
+
+            // when
+            partyCommandService.actionInvitation(inviteeId, request, invitationId);
+
+            // then
+            assertThat(invitation.getStatus()).isEqualTo(RequestStatus.REJECTED);
+            verifyNoInteractions(chatRoomService);
+            verifyNoInteractions(applicationEventPublisher);
+            verifyNoInteractions(notificationCommandService);
+        }
+
+        @Test
+        @DisplayName("실패 - 초대받은 사람이 아닌 제3자가 처리하려 하면 NOT_YOUR_INVITATION 발생")
+        void fail_actionInvitation_notYourInvitation() {
+            // given
+            Long invitationId = 100L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+            Long otherId = 99L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Member other = MemberFixture.createMember("제3자", Gender.MALE, Level.C, otherId);
+            ReflectionTestUtils.setField(other, "id", otherId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", 1L);
+
+            PartyInvitation invitation = PartyInvitation.create(party, owner, invitee);
+            ReflectionTestUtils.setField(invitation, "id", invitationId);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyInvitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+            given(memberRepository.findById(otherId)).willReturn(Optional.of(other));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionInvitation(otherId, request, invitationId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.NOT_YOUR_INVITATION);
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 처리된 초대를 다시 처리하려 할 때 INVITATION_ALREADY_ACTIONS 발생")
+        void fail_actionInvitation_alreadyActions() {
+            // given
+            Long invitationId = 100L;
+            Long ownerId = 10L;
+            Long inviteeId = 20L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, inviteeId);
+            ReflectionTestUtils.setField(invitee, "id", inviteeId);
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", 1L);
+
+            // 이미 승인된 초대
+            PartyInvitation invitation = PartyInvitation.create(party, owner, invitee);
+            ReflectionTestUtils.setField(invitation, "id", invitationId);
+            invitation.updateStatus(RequestStatus.APPROVED);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.REJECT);
+
+            given(partyInvitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+            given(memberRepository.findById(inviteeId)).willReturn(Optional.of(invitee));
+            given(memberPartyRepository.existsByPartyAndMember(party, invitee)).willReturn(false);
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionInvitation(inviteeId, request, invitationId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_ACTIONS);
         }
     }
 }
