@@ -27,6 +27,7 @@ import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
 import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
+import umc.cockple.demo.domain.party.dto.PartyInviteActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
 import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
 import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
@@ -878,6 +879,109 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVITATION_ALREADY_EXISTS.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/parties/invitations/{invitationId} - 모임 초대 처리")
+    class ActionInvitation {
+
+        @Test
+        @DisplayName("200 - 초대받은 멤버가 승인하면 모임 멤버로 추가된다")
+        void success_actionInvitation_approve() throws Exception {
+            // given
+            Member invitee = memberRepository.save(MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 1100L));
+
+            PartyInvitation invitation = partyInvitationRepository.save(
+                    PartyInvitation.create(party, manager, invitee)
+            );
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+            SecurityContextHelper.setAuthentication(invitee.getId(), invitee.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/invitations/{invitationId}", invitation.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            PartyInvitation updated = partyInvitationRepository.findById(invitation.getId()).orElseThrow();
+            assertThat(updated.getStatus()).isEqualTo(RequestStatus.APPROVED);
+            assertThat(memberPartyRepository.existsByPartyAndMember(party, invitee)).isTrue();
+        }
+
+        @Test
+        @DisplayName("200 - 초대받은 멤버가 거절하면 상태가 REJECTED로 바뀌고 멤버로 추가되지 않는다")
+        void success_actionInvitation_reject() throws Exception {
+            // given
+            Member invitee = memberRepository.save(MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 1101L));
+
+            PartyInvitation invitation = partyInvitationRepository.save(
+                    PartyInvitation.create(party, manager, invitee)
+            );
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.REJECT);
+            SecurityContextHelper.setAuthentication(invitee.getId(), invitee.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/invitations/{invitationId}", invitation.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"));
+
+            // 검증
+            PartyInvitation updated = partyInvitationRepository.findById(invitation.getId()).orElseThrow();
+            assertThat(updated.getStatus()).isEqualTo(RequestStatus.REJECTED);
+            assertThat(memberPartyRepository.existsByPartyAndMember(party, invitee)).isFalse();
+        }
+
+        @Test
+        @DisplayName("403 - 초대받은 사람이 아닌 제3자가 처리하면 NOT_YOUR_INVITATION 발생")
+        void fail_actionInvitation_notYourInvitation() throws Exception {
+            // given
+            Member invitee = memberRepository.save(MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 1102L));
+
+            PartyInvitation invitation = partyInvitationRepository.save(
+                    PartyInvitation.create(party, manager, invitee)
+            );
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+            // normalMember는 초대받은 사람이 아님
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/invitations/{invitationId}", invitation.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.NOT_YOUR_INVITATION.getCode()));
+        }
+
+        @Test
+        @DisplayName("409 - 이미 처리된 초대를 다시 처리하면 INVITATION_ALREADY_ACTIONS 발생")
+        void fail_actionInvitation_alreadyActions() throws Exception {
+            // given
+            Member invitee = memberRepository.save(MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 1103L));
+
+            // 이미 APPROVED 처리된 초대
+            PartyInvitation invitation = partyInvitationRepository.save(
+                    PartyInvitation.create(party, manager, invitee)
+            );
+            invitation.updateStatus(RequestStatus.APPROVED);
+            partyInvitationRepository.save(invitation);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.REJECT);
+            SecurityContextHelper.setAuthentication(invitee.getId(), invitee.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/invitations/{invitationId}", invitation.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.INVITATION_ALREADY_ACTIONS.getCode()));
         }
     }
 
