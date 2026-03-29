@@ -90,9 +90,9 @@ public class ExerciseValidator {
     private void validateSubManagerPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
         boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), memberId, Role.party_MANAGER);
+                party.getId(), memberId, Role.PARTY_MANAGER);
         boolean isSubManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), memberId, Role.party_SUBMANAGER);
+                party.getId(), memberId, Role.PARTY_SUBMANAGER);
 
         if (!isOwner && !isManager && !isSubManager)
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);

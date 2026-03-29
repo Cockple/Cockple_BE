@@ -108,7 +108,7 @@ class PartyCommandServiceTest {
             Member member = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, 10L);
             ReflectionTestUtils.setField(member, "id", memberId);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.party_MEMBER);
+            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
@@ -197,11 +197,11 @@ class PartyCommandServiceTest {
             Member subManager = MemberFixture.createMember("부모임장", Gender.MALE, Level.A, 2L);
             ReflectionTestUtils.setField(subManager, "id", subManagerId);
 
-            MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
+            MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
-            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER))
+            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER))
                     .willReturn(Optional.of(subManagerParty));
 
             // when & then
@@ -736,20 +736,20 @@ class PartyCommandServiceTest {
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            MemberParty memberParty = MemberFixture.createMemberParty(party, targetMember, Role.PARTY_MEMBER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(memberParty));
-            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)).willReturn(Optional.empty());
+            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)).willReturn(Optional.empty());
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(memberParty));
 
             // when
             partyCommandService.updateMemberRole(partyId, targetMemberId, currentOwnerId, request);
 
             // then
-            assertThat(memberParty.getRole()).isEqualTo(Role.party_SUBMANAGER);
+            assertThat(memberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
             verify(notificationCommandService, times(1)).createNotification(any());
         }
 
@@ -768,8 +768,8 @@ class PartyCommandServiceTest {
             ReflectionTestUtils.setField(party, "id", partyId);
 
             // 타겟이 이미 모임장 권한을 가짐
-            MemberParty memberParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            MemberParty memberParty = MemberFixture.createMemberParty(party, owner, Role.PARTY_MANAGER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
@@ -803,8 +803,8 @@ class PartyCommandServiceTest {
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
-            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.party_SUBMANAGER);
+            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.PARTY_MEMBER);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(targetId)).willReturn(Optional.of(targetMember));
@@ -838,8 +838,8 @@ class PartyCommandServiceTest {
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
-            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.party_MEMBER);
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.PARTY_MANAGER);
+            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.PARTY_MEMBER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
@@ -872,8 +872,8 @@ class PartyCommandServiceTest {
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
-            MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.PARTY_MANAGER);
+            MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
@@ -901,7 +901,7 @@ class PartyCommandServiceTest {
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.party_MANAGER);
+            MemberParty ownerParty = MemberFixture.createMemberParty(party, owner, Role.PARTY_MANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
