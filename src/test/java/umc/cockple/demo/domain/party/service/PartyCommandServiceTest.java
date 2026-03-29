@@ -742,9 +742,7 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(memberParty));
-            // 만약 기존 부모임장이 있으면 해제하는 로직에 대한 빈 Optional 반환
             given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.party_SUBMANAGER)).willReturn(Optional.empty());
-            // 알림 발송 시 파티 내 전체 멤버를 조회
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(memberParty));
 
             // when
@@ -1331,6 +1329,78 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.actionInvitation(inviteeId, request, invitationId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_ACTIONS);
+        }
+    }
+
+    @Nested
+    @DisplayName("addKeyword")
+    class AddKeyword {
+
+        @Test
+        @DisplayName("성공 - 모임장이 유효한 키워드 목록을 모임에 추가한다")
+        void success_addKeyword() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(
+                    List.of("친목", "가입비 무료")
+            );
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+            // when
+            partyCommandService.addKeyword(partyId, ownerId, request);
+
+            // then
+            assertThat(party.getKeywords()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 사용자가 키워드를 추가하면 INSUFFICIENT_PERMISSION 발생")
+        void fail_addKeyword_notOwner() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long nonOwnerId = 99L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("친목"));
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.addKeyword(partyId, nonOwnerId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 유효하지 않은 키워드 문자열을 전달하면 INVALID_KEYWORD 발생")
+        void fail_addKeyword_invalidKeyword() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", ownerId, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("존재하지않는키워드"));
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.addKeyword(partyId, ownerId, request));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVALID_KEYWORD);
         }
     }
 }
