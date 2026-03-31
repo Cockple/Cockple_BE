@@ -1106,6 +1106,108 @@ class PartyCommandServiceTest {
                     () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS);
         }
+
+        @Test
+        @DisplayName("실패 - 해당 가입 요청을 찾을 수 없는 경우 JOIN_REQUEST_NOT_FOUND 발생")
+        void fail_actionJoinRequest_notFound() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long requestId = 999L; // 존재하지 않는 ID
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.empty());
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 - 모임장이 아닌 사용자가 가입 신청을 처리하려 할 때 INSUFFICIENT_PERMISSION 발생")
+        void fail_actionJoinRequest_insufficientPermission() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 10L;
+            Long notOwnerId = 99L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId); // 실제 모임장
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionJoinRequest(partyId, notOwnerId, requestDTO, requestId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 처리하려는 가입 신청이 해당 모임의 것이 아닌 경우 JOIN_REQUEST_PARTY_NOT_FOUND 발생")
+        void fail_actionJoinRequest_partyNotFound() {
+            // given
+            Long partyId = 1L;
+            Long wrongPartyId = 2L;
+            Long ownerId = 10L;
+            Long requestId = 100L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+            
+            Party targetParty = PartyFixture.createParty("대상 모임", owner.getId(), addr);
+            ReflectionTestUtils.setField(targetParty, "id", partyId);
+
+            Party wrongParty = PartyFixture.createParty("다른 모임", owner.getId(), addr);
+            ReflectionTestUtils.setField(wrongParty, "id", wrongPartyId);
+
+            Member applicant = MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 20L);
+            ReflectionTestUtils.setField(applicant, "id", 20L);
+
+            // 다른 모임으로 가입신청
+            PartyJoinRequest joinRequest = PartyJoinRequest.builder()
+                    .party(wrongParty)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build();
+            ReflectionTestUtils.setField(joinRequest, "id", requestId);
+
+            PartyJoinActionDTO.Request requestDTO = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(targetParty));
+            given(partyJoinRequestRepository.findById(requestId)).willReturn(Optional.of(joinRequest));
+
+            // when & then
+            PartyException exception = assertThrows(PartyException.class,
+                    () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
+            assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_PARTY_NOT_FOUND);
+        }
     }
 
     @Nested
