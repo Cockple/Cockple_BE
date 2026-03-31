@@ -28,7 +28,6 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
-import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -654,6 +653,24 @@ class PartyQueryServiceTest {
                     .satisfies(e -> assertThat(((PartyException) e).getCode())
                             .isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
         }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_getPartyDetails_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Party party = PartyFixture.createParty("상세 모임", 11L, null);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getPartyDetails(partyId, 1L))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode())
+                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
     }
 
     @Nested
@@ -790,6 +807,20 @@ class PartyQueryServiceTest {
             assertThatThrownBy(() -> partyQueryService.getJoinRequests(partyId, ownerId, invalidStatus, pageable))
                     .isInstanceOf(PartyException.class)
                     .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.INVALID_REQUEST_STATUS));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_getJoinRequests_partyNotFound() {
+            // given
+            Long invalidId = 999L;
+            given(partyRepository.findById(invalidId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getJoinRequests(invalidId, 1L, "PENDING", PageRequest.of(0, 10)))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode())
+                            .isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
         }
     }
 
