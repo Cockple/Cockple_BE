@@ -584,6 +584,7 @@ class PartyQueryServiceTest {
             assertThat(result.partyName()).isEqualTo("상세 모임");
             assertThat(result.memberStatus()).isEqualTo("NOT_MEMBER");
             assertThat(result.hasPendingJoinRequest()).isFalse();
+            assertThat(result.isBookmarked()).isFalse();
             verify(partyRepository).findById(partyId);
         }
 
@@ -611,6 +612,7 @@ class PartyQueryServiceTest {
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(memberPartyRepository.findByPartyAndMember(party, member))
                     .willReturn(Optional.of(memberParty));
+            given(partyBookmarkRepository.existsByMemberAndParty(member, party)).willReturn(true);
 
             // when
             PartyDetailDTO.Response result = partyQueryService.getPartyDetails(partyId, memberId);
@@ -618,6 +620,8 @@ class PartyQueryServiceTest {
             // then
             assertThat(result.memberStatus()).isEqualTo("MEMBER");
             assertThat(result.memberRole()).isEqualTo("PARTY_MEMBER");
+            assertThat(result.hasPendingJoinRequest()).isNull(); // 멤버이므로 null 반환
+            assertThat(result.isBookmarked()).isTrue();
         }
 
         @Test
