@@ -28,6 +28,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -278,6 +279,90 @@ class PartyQueryServiceTest {
             assertThat(result.getContent().get(0).isBookmarked()).isTrue();
 
             verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 사용자가 가입한 모임 목록을 오래된 순으로 페이징하여 반환한다")
+        void success_getMyParties_oldest() {
+            // given
+            Long memberId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+
+            Party party1 = PartyFixture.createParty("테스트 모임1", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("테스트 모임2", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+
+            // 오래된 순: party1, party2 순서
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2), pageable, false);
+
+            given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L, 2L)))
+                    .willReturn(List.of());
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L, 2L)))
+                    .willReturn(List.of());
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
+                    .willReturn(Set.of());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false,
+                    "오래된 순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(2);
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 사용자가 가입한 모임 목록을 운동 많은 순으로 페이징하여 반환한다")
+        void success_getMyParties_exerciseCount() {
+            // given
+            Long memberId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+
+            Party party1 = PartyFixture.createParty("운동많은모임", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("운동적은모임", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+
+            // 운동 많은 순: party1, party2 순서
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2), pageable, false);
+
+            given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L, 2L)))
+                    .willReturn(List.of());
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L, 2L)))
+                    .willReturn(List.of());
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
+                    .willReturn(Set.of());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false,
+                    "운동 많은 순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(2);
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 유효하지 않은 정렬 기준을 전달하면 INVALID_ORDER_TYPE 발생")
+        void fail_getMyParties_invalidSort() {
+            // given
+            Long memberId = 10L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // when & then
+            assertThatThrownBy(() -> partyQueryService.getMyParties(memberId, false, "존재하지않는정렬", pageable))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode())
+                            .isEqualTo(PartyErrorCode.INVALID_ORDER_TYPE));
         }
     }
 

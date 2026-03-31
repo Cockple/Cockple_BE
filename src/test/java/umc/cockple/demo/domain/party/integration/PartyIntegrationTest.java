@@ -36,6 +36,7 @@ import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
@@ -242,7 +243,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
     class GetMyParties {
 
         @Test
-        @DisplayName("200 - 사용자가 가입한 모임 목록을 페이징하여 반환한다")
+        @DisplayName("200 - 사용자가 가입한 모임 목록을 최신순으로 페이징하여 반환한다")
         void success_getMyParties() throws Exception {
             mockMvc.perform(get("/api/my/parties")
                             .param("created", "false")
@@ -258,6 +259,34 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
                     .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
                     .andExpect(jsonPath("$.data.last").value(true));
+        }
+
+        @Test
+        @DisplayName("200 - 사용자가 가입한 모임 목록을 오래된 순으로 페이징하여 반환한다")
+        void success_getMyParties_oldest() throws Exception {
+            mockMvc.perform(get("/api/my/parties")
+                            .param("created", "false")
+                            .param("sort", "오래된 순")
+                            .param("size", "10")
+                            .param("page", "0"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()));
+        }
+
+        @Test
+        @DisplayName("200 - 사용자가 가입한 모임 목록을 운동 많은 순으로 페이징하여 반환한다")
+        void success_getMyParties_exerciseCount() throws Exception {
+            mockMvc.perform(get("/api/my/parties")
+                            .param("created", "false")
+                            .param("sort", "운동 많은 순")
+                            .param("size", "10")
+                            .param("page", "0"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()));
         }
 
         @Test
