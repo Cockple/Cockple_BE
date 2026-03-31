@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -36,7 +37,6 @@ import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
 import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
-import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
@@ -235,6 +235,14 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(delete("/api/parties/{partyId}/members/my", party.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.NOT_MEMBER.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티에서 탈퇴 시도 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_leaveParty_partyNotFound() throws Exception {
+            mockMvc.perform(delete("/api/parties/{partyId}/members/my", 9999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
         }
     }
 
@@ -535,7 +543,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_createJoinRequest_alreadyExists() throws Exception {
             // 가입하지 않은 멤버 생성
             Member applicant = memberRepository.save(MemberFixture.createMember("신청자2", Gender.MALE, Level.A, 5002L, LocalDate.of(1995, 1, 1)));
-            
+
             // 기존 가입 신청 추가
             PartyJoinRequest joinRequest = PartyJoinRequest.create(applicant, party);
             partyJoinRequestRepository.save(joinRequest);
@@ -648,6 +656,23 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INSUFFICIENT_PERMISSION.getCode()));
         }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티 수정 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_updateParty_partyNotFound() throws Exception {
+            // given
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityDay(List.of("월"))
+                    .activityTime("오전")
+                    .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}", 9999L)
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
     }
 
     @Nested
@@ -696,6 +721,14 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
         }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티 삭제 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_deleteParty_partyNotFound() throws Exception {
+            mockMvc.perform(patch("/api/parties/{partyId}/status", 9999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
     }
 
     @Nested
@@ -742,6 +775,22 @@ class PartyIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), manager.getId()))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_REMOVE_SELF.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티의 멤버 삭제 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_removeMember_partyNotFound() throws Exception {
+            mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", 9999L, normalMember.getId()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 멤버를 강퇴하려 할 때 MEMBER_NOT_FOUND 에러를 반환한다")
+        void fail_removeMember_memberNotFound() throws Exception {
+            mockMvc.perform(delete("/api/parties/{partyId}/members/{memberId}", party.getId(), 9999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()));
         }
     }
 
@@ -823,6 +872,15 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .param("status", "UNKNOWN_STATUS"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_REQUEST_STATUS.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티의 가입 신청 목록 조회 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_getJoinRequests_partyNotFound() throws Exception {
+            mockMvc.perform(get("/api/parties/{partyId}/join-requests", 9999L)
+                            .param("status", "PENDING"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
         }
     }
 
@@ -949,6 +1007,32 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVITATION_ALREADY_EXISTS.getCode()));
         }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티에서 멤버 초대 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_createInvitation_partyNotFound() throws Exception {
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(normalMember.getId());
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", 9999L)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 회원을 모임에 초대하면 MEMBER_NOT_FOUND 에러를 반환한다")
+        void fail_createInvitation_memberNotFound() throws Exception {
+            PartyInviteCreateDTO.Request request = new PartyInviteCreateDTO.Request(9999L);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/invitations", party.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()));
+        }
     }
 
     @Nested
@@ -1051,6 +1135,27 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVITATION_ALREADY_ACTIONS.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 회원이 초대를 처리하려 할 때 MEMBER_NOT_FOUND 에러를 반환한다")
+        void fail_actionInvitation_memberNotFound() throws Exception {
+            // given
+            Member invitee = memberRepository.save(MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 1104L));
+            PartyInvitation invitation = partyInvitationRepository.save(
+                    PartyInvitation.create(party, manager, invitee)
+            );
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+            // 인증 정보에는 유효하지만 DB에는 없는 ID 설정
+            SecurityContextHelper.setAuthentication(9999L, "ghost");
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/invitations/{invitationId}", invitation.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()));
         }
     }
 
@@ -1160,6 +1265,28 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(actionRequest)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.JOIN_REQUEST_ALREADY_ACTIONS.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티의 가입 신청 요청 처리 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_actionJoinRequest_partyNotFound() throws Exception {
+            // given
+            Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1060L));
+            PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
+                    .party(party)
+                    .member(applicant)
+                    .status(RequestStatus.PENDING)
+                    .build());
+
+            PartyJoinActionDTO.Request actionRequest = new PartyJoinActionDTO.Request(RequestAction.APPROVE);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            // when & then
+            mockMvc.perform(patch("/api/parties/{partyId}/join-requests/{requestId}", 9999L, joinRequest.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(actionRequest)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
         }
     }
 
@@ -1323,6 +1450,32 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER.getCode()));
         }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티의 멤버 역할 수정 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_updateMemberRole_partyNotFound() throws Exception {
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(patch("/api/parties/{partyId}/members/{memberId}/role", 9999L, normalMember.getId())
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 멤버의 역할 수정 시 MEMBER_NOT_FOUND 에러를 반환한다")
+        void fail_updateMemberRole_memberNotFound() throws Exception {
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(patch("/api/parties/{partyId}/members/{memberId}/role", party.getId(), 9999L)
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()));
+        }
     }
 
     @Nested
@@ -1378,6 +1531,19 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.INVALID_KEYWORD.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티에 키워드 추가 시 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_addKeyword_partyNotFound() throws Exception {
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("새키워드"));
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/keywords", 9999L)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
         }
     }
 }

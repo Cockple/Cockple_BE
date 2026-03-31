@@ -230,6 +230,24 @@ class PartyCommandServiceTest {
                     .isInstanceOf(PartyException.class)
                     .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.NOT_MEMBER));
         }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외가 발생한다")
+        void fail_leaveParty_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Party party = PartyFixture.createParty("모임명", 1L, addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(10L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.leaveParty(partyId, 10L))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
     }
 
     @Nested
@@ -357,6 +375,33 @@ class PartyCommandServiceTest {
             assertThatThrownBy(() -> partyCommandService.createJoinRequest(partyId, memberId))
                     .isInstanceOf(PartyException.class)
                     .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.AGE_NOT_MATCH));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_createJoinRequest_partyNotFound() {
+            // given
+            Member member = MemberFixture.createMember("사용자", Gender.MALE, Level.B, 1L);
+            ReflectionTestUtils.setField(member, "id", 1L);
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.createJoinRequest(999L, 1L))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_createJoinRequest_memberNotFound() {
+            // given
+            given(memberRepository.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.createJoinRequest(1L, 1L))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -527,6 +572,33 @@ class PartyCommandServiceTest {
                     () -> partyCommandService.createParty(memberId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.AGE_NOT_MATCH);
         }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_createParty_memberNotFound() {
+            // given
+            Long memberId = 1L;
+            PartyCreateDTO.Request request = PartyCreateDTO.Request.builder()
+                    .partyName("테스트 모임")
+                    .partyType("혼복")
+                    .activityTime("오전")
+                    .addr1("서울")
+                    .addr2("강남")
+                    .activityDay(List.of("월", "수"))
+                    .price(10000)
+                    .joinPrice(5000)
+                    .designatedCock("테스트콕")
+                    .maleLevel(List.of("A조"))
+                    .femaleLevel(List.of("B조"))
+                    .build();
+
+            given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.createParty(memberId, request))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
     }
 
     @Nested
@@ -615,6 +687,26 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateParty(partyId, memberId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_updateParty_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Long memberId = 1L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+            PartyUpdateDTO.Request request = PartyUpdateDTO.Request.builder()
+                    .activityTime("오전")
+                    .build();
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.updateParty(partyId, memberId, request))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -708,6 +800,23 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.deleteParty(invalidId, 1L));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_deleteParty_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Long memberId = 1L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.deleteParty(partyId, memberId))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -851,6 +960,36 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateMemberRole(partyId, targetId, notOwnerId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_updateMemberRole_partyNotFound() {
+            // given
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.updateMemberRole(999L, 1L, 1L, request))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_updateMemberRole_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.updateMemberRole(partyId, 1L, 1L, request))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1004,7 +1143,7 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
-            
+
             // 타겟 멤버가 모임 소속이 아님 -> findMemberPartyOrThrow 에서 NOT_MEMBER 발생
             given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.empty());
 
@@ -1012,6 +1151,34 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.removeMember(partyId, targetMemberId, ownerId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.NOT_MEMBER);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_removeMember_partyNotFound() {
+            // given
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.removeMember(999L, 1L, 1L))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_removeMember_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.removeMember(partyId, 10L, 1L))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1234,7 +1401,7 @@ class PartyCommandServiceTest {
 
         @Test
         @DisplayName("실패 - 처리하려는 가입 신청이 해당 모임의 것이 아닌 경우 JOIN_REQUEST_PARTY_NOT_FOUND 발생")
-        void fail_actionJoinRequest_partyNotFound() {
+        void fail_actionJoinRequest_joinRequestPartyNotFound() {
             // given
             Long partyId = 1L;
             Long wrongPartyId = 2L;
@@ -1244,7 +1411,7 @@ class PartyCommandServiceTest {
             PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
             Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
             ReflectionTestUtils.setField(owner, "id", ownerId);
-            
+
             Party targetParty = PartyFixture.createParty("대상 모임", owner.getId(), addr);
             ReflectionTestUtils.setField(targetParty, "id", partyId);
 
@@ -1271,6 +1438,18 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.actionJoinRequest(partyId, ownerId, requestDTO, requestId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.JOIN_REQUEST_PARTY_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_actionJoinRequest_partyNotFound() {
+            // given
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.actionJoinRequest(999L, 1L, new PartyJoinActionDTO.Request(RequestAction.APPROVE), 1L))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
         }
     }
 
@@ -1391,6 +1570,34 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.createInvitation(partyId, inviteeId, ownerId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_EXISTS);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_createInvitation_partyNotFound() {
+            // given
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.createInvitation(999L, 1L, 1L))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_createInvitation_memberNotFound() {
+            // given
+            Long partyId = 1L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.createInvitation(partyId, 1L, 1L))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1533,6 +1740,26 @@ class PartyCommandServiceTest {
                     () -> partyCommandService.actionInvitation(inviteeId, request, invitationId));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVITATION_ALREADY_ACTIONS);
         }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 회원인 경우 MEMBER_NOT_FOUND 예외 발생")
+        void fail_actionInvitation_memberNotFound() {
+            // given
+            Long invitationId = 100L;
+            Party party = PartyFixture.createParty("모임명", 1L, null);
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1L);
+            Member invitee = MemberFixture.createMember("초대대상", Gender.FEMALE, Level.B, 20L);
+            PartyInvitation invitation = PartyInvitation.create(party, owner, invitee);
+
+            PartyInviteActionDTO.Request request = new PartyInviteActionDTO.Request(RequestAction.APPROVE);
+            given(partyInvitationRepository.findById(invitationId)).willReturn(Optional.of(invitation));
+            given(memberRepository.findById(20L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.actionInvitation(20L, request, invitationId))
+                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+        }
     }
 
     @Nested
@@ -1604,6 +1831,19 @@ class PartyCommandServiceTest {
             PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.addKeyword(partyId, ownerId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INVALID_KEYWORD);
+        }
+
+        @Test
+        @DisplayName("실패 - 존재하지 않는 파티인 경우 PARTY_NOT_FOUND 예외 발생")
+        void fail_addKeyword_partyNotFound() {
+            // given
+            PartyKeywordDTO.Request request = new PartyKeywordDTO.Request(List.of("새키워드"));
+            given(partyRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> partyCommandService.addKeyword(999L, 10L, request))
+                    .isInstanceOf(PartyException.class)
+                    .satisfies(e -> assertThat(((PartyException) e).getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND));
         }
     }
 }
