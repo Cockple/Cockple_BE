@@ -16,14 +16,13 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
-import umc.cockple.demo.domain.notification.service.NotificationCommandService;
+import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
-import umc.cockple.demo.domain.party.dto.PartyInviteActionDTO;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
@@ -31,8 +30,8 @@ import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
-import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -49,9 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PartyCommandServiceTest {
@@ -571,7 +568,7 @@ class PartyCommandServiceTest {
             assertThat(party.getJoinPrice()).isEqualTo(0);
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
-            
+
             verify(notificationCommandService, times(1)).createNotification(any());
         }
 
@@ -586,7 +583,7 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.empty());
 
             // when & then
-            PartyException exception = assertThrows(PartyException.class, 
+            PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateParty(partyId, memberId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.PARTY_NOT_FOUND);
         }
@@ -601,7 +598,7 @@ class PartyCommandServiceTest {
             PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
             Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1L);
             ReflectionTestUtils.setField(owner, "id", 1L);
-            
+
             Member normalMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, 2L);
             ReflectionTestUtils.setField(normalMember, "id", memberId);
 
@@ -615,7 +612,7 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(memberId)).willReturn(Optional.of(normalMember));
 
             // when & then
-            PartyException exception = assertThrows(PartyException.class, 
+            PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateParty(partyId, memberId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
@@ -776,7 +773,7 @@ class PartyCommandServiceTest {
             given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(memberParty));
 
             // when & then
-            PartyException exception = assertThrows(PartyException.class, 
+            PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateMemberRole(partyId, ownerId, ownerId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.CANNOT_ASSIGN_TO_OWNER);
         }
@@ -793,7 +790,7 @@ class PartyCommandServiceTest {
             PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
             Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
             ReflectionTestUtils.setField(owner, "id", ownerId);
-            
+
             Member notOwner = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, notOwnerId);
             ReflectionTestUtils.setField(notOwner, "id", notOwnerId);
 
@@ -811,7 +808,7 @@ class PartyCommandServiceTest {
             given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
 
             // when & then (notOwnerId를 currentMemberId로 전달하여 실행)
-            PartyException exception = assertThrows(PartyException.class, 
+            PartyException exception = assertThrows(PartyException.class,
                     () -> partyCommandService.updateMemberRole(partyId, targetId, notOwnerId, request));
             assertThat(exception.getCode()).isEqualTo(PartyErrorCode.INSUFFICIENT_PERMISSION);
         }
