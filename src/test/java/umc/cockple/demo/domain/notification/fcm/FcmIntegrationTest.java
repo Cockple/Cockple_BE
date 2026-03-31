@@ -107,6 +107,39 @@ class FcmIntegrationTest extends IntegrationTestBase {
                                 .content(objectMapper.writeValueAsString(new FcmTokenRequestDTO(""))))
                         .andExpect(status().isBadRequest());
             }
+
+            @Test
+            @DisplayName("400 - null 토큰은 @NotBlank 검증에서 거부된다")
+            void registerFcmToken_nullToken_returns400() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(patch("/api/notifications/fcm-token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new FcmTokenRequestDTO(null))))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("400 - 공백 문자열 토큰은 @NotBlank 검증에서 거부된다")
+            void registerFcmToken_whitespaceToken_returns400() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(patch("/api/notifications/fcm-token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(new FcmTokenRequestDTO("   "))))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("400 - fcmToken 필드 누락 시 @NotBlank 검증에서 거부된다")
+            void registerFcmToken_missingField_returns400() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(patch("/api/notifications/fcm-token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                        .andExpect(status().isBadRequest());
+            }
         }
     }
 

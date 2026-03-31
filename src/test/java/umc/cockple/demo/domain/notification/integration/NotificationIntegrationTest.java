@@ -159,7 +159,8 @@ class NotificationIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/notifications"))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(2)));
+                        .andExpect(jsonPath("$.data", hasSize(2)))
+                        .andExpect(jsonPath("$.data[0].imgUrl").value(nullValue()));
             }
         }
     }
