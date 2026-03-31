@@ -716,12 +716,13 @@ class PartyCommandServiceTest {
     class UpdateMemberRole {
 
         @Test
-        @DisplayName("성공 - 모임장이 일반 멤버를 부모임장으로 지정하고 알림을 발생시킨다")
+        @DisplayName("성공 - 모임장이 일반 멤버를 부모임장으로 지정하면 기존 부모임장은 일반 멤버로 강등되고 새 부모임장이 지정된다")
         void success_updateMemberRole() {
             // given
             Long partyId = 1L;
             Long currentOwnerId = 1L;
             Long targetMemberId = 10L;
+            Long oldSubManagerId = 20L;
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
             Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, currentOwnerId);
@@ -730,24 +731,63 @@ class PartyCommandServiceTest {
             Member targetMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.A, targetMemberId);
             ReflectionTestUtils.setField(targetMember, "id", targetMemberId);
 
+            Member oldSubManager = MemberFixture.createMember("기존부모임장", Gender.MALE, Level.A, oldSubManagerId);
+            ReflectionTestUtils.setField(oldSubManager, "id", oldSubManagerId);
+
             Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
             ReflectionTestUtils.setField(party, "id", partyId);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, targetMember, Role.PARTY_MEMBER);
+            MemberParty targetMemberParty = MemberFixture.createMemberParty(party, targetMember, Role.PARTY_MEMBER);
+            MemberParty oldSubManagerParty = MemberFixture.createMemberParty(party, oldSubManager, Role.PARTY_SUBMANAGER);
+
             PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(memberParty));
-            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)).willReturn(Optional.empty());
-            given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(memberParty));
+            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+            given(memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)).willReturn(Optional.of(oldSubManagerParty));
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(targetMemberParty, oldSubManagerParty));
 
             // when
             partyCommandService.updateMemberRole(partyId, targetMemberId, currentOwnerId, request);
 
             // then
-            assertThat(memberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
-            verify(notificationCommandService, times(1)).createNotification(any());
+            assertThat(targetMemberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
+            assertThat(oldSubManagerParty.getRole()).isEqualTo(Role.PARTY_MEMBER);
+            verify(notificationCommandService, times(4)).createNotification(any());
+        }
+
+        @Test
+        @DisplayName("실패 - 이미 요청한 역할과 같은 역할인 경우 변경 없이 반환된다")
+        void fail_updateMemberRole_sameRole() {
+            // given
+            Long partyId = 1L;
+            Long ownerId = 1L;
+            Long targetId = 10L;
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울", "강남");
+            Member owner = MemberFixture.createMember("모임장", Gender.MALE, Level.A, ownerId);
+            ReflectionTestUtils.setField(owner, "id", ownerId);
+
+            Member targetMember = MemberFixture.createMember("타겟", Gender.MALE, Level.A, targetId);
+            ReflectionTestUtils.setField(targetMember, "id", targetId);
+
+            Party party = PartyFixture.createParty("모임명", owner.getId(), addr);
+            ReflectionTestUtils.setField(party, "id", partyId);
+
+            MemberParty targetMemberParty = spy(MemberFixture.createMemberParty(party, targetMember, Role.PARTY_SUBMANAGER));
+            PartyMemberRoleDTO.Request request = new PartyMemberRoleDTO.Request(Role.PARTY_SUBMANAGER);
+
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(targetId)).willReturn(Optional.of(targetMember));
+            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+
+            // when
+            partyCommandService.updateMemberRole(partyId, targetId, ownerId, request);
+
+            // then
+            verify(targetMemberParty, never()).changeRole(any());
+            verify(notificationCommandService, never()).createNotification(any());
         }
 
         @Test
