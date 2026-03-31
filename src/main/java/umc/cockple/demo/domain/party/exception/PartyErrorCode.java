@@ -27,7 +27,7 @@ public enum PartyErrorCode implements BaseErrorCode {
     INVALID_ROLE_VALUE(HttpStatus.BAD_REQUEST, "PARTY411", "유효하지 않은 역할 값입니다. (PARTY_SUBMANAGER 또는 PARTY_MEMBER를 입력해주세요.)"),
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY201", "존재하지 않는 모임입니다."),
-    JoinRequest_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
+    JOIN_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY202", "존재하지 않는 가입신청입니다."),
     JOIN_REQUEST_PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY203", "해당 모임에서 존재하지 않는 가입신청입니다."),
     NOT_MEMBER(HttpStatus.BAD_REQUEST, "PARTY204", "해당 모임의 멤버가 아닙니다."),
     INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTY205", "존재하지 않는 모임 초대입니다."),

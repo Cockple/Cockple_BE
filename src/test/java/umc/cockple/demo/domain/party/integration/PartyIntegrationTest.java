@@ -529,6 +529,51 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value(PartyErrorCode.GENDER_NOT_MATCH.getCode()));
         }
+
+        @Test
+        @DisplayName("409 - 이미 대기중인 가입 신청이 있는 상태에서 다시 신청하면 JOIN_REQUEST_ALREADY_EXISTS 에러를 반환한다")
+        void fail_createJoinRequest_alreadyExists() throws Exception {
+            // 가입하지 않은 멤버 생성
+            Member applicant = memberRepository.save(MemberFixture.createMember("신청자2", Gender.MALE, Level.A, 5002L, LocalDate.of(1995, 1, 1)));
+            
+            // 기존 가입 신청 추가
+            PartyJoinRequest joinRequest = PartyJoinRequest.create(applicant, party);
+            partyJoinRequestRepository.save(joinRequest);
+
+            SecurityContextHelper.setAuthentication(applicant.getId(), applicant.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", party.getId()))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.JOIN_REQUEST_ALREADY_EXISTS.getCode()));
+        }
+
+        @Test
+        @DisplayName("400 - 삭제된(비활성화된) 모임에 가입 신청하면 PARTY_IS_DELETED 에러를 반환한다")
+        void fail_createJoinRequest_partyDeleted() throws Exception {
+            // 파티 생성 후 삭제
+            PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울", "금천"));
+            Party deletedParty = partyRepository.save(PartyFixture.createParty("삭제된 모임", manager.getId(), addr));
+            deletedParty.delete();
+            partyRepository.save(deletedParty);
+
+            Member applicant = memberRepository.save(MemberFixture.createMember("신청자3", Gender.MALE, Level.A, 5003L));
+            SecurityContextHelper.setAuthentication(applicant.getId(), applicant.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", deletedParty.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_IS_DELETED.getCode()));
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 파티에 가입 신청하면 PARTY_NOT_FOUND 에러를 반환한다")
+        void fail_createJoinRequest_partyNotFound() throws Exception {
+            Member applicant = memberRepository.save(MemberFixture.createMember("신청자4", Gender.MALE, Level.A, 5004L));
+            SecurityContextHelper.setAuthentication(applicant.getId(), applicant.getNickname());
+
+            mockMvc.perform(post("/api/parties/{partyId}/join-requests", 9999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()));
+        }
     }
 
     @Nested

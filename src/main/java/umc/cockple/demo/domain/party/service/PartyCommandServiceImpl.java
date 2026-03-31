@@ -335,7 +335,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     //가입신청 조회
     private PartyJoinRequest findJoinRequestOrThrow(Long requestId) {
         return partyJoinRequestRepository.findById(requestId)
-                .orElseThrow(() -> new PartyException(PartyErrorCode.JoinRequest_NOT_FOUND));
+                .orElseThrow(() -> new PartyException(PartyErrorCode.JOIN_REQUEST_NOT_FOUND));
     }
 
     private PartyInvitation findInvitationOrThrow(Long invitationId) {
