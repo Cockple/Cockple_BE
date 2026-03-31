@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -25,13 +26,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
-import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyInviteCreateDTO;
-import umc.cockple.demo.domain.party.dto.PartyInviteActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyJoinActionDTO;
-import umc.cockple.demo.domain.party.dto.PartyKeywordDTO;
-import umc.cockple.demo.domain.party.dto.PartyMemberRoleDTO;
-import umc.cockple.demo.domain.party.dto.PartyUpdateDTO;
+import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.RequestAction;
@@ -52,7 +47,6 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -127,7 +121,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
         // 추천 조회용 모임 (manager의 조건에 맞춤)
         Party suggestedParty = PartyFixture.createParty("추천 모임", normalMember.getId(), addr);
-        suggestedParty.addLevel(Gender.MALE, Level.A); 
+        suggestedParty.addLevel(Gender.MALE, Level.A);
         partyRepository.save(suggestedParty);
 
         SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
@@ -686,7 +680,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_getJoinRequests() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("가입희망자", Gender.FEMALE, Level.B, 1010L));
-            
+
             PartyJoinRequest joinRequest = PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
@@ -711,7 +705,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_getJoinRequests_approved() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("승인된멤버", Gender.MALE, Level.C, 1015L));
-            
+
             PartyJoinRequest joinRequest = PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
@@ -995,7 +989,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_actionJoinRequest_approve() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1020L));
-            
+
             PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
@@ -1024,7 +1018,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_actionJoinRequest_reject() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("탈락자", Gender.FEMALE, Level.B, 1030L));
-            
+
             PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
@@ -1053,7 +1047,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_actionJoinRequest_notOwner() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1040L));
-            
+
             PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
@@ -1076,7 +1070,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void fail_actionJoinRequest_alreadyHandled() throws Exception {
             // given
             Member applicant = memberRepository.save(MemberFixture.createMember("지원자", Gender.FEMALE, Level.B, 1050L));
-            
+
             PartyJoinRequest joinRequest = partyJoinRequestRepository.save(PartyJoinRequest.builder()
                     .party(party)
                     .member(applicant)
