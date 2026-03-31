@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.notification.fcm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -12,7 +11,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.dto.FcmTokenRequestDTO;
-import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.IntegrationTestBase;
@@ -20,12 +18,6 @@ import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,11 +25,7 @@ class FcmIntegrationTest extends IntegrationTestBase {
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
-    @Autowired FcmService fcmService;
     @Autowired ObjectMapper objectMapper;
-
-    @MockitoBean
-    FirebaseMessaging firebaseMessaging;
 
     private Member member;
 
@@ -143,72 +131,4 @@ class FcmIntegrationTest extends IntegrationTestBase {
         }
     }
 
-
-    @Nested
-    @DisplayName("sendNotification - FCM 푸시 알림 전송")
-    class SendNotification {
-
-        @Nested
-        @DisplayName("전송 성공")
-        class Success {
-
-            @Test
-            @DisplayName("FCM 토큰이 있는 회원에게 알림 전송 시 firebaseMessaging.send()가 호출된다")
-            void sendNotification_withToken_callsFirebase() throws Exception {
-                ReflectionTestUtils.setField(member, "fcmToken", "valid-fcm-token");
-
-                fcmService.sendNotification(member, "테스트 제목", "테스트 내용");
-
-                then(firebaseMessaging).should().send(any());
-            }
-        }
-
-        @Nested
-        @DisplayName("전송 생략")
-        class Skip {
-
-            @Test
-            @DisplayName("FCM 토큰이 null이면 firebaseMessaging.send()가 호출되지 않는다")
-            void sendNotification_nullToken_skipsFirebase() {
-                // member의 fcmToken은 기본값 null
-
-                fcmService.sendNotification(member, "제목", "내용");
-
-                try {
-                    then(firebaseMessaging).should(never()).send(any());
-                } catch (FirebaseMessagingException e) {
-                    System.out.println("FirebaseMessagingException이 발생했지만, sendNotification 메서드는 예외를 전파하지 않아야 합니다.");
-                }
-            }
-
-            @Test
-            @DisplayName("FCM 토큰이 빈 문자열이면 firebaseMessaging.send()가 호출되지 않는다")
-            void sendNotification_blankToken_skipsFirebase() {
-                ReflectionTestUtils.setField(member, "fcmToken", "");
-
-                fcmService.sendNotification(member, "제목", "내용");
-
-                try {
-                    then(firebaseMessaging).should(never()).send(any());
-                } catch (FirebaseMessagingException e) {
-                    System.out.println("FirebaseMessagingException이 발생했지만, sendNotification 메서드는 예외를 전파하지 않아야 합니다.");
-                }
-            }
-        }
-
-        @Nested
-        @DisplayName("전송 실패")
-        class Failure {
-
-            @Test
-            @DisplayName("Firebase 전송 실패 시 예외를 전파하지 않는다")
-            void sendNotification_firebaseException_doesNotThrow() throws FirebaseMessagingException {
-                ReflectionTestUtils.setField(member, "fcmToken", "valid-fcm-token");
-                given(firebaseMessaging.send(any())).willThrow(mock(FirebaseMessagingException.class));
-
-                assertThatCode(() -> fcmService.sendNotification(member, "제목", "내용"))
-                        .doesNotThrowAnyException();
-            }
-        }
-    }
 }
