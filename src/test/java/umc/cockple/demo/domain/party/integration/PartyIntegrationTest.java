@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -250,8 +251,32 @@ class PartyIntegrationTest extends IntegrationTestBase {
     @DisplayName("GET /api/my/parties - 내 모임 조회")
     class GetMyParties {
 
+        Party party2;
+        Party party3;
+
+        @BeforeEach
+        void setUpMyParties() {
+            PartyAddr addr = partyAddrRepository.findAll().get(0);
+
+            // party: 1번째 생성, 운동 횟수 10
+            ReflectionTestUtils.setField(party, "exerciseCount", 10);
+            partyRepository.save(party);
+
+            // party2: 2번째 생성, 운동 횟수 20
+            party2 = partyRepository.save(PartyFixture.createParty("테스트 모임 2", manager.getId(), addr));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party2, manager, Role.PARTY_MANAGER));
+            ReflectionTestUtils.setField(party2, "exerciseCount", 20);
+            partyRepository.save(party2);
+
+            // party3: 3번째 생성, 운동 횟수 5
+            party3 = partyRepository.save(PartyFixture.createParty("테스트 모임 3", manager.getId(), addr));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party3, manager, Role.PARTY_MANAGER));
+            ReflectionTestUtils.setField(party3, "exerciseCount", 5);
+            partyRepository.save(party3);
+        }
+
         @Test
-        @DisplayName("200 - 사용자가 가입한 모임 목록을 최신순으로 페이징하여 반환한다")
+        @DisplayName("200 - 사용자가 가입한 모임 목록을 최신순(기본)으로 페이징하여 반환한다")
         void success_getMyParties() throws Exception {
             mockMvc.perform(get("/api/my/parties")
                             .param("created", "false")
@@ -260,13 +285,11 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .param("page", "0"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
-                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content.length()").value(1))
-                    .andExpect(jsonPath("$.data.content[0].partyName").value("테스트 모임"))
-                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
-                    .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
-                    .andExpect(jsonPath("$.data.last").value(true));
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party3.getId()))
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(party2.getId()))
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(party.getId()));
         }
 
         @Test
@@ -280,7 +303,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()));
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(party2.getId()))
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(party3.getId()));
         }
 
         @Test
@@ -294,7 +320,10 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()));
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party2.getId())) // 20회
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(party.getId()))  // 10회
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(party3.getId())); // 5회
         }
 
         @Test
@@ -311,7 +340,6 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .param("page", "0"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
-                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content").isEmpty())
                     .andExpect(jsonPath("$.data.empty").value(true));
@@ -322,6 +350,22 @@ class PartyIntegrationTest extends IntegrationTestBase {
     @DisplayName("GET /api/my/parties/simple - 내 모임 간략화 조회")
     class GetSimpleMyParties {
 
+        Party party2;
+        Party party3;
+
+        @BeforeEach
+        void setUpSimpleMyParties() {
+            PartyAddr addr = partyAddrRepository.findAll().get(0);
+
+            // party2
+            party2 = partyRepository.save(PartyFixture.createParty("간략 모임 2", manager.getId(), addr));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party2, manager, Role.PARTY_MANAGER));
+            
+            // party3
+            party3 = partyRepository.save(PartyFixture.createParty("간략 모임 3", manager.getId(), addr));
+            memberPartyRepository.save(MemberFixture.createMemberParty(party3, manager, Role.PARTY_MANAGER));
+        }
+
         @Test
         @DisplayName("200 - 사용자가 가입한 모임의 간략화된 목록을 페이징하여 반환한다")
         void success_getSimpleMyParties() throws Exception {
@@ -331,13 +375,11 @@ class PartyIntegrationTest extends IntegrationTestBase {
                             .param("sort", "createdAt,DESC"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
-                    .andExpect(jsonPath("$.message").value("요청에 성공했습니다."))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content.length()").value(1))
-                    .andExpect(jsonPath("$.data.content[0].partyName").value("테스트 모임"))
-                    .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
-                    .andExpect(jsonPath("$.data.pageable.pageNumber").value(0))
-                    .andExpect(jsonPath("$.data.last").value(true));
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(party3.getId()))
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(party2.getId()))
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(party.getId()));
         }
 
         @Test
@@ -364,23 +406,67 @@ class PartyIntegrationTest extends IntegrationTestBase {
     @DisplayName("GET /api/my/parties/suggestions - 모임 추천 조회")
     class GetRecommendedParties {
 
+        Party recParty1;
+        Party recParty2;
+        Party recParty3;
+
+        @BeforeEach
+        void setUpRecommends() {
+            PartyAddr addr = partyAddrRepository.findAll().get(0);
+
+            // recParty1: 1번째 생성, 운동 횟수 10
+            recParty1 = partyRepository.findAll().stream()
+                    .filter(p -> p.getPartyName().equals("추천 모임"))
+                    .findFirst().orElseThrow();
+            ReflectionTestUtils.setField(recParty1, "exerciseCount", 10);
+            partyRepository.save(recParty1);
+
+            // recParty2: 1번째 생성, 운동 횟수 20
+            recParty2 = partyRepository.save(PartyFixture.createParty("추천 모임 2", normalMember.getId(), addr));
+            recParty2.addLevel(Gender.MALE, Level.A); // manager 조건에 맞도록
+            ReflectionTestUtils.setField(recParty2, "exerciseCount", 20);
+            partyRepository.save(recParty2);
+
+            // recParty3: 3번째 생성, 운동 횟수 5
+            recParty3 = partyRepository.save(PartyFixture.createParty("추천 모임 3", normalMember.getId(), addr));
+            recParty3.addLevel(Gender.MALE, Level.A); // manager 조건에 맞도록
+            ReflectionTestUtils.setField(recParty3, "exerciseCount", 5);
+            partyRepository.save(recParty3);
+        }
+
         @Test
-        @DisplayName("200 - Cockple 추천 모드 시 추천된 모임 목록을 반환한다")
+        @DisplayName("200 - Cockple 추천 모드 시 추천된 모임 목록 3개를 반환한다")
         void success_getRecommendedParties_cockpleRecommend() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "true")
-                            .param("sort", "최신순")
                             .param("page", "0")
                             .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content[0].partyName").value("추천 모임"));
+                    .andExpect(jsonPath("$.data.content.length()").value(3));
         }
 
         @Test
-        @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 반환한다")
-        void success_getRecommendedParties_filterMode() throws Exception {
+        @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 운동 많은 순으로 반환한다")
+        void success_getRecommendedParties_exerciseCount() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                            .param("isCockpleRecommend", "false")
+                            .param("sort", "운동 많은 순")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(recParty2.getId())) // 20회
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(recParty1.getId())) // 10회
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(recParty3.getId())); // 5회
+        }
+
+        @Test
+        @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 최신순으로 반환한다")
+        void success_getRecommendedParties_latest() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
                             .param("isCockpleRecommend", "false")
                             .param("addr1", "서울특별시")
@@ -391,22 +477,42 @@ class PartyIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content[0].addr1").value("서울특별시"))
-                    .andExpect(jsonPath("$.data.content[0].addr2").value("강남구"));
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(recParty3.getId()))
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(recParty2.getId()))
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(recParty1.getId()));
+        }
+
+        @Test
+        @DisplayName("200 - 필터 모드 시 조건에 맞는 모임 목록을 오래된 순으로 반환한다")
+        void success_getRecommendedParties_oldest() throws Exception {
+            mockMvc.perform(get("/api/my/parties/suggestions")
+                            .param("isCockpleRecommend", "false")
+                            .param("sort", "오래된 순")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("COMMON200"))
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content.length()").value(3))
+                    .andExpect(jsonPath("$.data.content[0].partyId").value(recParty1.getId()))
+                    .andExpect(jsonPath("$.data.content[1].partyId").value(recParty2.getId()))
+                    .andExpect(jsonPath("$.data.content[2].partyId").value(recParty3.getId()));
         }
 
         @Test
         @DisplayName("200 - 검색 모드 시 모임명으로 검색된 결과를 반환한다")
-        void success_getRecommendedParties_searchMode() throws Exception {
+        void success_getRecommendedParties_search() throws Exception {
             mockMvc.perform(get("/api/my/parties/suggestions")
-                            .param("search", "추천")
+                            .param("search", "추천 모임 2")
                             .param("isCockpleRecommend", "false")
                             .param("page", "0")
                             .param("size", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"))
                     .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content[0].partyName", containsString("추천")));
+                    .andExpect(jsonPath("$.data.content.length()").value(1))
+                    .andExpect(jsonPath("$.data.content[0].partyName").value("추천 모임 2"));
         }
 
         @Test

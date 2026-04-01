@@ -240,48 +240,45 @@ class PartyQueryServiceTest {
     class GetMyParties {
 
         @Test
-        @DisplayName("성공 - 내 모임 목록과 부가 정보(운동 횟수, 다음 운동 정보, 북마크 여부)를 조합하여 반환한다")
+        @DisplayName("성공 - 내 모임 목록을 최신순(기본값)으로 페이징하여 반환한다")
         void success_getMyParties() {
             // given
             Long memberId = 10L;
             Pageable pageable = PageRequest.of(0, 10);
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party party = PartyFixture.createParty("테스트 모임", 10L, addr);
-            ReflectionTestUtils.setField(party, "id", 1L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
 
-            Slice<Party> partySlice = new SliceImpl<>(List.of(party), pageable, false);
-
-            PartyDTO.Response expectedResponse = PartyDTO.Response.builder()
-                    .partyId(1L)
-                    .partyName("테스트 모임")
-                    .totalExerciseCount(5)
-                    .nextExerciseInfo("05.01 오전 운동")
-                    .isBookmarked(true)
-                    .build();
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party3, party2, party1), pageable, false);
 
             given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
                     .willReturn(partySlice);
-            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L)))
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(anyList()))
                     .willReturn(List.of());
-            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L)))
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(anyList()))
                     .willReturn(List.of());
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
-                    .willReturn(Set.of(1L));
+                    .willReturn(Set.of(1L, 2L, 3L));
+
             // when
-            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "최신순",
-                    pageable);
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "최신순", pageable);
 
             // then
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).partyName()).isEqualTo("테스트 모임");
-            assertThat(result.getContent().get(0).isBookmarked()).isTrue();
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(3L);
+            assertThat(result.getContent().get(1).partyId()).isEqualTo(2L);
+            assertThat(result.getContent().get(2).partyId()).isEqualTo(1L);
 
-            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
         }
 
         @Test
-        @DisplayName("성공 - 사용자가 가입한 모임 목록을 오래된 순으로 페이징하여 반환한다")
+        @DisplayName("성공 - 내 모임 목록을 오래된 순으로 페이징하여 반환한다")
         void success_getMyParties_oldest() {
             // given
             Long memberId = 10L;
@@ -289,34 +286,37 @@ class PartyQueryServiceTest {
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
 
-            Party party1 = PartyFixture.createParty("테스트 모임1", 10L, addr);
-            ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("테스트 모임2", 10L, addr);
-            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
 
-            // 오래된 순: party1, party2 순서
-            Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2), pageable, false);
+            // 오래된 순 응답 가정
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2, party3), pageable, false);
 
             given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
                     .willReturn(partySlice);
-            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L, 2L)))
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(anyList()))
                     .willReturn(List.of());
-            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L, 2L)))
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(anyList()))
                     .willReturn(List.of());
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
                     .willReturn(Set.of());
 
             // when
-            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false,
-                    "오래된 순", pageable);
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "오래된 순", pageable);
 
             // then
-            assertThat(result.getContent()).hasSize(2);
-            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(1L);
+
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.ASC);
         }
 
         @Test
-        @DisplayName("성공 - 사용자가 가입한 모임 목록을 운동 많은 순으로 페이징하여 반환한다")
+        @DisplayName("성공 - 내 모임 목록을 운동 많은 순으로 페이징하여 반환한다")
         void success_getMyParties_exerciseCount() {
             // given
             Long memberId = 10L;
@@ -324,30 +324,33 @@ class PartyQueryServiceTest {
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
 
-            Party party1 = PartyFixture.createParty("운동많은모임", 10L, addr);
-            ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("운동적은모임", 10L, addr);
-            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
 
-            // 운동 많은 순: party1, party2 순서
-            Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2), pageable, false);
+            // 운동 많은 순 응답 가정 (20회, 10회, 5회)
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party2, party1, party3), pageable, false);
 
             given(partyRepository.findMyParty(eq(memberId), eq(false), any(Pageable.class)))
                     .willReturn(partySlice);
-            given(exerciseRepository.findTotalExerciseCountsByPartyIds(List.of(1L, 2L)))
+            given(exerciseRepository.findTotalExerciseCountsByPartyIds(anyList()))
                     .willReturn(List.of());
-            given(exerciseRepository.findUpcomingExercisesByPartyIds(List.of(1L, 2L)))
+            given(exerciseRepository.findUpcomingExercisesByPartyIds(anyList()))
                     .willReturn(List.of());
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId))
                     .willReturn(Set.of());
 
             // when
-            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false,
-                    "운동 많은 순", pageable);
+            Slice<PartyDTO.Response> result = partyQueryService.getMyParties(memberId, false, "운동 많은 순", pageable);
 
             // then
-            assertThat(result.getContent()).hasSize(2);
-            verify(partyRepository).findMyParty(eq(memberId), eq(false), any(Pageable.class));
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(2L);
+
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).findMyParty(eq(memberId), eq(false), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("exerciseCount").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
         }
 
         @Test
@@ -370,7 +373,7 @@ class PartyQueryServiceTest {
     class GetSimpleMyParties {
 
         @Test
-        @DisplayName("성공 - 유효한 회원 ID가 주어지면 가입한 모임의 간략화된 목록을 반환한다")
+        @DisplayName("성공 - 유효한 회원 ID가 주어지면 가입한 모임 3개의 간략화된 목록을 반환한다")
         void success_getSimpleMyParties() {
             // given
             Long memberId = 1L;
@@ -378,30 +381,29 @@ class PartyQueryServiceTest {
 
             Member member = MemberFixture.createMember("사용자", Gender.MALE, Level.A, 1001L);
             ReflectionTestUtils.setField(member, "id", memberId);
-
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party party = PartyFixture.createParty("테스트 모임", 10L, addr);
-            ReflectionTestUtils.setField(party, "id", 10L);
 
-            MemberParty memberParty = MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
 
-            Slice<MemberParty> memberPartySlice = new SliceImpl<>(List.of(memberParty), pageable, false);
+            MemberParty mp1 = MemberFixture.createMemberParty(party1, member, Role.PARTY_MEMBER);
+            MemberParty mp2 = MemberFixture.createMemberParty(party2, member, Role.PARTY_MEMBER);
+            MemberParty mp3 = MemberFixture.createMemberParty(party3, member, Role.PARTY_MEMBER);
 
-            PartySimpleDTO.Response expectedResponse = PartySimpleDTO.Response.builder()
-                    .partyId(10L)
-                    .partyName("테스트 모임")
-                    .build();
+            Slice<MemberParty> memberPartySlice = new SliceImpl<>(List.of(mp1, mp2, mp3), pageable, false);
 
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(memberPartyRepository.findByMember(member, pageable)).willReturn(memberPartySlice);
 
             // when
-            Slice<PartySimpleDTO.Response> result = partyQueryService.getSimpleMyParties(memberId,
-                    pageable);
+            Slice<PartySimpleDTO.Response> result = partyQueryService.getSimpleMyParties(memberId, pageable);
 
             // then
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).partyName()).isEqualTo("테스트 모임");
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(1L);
+            assertThat(result.getContent().get(1).partyId()).isEqualTo(2L);
+            assertThat(result.getContent().get(2).partyId()).isEqualTo(3L);
 
             verify(memberRepository).findById(memberId);
             verify(memberPartyRepository).findByMember(member, pageable);
@@ -470,32 +472,124 @@ class PartyQueryServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 필터 모드 시 설정한 필터 조건(addr1, addr2 등)에 맞는 모임 목록을 반환한다")
-        void success_getRecommendedParties_filterMode() {
+        @DisplayName("성공 - 필터 모드 시 조건에 맞는 모임 목록을 최신순으로 반환한다")
+        void success_getRecommendedParties_latest() {
             // given
             Long memberId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
-            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder()
-                    .addr1("서울특별시")
-                    .addr2("강남구")
-                    .build();
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().addr1("서울특별시").build();
 
-            Party filteredParty = PartyFixture.createParty("필터 모임", 2L,
-                    PartyFixture.createPartyAddr("서울특별시", "강남구"));
-            ReflectionTestUtils.setField(filteredParty, "id", 200L);
-            Slice<Party> partySlice = new SliceImpl<>(List.of(filteredParty), pageable, false);
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+
+            Slice<Party> partySlice = new SliceImpl<>(List.of(p3, p2, p1), pageable, false);
 
             given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
                     .willReturn(partySlice);
             given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
 
             // when
-            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false,
-                    filter, "최신순", pageable);
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false, filter, "최신순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(3L);
+
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).searchParties(eq(memberId), eq(filter), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+        }
+
+        @Test
+        @DisplayName("성공 - 필터 모드 시 조건에 맞는 모임 목록을 오래된 순으로 반환한다")
+        void success_getRecommendedParties_oldest() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+
+            Slice<Party> partySlice = new SliceImpl<>(List.of(p1, p2, p3), pageable, false);
+
+            given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false, filter, "오래된 순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(1L);
+
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).searchParties(eq(memberId), eq(filter), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.ASC);
+        }
+
+        @Test
+        @DisplayName("성공 - 필터 모드 시 조건에 맞는 모임 목록을 운동 많은 순으로 반환한다")
+        void success_getRecommendedParties_exerciseCount() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+
+            Slice<Party> partySlice = new SliceImpl<>(List.of(p2, p1, p3), pageable, false); // 20회, 10회, 5회 가정
+
+            given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false, filter, "운동 많은 순", pageable);
+
+            // then
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).partyId()).isEqualTo(2L);
+
+            org.mockito.ArgumentCaptor<Pageable> captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            verify(partyRepository).searchParties(eq(memberId), eq(filter), captor.capture());
+            assertThat(captor.getValue().getSort().getOrderFor("exerciseCount").getDirection())
+                    .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+        }
+
+        @Test
+        @DisplayName("성공 - 검색 모드 시 검색 키워드에 맞는 모임 목록을 반환한다")
+        void success_getRecommendedParties_search() {
+            // given
+            Long memberId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+            PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().search("검색값").build();
+
+            PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
+            Party party = PartyFixture.createParty("검색결과모임", 2L, addr);
+            ReflectionTestUtils.setField(party, "id", 100L);
+            Slice<Party> partySlice = new SliceImpl<>(List.of(party), pageable, false);
+
+            given(partyRepository.searchParties(eq(memberId), eq(filter), any(Pageable.class)))
+                    .willReturn(partySlice);
+            given(partyBookmarkRepository.findAllPartyIdsByMemberId(memberId)).willReturn(Set.of());
+
+            // when
+            Slice<PartyDTO.Response> result = partyQueryService.getRecommendedParties(memberId, false, filter, "최신순", pageable);
 
             // then
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).partyName()).isEqualTo("필터 모임");
+            assertThat(result.getContent().get(0).partyName()).isEqualTo("검색결과모임");
             verify(partyRepository).searchParties(eq(memberId), eq(filter), any(Pageable.class));
         }
 
