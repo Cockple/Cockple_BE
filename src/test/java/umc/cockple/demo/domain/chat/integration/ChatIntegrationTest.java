@@ -206,6 +206,109 @@ class ChatIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("GET /api/chats/parties/search - 모임 채팅방 이름 검색")
+    class SearchPartyChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - name query param으로 매칭된 모임 채팅방만 반환한다")
+            void searchPartyChatRooms_filtersByName() throws Exception {
+                PartyAddr matchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party matchingParty = partyRepository.save(PartyFixture.createParty("배드 모임", member.getId(), matchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(matchingParty, member, Role.party_MANAGER));
+
+                PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "마포구"));
+                Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("축구 모임", member.getId(), nonMatchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.party_MANAGER));
+
+                ChatRoom matchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(matchingParty));
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(matchingRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(nonMatchingRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(matchingRoom, member, "배드 공지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, member, "축구 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "배드")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(matchingRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(matchingParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("배드 공지"));
+            }
+
+            @Test
+            @DisplayName("200 - 여러 검색 결과가 있으면 최근 메시지 방이 먼저 온다")
+            void searchPartyChatRooms_latestMessageRoomFirst() throws Exception {
+                PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party secondMatchingParty = partyRepository.save(PartyFixture.createParty("배드 새 모임", member.getId(), secondAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondMatchingParty, member, Role.party_MANAGER));
+
+                PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "용산구"));
+                Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("농구 모임", member.getId(), nonMatchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.party_MANAGER));
+
+                ChatRoom secondMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondMatchingParty));
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(secondMatchingRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(nonMatchingRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "먼저 온 배드 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondMatchingRoom, member, "가장 최근 배드 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, member, "비매칭 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "배드")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(secondMatchingRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(secondMatchingParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드 새 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("가장 최근 배드 메시지"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.content").value("먼저 온 배드 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - 검색 결과가 없으면 빈 목록과 hasNext false를 반환한다")
+            void searchPartyChatRooms_empty() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "배드민턴 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "농구")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/chats/rooms/{roomId} - 초기 채팅방 조회")
     class GetChatRoomDetail {
 
