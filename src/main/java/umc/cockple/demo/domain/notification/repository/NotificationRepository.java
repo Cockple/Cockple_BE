@@ -10,8 +10,7 @@ import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findAllByMember(Member member);
+    List<Notification> findAllByMemberOrderByCreatedAtDesc(Member member);
 
     Optional<Notification> findFirstByMemberAndTypeNotOrderByCreatedAtAsc(Member member, NotificationType type);
-
 }
