@@ -14,6 +14,8 @@ import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
@@ -24,6 +26,7 @@ import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
+import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -245,8 +248,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.leaveParty(partyId, 10L))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -332,7 +335,7 @@ class PartyCommandServiceTest {
             Party party = Party.builder()
                     .partyName("여복 모임")
                     .partyType(ParticipationType.WOMEN_DOUBLES)
-                    .status(umc.cockple.demo.domain.party.enums.PartyStatus.ACTIVE)
+                    .status(PartyStatus.ACTIVE)
                     .ownerId(10L)
                     .build();
             Member member = MemberFixture.createMember("남자지원자", Gender.MALE, Level.B, 1L); // 남성 지원
@@ -360,7 +363,7 @@ class PartyCommandServiceTest {
                     .partyName("나이 제한 모임")
                     .minBirthYear(1990)
                     .maxBirthYear(2000)
-                    .status(umc.cockple.demo.domain.party.enums.PartyStatus.ACTIVE)
+                    .status(PartyStatus.ACTIVE)
                     .ownerId(10L)
                     .build();
             // 1980년생 지원자 (범위 밖)
@@ -400,8 +403,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.createJoinRequest(1L, 1L))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -596,8 +599,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.createParty(memberId, request))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -705,8 +708,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.updateParty(partyId, memberId, request))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -735,7 +738,7 @@ class PartyCommandServiceTest {
             partyCommandService.deleteParty(partyId, ownerId);
 
             // then
-            assertThat(party.getStatus()).isEqualTo(umc.cockple.demo.domain.party.enums.PartyStatus.INACTIVE);
+            assertThat(party.getStatus()).isEqualTo(PartyStatus.INACTIVE);
         }
 
         @Test
@@ -815,8 +818,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.deleteParty(partyId, memberId))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -988,8 +991,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.updateMemberRole(partyId, 1L, 1L, request))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1177,8 +1180,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.removeMember(partyId, 10L, 1L))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1222,7 +1225,7 @@ class PartyCommandServiceTest {
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
             verify(chatRoomService).joinPartyChatRoom(partyId, applicant);
-            verify(applicationEventPublisher).publishEvent(any(umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent.class));
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
             verify(notificationCommandService).createNotification(any());
         }
 
@@ -1596,8 +1599,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.createInvitation(partyId, 1L, 1L))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -1757,8 +1760,8 @@ class PartyCommandServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.actionInvitation(20L, request, invitationId))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode()).isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 

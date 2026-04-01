@@ -29,10 +29,7 @@ import umc.cockple.demo.domain.party.domain.PartyAddr;
 import umc.cockple.demo.domain.party.domain.PartyInvitation;
 import umc.cockple.demo.domain.party.domain.PartyJoinRequest;
 import umc.cockple.demo.domain.party.dto.*;
-import umc.cockple.demo.domain.party.enums.ActivityTime;
-import umc.cockple.demo.domain.party.enums.ParticipationType;
-import umc.cockple.demo.domain.party.enums.RequestAction;
-import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.enums.*;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyInvitationRepository;
@@ -51,7 +48,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -329,8 +325,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("200 - 가입한 모임이 없을 경우 빈 목록을 반환한다")
         void success_emptyMyParties() throws Exception {
-            Member newMember = memberRepository.save(umc.cockple.demo.support.fixture.MemberFixture.createMember("뉴비",
-                    umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.BEGINNER, 3003L));
+            Member newMember = memberRepository.save(MemberFixture.createMember("뉴비",
+                    Gender.MALE, Level.BEGINNER, 3003L));
             SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
 
             mockMvc.perform(get("/api/my/parties")
@@ -360,7 +356,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
             // party2
             party2 = partyRepository.save(PartyFixture.createParty("간략 모임 2", manager.getId(), addr));
             memberPartyRepository.save(MemberFixture.createMemberParty(party2, manager, Role.PARTY_MANAGER));
-            
+
             // party3
             party3 = partyRepository.save(PartyFixture.createParty("간략 모임 3", manager.getId(), addr));
             memberPartyRepository.save(MemberFixture.createMemberParty(party3, manager, Role.PARTY_MANAGER));
@@ -385,8 +381,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("200 - 가입한 모임이 없을 경우 빈 목록을 반환한다")
         void success_emptySimpleMyParties() throws Exception {
-            Member newMember = memberRepository.save(umc.cockple.demo.support.fixture.MemberFixture.createMember("뉴비",
-                    umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.BEGINNER, 3003L));
+            Member newMember = memberRepository.save(MemberFixture.createMember("뉴비",
+                    Gender.MALE, Level.BEGINNER, 3003L));
             SecurityContextHelper.setAuthentication(newMember.getId(), newMember.getNickname());
 
             mockMvc.perform(get("/api/my/parties/simple")
@@ -625,7 +621,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
             Party womenParty = partyRepository.save(Party.builder()
                     .partyName("여복 전용 모임")
                     .partyType(ParticipationType.WOMEN_DOUBLES)
-                    .status(umc.cockple.demo.domain.party.enums.PartyStatus.ACTIVE)
+                    .status(PartyStatus.ACTIVE)
                     .ownerId(manager.getId())
                     .partyAddr(addr)
                     .minBirthYear(1900)
@@ -798,7 +794,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
             // 검증
             Party deletedParty = partyRepository.findById(party.getId()).orElseThrow();
-            assertThat(deletedParty.getStatus()).isEqualTo(umc.cockple.demo.domain.party.enums.PartyStatus.INACTIVE);
+            assertThat(deletedParty.getStatus()).isEqualTo(PartyStatus.INACTIVE);
         }
 
         @Test

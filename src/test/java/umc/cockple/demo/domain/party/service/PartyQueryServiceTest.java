@@ -19,6 +19,8 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -247,9 +249,12 @@ class PartyQueryServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
-            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr);
+            ReflectionTestUtils.setField(party3, "id", 3L);
 
             Slice<Party> partySlice = new SliceImpl<>(List.of(party3, party2, party1), pageable, false);
 
@@ -286,9 +291,12 @@ class PartyQueryServiceTest {
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
 
-            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
-            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr);
+            ReflectionTestUtils.setField(party3, "id", 3L);
 
             // 오래된 순 응답 가정
             Slice<Party> partySlice = new SliceImpl<>(List.of(party1, party2, party3), pageable, false);
@@ -324,9 +332,12 @@ class PartyQueryServiceTest {
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
 
-            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
-            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr);
+            ReflectionTestUtils.setField(party3, "id", 3L);
 
             // 운동 많은 순 응답 가정 (20회, 10회, 5회)
             Slice<Party> partySlice = new SliceImpl<>(List.of(party2, party1, party3), pageable, false);
@@ -383,9 +394,12 @@ class PartyQueryServiceTest {
             ReflectionTestUtils.setField(member, "id", memberId);
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
 
-            Party party1 = PartyFixture.createParty("모임1", 10L, addr); ReflectionTestUtils.setField(party1, "id", 1L);
-            Party party2 = PartyFixture.createParty("모임2", 10L, addr); ReflectionTestUtils.setField(party2, "id", 2L);
-            Party party3 = PartyFixture.createParty("모임3", 10L, addr); ReflectionTestUtils.setField(party3, "id", 3L);
+            Party party1 = PartyFixture.createParty("모임1", 10L, addr);
+            ReflectionTestUtils.setField(party1, "id", 1L);
+            Party party2 = PartyFixture.createParty("모임2", 10L, addr);
+            ReflectionTestUtils.setField(party2, "id", 2L);
+            Party party3 = PartyFixture.createParty("모임3", 10L, addr);
+            ReflectionTestUtils.setField(party3, "id", 3L);
 
             MemberParty mp1 = MemberFixture.createMemberParty(party1, member, Role.PARTY_MEMBER);
             MemberParty mp2 = MemberFixture.createMemberParty(party2, member, Role.PARTY_MEMBER);
@@ -420,11 +434,11 @@ class PartyQueryServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyQueryService.getSimpleMyParties(invalidMemberId, pageable))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .isInstanceOf(MemberException.class)
                     .satisfies(e -> assertThat(
-                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                            ((MemberException) e)
                                     .getCode())
-                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                            .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
@@ -480,9 +494,12 @@ class PartyQueryServiceTest {
             PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().addr1("서울특별시").build();
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
-            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
-            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr);
+            ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr);
+            ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr);
+            ReflectionTestUtils.setField(p3, "id", 3L);
 
             Slice<Party> partySlice = new SliceImpl<>(List.of(p3, p2, p1), pageable, false);
 
@@ -512,9 +529,12 @@ class PartyQueryServiceTest {
             PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
-            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
-            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr);
+            ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr);
+            ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr);
+            ReflectionTestUtils.setField(p3, "id", 3L);
 
             Slice<Party> partySlice = new SliceImpl<>(List.of(p1, p2, p3), pageable, false);
 
@@ -544,9 +564,12 @@ class PartyQueryServiceTest {
             PartyFilterDTO.Request filter = PartyFilterDTO.Request.builder().build();
 
             PartyAddr addr = PartyFixture.createPartyAddr("서울특별시", "강남구");
-            Party p1 = PartyFixture.createParty("모임1", 2L, addr); ReflectionTestUtils.setField(p1, "id", 1L);
-            Party p2 = PartyFixture.createParty("모임2", 2L, addr); ReflectionTestUtils.setField(p2, "id", 2L);
-            Party p3 = PartyFixture.createParty("모임3", 2L, addr); ReflectionTestUtils.setField(p3, "id", 3L);
+            Party p1 = PartyFixture.createParty("모임1", 2L, addr);
+            ReflectionTestUtils.setField(p1, "id", 1L);
+            Party p2 = PartyFixture.createParty("모임2", 2L, addr);
+            ReflectionTestUtils.setField(p2, "id", 2L);
+            Party p3 = PartyFixture.createParty("모임3", 2L, addr);
+            ReflectionTestUtils.setField(p3, "id", 3L);
 
             Slice<Party> partySlice = new SliceImpl<>(List.of(p2, p1, p3), pageable, false); // 20회, 10회, 5회 가정
 
@@ -606,11 +629,11 @@ class PartyQueryServiceTest {
             // when & then
             assertThatThrownBy(() -> partyQueryService.getRecommendedParties(memberId, true, filter, "최신순",
                     pageable))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .isInstanceOf(MemberException.class)
                     .satisfies(e -> assertThat(
-                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                            ((MemberException) e)
                                     .getCode())
-                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                            .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
 
         @Test
@@ -630,11 +653,11 @@ class PartyQueryServiceTest {
             // when & then
             assertThatThrownBy(() -> partyQueryService.getRecommendedParties(memberId, true, filter, "최신순",
                     pageable))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
+                    .isInstanceOf(MemberException.class)
                     .satisfies(e -> assertThat(
-                            ((umc.cockple.demo.domain.member.exception.MemberException) e)
+                            ((MemberException) e)
                                     .getCode())
-                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MAIN_ADDRESS_NULL));
+                            .isEqualTo(MemberErrorCode.MAIN_ADDRESS_NULL));
         }
     }
 
@@ -761,9 +784,9 @@ class PartyQueryServiceTest {
 
             // when & then
             assertThatThrownBy(() -> partyQueryService.getPartyDetails(partyId, 1L))
-                    .isInstanceOf(umc.cockple.demo.domain.member.exception.MemberException.class)
-                    .satisfies(e -> assertThat(((umc.cockple.demo.domain.member.exception.MemberException) e).getCode())
-                            .isEqualTo(umc.cockple.demo.domain.member.exception.MemberErrorCode.MEMBER_NOT_FOUND));
+                    .isInstanceOf(MemberException.class)
+                    .satisfies(e -> assertThat(((MemberException) e).getCode())
+                            .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
         }
     }
 
