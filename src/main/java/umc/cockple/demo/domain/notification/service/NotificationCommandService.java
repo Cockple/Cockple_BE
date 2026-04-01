@@ -63,7 +63,7 @@ public class NotificationCommandService {
         try {
 
             Member member = dto.member();
-            List<Notification> bookmarks = notificationRepository.findAllByMember(member);
+            List<Notification> bookmarks = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
             if (bookmarks.size() >= 50) {
                 // INVITE타입이 아니면서 가장 오래된 거 삭제
                 notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)

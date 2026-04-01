@@ -33,7 +33,7 @@ public class NotificationQueryService {
         Member member = findByMemberId(memberId);
 
         // 회원의 모든 알림 조회
-        List<Notification> notifications = notificationRepository.findAllByMember(member);
+        List<Notification> notifications = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
 
         if (notifications.isEmpty()) {
             return List.of();
