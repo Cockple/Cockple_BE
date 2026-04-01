@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -15,6 +18,8 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
+import umc.cockple.demo.domain.chat.dto.LastMessageCacheDTO;
+import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -28,6 +33,7 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -35,14 +41,17 @@ import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -78,6 +87,222 @@ class ChatQueryServiceTest {
                 chatProcessor,
                 chatRoomListCacheService
         );
+    }
+
+    @Nested
+    @DisplayName("getPartyChatRooms - 모임 채팅방 목록 조회")
+    class GetPartyChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("채팅방이 없으면 빈 목록과 hasNext false를 반환한다")
+            void emptySlice_returnsEmptyResponse() {
+                // given
+                Long memberId = 10L;
+                Slice<ChatRoom> emptySlice = new SliceImpl<>(List.of(), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
+                        .willReturn(emptySlice);
+
+                // when
+                PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 10);
+
+                // then
+                assertThat(result.content()).isEmpty();
+                assertThat(result.hasNext()).isFalse();
+            }
+
+            @Test
+            @DisplayName("마지막으로 읽은 메시지가 없으면 전체 미읽음 개수를 사용한다")
+            void unreadCount_usesAllUnreadMessages_whenLastReadMessageIdIsNull() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 1L;
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                Party party = PartyFixture.createParty("배드민턴 모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+                ReflectionTestUtils.setField(party, "id", 100L);
+
+                ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                ChatRoomMember membership = ChatFixture.createJoinedMember(chatRoom, me);
+                ReflectionTestUtils.setField(membership, "id", 1L);
+
+                Slice<ChatRoom> chatRooms = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
+                        .willReturn(chatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(membership));
+                given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
+                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(4);
+
+                // when
+                PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 10);
+
+                // then
+                assertThat(result.hasNext()).isFalse();
+                assertThat(result.content()).hasSize(1);
+                PartyChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
+                assertThat(roomInfo.chatRoomId()).isEqualTo(roomId);
+                assertThat(roomInfo.partyId()).isEqualTo(100L);
+                assertThat(roomInfo.partyName()).isEqualTo("배드민턴 모임");
+                assertThat(roomInfo.memberCount()).isEqualTo(1);
+                assertThat(roomInfo.unreadCount()).isEqualTo(4);
+                assertThat(roomInfo.partyImgUrl()).isNull();
+                assertThat(roomInfo.lastMessage()).isNull();
+                verify(messageReadStatusRepository).countAllUnreadMessages(roomId, memberId);
+                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
+            }
+
+            @Test
+            @DisplayName("마지막으로 읽은 메시지가 있으면 이후 미읽음 개수를 사용하고 마지막 메시지와 이미지 URL을 매핑한다")
+            void mapsLastMessageAndPartyImage_andUsesUnreadAfter_whenLastReadMessageExists() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 2L;
+                LocalDateTime sentAt = LocalDateTime.of(2026, 4, 1, 12, 30);
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                Party party = PartyFixture.createParty("아침 배드민턴", memberId, PartyFixture.createPartyAddr("서울", "송파구"));
+                ReflectionTestUtils.setField(party, "id", 200L);
+                PartyImg partyImg = PartyImg.create("party/image.png", party);
+                ReflectionTestUtils.setField(party, "partyImg", partyImg);
+
+                ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                ChatRoomMember membership = ChatFixture.createJoinedMemberWithLastRead(chatRoom, me, 30L);
+                ReflectionTestUtils.setField(membership, "id", 2L);
+
+                Slice<ChatRoom> chatRooms = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 5), true);
+                LastMessageCacheDTO lastMessage = LastMessageCacheDTO.builder()
+                        .content("최근 공지")
+                        .timestamp(sentAt)
+                        .messageType("TEXT")
+                        .build();
+
+                given(chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 5)))
+                        .willReturn(chatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(membership));
+                given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(3);
+                given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 30L)).willReturn(2);
+                given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
+                given(fileService.getUrlFromKey("party/image.png")).willReturn("https://cdn.example.com/party/image.png");
+
+                // when
+                PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 5);
+
+                // then
+                assertThat(result.hasNext()).isTrue();
+                assertThat(result.content()).hasSize(1);
+
+                PartyChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
+                assertThat(roomInfo.chatRoomId()).isEqualTo(roomId);
+                assertThat(roomInfo.partyId()).isEqualTo(200L);
+                assertThat(roomInfo.partyName()).isEqualTo("아침 배드민턴");
+                assertThat(roomInfo.memberCount()).isEqualTo(3);
+                assertThat(roomInfo.unreadCount()).isEqualTo(2);
+                assertThat(roomInfo.partyImgUrl()).isEqualTo("https://cdn.example.com/party/image.png");
+                assertThat(roomInfo.lastMessage()).isNotNull();
+                assertThat(roomInfo.lastMessage().content()).isEqualTo("최근 공지");
+                assertThat(roomInfo.lastMessage().timestamp()).isEqualTo(sentAt);
+                assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
+
+                verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 30L);
+                verify(messageReadStatusRepository, never()).countAllUnreadMessages(roomId, memberId);
+                verify(chatRoomListCacheService).getLastMessage(roomId);
+                verify(fileService).getUrlFromKey("party/image.png");
+            }
+
+            @Test
+            @DisplayName("채팅방 목록은 최신 메시지 기준으로 받은 순서를 유지한다")
+            void preservesLatestMessageFirstOrder() {
+                // given
+                Long memberId = 10L;
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                Party newerParty = PartyFixture.createParty("최근 모임", memberId, PartyFixture.createPartyAddr("서울", "강동구"));
+                ReflectionTestUtils.setField(newerParty, "id", 401L);
+                ChatRoom newerRoom = ChatFixture.createPartyChatRoom(newerParty);
+                ReflectionTestUtils.setField(newerRoom, "id", 11L);
+                ChatRoomMember newerMembership = ChatFixture.createJoinedMember(newerRoom, me);
+                ReflectionTestUtils.setField(newerMembership, "id", 11L);
+
+                Party olderParty = PartyFixture.createParty("이전 모임", memberId, PartyFixture.createPartyAddr("서울", "서초구"));
+                ReflectionTestUtils.setField(olderParty, "id", 402L);
+                ChatRoom olderRoom = ChatFixture.createPartyChatRoom(olderParty);
+                ReflectionTestUtils.setField(olderRoom, "id", 12L);
+                ChatRoomMember olderMembership = ChatFixture.createJoinedMember(olderRoom, me);
+                ReflectionTestUtils.setField(olderMembership, "id", 12L);
+
+                Slice<ChatRoom> orderedChatRooms = new SliceImpl<>(List.of(newerRoom, olderRoom), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
+                        .willReturn(orderedChatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(11L, memberId)).willReturn(Optional.of(newerMembership));
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(12L, memberId)).willReturn(Optional.of(olderMembership));
+                given(chatRoomMemberRepository.countByChatRoomId(11L)).willReturn(2);
+                given(chatRoomMemberRepository.countByChatRoomId(12L)).willReturn(2);
+                given(messageReadStatusRepository.countAllUnreadMessages(11L, memberId)).willReturn(0);
+                given(messageReadStatusRepository.countAllUnreadMessages(12L, memberId)).willReturn(0);
+                given(chatRoomListCacheService.getLastMessage(11L)).willReturn(
+                        LastMessageCacheDTO.builder().content("가장 최근 메시지").timestamp(LocalDateTime.of(2026, 4, 1, 20, 0)).messageType("TEXT").build());
+                given(chatRoomListCacheService.getLastMessage(12L)).willReturn(
+                        LastMessageCacheDTO.builder().content("이전 메시지").timestamp(LocalDateTime.of(2026, 4, 1, 19, 0)).messageType("TEXT").build());
+
+                // when
+                PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 10);
+
+                // then
+                assertThat(result.content()).hasSize(2);
+                assertThat(result.content().get(0).chatRoomId()).isEqualTo(11L);
+                assertThat(result.content().get(0).partyName()).isEqualTo("최근 모임");
+                assertThat(result.content().get(0).lastMessage().content()).isEqualTo("가장 최근 메시지");
+                assertThat(result.content().get(1).chatRoomId()).isEqualTo(12L);
+                assertThat(result.content().get(1).partyName()).isEqualTo("이전 모임");
+                assertThat(result.content().get(1).lastMessage().content()).isEqualTo("이전 메시지");
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("조회된 채팅방의 멤버가 아니면 CHAT_ROOM_ACCESS_DENIED 예외를 던진다")
+            void throwsAccessDenied_whenMembershipIsMissing() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 3L;
+
+                Party party = PartyFixture.createParty("저녁 배드민턴", memberId, PartyFixture.createPartyAddr("서울", "마포구"));
+                ReflectionTestUtils.setField(party, "id", 300L);
+
+                ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                Slice<ChatRoom> chatRooms = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
+                        .willReturn(chatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> chatQueryService.getPartyChatRooms(memberId, 0, 10))
+                        .isInstanceOf(ChatException.class)
+                        .satisfies(e -> assertThat(((ChatException) e).getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
+            }
+        }
     }
 
     @Nested

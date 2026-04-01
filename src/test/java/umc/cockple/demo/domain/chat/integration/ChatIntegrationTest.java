@@ -2,20 +2,25 @@ package umc.cockple.demo.domain.chat.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
@@ -43,6 +48,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
     @Autowired ChatRoomRepository chatRoomRepository;
     @Autowired ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired ChatMessageRepository chatMessageRepository;
+    @Autowired MessageReadStatusRepository messageReadStatusRepository;
+    @Autowired ChatRoomListCacheService chatRoomListCacheService;
 
     private Member member;
     private Member otherMember;
@@ -67,6 +74,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        chatRoomListCacheService.evictAllLastMessages();
+        messageReadStatusRepository.deleteAll();
         chatMessageRepository.deleteAll();
         chatRoomMemberRepository.deleteAll();
         chatRoomRepository.deleteAll();
@@ -75,6 +84,125 @@ class ChatIntegrationTest extends IntegrationTestBase {
         partyAddrRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/parties - 모임 채팅방 목록 조회")
+    class GetPartyChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 인증된 회원은 자신의 모임 채팅방 목록을 조회할 수 있다")
+            void getPartyChatRooms_success() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(
+                        ChatFixture.createTextMessage(partyChatRoom, member, "최근 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[0].memberCount").value(1))
+                        .andExpect(jsonPath("$.data.content[0].unreadCount").value(0))
+                        .andExpect(jsonPath("$.data.content[0].partyImgUrl").doesNotExist())
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("최근 공지"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.timestamp").exists());
+            }
+
+            @Test
+            @DisplayName("200 - 참여 중인 모임 채팅방이 없으면 빈 목록을 반환한다")
+            void getPartyChatRooms_empty() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+
+            @Test
+            @DisplayName("200 - 마지막 메시지가 더 최근인 채팅방이 목록의 위에 온다")
+            void getPartyChatRooms_latestMessageRoomFirst() throws Exception {
+                PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party secondParty = partyRepository.save(PartyFixture.createParty("새 모임", member.getId(), secondAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondParty, member, Role.party_MANAGER));
+
+                ChatRoom secondPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(secondPartyChatRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "먼저 온 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondPartyChatRoom, member, "가장 최근 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(secondPartyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(secondParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("새 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("가장 최근 메시지"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.content").value("먼저 온 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - unreadCount와 partyImgUrl이 실제 값으로 채워진다")
+            void getPartyChatRooms_populatedUnreadCountAndPartyImgUrl() throws Exception {
+                PartyAddr richAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "용산구"));
+                Party richParty = PartyFixture.createParty("이미지 있는 모임", member.getId(), richAddr);
+                ReflectionTestUtils.invokeMethod(richParty, "setPartyImg", PartyImg.create("party/test-image.png", richParty));
+                richParty = partyRepository.saveAndFlush(richParty);
+
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, otherMember, Role.party_MEMBER));
+
+                ChatRoom richPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(richParty));
+                chatRoomMemberRepository.save(ChatRoomMember.create(richPartyChatRoom, member));
+
+                ChatMessage firstMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(richPartyChatRoom, otherMember, "첫 번째 메시지"));
+                ChatMessage latestMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(richPartyChatRoom, otherMember, "읽지 않은 최근 메시지"));
+
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(firstMessage.getId(), member.getId(), richPartyChatRoom.getId()));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(latestMessage.getId(), member.getId(), richPartyChatRoom.getId()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(richPartyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].unreadCount").value(2))
+                        .andExpect(jsonPath("$.data.content[0].partyImgUrl").value("https://storage.googleapis.com/test-bucket/party/test-image.png"))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("이미지 있는 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("읽지 않은 최근 메시지"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"));
+            }
+        }
     }
 
     @Nested
