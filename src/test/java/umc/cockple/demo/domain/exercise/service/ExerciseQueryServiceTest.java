@@ -142,7 +142,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
 
                 // when
@@ -169,7 +169,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), subManager.getId(), Role.party_MANAGER))
+                        party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
 
                 // when
@@ -196,7 +196,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), normalMember.getId(), Role.party_MANAGER))
+                        party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
 
                 // when
@@ -223,7 +223,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), outsider.getId(), Role.party_MANAGER))
+                        party.getId(), outsider.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
 
                 // when
@@ -253,7 +253,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(withdrawnMember.getId())))
@@ -278,7 +278,7 @@ class ExerciseQueryServiceTest {
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(activeMember, exercise);
 
-                MemberParty memberParty = MemberFixture.createMemberParty(party, activeMember, Role.party_MEMBER);
+                MemberParty memberParty = MemberFixture.createMemberParty(party, activeMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -289,7 +289,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(activeMember.getId())))
@@ -321,7 +321,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberRepository.findMemberNamesByIds(any()))
                         .willReturn(Map.of(manager.getId(), "모임장"));
@@ -366,9 +366,9 @@ class ExerciseQueryServiceTest {
                 ReflectionTestUtils.setField(guest, "id", 71L);
                 ReflectionTestUtils.setField(guest, "createdAt", LocalDateTime.now().minusMinutes(1));
 
-                MemberParty managerParty = MemberFixture.createMemberParty(party, manager, Role.party_MANAGER);
-                MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER);
-                MemberParty memberParty = MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER);
+                MemberParty managerParty = MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER);
+                MemberParty subManagerParty = MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER);
+                MemberParty memberParty = MemberFixture.createMemberParty(party, normalMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -379,7 +379,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(manager.getId(), subManager.getId(), normalMember.getId(), outsider.getId())))
@@ -398,9 +398,9 @@ class ExerciseQueryServiceTest {
                                 ExerciseDetailDTO.ParticipantInfo::participantType,
                                 ExerciseDetailDTO.ParticipantInfo::partyPosition)
                         .containsExactly(
-                                tuple("모임장", "PARTY_MEMBER", "party_MANAGER"),
-                                tuple("부모임장", "PARTY_MEMBER", "party_SUBMANAGER"),
-                                tuple("일반멤버", "PARTY_MEMBER", "party_MEMBER"),
+                                tuple("모임장", "PARTY_MEMBER", "PARTY_MANAGER"),
+                                tuple("부모임장", "PARTY_MEMBER", "PARTY_SUBMANAGER"),
+                                tuple("일반멤버", "PARTY_MEMBER", "PARTY_MEMBER"),
                                 tuple("외부회원", "EXTERNAL_PARTICIPANT", null),
                                 tuple("게스트", "GUEST", null)
                         );
@@ -424,8 +424,8 @@ class ExerciseQueryServiceTest {
                 MemberExercise second = MemberFixture.createMemberExercise(secondMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
-                MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.party_MEMBER);
-                MemberParty secondParty = MemberFixture.createMemberParty(party, secondMember, Role.party_MEMBER);
+                MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.PARTY_MEMBER);
+                MemberParty secondParty = MemberFixture.createMemberParty(party, secondMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -436,7 +436,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(firstMember.getId(), secondMember.getId())))
@@ -468,7 +468,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberRepository.findMemberNamesByIds(any()))
                         .willReturn(Map.of(manager.getId(), "모임장"));
@@ -500,8 +500,8 @@ class ExerciseQueryServiceTest {
                 MemberExercise second = MemberFixture.createMemberExercise(secondMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
-                MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.party_MEMBER);
-                MemberParty secondParty = MemberFixture.createMemberParty(party, secondMember, Role.party_MEMBER);
+                MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.PARTY_MEMBER);
+                MemberParty secondParty = MemberFixture.createMemberParty(party, secondMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -512,7 +512,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(firstMember.getId(), secondMember.getId())))
@@ -549,8 +549,8 @@ class ExerciseQueryServiceTest {
                 MemberExercise second = MemberFixture.createMemberExercise(femaleMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
-                MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.party_MEMBER);
-                MemberParty femaleParty = MemberFixture.createMemberParty(party, femaleMember, Role.party_MEMBER);
+                MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.PARTY_MEMBER);
+                MemberParty femaleParty = MemberFixture.createMemberParty(party, femaleMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -561,7 +561,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(maleMember.getId(), femaleMember.getId())))
@@ -594,8 +594,8 @@ class ExerciseQueryServiceTest {
                 MemberExercise femaleExercise = MemberFixture.createMemberExercise(femaleMember, exercise);
                 ReflectionTestUtils.setField(femaleExercise, "createdAt", LocalDateTime.now());
 
-                MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.party_MEMBER);
-                MemberParty femaleParty = MemberFixture.createMemberParty(party, femaleMember, Role.party_MEMBER);
+                MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.PARTY_MEMBER);
+                MemberParty femaleParty = MemberFixture.createMemberParty(party, femaleMember, Role.PARTY_MEMBER);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
@@ -606,7 +606,7 @@ class ExerciseQueryServiceTest {
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                        party.getId(), manager.getId(), Role.party_MANAGER))
+                        party.getId(), manager.getId(), Role.PARTY_MANAGER))
                         .willReturn(true);
                 given(memberPartyRepository.findMemberRolesByPartyAndMembers(
                         party.getId(), List.of(maleMember.getId(), femaleMember.getId())))

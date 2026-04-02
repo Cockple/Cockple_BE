@@ -128,9 +128,9 @@ class ExerciseLifecycleServiceTest {
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
 
                 Exercise savedExercise = Exercise.builder()
@@ -175,9 +175,9 @@ class ExerciseLifecycleServiceTest {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
@@ -278,9 +278,9 @@ class ExerciseLifecycleServiceTest {
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
 
                 // when
@@ -303,9 +303,9 @@ class ExerciseLifecycleServiceTest {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
@@ -384,9 +384,9 @@ class ExerciseLifecycleServiceTest {
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
 
                 Exercise savedExercise = Exercise.builder()
@@ -418,9 +418,9 @@ class ExerciseLifecycleServiceTest {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(false);
 
                 assertThatThrownBy(() ->

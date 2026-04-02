@@ -70,9 +70,9 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
         party = partyRepository.save(PartyFixture.createParty("테스트 모임", manager.getId(), addr));
 
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.party_SUBMANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.party_MEMBER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, subManager, Role.PARTY_SUBMANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, normalMember, Role.PARTY_MEMBER));
     }
 
     @AfterEach
@@ -606,7 +606,7 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
             void ageNotAllowed() throws Exception {
                 Member youngMember = memberRepository.save(
                         MemberFixture.createMember("어린회원", Gender.MALE, Level.B, 4001L, LocalDate.of(2010, 1, 1)));
-                memberPartyRepository.save(MemberFixture.createMemberParty(party, youngMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(party, youngMember, Role.PARTY_MEMBER));
 
                 SecurityContextHelper.setAuthentication(youngMember.getId(), youngMember.getNickname());
 

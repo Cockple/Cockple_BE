@@ -72,7 +72,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
         partyRepository.save(party);
 
         // 모임장을 모임 멤버로 등록
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.party_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, manager, Role.PARTY_MANAGER));
     }
 
     @AfterEach
@@ -155,7 +155,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
             void 소속된_모임의_운동은_추천되지_않는다() throws Exception {
                 // given - outsider를 모임에 가입시킴
                 memberPartyRepository.save(
-                        MemberFixture.createMemberParty(party, outsider, Role.party_MEMBER));
+                        MemberFixture.createMemberParty(party, outsider, Role.PARTY_MEMBER));
 
                 exerciseRepository.save(ExerciseFixture.createRecommendableExercise(party,
                         LocalDate.now().plusDays(3), 37.5, 127.0, "테스트 체육관"));

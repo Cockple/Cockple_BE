@@ -63,7 +63,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("경기도", "안산시"));
         bookmarkParty = partyRepository.save(PartyFixture.createParty("테스트 모임", member.getId(), addr));
 
-        memberPartyRepository.save(MemberFixture.createMemberParty(bookmarkParty, member, Role.party_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(bookmarkParty, member, Role.PARTY_MANAGER));
 
         bookmarkExercise = exerciseRepository.save(Exercise.builder()
                 .party(bookmarkParty)

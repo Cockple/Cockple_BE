@@ -391,7 +391,7 @@ public class ExerciseQueryService {
 
     private boolean checkManagerPermission(Party party, Member member) {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), member.getId(), Role.party_MANAGER);
+                party.getId(), member.getId(), Role.PARTY_MANAGER);
     }
 
     private ExerciseDetailDTO.ExerciseInfo createExerciseInfo(Exercise exercise) {
