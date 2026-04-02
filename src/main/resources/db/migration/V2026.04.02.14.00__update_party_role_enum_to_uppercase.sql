@@ -1,11 +1,13 @@
+ALTER TABLE member_party MODIFY role VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+
 UPDATE member_party
-SET role = 'PARTY_MANAGER' 
-WHERE role = 'party_MANAGER';
+SET role = 'PARTY_MANAGER'
+WHERE CAST(role AS BINARY) = CAST('party_MANAGER' AS BINARY);
 
-UPDATE member_party 
-SET role = 'PARTY_SUBMANAGER' 
-WHERE role = 'party_SUBMANAGER';
+UPDATE member_party
+SET role = 'PARTY_SUBMANAGER'
+WHERE CAST(role AS BINARY) = CAST('party_SUBMANAGER' AS BINARY);
 
-UPDATE member_party 
-SET role = 'PARTY_MEMBER' 
-WHERE role = 'party_MEMBER';
+UPDATE member_party
+SET role = 'PARTY_MEMBER'
+WHERE CAST(role AS BINARY) = CAST('party_MEMBER' AS BINARY);
