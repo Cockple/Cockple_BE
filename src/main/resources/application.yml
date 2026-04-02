@@ -88,3 +88,5 @@ jwt:
 logging:
   level:
     org.hibernate.SQL: WARN
+
+
