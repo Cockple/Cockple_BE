@@ -703,7 +703,7 @@ class MemberCommandServiceTest {
             void 활성_모임의_모임장이면_MANAGER_CANNOT_LEAVE_예외를_던진다() {
                 // given
                 MemberParty leaderParty = MemberParty.builder()
-                        .role(Role.party_MANAGER)
+                        .role(Role.PARTY_MANAGER)
                         .status(MemberPartyStatus.ACTIVE)
                         .joinedAt(LocalDateTime.now())
                         .build();
@@ -723,7 +723,7 @@ class MemberCommandServiceTest {
             void 활성_모임의_부모임장이면_SUBMANAGER_CANNOT_LEAVE_예외를_던진다() {
                 // given
                 MemberParty subManagerParty = MemberParty.builder()
-                        .role(Role.party_SUBMANAGER)
+                        .role(Role.PARTY_SUBMANAGER)
                         .status(MemberPartyStatus.ACTIVE)
                         .joinedAt(LocalDateTime.now())
                         .build();
@@ -743,7 +743,7 @@ class MemberCommandServiceTest {
             void 비활성_모임의_모임장이면_탈퇴가_가능하다() {
                 // given: BANNED 상태의 모임이라면 탈퇴 검증을 통과해야 한다
                 MemberParty bannedParty = MemberParty.builder()
-                        .role(Role.party_MANAGER)
+                        .role(Role.PARTY_MANAGER)
                         .status(MemberPartyStatus.BANNED)
                         .joinedAt(LocalDateTime.now())
                         .build();

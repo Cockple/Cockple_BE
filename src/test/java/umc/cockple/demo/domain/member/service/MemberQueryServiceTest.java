@@ -125,8 +125,8 @@ class MemberQueryServiceTest {
             @DisplayName("참여한_모임_수가_올바르게_반환된다")
             void 참여한_모임_수가_올바르게_반환된다() {
                 // given
-                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.party_MEMBER));
-                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.party_MEMBER));
+                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.PARTY_MEMBER));
+                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.PARTY_MEMBER));
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
 

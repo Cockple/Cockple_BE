@@ -58,8 +58,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
         party = partyRepository.save(PartyFixture.createParty("배드민턴 모임", member.getId(), addr));
 
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.party_MANAGER));
-        memberPartyRepository.save(MemberFixture.createMemberParty(party, otherMember, Role.party_MEMBER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.PARTY_MANAGER));
+        memberPartyRepository.save(MemberFixture.createMemberParty(party, otherMember, Role.PARTY_MEMBER));
 
         partyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(party));
         directChatRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());

@@ -341,9 +341,9 @@ class ExerciseParticipationServiceTest {
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
                 given(memberRepository.findById(participant.getId())).willReturn(Optional.of(participant));
                 given(memberExerciseRepository.findByExerciseAndMember(exercise, participant))
@@ -392,9 +392,9 @@ class ExerciseParticipationServiceTest {
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_MANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
-                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.party_SUBMANAGER))
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(false);
 
                 assertThatThrownBy(() ->

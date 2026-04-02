@@ -211,9 +211,9 @@ public class PartyConverter {
 
     private int getRolePriority(String role) {
         return switch (role) {
-            case "party_MANAGER" -> 0; // 모임장 역할
-            case "party_SUBMANAGER" -> 1; // 부모임장
-            case "party_MEMBER" -> 2; // 일반 멤버
+            case "PARTY_MANAGER" -> 0; // 모임장 역할
+            case "PARTY_SUBMANAGER" -> 1; // 부모임장
+            case "PARTY_MEMBER" -> 2; // 일반 멤버
             default -> 99;
         };
     }

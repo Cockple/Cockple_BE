@@ -51,3 +51,7 @@ terraform/terraform.tfvars
 
 ### firebase ###
 src/main/resources/firebase/*.json
+
+### Claude / OMC ###
+.claude/
+.omc/
