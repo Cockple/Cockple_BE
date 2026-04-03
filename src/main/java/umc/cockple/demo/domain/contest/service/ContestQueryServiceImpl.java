@@ -139,7 +139,7 @@ public class ContestQueryServiceImpl implements ContestQueryService {
                 : "";
     }
 
-    public String getMedalImgUrl(Contest contest) {
+    private String getMedalImgUrl(Contest contest) {
         String baseKey = "contest/";
         String key = switch (contest.getMedalType()) {
             case GOLD   -> baseKey + "b0ac9ac7-169a-40de-aeb3-a8572bc91506.svg";

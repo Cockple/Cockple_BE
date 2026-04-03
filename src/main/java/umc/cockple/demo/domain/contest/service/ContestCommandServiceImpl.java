@@ -116,6 +116,28 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toUpdateResponseDTO(contest);
     }
 
+
+    // 삭제
+    @Override
+    public ContestRecordDeleteDTO.Response deleteContestRecord(Long memberId, Long contestId) {
+
+        log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
+
+        // 1. 대회 조회
+        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
+                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
+
+        // 2. 연관관계 해제 (양방향)
+        contest.removeMember();
+
+        // 3. 삭제
+        contestRepository.delete(contest);
+
+        log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
+
+        return contestConverter.toDeleteResponseDTO(contest);
+    }
+
     private void updateContestImages(Contest contest, List<ContestImgUpdateRequest> requestImgs) {
         if (requestImgs == null) {
             requestImgs = List.of();
@@ -200,27 +222,6 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 contest.getContestVideos().add(newVideo);
             }
         }
-    }
-
-    // 삭제
-    @Override
-    public ContestRecordDeleteDTO.Response deleteContestRecord(Long memberId, Long contestId) {
-
-        log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
-
-        // 1. 대회 조회
-        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
-                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
-
-        // 2. 연관관계 해제 (양방향)
-        contest.removeMember();
-
-        // 3. 삭제
-        contestRepository.delete(contest);
-
-        log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
-
-        return contestConverter.toDeleteResponseDTO(contest);
     }
 
     private void extractedImgsWithOrder(List<AddContestImgRequest> imgs, Contest contest) {
