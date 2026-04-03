@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -26,6 +27,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.ChatFixture;
@@ -304,6 +306,90 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.hasNext").value(false))
                         .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/chats/direct - 개인 채팅방 생성 및 참여")
+    class CreateDirectChatRoom {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 새로운 개인 채팅방을 생성하고 요청자는 JOINED, 상대방은 PENDING 상태로 저장한다")
+            void createDirectChatRoom_success() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", otherMember.getId().toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.CREATED.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.CREATED.getMessage()))
+                        .andExpect(jsonPath("$.data.chatRoomId").isNumber())
+                        .andExpect(jsonPath("$.data.displayName").value(otherMember.getMemberName()))
+                        .andExpect(jsonPath("$.data.createdAt").exists())
+                        .andExpect(jsonPath("$.data.members", hasSize(2)))
+                        .andExpect(jsonPath("$.data.members[*].memberName",
+                                containsInAnyOrder(member.getMemberName(), otherMember.getMemberName())));
+            }
+
+            @Test
+            @DisplayName("200 - 이미 존재하는 개인 채팅방이 있으면 새로 만들지 않고 기존 채팅방을 반환한다")
+            void createDirectChatRoom_returnsExistingRoom() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, otherMember.getMemberName()));
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(directChatRoom, otherMember, member.getMemberName()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", otherMember.getId().toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.CREATED.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.CREATED.getMessage()))
+                        .andExpect(jsonPath("$.data.chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.displayName").value(otherMember.getMemberName()))
+                        .andExpect(jsonPath("$.data.createdAt").exists())
+                        .andExpect(jsonPath("$.data.members", hasSize(2)))
+                        .andExpect(jsonPath("$.data.members[*].memberName",
+                                containsInAnyOrder(member.getMemberName(), otherMember.getMemberName())));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("400 - 자기 자신을 대상으로 요청하면 CANNOT_CHAT_WITH_SELF 에러를 반환한다")
+            void fail_cannotChatWithSelf() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", member.getId().toString()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.code").value(ChatErrorCode.CANNOT_CHAT_WITH_SELF.getCode()))
+                        .andExpect(jsonPath("$.message").value(ChatErrorCode.CANNOT_CHAT_WITH_SELF.getMessage()))
+                        .andExpect(jsonPath("$.data").doesNotExist());
+            }
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 상대 회원이면 MEMBER_NOT_FOUND 에러를 반환한다")
+            void fail_targetMemberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", "999999"))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()))
+                        .andExpect(jsonPath("$.data").doesNotExist());
             }
         }
     }
