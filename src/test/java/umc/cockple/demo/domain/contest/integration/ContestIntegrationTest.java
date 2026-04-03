@@ -89,8 +89,8 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(post("/api/contests/my")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                        .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON201"))
                         .andExpect(jsonPath("$.data.contestId").isNumber())
                         .andExpect(jsonPath("$.data.createdAt").isNotEmpty())
@@ -117,7 +117,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(post("/api/contests/my")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                        .andExpect(status().isCreated())
+                        .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.contestId").isNumber())
                         .andExpect(jsonPath("$.data.contestImgIds", hasSize(0)))
                         .andExpect(jsonPath("$.data.contestVideoIds", hasSize(0)));
@@ -266,8 +266,8 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(patch("/api/contests/my/{contestId}", myContest.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                        .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON201"))
                         .andExpect(jsonPath("$.data.contestId").value(myContest.getId()))
                         .andExpect(jsonPath("$.data.contestImgs").isArray())
@@ -346,7 +346,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(delete("/api/contests/my/{contestId}", myContest.getId()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data.deleteContestId").value(myContest.getId()));
             }
@@ -402,11 +402,11 @@ class ContestIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/contests/my/{contestId}", myContest.getId()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data.contestId").value(myContest.getId()))
                         .andExpect(jsonPath("$.data.contestName").value("내 대회 기록"))
-                        .andExpect(jsonPath("$.data.date").value("2026-06-15"))
+                        .andExpect(jsonPath("$.data.date").value("2024-06-15"))
                         .andExpect(jsonPath("$.data.medalType").value("GOLD"))
                         .andExpect(jsonPath("$.data.type").value("SINGLE"))
                         .andExpect(jsonPath("$.data.level").value("A"))
@@ -472,7 +472,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/contests/my"))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data", hasSize(4)))
                         .andExpect(jsonPath("$.data[0].contestId").isNumber())
@@ -566,7 +566,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/contests/my/medals"))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data.myMedalTotal").value(4))
                         .andExpect(jsonPath("$.data.goldCount").value(2))
@@ -600,7 +600,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
         void setUpContest() {
             otherContest = contestRepository.save(ContestFixture.createPrivateContest(
                     otherMember, "타인의 대회", MedalType.BRONZE,
-                    LocalDate.of(2025, 3, 10), ParticipationType.WOMEN_DOUBLES, Level.C, "비공개 후기"
+                    LocalDate.of(2026, 3, 10), ParticipationType.WOMEN_DOUBLES, Level.C, "비공개 후기"
             ));
         }
 
@@ -616,11 +616,11 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/members/{memberId}/contests/{contestId}",
                                 otherMember.getId(), otherContest.getId()))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data.contestId").value(otherContest.getId()))
                         .andExpect(jsonPath("$.data.contestName").value("타인의 대회"))
-                        .andExpect(jsonPath("$.data.date").value("2024-03-10"))
+                        .andExpect(jsonPath("$.data.date").value("2026-03-10"))
                         .andExpect(jsonPath("$.data.medalType").value("BRONZE"))
                         .andExpect(jsonPath("$.data.type").value("WOMEN_DOUBLES"))
                         .andExpect(jsonPath("$.data.level").value("C"))
@@ -676,7 +676,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/members/{memberId}/contests", otherMember.getId())
                                 .param("memeberId", String.valueOf(otherMember.getId())))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data", hasSize(2)));
             }
@@ -719,7 +719,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/members/{memberId}/medals", otherMember.getId())
                                 .param("memberId", String.valueOf(otherMember.getId())))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.isSuccess").value(true))
+                        .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
                         .andExpect(jsonPath("$.data.myMedalTotal").value(2))
                         .andExpect(jsonPath("$.data.goldCount").value(1))

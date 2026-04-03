@@ -263,8 +263,6 @@ class ContestQueryServiceTest {
 
             noneContest = ContestFixture.createContest(member, "미입상 대회", MedalType.NONE);
             ReflectionTestUtils.setField(noneContest, "id", 3L);
-
-            given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
         }
 
         @Nested
@@ -275,6 +273,7 @@ class ContestQueryServiceTest {
             @DisplayName("medalType=null이면 전체 대회 기록을 반환한다")
             void getList_noFilter() {
                 // given
+                given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
                 given(contestRepository.findAllByMember_Id(member.getId()))
                         .willReturn(List.of(goldContest, silverContest, noneContest));
 
@@ -290,6 +289,7 @@ class ContestQueryServiceTest {
             @DisplayName("medalType=NONE이면 미입상 대회 기록만 반환한다")
             void getList_filterByNone() {
                 // given
+                given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
                 given(contestRepository.findAllByMember_Id(member.getId()))
                         .willReturn(List.of(goldContest, silverContest, noneContest));
 
@@ -306,6 +306,7 @@ class ContestQueryServiceTest {
             @DisplayName("medalType=GOLD이면 NONE 필터링 없이 전체를 반환한다")
             void getList_filterByGold_returnsAll() {
                 // given
+                given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
                 given(contestRepository.findAllByMember_Id(member.getId()))
                         .willReturn(List.of(goldContest, silverContest, noneContest));
 
@@ -321,6 +322,7 @@ class ContestQueryServiceTest {
             @DisplayName("medalType=SILVER이면 NONE 필터링 없이 전체를 반환한다")
             void getList_filterBySilver_returnsAll() {
                 // given
+                given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
                 given(contestRepository.findAllByMember_Id(member.getId()))
                         .willReturn(List.of(goldContest, silverContest, noneContest));
 
@@ -336,6 +338,7 @@ class ContestQueryServiceTest {
             @DisplayName("medalType=BRONZE이면 NONE 필터링 없이 전체를 반환한다")
             void getList_filterByBronze_returnsAll() {
                 // given
+                given(fileService.getUrlFromKey(anyString())).willReturn("https://cdn.example.com/medal.svg");
                 given(contestRepository.findAllByMember_Id(member.getId()))
                         .willReturn(List.of(goldContest, silverContest, noneContest));
 

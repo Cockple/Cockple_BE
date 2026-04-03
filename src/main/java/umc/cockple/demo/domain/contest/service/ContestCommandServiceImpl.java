@@ -218,8 +218,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 }
             } else {
                 // 신규 항목 추가
-                ContestVideo newVideo = ContestVideo.of(contest, reqVideo.videoKey(), reqVideo.videoOrder());
-                contest.getContestVideos().add(newVideo);
+                ContestVideo.of(contest, reqVideo.videoKey(), reqVideo.videoOrder());
             }
         }
     }
@@ -239,8 +238,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     private void extractedVideoWithOrder(List<AddContestVideoRequest> videos, Contest contest) {
         if (videos != null && !videos.isEmpty()) {
             for (AddContestVideoRequest video : videos) {
-                ContestVideo contestVideo = ContestVideo.of(contest, video.videoKey(), video.videoOrder());
-                contest.getContestVideos().add(contestVideo);
+                ContestVideo.of(contest, video.videoKey(), video.videoOrder());
             }
         }
     }
