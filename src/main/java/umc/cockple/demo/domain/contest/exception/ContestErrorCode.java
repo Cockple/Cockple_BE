@@ -10,8 +10,6 @@ import umc.cockple.demo.global.response.dto.ErrorReasonDTO;
 @RequiredArgsConstructor
 public enum ContestErrorCode implements BaseErrorCode {
 
-    IMAGE_UPLOAD_LIMIT_EXCEEDED(HttpStatus.BANDWIDTH_LIMIT_EXCEEDED, "CONTEST101", "이미지가 3개를 초과했습니다."),
-
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST201", "존재하지 않는 회원입니다."),
     CONTEST_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST202", "존재하지 않는 대회기록입니다."),
     CONTEST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTEST203", "존재하지 않는 대회 이미지입니다."),

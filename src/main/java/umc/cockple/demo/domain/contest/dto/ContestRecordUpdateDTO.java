@@ -52,7 +52,7 @@ public class ContestRecordUpdateDTO {
             Long contestId,
             List<ContestImgResponse> contestImgs,
             List<ContestVideoResponse> contestVideos,
-            LocalDateTime UpdatedAt
+            LocalDateTime updatedAt
     ) {
     }
 }
