@@ -65,7 +65,7 @@ public class ContestConverter {
                 .contestId(contest.getId())
                 .contestImgs(imgResponses)
                 .contestVideos(videoResponses)
-                .UpdatedAt(contest.getUpdatedAt())
+                .updatedAt(contest.getUpdatedAt())
                 .build();
     }
 

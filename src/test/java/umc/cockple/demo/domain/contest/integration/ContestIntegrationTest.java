@@ -276,7 +276,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.contestImgs[0].imgOrder").value(1))
                         .andExpect(jsonPath("$.data.contestVideos").isArray())
                         .andExpect(jsonPath("$.data.contestVideos", hasSize(1)))
-                        .andExpect(jsonPath("$.data.UpdatedAt").isNotEmpty());
+                        .andExpect(jsonPath("$.data.updatedAt").isNotEmpty());
             }
         }
 

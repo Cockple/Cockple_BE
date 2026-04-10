@@ -46,6 +46,7 @@ class ContestCommandServiceTest {
     @Mock private ContestRepository contestRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private ContestConverter contestConverter;
+    @Mock private FileService fileService;
 
     private Member member;
 
@@ -291,7 +292,7 @@ class ContestCommandServiceTest {
                         .contestId(10L)
                         .contestImgs(List.of())
                         .contestVideos(List.of())
-                        .UpdatedAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
                         .build();
 
                 given(contestRepository.findByIdAndMember_Id(10L, member.getId()))
