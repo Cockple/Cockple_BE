@@ -673,8 +673,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
             void getOtherContestList_all() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
-                mockMvc.perform(get("/api/members/{memberId}/contests", otherMember.getId())
-                                .param("memeberId", String.valueOf(otherMember.getId())))
+                mockMvc.perform(get("/api/members/{memberId}/contests", otherMember.getId()))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
@@ -687,7 +686,6 @@ class ContestIntegrationTest extends IntegrationTestBase {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
                 mockMvc.perform(get("/api/members/{memberId}/contests", otherMember.getId())
-                                .param("memeberId", String.valueOf(otherMember.getId()))
                                 .param("medalType", "NONE"))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data", hasSize(1)))
@@ -716,8 +714,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
             void getOtherMemberMedals_allFields() throws Exception {
                 SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
 
-                mockMvc.perform(get("/api/members/{memberId}/medals", otherMember.getId())
-                                .param("memberId", String.valueOf(otherMember.getId())))
+                mockMvc.perform(get("/api/members/{memberId}/medals", otherMember.getId()))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.success").value(true))
                         .andExpect(jsonPath("$.code").value("COMMON200"))
@@ -732,8 +729,7 @@ class ContestIntegrationTest extends IntegrationTestBase {
             void getOtherMemberMedals_noMedals() throws Exception {
                 SecurityContextHelper.setAuthentication(otherMember.getId(), otherMember.getNickname());
 
-                mockMvc.perform(get("/api/members/{memberId}/medals", member.getId())
-                                .param("memberId", String.valueOf(member.getId())))
+                mockMvc.perform(get("/api/members/{memberId}/medals", member.getId()))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.myMedalTotal").value(0))
                         .andExpect(jsonPath("$.data.goldCount").value(0))

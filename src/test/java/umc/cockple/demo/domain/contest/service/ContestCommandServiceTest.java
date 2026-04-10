@@ -246,35 +246,6 @@ class ContestCommandServiceTest {
                                 .isEqualTo(ContestErrorCode.MEMBER_NOT_FOUND));
             }
 
-            @Test
-            @DisplayName("이미지가 3개를 초과하면 ContestException(IMAGE_UPLOAD_LIMIT_EXCEEDED)을 던진다")
-            void createContestRecord_imageLimitExceeded() {
-                // given
-                ContestRecordCreateDTO.Command commandWith4Imgs = ContestRecordCreateDTO.Command.builder()
-                        .memberId(member.getId())
-                        .contestName("테스트 대회")
-                        .type(ParticipationType.SINGLE)
-                        .level(Level.A)
-                        .contentIsOpen(true)
-                        .videoIsOpen(false)
-                        .contestImgs(List.of(
-                                new AddContestImgRequest("img1.jpg", 1),
-                                new AddContestImgRequest("img2.jpg", 2),
-                                new AddContestImgRequest("img3.jpg", 3),
-                                new AddContestImgRequest("img4.jpg", 4)
-                        ))
-                        .build();
-
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-                given(contestConverter.toCreateCommand(any(), any())).willReturn(commandWith4Imgs);
-
-                // when & then
-                assertThatThrownBy(() ->
-                        contestCommandService.createContestRecord(member.getId(), request))
-                        .isInstanceOf(ContestException.class)
-                        .satisfies(e -> assertThat(((ContestException) e).getCode())
-                                .isEqualTo(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED));
-            }
         }
     }
 
@@ -357,32 +328,6 @@ class ContestCommandServiceTest {
                                 .isEqualTo(ContestErrorCode.CONTEST_NOT_FOUND));
             }
 
-            @Test
-            @DisplayName("수정 요청 이미지가 3개를 초과하면 ContestException(IMAGE_UPLOAD_LIMIT_EXCEEDED)을 던진다")
-            void updateContestRecord_imageLimitExceeded() {
-                // given
-                ContestRecordUpdateDTO.Request requestWith4Imgs = new ContestRecordUpdateDTO.Request(
-                        "수정된 이름", null, MedalType.GOLD, ParticipationType.SINGLE, Level.A,
-                        null, true, false,
-                        List.of(
-                                new ContestImgUpdateRequest(null, "img1.jpg", 1),
-                                new ContestImgUpdateRequest(null, "img2.jpg", 2),
-                                new ContestImgUpdateRequest(null, "img3.jpg", 3),
-                                new ContestImgUpdateRequest(null, "img4.jpg", 4)
-                        ),
-                        null
-                );
-
-                given(contestRepository.findByIdAndMember_Id(10L, member.getId()))
-                        .willReturn(Optional.of(contest));
-
-                // when & then
-                assertThatThrownBy(() ->
-                        contestCommandService.updateContestRecord(member.getId(), 10L, requestWith4Imgs))
-                        .isInstanceOf(ContestException.class)
-                        .satisfies(e -> assertThat(((ContestException) e).getCode())
-                                .isEqualTo(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED));
-            }
         }
     }
 

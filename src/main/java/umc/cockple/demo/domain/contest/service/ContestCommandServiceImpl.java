@@ -143,11 +143,6 @@ public class ContestCommandServiceImpl implements ContestCommandService {
             requestImgs = List.of();
         }
 
-        if (requestImgs.size() > 3) {
-            log.error("이미지 개수 초과: {}", requestImgs.size());
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
-        }
-
         // 요청에 포함된 기존 이미지 ID 목록
         Set<Long> requestImgIds = requestImgs.stream()
                 .map(ContestImgUpdateRequest::id)
@@ -224,11 +219,6 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     }
 
     private void extractedImgsWithOrder(List<AddContestImgRequest> imgs, Contest contest) {
-        int total = contest.getContestImgs().size() + imgs.size();
-        if (total > 3) {
-            log.error("이미지 개수 초과: 기존 {}, 추가 {}", contest.getContestImgs().size(), imgs.size());
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
-        }
         for (AddContestImgRequest img : imgs) {
             ContestImg contestImg = ContestImg.of(contest, img.imgKey(), img.imgOrder());
             contest.addContestImg(contestImg);
