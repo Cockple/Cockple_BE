@@ -693,6 +693,199 @@ class ChatQueryServiceTest {
     }
 
     @Nested
+    @DisplayName("searchDirectChatRoomsByName - 개인 채팅방 이름 검색")
+    class SearchDirectChatRoomsByName {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("검색 결과가 없으면 빈 목록과 hasNext false를 반환한다")
+            void emptySlice_returnsEmptyResponse() {
+                // given
+                Long memberId = 10L;
+                String name = "영희";
+                Slice<ChatRoom> emptySlice = new SliceImpl<>(List.of(), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 10)))
+                        .willReturn(emptySlice);
+
+                // when
+                DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 0, 10);
+
+                // then
+                assertThat(result.content()).isEmpty();
+                assertThat(result.hasNext()).isFalse();
+                verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 10));
+            }
+
+            @Test
+            @DisplayName("검색된 개인 채팅방을 현재 사용자 membership displayName 기준으로 매핑한다")
+            void mapsMatchedRoomUsingCurrentMembershipDisplayName() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 61L;
+                String name = "영희";
+                LocalDateTime sentAt = LocalDateTime.of(2026, 4, 5, 8, 45);
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                Member withdrawnCounterPart = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 2002L);
+                ReflectionTestUtils.setField(withdrawnCounterPart, "id", 20L);
+                withdrawnCounterPart.updateProfileImg(ProfileImg.builder()
+                        .imgKey("member/search-profile.png")
+                        .build());
+
+                ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me, "영희 채팅");
+                ReflectionTestUtils.setField(myMembership, "id", 61L);
+                myMembership.updateLastReadMessageId(40L);
+
+                ChatRoomMember counterPartMembership =
+                        ChatFixture.createJoinedMember(chatRoom, withdrawnCounterPart, "홍길동");
+                ReflectionTestUtils.setField(counterPartMembership, "id", 62L);
+                chatRoom.addChatRoomMember(myMembership);
+                chatRoom.addChatRoomMember(counterPartMembership);
+
+                LastMessageCacheDTO lastMessage = LastMessageCacheDTO.builder()
+                        .content("최근 영희 메시지")
+                        .timestamp(sentAt)
+                        .messageType("TEXT")
+                        .build();
+                Slice<ChatRoom> searchResult = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 5), true);
+
+                given(chatRoomRepository.searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 5)))
+                        .willReturn(searchResult);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId))
+                        .willReturn(Optional.of(myMembership));
+                given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 40L))
+                        .willReturn(2);
+                given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
+                given(fileService.getUrlFromKey("member/search-profile.png"))
+                        .willReturn("https://cdn.example.com/member/search-profile.png");
+
+                // when
+                DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 0, 5);
+
+                // then
+                assertThat(result.hasNext()).isTrue();
+                assertThat(result.content()).hasSize(1);
+
+                DirectChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
+                assertThat(roomInfo.chatRoomId()).isEqualTo(roomId);
+                assertThat(roomInfo.displayName()).isEqualTo("영희 채팅");
+                assertThat(roomInfo.profileImgUrl()).isEqualTo("https://cdn.example.com/member/search-profile.png");
+                assertThat(roomInfo.isWithdrawn()).isTrue();
+                assertThat(roomInfo.unreadCount()).isEqualTo(2);
+                assertThat(roomInfo.lastMessage()).isNotNull();
+                assertThat(roomInfo.lastMessage().content()).isEqualTo("최근 영희 메시지");
+                assertThat(roomInfo.lastMessage().timestamp()).isEqualTo(sentAt);
+                assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
+
+                verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 5));
+                verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 40L);
+                verify(chatRoomListCacheService).getLastMessage(roomId);
+                verify(fileService).getUrlFromKey("member/search-profile.png");
+            }
+
+            @Test
+            @DisplayName("검색 결과는 repository가 반환한 최신 메시지 순서를 그대로 유지한다")
+            void preservesRepositoryOrder() {
+                // given
+                Long memberId = 10L;
+                String name = "채팅";
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                Member newerCounterPart = MemberFixture.createMemberWithName("이영희", "영희", Gender.FEMALE, Level.B, 2002L);
+                ReflectionTestUtils.setField(newerCounterPart, "id", 20L);
+                Member olderCounterPart = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.C, 3003L);
+                ReflectionTestUtils.setField(olderCounterPart, "id", 30L);
+
+                ChatRoom newerRoom = ChatFixture.createDirectChatRoom();
+                ReflectionTestUtils.setField(newerRoom, "id", 71L);
+                ChatRoomMember newerMyMembership = ChatFixture.createJoinedMember(newerRoom, me, "영희 채팅");
+                ReflectionTestUtils.setField(newerMyMembership, "id", 71L);
+                ChatRoomMember newerCounterPartMembership =
+                        ChatFixture.createJoinedMember(newerRoom, newerCounterPart, "홍길동");
+                ReflectionTestUtils.setField(newerCounterPartMembership, "id", 72L);
+                newerRoom.addChatRoomMember(newerMyMembership);
+                newerRoom.addChatRoomMember(newerCounterPartMembership);
+
+                ChatRoom olderRoom = ChatFixture.createDirectChatRoom();
+                ReflectionTestUtils.setField(olderRoom, "id", 72L);
+                ChatRoomMember olderMyMembership = ChatFixture.createJoinedMember(olderRoom, me, "철수 채팅");
+                ReflectionTestUtils.setField(olderMyMembership, "id", 73L);
+                ChatRoomMember olderCounterPartMembership =
+                        ChatFixture.createJoinedMember(olderRoom, olderCounterPart, "홍길동");
+                ReflectionTestUtils.setField(olderCounterPartMembership, "id", 74L);
+                olderRoom.addChatRoomMember(olderMyMembership);
+                olderRoom.addChatRoomMember(olderCounterPartMembership);
+
+                Slice<ChatRoom> orderedChatRooms =
+                        new SliceImpl<>(List.of(newerRoom, olderRoom), PageRequest.of(1, 2), false);
+
+                given(chatRoomRepository.searchDirectChatRoomsByName(memberId, name, PageRequest.of(1, 2)))
+                        .willReturn(orderedChatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(71L, memberId))
+                        .willReturn(Optional.of(newerMyMembership));
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(72L, memberId))
+                        .willReturn(Optional.of(olderMyMembership));
+                given(messageReadStatusRepository.countAllUnreadMessages(71L, memberId)).willReturn(0);
+                given(messageReadStatusRepository.countAllUnreadMessages(72L, memberId)).willReturn(0);
+
+                // when
+                DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 1, 2);
+
+                // then
+                assertThat(result.hasNext()).isFalse();
+                assertThat(result.content()).hasSize(2);
+                assertThat(result.content().get(0).chatRoomId()).isEqualTo(71L);
+                assertThat(result.content().get(0).displayName()).isEqualTo("영희 채팅");
+                assertThat(result.content().get(1).chatRoomId()).isEqualTo(72L);
+                assertThat(result.content().get(1).displayName()).isEqualTo("철수 채팅");
+
+                verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(1, 2));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("검색 결과에 현재 사용자 membership이 없으면 CHAT_ROOM_ACCESS_DENIED 예외를 던진다")
+            void throwsAccessDenied_whenMembershipIsMissing() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 81L;
+                String name = "영희";
+
+                ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                Slice<ChatRoom> searchResult = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 10)))
+                        .willReturn(searchResult);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> chatQueryService.searchDirectChatRoomsByName(memberId, name, 0, 10))
+                        .isInstanceOf(ChatException.class)
+                        .satisfies(e -> assertThat(((ChatException) e).getCode())
+                                .isEqualTo(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("getChatRoomDetail - 초기 채팅방 조회")
     class GetChatRoomDetail {
 

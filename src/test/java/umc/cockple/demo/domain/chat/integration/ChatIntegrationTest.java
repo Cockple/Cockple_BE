@@ -500,6 +500,237 @@ class ChatIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("GET /api/chats/direct/search - 개인 채팅방 이름 검색")
+    class SearchDirectChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 현재 사용자 membership displayName과 매칭되는 direct 채팅방만 반환한다")
+            void searchDirectChatRooms_filtersByCurrentMembershipDisplayName() throws Exception {
+                Member hiddenCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.C, 3003L));
+                Member nonMatchingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("최유리", Gender.FEMALE, Level.B, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "영희와의 최근 메시지"));
+
+                ChatRoom misleadingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(misleadingRoom, member, "숨김 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(misleadingRoom, hiddenCounterPart, "영희 채팅"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(misleadingRoom, hiddenCounterPart, "상대방 displayName만 일치"));
+
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(nonMatchingRoom, member, "민수 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(nonMatchingRoom, nonMatchingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, nonMatchingCounterPart, "검색어 미포함 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.OK.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.OK.getMessage()))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("영희와의 최근 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - DIRECT가 아닌 채팅방은 검색 결과에서 제외된다")
+            void searchDirectChatRooms_excludesNonDirectRooms() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "direct 메시지"));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(partyChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(partyChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, otherMember, "party 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - 현재 사용자가 JOINED 상태인 개인 채팅방만 검색된다")
+            void searchDirectChatRooms_filtersPendingMemberships() throws Exception {
+                Member joinedCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+                Member pendingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.D, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, joinedCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, joinedCounterPart, "JOINED 방 메시지"));
+
+                ChatRoom pendingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingRoom, member, "영희 보류 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingRoom, pendingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(pendingRoom, pendingCounterPart, "PENDING 방 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - 여러 검색 결과가 있으면 최신 메시지 순으로 반환한다")
+            void searchDirectChatRooms_latestMessageRoomFirst() throws Exception {
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 예전 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "먼저 온 영희 메시지"));
+
+                ChatRoom latestRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, member, "영희 최신 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, latestCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(latestRoom, latestCounterPart, "가장 최근 영희 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 최신 채팅"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("영희 예전 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - paging 파라미터에 따라 slice와 hasNext를 반환한다")
+            void searchDirectChatRooms_supportsPaging() throws Exception {
+                Member firstCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+                Member secondCounterPart = memberRepository.save(
+                        MemberFixture.createMember("김영희", Gender.FEMALE, Level.B, 4004L));
+                Member thirdCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박영희", Gender.FEMALE, Level.A, 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 첫 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, firstCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, firstCounterPart, "첫 번째 영희 메시지"));
+
+                ChatRoom secondRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(secondRoom, member, "영희 두번째 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(secondRoom, secondCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondRoom, secondCounterPart, "두 번째 영희 메시지"));
+
+                ChatRoom thirdRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(thirdRoom, member, "영희 세번째 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(thirdRoom, thirdCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(thirdRoom, thirdCounterPart, "세 번째 영희 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(true))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(thirdRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(secondRoom.getId()));
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "1")
+                                .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - 검색 결과가 없으면 빈 목록과 hasNext false를 반환한다")
+            void searchDirectChatRooms_empty() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "없는검색어")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+
+            @Test
+            @DisplayName("200 - 빈 검색어면 현재 사용자가 JOINED인 개인 채팅방 전체를 최신순으로 반환한다")
+            void searchDirectChatRooms_blankNameReturnsAllJoinedDirectRooms() throws Exception {
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("김영희", Gender.FEMALE, Level.C, 3003L));
+                Member pendingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.D, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "첫 번째 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "먼저 온 메시지"));
+
+                ChatRoom latestRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, member, "두 번째 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, latestCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(latestRoom, latestCounterPart, "가장 최근 메시지"));
+
+                ChatRoom pendingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingRoom, member, "보이면 안 되는 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingRoom, pendingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(pendingRoom, pendingCounterPart, "최신이지만 제외되어야 하는 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("두 번째 대화"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("첫 번째 대화"));
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/chats/rooms/{roomId} - 초기 채팅방 조회")
     class GetChatRoomDetail {
 
