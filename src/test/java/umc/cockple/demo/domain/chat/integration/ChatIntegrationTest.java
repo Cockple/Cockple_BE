@@ -140,7 +140,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
             void getPartyChatRooms_latestMessageRoomFirst() throws Exception {
                 PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
                 Party secondParty = partyRepository.save(PartyFixture.createParty("새 모임", member.getId(), secondAddr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(secondParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondParty, member, Role.PARTY_MANAGER));
 
                 ChatRoom secondPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondParty));
 
@@ -175,8 +175,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
                 ReflectionTestUtils.invokeMethod(richParty, "setPartyImg", PartyImg.create("party/test-image.png", richParty));
                 richParty = partyRepository.saveAndFlush(richParty);
 
-                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, member, Role.party_MANAGER));
-                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, otherMember, Role.party_MEMBER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, member, Role.PARTY_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, otherMember, Role.PARTY_MEMBER));
 
                 ChatRoom richPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(richParty));
                 chatRoomMemberRepository.save(ChatRoomMember.create(richPartyChatRoom, member));
@@ -220,11 +220,11 @@ class ChatIntegrationTest extends IntegrationTestBase {
             void searchPartyChatRooms_filtersByName() throws Exception {
                 PartyAddr matchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
                 Party matchingParty = partyRepository.save(PartyFixture.createParty("배드 모임", member.getId(), matchAddr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(matchingParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(matchingParty, member, Role.PARTY_MANAGER));
 
                 PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "마포구"));
                 Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("축구 모임", member.getId(), nonMatchAddr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.PARTY_MANAGER));
 
                 ChatRoom matchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(matchingParty));
                 ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
@@ -255,11 +255,11 @@ class ChatIntegrationTest extends IntegrationTestBase {
             void searchPartyChatRooms_latestMessageRoomFirst() throws Exception {
                 PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
                 Party secondMatchingParty = partyRepository.save(PartyFixture.createParty("배드 새 모임", member.getId(), secondAddr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(secondMatchingParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondMatchingParty, member, Role.PARTY_MANAGER));
 
                 PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "용산구"));
                 Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("농구 모임", member.getId(), nonMatchAddr));
-                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.party_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.PARTY_MANAGER));
 
                 ChatRoom secondMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondMatchingParty));
                 ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
