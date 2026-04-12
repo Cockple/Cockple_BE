@@ -29,13 +29,13 @@ public class IntegrationTestConfig {
         redis.start();
     }
 
-    @Bean
+    @Bean(destroyMethod = "")
     @ServiceConnection
     MySQLContainer<?> mySQLContainer() {
         return mysql;
     }
 
-    @Bean
+    @Bean(destroyMethod = "")
     @ServiceConnection
     RedisContainer redisContainer() {
         return redis;
