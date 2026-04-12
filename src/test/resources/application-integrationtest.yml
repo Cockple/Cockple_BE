@@ -47,3 +47,4 @@ logging:
     org.springframework.batch: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.tool.schema: ERROR
+    io.lettuce.core.protocol.ConnectionWatchdog: ERROR
