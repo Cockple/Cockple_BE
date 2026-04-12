@@ -5,6 +5,10 @@ import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -35,6 +39,14 @@ public class IntegrationTestConfig {
     @ServiceConnection
     RedisContainer redisContainer() {
         return redis;
+    }
+
+    @Bean
+    @Primary
+    RedisConnectionFactory testRedisConnectionFactory(RedisContainer redisContainer) {
+        RedisStandaloneConfiguration configuration =
+                new RedisStandaloneConfiguration(redisContainer.getHost(), redisContainer.getMappedPort(6379));
+        return new LettuceConnectionFactory(configuration);
     }
 
     @Bean
