@@ -6,5 +6,7 @@ public enum NotificationType {
     INVITE_REJECT, // 초대 버튼 있는 알림이고 거절한 경우
 
     CHANGE, // 눌렀을 떄 운동 / 모임 상세 페이지로 가는 알림
-    SIMPLE // 읽기 전용 단순 알림
+    SIMPLE, // 읽기 전용 단순 알림
+    CHAT // 채팅 메시지 수신 알림
+     ;
 }
