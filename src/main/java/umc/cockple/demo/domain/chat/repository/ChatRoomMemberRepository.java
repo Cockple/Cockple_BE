@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +62,17 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query("SELECT crm.member.id FROM ChatRoomMember crm WHERE crm.chatRoom.id = :chatRoomId")
     List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
+
+    @Query("""
+            SELECT crm FROM ChatRoomMember crm
+            JOIN FETCH crm.member m
+            WHERE crm.chatRoom.id = :chatRoomId
+            AND crm.status = :status
+            """)
+    List<ChatRoomMember> findByChatRoomIdAndStatusWithMember(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("status") ChatRoomMemberStatus status
+    );
 
     @Query("""
             SELECT counterPart FROM ChatRoomMember counterPart

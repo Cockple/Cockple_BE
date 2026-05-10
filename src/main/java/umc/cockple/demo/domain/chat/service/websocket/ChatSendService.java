@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class ChatSendService {
     private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
+    private final ChatPushNotificationService chatPushNotificationService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -75,6 +77,8 @@ public class ChatSendService {
                 chatConverter.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
+
+        chatPushNotificationService.sendPush(chatRoom, savedMessage, sender, activeSubscribers);
 
         publishChatRoomListUpdateEvent(chatRoom, savedMessage);
     }
