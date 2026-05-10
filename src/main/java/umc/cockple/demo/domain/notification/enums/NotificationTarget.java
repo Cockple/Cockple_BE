@@ -10,9 +10,7 @@ public enum NotificationTarget {
     PARTY_INVITE_APPROVED(NotificationType.SIMPLE),
     PARTY_JOINREQUEST_APPROVED(NotificationType.CHANGE),
     PARTY_SUBOWNER_ASSIGNED(NotificationType.SIMPLE),
-    PARTY_SUBOWNER_RELEASED(NotificationType.SIMPLE),
-    CHAT_MESSAGE_RECEIVED(NotificationType.CHAT),
-    GROUP_CHAT_MESSAGE_RECEIVED(NotificationType.CHAT)
+    PARTY_SUBOWNER_RELEASED(NotificationType.SIMPLE)
 
     ;
 
