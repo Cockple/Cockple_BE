@@ -10,13 +10,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
@@ -67,12 +66,11 @@ class ChatPushNotificationServiceTest {
     @DisplayName("단체채팅")
     class PartyChatRoom {
 
-        private Party party;
         private ChatRoom chatRoom;
 
         @BeforeEach
         void setUp() {
-            party = PartyFixture.createParty("테스트모임", sender.getId(),
+            Party party = PartyFixture.createParty("테스트모임", sender.getId(),
                     PartyFixture.createPartyAddr("서울", "강남구"));
             chatRoom = ChatFixture.createPartyChatRoom(party);
             ReflectionTestUtils.setField(chatRoom, "id", 10L);
@@ -82,33 +80,34 @@ class ChatPushNotificationServiceTest {
         @DisplayName("오프라인 멤버에게 FCM을 전송한다")
         void sendPush_toOfflineMember() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요!");
-            List<Long> activeSubscriberIds = List.of(sender.getId(), activeSubscriber.getId());
-
-            ChatRoomMember offlineCrm = ChatFixture.createJoinedMember(chatRoom, offlineMember);
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.PARTY,
+                    "테스트모임", "발신자: 안녕하세요!",
+                    sender.getId(), List.of(sender.getId(), activeSubscriber.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
                             ChatFixture.createJoinedMember(chatRoom, activeSubscriber),
-                            offlineCrm
+                            ChatFixture.createJoinedMember(chatRoom, offlineMember)
                     ));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should(times(1)).sendChatNotification(
-                    any(), any(), any(), any(), any()
-            );
+            then(fcmService).should(times(1)).sendChatNotification(any(), any(), any(), any(), any());
         }
 
         @Test
-        @DisplayName("title은 모임 이름, content는 '닉네임: 메시지내용' 형식이다")
-        void sendPush_partyChatFormat() {
+        @DisplayName("이벤트의 title과 content를 FCM에 그대로 전달한다")
+        void sendPush_forwardsEventTitleAndContent() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요!");
-            List<Long> activeSubscriberIds = List.of(sender.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.PARTY,
+                    "테스트모임", "발신자: 안녕하세요!",
+                    sender.getId(), List.of(sender.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -119,7 +118,7 @@ class ChatPushNotificationServiceTest {
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should().sendChatNotification(
@@ -133,14 +132,16 @@ class ChatPushNotificationServiceTest {
         @DisplayName("sender는 FCM 대상에서 제외된다")
         void sendPush_excludesSender() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요!");
-            List<Long> activeSubscriberIds = List.of();
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.PARTY,
+                    "테스트모임", "발신자: 안녕하세요!",
+                    sender.getId(), List.of()
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(ChatFixture.createJoinedMember(chatRoom, sender)));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
@@ -150,9 +151,11 @@ class ChatPushNotificationServiceTest {
         @DisplayName("활성 구독자는 FCM 대상에서 제외된다")
         void sendPush_excludesActiveSubscribers() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요!");
-            List<Long> activeSubscriberIds = List.of(activeSubscriber.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.PARTY,
+                    "테스트모임", "발신자: 안녕하세요!",
+                    sender.getId(), List.of(activeSubscriber.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -160,7 +163,7 @@ class ChatPushNotificationServiceTest {
                     ));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
@@ -173,9 +176,11 @@ class ChatPushNotificationServiceTest {
             Member anotherOffline = MemberFixture.createMember("또다른오프라인", Gender.FEMALE, Level.A, 1004L);
             ReflectionTestUtils.setField(anotherOffline, "id", 4L);
 
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "공지사항입니다");
-            List<Long> activeSubscriberIds = List.of(sender.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.PARTY,
+                    "테스트모임", "발신자: 공지사항입니다",
+                    sender.getId(), List.of(sender.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -184,7 +189,7 @@ class ChatPushNotificationServiceTest {
                     ));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should(times(2)).sendChatNotification(any(), any(), any(), any(), any());
@@ -207,9 +212,11 @@ class ChatPushNotificationServiceTest {
         @DisplayName("오프라인 상대방에게 FCM을 전송한다")
         void sendPush_toOfflineCounterPart() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕!");
-            List<Long> activeSubscriberIds = List.of(sender.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.DIRECT,
+                    "발신자", "안녕!",
+                    sender.getId(), List.of(sender.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -217,19 +224,21 @@ class ChatPushNotificationServiceTest {
                     ));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should(times(1)).sendChatNotification(any(), any(), any(), any(), any());
         }
 
         @Test
-        @DisplayName("title은 발신자 닉네임, content는 메시지 내용이다")
-        void sendPush_directChatFormat() {
+        @DisplayName("이벤트의 title과 content를 FCM에 그대로 전달한다")
+        void sendPush_forwardsEventTitleAndContent() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕!");
-            List<Long> activeSubscriberIds = List.of(sender.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.DIRECT,
+                    "발신자", "안녕!",
+                    sender.getId(), List.of(sender.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -240,7 +249,7 @@ class ChatPushNotificationServiceTest {
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should().sendChatNotification(
@@ -254,9 +263,11 @@ class ChatPushNotificationServiceTest {
         @DisplayName("상대방이 활성 구독자면 FCM을 전송하지 않는다")
         void sendPush_excludesActiveCounterPart() {
             // given
-            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕!");
-            List<Long> activeSubscriberIds = List.of(offlineMember.getId());
-
+            ChatNotificationEvent event = ChatNotificationEvent.create(
+                    chatRoom.getId(), ChatRoomType.DIRECT,
+                    "발신자", "안녕!",
+                    sender.getId(), List.of(offlineMember.getId())
+            );
             given(chatRoomMemberRepository.findByChatRoomIdAndStatusWithMember(chatRoom.getId(), ChatRoomMemberStatus.JOINED))
                     .willReturn(List.of(
                             ChatFixture.createJoinedMember(chatRoom, sender),
@@ -264,7 +275,7 @@ class ChatPushNotificationServiceTest {
                     ));
 
             // when
-            chatPushNotificationService.sendPush(chatRoom, message, sender, activeSubscriberIds);
+            chatPushNotificationService.sendPush(event);
 
             // then
             then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
