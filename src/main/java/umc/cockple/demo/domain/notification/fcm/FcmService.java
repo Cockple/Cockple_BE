@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -49,6 +50,32 @@ public class FcmService {
             log.info("FCM 전송 완료 - memberId: {}", member.getId());
         } catch (FirebaseMessagingException e) {
             log.error("FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
+        }
+    }
+
+    public void sendChatNotification(Member member, String title, String content,
+                                     Long chatRoomId, ChatRoomType chatRoomType) {
+        String fcmToken = member.getFcmToken();
+        if (fcmToken == null || fcmToken.isBlank()) {
+            log.info("FCM 토큰 없음 - memberId: {}, 채팅 알림 전송 생략", member.getId());
+            return;
+        }
+
+        Message message = Message.builder()
+                .setToken(fcmToken)
+                .setNotification(Notification.builder()
+                        .setTitle(title)
+                        .setBody(content)
+                        .build())
+                .putData("chatRoomId", chatRoomId.toString())
+                .putData("chatRoomType", chatRoomType.name())
+                .build();
+
+        try {
+            firebaseMessaging.send(message);
+            log.info("채팅 FCM 전송 완료 - memberId: {}, chatRoomId: {}", member.getId(), chatRoomId);
+        } catch (FirebaseMessagingException e) {
+            log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
     }
 }

@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,6 @@ public class ChatSendService {
     private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
-
     private final ApplicationEventPublisher eventPublisher;
 
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
@@ -75,6 +75,9 @@ public class ChatSendService {
                 chatConverter.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
+
+        // 알림 이벤트 발행
+        publishChatNotificationEvent(chatRoom, savedMessage, sender, activeSubscribers);
 
         publishChatRoomListUpdateEvent(chatRoom, savedMessage);
     }
@@ -197,6 +200,26 @@ public class ChatSendService {
         }
 
         return unreadCounts;
+    }
+
+    // 채팅 알림 이벤트 발행
+    private void publishChatNotificationEvent(ChatRoom chatRoom, ChatMessage savedMessage,
+                                              Member sender, List<Long> activeSubscribers) {
+        String notificationTitle = chatRoom.getType() == ChatRoomType.PARTY
+                ? chatRoom.getParty().getPartyName()
+                : sender.getNickname();
+        String notificationContent = chatRoom.getType() == ChatRoomType.PARTY
+                ? sender.getNickname() + ": " + savedMessage.getDisplayContent()
+                : savedMessage.getDisplayContent();
+
+        eventPublisher.publishEvent(ChatNotificationEvent.create(
+                chatRoom.getId(),
+                chatRoom.getType(),
+                notificationTitle,
+                notificationContent,
+                sender.getId(),
+                activeSubscribers
+        ));
     }
 
     private ChatRoom findChatRoom(Long chatRoomId) {
