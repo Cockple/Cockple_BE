@@ -61,7 +61,7 @@ public class NotificationCommandService {
 
     public void createNotification(CreateNotificationRequestDTO dto) {
         try {
-
+            long start = System.currentTimeMillis();
             Member member = dto.member();
             List<Notification> bookmarks = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
             if (bookmarks.size() >= 50) {
@@ -119,7 +119,11 @@ public class NotificationCommandService {
                     .build();
 
             notificationRepository.save(notification);
+            long dbTime = System.currentTimeMillis() - start;
+            log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms", member.getId(), dbTime);
+
             fcmService.sendNotification(member, title, content);
+            log.info("[NOTIFICATION] 전체 알림 생성 완료 - memberId: {}, 총 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_DATA);
