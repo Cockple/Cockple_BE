@@ -46,8 +46,9 @@ public class FcmService {
                 .build();
 
         try {
+            long start = System.currentTimeMillis();
             firebaseMessaging.send(message);
-            log.info("FCM 전송 완료 - memberId: {}", member.getId());
+            log.info("[FCM] 일반 알림 전송 완료 - memberId: {}, 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
         } catch (FirebaseMessagingException e) {
             log.error("FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
@@ -72,8 +73,9 @@ public class FcmService {
                 .build();
 
         try {
+            long start = System.currentTimeMillis();
             firebaseMessaging.send(message);
-            log.info("채팅 FCM 전송 완료 - memberId: {}, chatRoomId: {}", member.getId(), chatRoomId);
+            log.info("[FCM] 채팅 알림 전송 완료 - memberId: {}, chatRoomId: {}, 소요시간: {}ms", member.getId(), chatRoomId, System.currentTimeMillis() - start);
         } catch (FirebaseMessagingException e) {
             log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
