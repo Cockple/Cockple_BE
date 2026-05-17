@@ -126,7 +126,12 @@ public class NotificationCommandService {
             long dbTime = System.currentTimeMillis() - start;
             log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms", member.getId(), dbTime);
 
-            fcmService.sendNotification(member, title, content);
+            // [부하테스트용 FCM 시뮬레이션] 실제 FCM 평균 응답시간 836ms 재현 - 비동기 전환 전 baseline 측정용
+            try {
+                Thread.sleep(800);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             log.info("[NOTIFICATION] 전체 알림 생성 완료 - memberId: {}, 총 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
