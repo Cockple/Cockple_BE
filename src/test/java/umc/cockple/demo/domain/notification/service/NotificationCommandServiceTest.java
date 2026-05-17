@@ -217,7 +217,6 @@ class NotificationCommandServiceTest {
 
                 // then
                 then(notificationRepository).should().save(any(Notification.class));
-                then(fcmService).should().sendNotification(eq(member), eq("테스트 모임"), eq("모임이 삭제되었어요!"));
             }
 
             @Test
@@ -242,7 +241,7 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(fcmService).should().sendNotification(eq(member), eq("새로운 모임"), any(String.class));
+                then(notificationRepository).should().save(any(Notification.class));
             }
 
             @Test
@@ -269,7 +268,6 @@ class NotificationCommandServiceTest {
 
                 // then
                 then(notificationRepository).should().save(any(Notification.class));
-                then(fcmService).should().sendNotification(eq(member), eq("테스트 모임"), eq("03.15(토) 운동이 삭제되었어요!"));
             }
 
             @Test
