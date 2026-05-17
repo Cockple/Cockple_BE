@@ -58,3 +58,5 @@ src/main/resources/firebase/*.json
 .omx/
 
 cockple_dump.sql
+
+k6
