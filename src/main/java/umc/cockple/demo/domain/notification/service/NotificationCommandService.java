@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import static umc.cockple.demo.domain.notification.dto.MarkAsReadDTO.*;
 
@@ -65,9 +66,12 @@ public class NotificationCommandService {
             Member member = dto.member();
             List<Notification> bookmarks = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
             if (bookmarks.size() >= 50) {
-                // INVITE타입이 아니면서 가장 오래된 거 삭제
-                notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)
-                        .ifPresent(notificationRepository::delete);
+                try {
+                    notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)
+                            .ifPresent(notificationRepository::delete);
+                } catch (ObjectOptimisticLockingFailureException e) {
+                    log.warn("알림 삭제 충돌 - 다른 트랜잭션에서 이미 삭제됨 - memberId: {}", member.getId());
+                }
             }
 
             Party party = partyRepository.findById(dto.partyId())
@@ -122,7 +126,12 @@ public class NotificationCommandService {
             long dbTime = System.currentTimeMillis() - start;
             log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms", member.getId(), dbTime);
 
-            fcmService.sendNotification(member, title, content);
+            // [부하테스트용 FCM 시뮬레이션] 실제 FCM 평균 응답시간 836ms 재현 - 비동기 전환 전 baseline 측정용
+            try {
+                Thread.sleep(800);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             log.info("[NOTIFICATION] 전체 알림 생성 완료 - memberId: {}, 총 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
