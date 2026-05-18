@@ -51,8 +51,6 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberStatus isActive;
 
-    private String refreshToken;
-
     @Column(nullable = false)
     private Long socialId; // 카카오에서 받아온 고유id
 
@@ -175,12 +173,7 @@ public class Member extends BaseEntity {
 
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
-        this.refreshToken = null;
         this.fcmToken = null;
-    }
-
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
     }
 
     // FCM 토큰 업데이트 메서드

@@ -34,9 +34,6 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
 
     Optional<Member> findBySocialId(Long socialId);
 
-    Optional<Member> findByRefreshToken(String refreshToken);
-
-           
     @Query("""
             SELECT m FROM Member m
             LEFT JOIN FETCH m.addresses addr

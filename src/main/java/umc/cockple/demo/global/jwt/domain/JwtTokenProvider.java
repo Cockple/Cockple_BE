@@ -18,7 +18,6 @@ import umc.cockple.demo.global.jwt.properties.JwtProperties;
 import umc.cockple.demo.global.security.domain.CustomUserDetails;
 
 import java.security.Key;
-import java.time.Duration;
 import java.util.Date;
 
 @Component
@@ -107,23 +106,6 @@ public class JwtTokenProvider {
         return false;
     }
 
-
-    public boolean isTokenExpiringSoon(String refreshToken, long thresholdMillis) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(refreshToken)
-                    .getBody();
-
-            Date expiration = claims.getExpiration();
-            long now = System.currentTimeMillis();
-
-            return expiration.getTime() - now < thresholdMillis;
-        } catch (JwtException e) {
-            throw new MemberException(MemberErrorCode.INVALID_TOKEN);
-        }
-    }
 
     public Long getUserId(String token) {
         Claims claims = Jwts.parserBuilder()
