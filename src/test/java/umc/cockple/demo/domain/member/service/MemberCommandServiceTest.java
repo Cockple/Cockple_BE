@@ -28,6 +28,7 @@ import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.auth.RefreshTokenRepository;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -62,6 +63,7 @@ class MemberCommandServiceTest {
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private FileService fileService;
     @Mock private KakaoOauthService kakaoOauthService;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
 
     private Member normalMember;
 
@@ -603,7 +605,7 @@ class MemberCommandServiceTest {
             given(memberRepository.findById(normalMember.getId())).willReturn(Optional.of(normalMember));
 
             // when
-            memberCommandService.withdrawMember(normalMember.getId());
+            memberCommandService.withdrawMember(normalMember.getId(), null);
 
             // then
             then(memberExerciseRepository).should()
@@ -624,7 +626,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId());
+                memberCommandService.withdrawMember(normalMember.getId(), null);
 
                 // then
                 then(memberExerciseRepository).should()
@@ -635,19 +637,18 @@ class MemberCommandServiceTest {
             }
 
             @Test
-            @DisplayName("탈퇴_후_회원_상태가_INACTIVE가_되고_refreshToken이_null이_된다")
-            void 탈퇴_후_회원_상태가_INACTIVE가_되고_refreshToken이_null이_된다() {
+            @DisplayName("탈퇴_후_회원_상태가_INACTIVE가_되고_deletedAt이_설정된다")
+            void 탈퇴_후_회원_상태가_INACTIVE가_되고_deletedAt이_설정된다() {
                 // given
-                normalMember.setRefreshToken("existing-refresh-token");
                 given(memberRepository.findById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId());
+                memberCommandService.withdrawMember(normalMember.getId(), null);
 
                 // then
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.INACTIVE);
-                assertThat(normalMember.getRefreshToken()).isNull();
+                assertThat(normalMember.getDeletedAt()).isNotNull();
             }
 
             @Test
@@ -658,7 +659,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId());
+                memberCommandService.withdrawMember(normalMember.getId(), null);
 
                 // then
                 then(kakaoOauthService).should().unlinkAccess(normalMember);
@@ -677,7 +678,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.empty());
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(999L))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(999L, null))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
             }
@@ -693,7 +694,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(withdrawnMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(withdrawnMember.getId()))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(withdrawnMember.getId(), null))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.ALREADY_WITHDRAW);
             }
@@ -753,7 +754,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId());
+                memberCommandService.withdrawMember(normalMember.getId(), null);
 
                 // then: 예외 없이 탈퇴 처리됨
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.INACTIVE);
