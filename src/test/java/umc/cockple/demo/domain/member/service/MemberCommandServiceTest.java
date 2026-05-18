@@ -714,7 +714,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId(), null))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MANAGER_CANNOT_LEAVE);
             }
@@ -734,7 +734,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId(), null))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
             }
