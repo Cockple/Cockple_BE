@@ -5,9 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
+import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.repository.MemberTermsRepository;
+import umc.cockple.demo.domain.party.repository.PartyJoinRequestRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +22,10 @@ import java.util.List;
 public class WithdrawnMemberCleanupScheduler {
 
     private final MemberRepository memberRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final PartyJoinRequestRepository partyJoinRequestRepository;
+    private final MemberTermsRepository memberTermsRepository;
+    private final FileService fileService;
 
     // 매일 새벽 3시에 탈퇴 후 14일이 지난 회원 데이터 하드 딜리트
     @Scheduled(cron = "0 0 3 * * *")
@@ -29,6 +37,17 @@ public class WithdrawnMemberCleanupScheduler {
 
         if (targets.isEmpty()) {
             return;
+        }
+
+        for (Member member : targets) {
+            // S3 프로필 이미지 삭제
+            if (member.getProfileImg() != null) {
+                fileService.delete(member.getProfileImg().getImgKey());
+            }
+            // cascade 없는 FK 관계 수동 처리
+            chatMessageRepository.nullifySenderByMemberId(member.getId()); // 메시지 보존, sender만 null
+            partyJoinRequestRepository.deleteByMember(member);
+            memberTermsRepository.deleteByMember(member);
         }
 
         memberRepository.deleteAll(targets);

@@ -36,7 +36,13 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
 
     Optional<Member> findBySocialId(Long socialId);
 
-    List<Member> findAllByIsActiveAndDeletedAtBefore(MemberStatus isActive, LocalDateTime threshold);
+    @Query("""
+            SELECT m FROM Member m
+            LEFT JOIN FETCH m.profileImg
+            WHERE m.isActive = :isActive
+            AND m.deletedAt < :threshold
+            """)
+    List<Member> findAllByIsActiveAndDeletedAtBefore(@Param("isActive") MemberStatus isActive, @Param("threshold") LocalDateTime threshold);
 
     @Query("""
             SELECT m FROM Member m

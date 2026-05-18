@@ -11,4 +11,5 @@ import umc.cockple.demo.domain.party.enums.RequestStatus;
 public interface PartyJoinRequestRepository extends JpaRepository<PartyJoinRequest, Long> {
     boolean existsByPartyAndMemberAndStatus(Party party, Member member, RequestStatus requestStatus);
     Slice<PartyJoinRequest> findByPartyAndStatus(Party party, RequestStatus status, Pageable pageable);
+    void deleteByMember(Member member);
 }
