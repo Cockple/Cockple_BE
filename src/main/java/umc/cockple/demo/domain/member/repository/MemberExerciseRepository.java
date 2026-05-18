@@ -61,4 +61,8 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
     List<Object[]> findLastExerciseDateByMemberIdsAndPartyId(
             @Param("memberIds") List<Long> memberIds,
             @Param("partyId") Long partyId);
+
+    @Modifying
+    @Query("DELETE FROM MemberExercise me WHERE me.member.id IN :memberIds")
+    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
 }

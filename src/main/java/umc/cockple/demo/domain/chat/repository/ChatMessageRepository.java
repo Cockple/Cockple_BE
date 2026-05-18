@@ -53,6 +53,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 탈퇴 회원 하드 딜리트 전 sender_id null 처리 (메시지 보존)
     @Modifying
-    @Query("UPDATE ChatMessage m SET m.sender = null WHERE m.sender.id = :memberId")
-    void nullifySenderByMemberId(@Param("memberId") Long memberId);
+    @Query("UPDATE ChatMessage m SET m.sender = null WHERE m.sender.id IN :memberIds")
+    void nullifySenderByMemberIds(@Param("memberIds") List<Long> memberIds);
 }

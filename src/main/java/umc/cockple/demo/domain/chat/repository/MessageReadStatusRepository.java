@@ -63,4 +63,8 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
             ORDER BY mrs.chatMessageId ASC
             """)
     List<Long> findUnreadMessageIdsByMember(Long chatRoomId, Long memberId);
+
+    @Modifying
+    @Query("DELETE FROM MessageReadStatus mrs WHERE mrs.memberId IN :memberIds")
+    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
 }

@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.bookmark.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
@@ -32,5 +33,7 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
 
     Optional<ExerciseBookmark> findFirstByMemberOrderByCreatedAtAsc(Member member);
 
-
+    @Modifying
+    @Query("DELETE FROM ExerciseBookmark eb WHERE eb.member.id IN :memberIds")
+    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
 }
