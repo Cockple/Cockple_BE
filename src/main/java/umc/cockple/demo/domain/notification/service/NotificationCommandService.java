@@ -119,7 +119,7 @@ public class NotificationCommandService {
             long dbTime = System.currentTimeMillis() - start;
             log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms", member.getId(), dbTime);
 
-            eventPublisher.publishEvent(new NotificationEvent(member, title, content));
+            eventPublisher.publishEvent(new NotificationEvent(member.getId(), title, content));
             log.info("[NOTIFICATION] 알림 이벤트 발행 완료 - memberId: {}, 총 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
