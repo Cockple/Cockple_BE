@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,8 @@ public class Member extends BaseEntity {
     @ColumnDefault("'ACTIVE'")
     @Enumerated(EnumType.STRING)
     private MemberStatus isActive;
+
+    private LocalDateTime deletedAt;
 
     @Column(nullable = false)
     private Long socialId; // 카카오에서 받아온 고유id
@@ -173,6 +176,7 @@ public class Member extends BaseEntity {
 
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
+        this.deletedAt = LocalDateTime.now();
         this.fcmToken = null;
     }
 

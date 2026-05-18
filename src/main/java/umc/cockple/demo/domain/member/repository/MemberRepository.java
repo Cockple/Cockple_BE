@@ -4,7 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +35,8 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
 
 
     Optional<Member> findBySocialId(Long socialId);
+
+    List<Member> findAllByIsActiveAndDeletedAtBefore(MemberStatus isActive, LocalDateTime threshold);
 
     @Query("""
             SELECT m FROM Member m
