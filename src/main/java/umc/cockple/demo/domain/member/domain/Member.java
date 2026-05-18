@@ -174,6 +174,10 @@ public class Member extends BaseEntity {
                         );
     }
 
+    public boolean isWithdrawn() {
+        return this.isActive == MemberStatus.INACTIVE;
+    }
+
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
         this.deletedAt = LocalDateTime.now();
