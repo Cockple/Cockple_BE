@@ -10,15 +10,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.events.NotificationEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
-import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -51,11 +50,10 @@ class NotificationCommandServiceTest {
     private NotificationCommandService notificationCommandService;
 
     @Mock private NotificationRepository notificationRepository;
-    @Mock private MemberRepository memberRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private NotificationMessageGenerator notificationMessageGenerator;
     @Mock private ObjectMapper objectMapper;
-    @Mock private FcmService fcmService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private Member member;
     private Party party;
@@ -217,10 +215,11 @@ class NotificationCommandServiceTest {
 
                 // then
                 then(notificationRepository).should().save(any(Notification.class));
+                then(eventPublisher).should().publishEvent(any(NotificationEvent.class));
             }
 
             @Test
-            @DisplayName("PARTY_INVITE 알림을 생성하면 title이 '새로운 모임'으로 FCM이 전송된다")
+            @DisplayName("PARTY_INVITE 알림을 생성하면 title이 '새로운 모임'으로 이벤트가 발행된다")
             void createNotification_partyInvite_usesTitleNewParty() throws Exception {
                 // given
                 CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
@@ -242,6 +241,7 @@ class NotificationCommandServiceTest {
 
                 // then
                 then(notificationRepository).should().save(any(Notification.class));
+                then(eventPublisher).should().publishEvent(any(NotificationEvent.class));
             }
 
             @Test
@@ -268,6 +268,7 @@ class NotificationCommandServiceTest {
 
                 // then
                 then(notificationRepository).should().save(any(Notification.class));
+                then(eventPublisher).should().publishEvent(any(NotificationEvent.class));
             }
 
             @Test
@@ -284,6 +285,7 @@ class NotificationCommandServiceTest {
                 Notification oldestNonInvite = Notification.builder()
                         .member(member).partyId(100L).title("오래된 알림").content("c")
                         .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build();
+                ReflectionTestUtils.setField(oldestNonInvite, "id", 50L);
 
                 CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                         .member(member)
@@ -305,7 +307,7 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should().delete(oldestNonInvite);
+                then(notificationRepository).should().deleteByIdQuery(50L);
                 then(notificationRepository).should().save(any(Notification.class));
             }
 
@@ -337,7 +339,7 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should(never()).delete(any());
+                then(notificationRepository).should(never()).deleteByIdQuery(any(Long.class));
                 then(notificationRepository).should().save(any(Notification.class));
             }
         }
