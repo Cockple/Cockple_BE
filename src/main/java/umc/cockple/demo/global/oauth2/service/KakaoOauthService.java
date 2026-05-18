@@ -28,7 +28,6 @@ public class KakaoOauthService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
-    private static final long EXPIRED = 7 * 24 * 60 * 60 * 1000L;
 
     @Transactional
     public KakaoLoginResponseDTO signup(String code) {
@@ -125,21 +124,15 @@ public class KakaoOauthService {
                 ;
     }
 
+    @Transactional
     public TokenRefreshResponse validateMember(String refreshToken) {
         Member member = memberRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN));
 
-        // 액세스 토큰 재발급
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
+        member.setRefreshToken(newRefreshToken);
 
-        // 리프레시 토큰 만료가 3일 이하로 남은 경우 갱신 (sliding session)
-        if (jwtTokenProvider.isTokenExpiringSoon(refreshToken, EXPIRED)) {
-            String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
-            member.setRefreshToken(newRefreshToken);
-
-            return new TokenRefreshResponse(newAccessToken, newRefreshToken);
-        }
-
-        return new TokenRefreshResponse(newAccessToken, refreshToken);
+        return new TokenRefreshResponse(newAccessToken, newRefreshToken);
     }
 }
