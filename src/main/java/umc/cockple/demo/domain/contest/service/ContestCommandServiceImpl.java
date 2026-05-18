@@ -116,14 +116,31 @@ public class ContestCommandServiceImpl implements ContestCommandService {
         return contestConverter.toUpdateResponseDTO(contest);
     }
 
+
+    // 삭제
+    @Override
+    public ContestRecordDeleteDTO.Response deleteContestRecord(Long memberId, Long contestId) {
+
+        log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
+
+        // 1. 대회 조회
+        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
+                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
+
+        // 2. 연관관계 해제 (양방향)
+        contest.removeMember();
+
+        // 3. 삭제
+        contestRepository.delete(contest);
+
+        log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
+
+        return contestConverter.toDeleteResponseDTO(contest);
+    }
+
     private void updateContestImages(Contest contest, List<ContestImgUpdateRequest> requestImgs) {
         if (requestImgs == null) {
             requestImgs = List.of();
-        }
-
-        if (requestImgs.size() > 3) {
-            log.error("이미지 개수 초과: {}", requestImgs.size());
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
         }
 
         // 요청에 포함된 기존 이미지 ID 목록
@@ -196,39 +213,12 @@ public class ContestCommandServiceImpl implements ContestCommandService {
                 }
             } else {
                 // 신규 항목 추가
-                ContestVideo newVideo = ContestVideo.of(contest, reqVideo.videoKey(), reqVideo.videoOrder());
-                contest.getContestVideos().add(newVideo);
+                ContestVideo.of(contest, reqVideo.videoKey(), reqVideo.videoOrder());
             }
         }
     }
 
-    // 삭제
-    @Override
-    public ContestRecordDeleteDTO.Response deleteContestRecord(Long memberId, Long contestId) {
-
-        log.info("[대회 기록 삭제 시작] - memberId: {}, contestId: {}", memberId, contestId);
-
-        // 1. 대회 조회
-        Contest contest = contestRepository.findByIdAndMember_Id(contestId, memberId)
-                .orElseThrow(() -> new ContestException(ContestErrorCode.CONTEST_NOT_FOUND));
-
-        // 2. 연관관계 해제 (양방향)
-        contest.removeMember();
-
-        // 3. 삭제
-        contestRepository.delete(contest);
-
-        log.info("대회 기록 삭제 완료 - contestId: {}", contestId);
-
-        return contestConverter.toDeleteResponseDTO(contest);
-    }
-
     private void extractedImgsWithOrder(List<AddContestImgRequest> imgs, Contest contest) {
-        int total = contest.getContestImgs().size() + imgs.size();
-        if (total > 3) {
-            log.error("이미지 개수 초과: 기존 {}, 추가 {}", contest.getContestImgs().size(), imgs.size());
-            throw new ContestException(ContestErrorCode.IMAGE_UPLOAD_LIMIT_EXCEEDED);
-        }
         for (AddContestImgRequest img : imgs) {
             ContestImg contestImg = ContestImg.of(contest, img.imgKey(), img.imgOrder());
             contest.addContestImg(contestImg);
@@ -238,8 +228,7 @@ public class ContestCommandServiceImpl implements ContestCommandService {
     private void extractedVideoWithOrder(List<AddContestVideoRequest> videos, Contest contest) {
         if (videos != null && !videos.isEmpty()) {
             for (AddContestVideoRequest video : videos) {
-                ContestVideo contestVideo = ContestVideo.of(contest, video.videoKey(), video.videoOrder());
-                contest.getContestVideos().add(contestVideo);
+                ContestVideo.of(contest, video.videoKey(), video.videoOrder());
             }
         }
     }

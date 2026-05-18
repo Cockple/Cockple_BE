@@ -55,3 +55,8 @@ src/main/resources/firebase/*.json
 ### Claude / OMC ###
 .claude/
 .omc/
+.omx/
+
+cockple_dump.sql
+
+k6

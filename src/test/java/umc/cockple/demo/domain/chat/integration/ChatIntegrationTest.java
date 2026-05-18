@@ -2,25 +2,33 @@ package umc.cockple.demo.domain.chat.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.ChatFixture;
@@ -43,6 +51,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
     @Autowired ChatRoomRepository chatRoomRepository;
     @Autowired ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired ChatMessageRepository chatMessageRepository;
+    @Autowired MessageReadStatusRepository messageReadStatusRepository;
+    @Autowired ChatRoomListCacheService chatRoomListCacheService;
 
     private Member member;
     private Member otherMember;
@@ -67,6 +77,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        chatRoomListCacheService.evictAllLastMessages();
+        messageReadStatusRepository.deleteAll();
         chatMessageRepository.deleteAll();
         chatRoomMemberRepository.deleteAll();
         chatRoomRepository.deleteAll();
@@ -75,6 +87,647 @@ class ChatIntegrationTest extends IntegrationTestBase {
         partyAddrRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/parties - 모임 채팅방 목록 조회")
+    class GetPartyChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 인증된 회원은 자신의 모임 채팅방 목록을 조회할 수 있다")
+            void getPartyChatRooms_success() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(
+                        ChatFixture.createTextMessage(partyChatRoom, member, "최근 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[0].memberCount").value(1))
+                        .andExpect(jsonPath("$.data.content[0].unreadCount").value(0))
+                        .andExpect(jsonPath("$.data.content[0].partyImgUrl").doesNotExist())
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("최근 공지"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.timestamp").exists());
+            }
+
+            @Test
+            @DisplayName("200 - 참여 중인 모임 채팅방이 없으면 빈 목록을 반환한다")
+            void getPartyChatRooms_empty() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+
+            @Test
+            @DisplayName("200 - 마지막 메시지가 더 최근인 채팅방이 목록의 위에 온다")
+            void getPartyChatRooms_latestMessageRoomFirst() throws Exception {
+                PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party secondParty = partyRepository.save(PartyFixture.createParty("새 모임", member.getId(), secondAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondParty, member, Role.PARTY_MANAGER));
+
+                ChatRoom secondPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(secondPartyChatRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "먼저 온 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondPartyChatRoom, member, "가장 최근 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(secondPartyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(secondParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("새 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("가장 최근 메시지"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.content").value("먼저 온 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - unreadCount와 partyImgUrl이 실제 값으로 채워진다")
+            void getPartyChatRooms_populatedUnreadCountAndPartyImgUrl() throws Exception {
+                PartyAddr richAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "용산구"));
+                Party richParty = PartyFixture.createParty("이미지 있는 모임", member.getId(), richAddr);
+                ReflectionTestUtils.invokeMethod(richParty, "setPartyImg", PartyImg.create("party/test-image.png", richParty));
+                richParty = partyRepository.saveAndFlush(richParty);
+
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, member, Role.PARTY_MANAGER));
+                memberPartyRepository.save(MemberFixture.createMemberParty(richParty, otherMember, Role.PARTY_MEMBER));
+
+                ChatRoom richPartyChatRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(richParty));
+                chatRoomMemberRepository.save(ChatRoomMember.create(richPartyChatRoom, member));
+
+                ChatMessage firstMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(richPartyChatRoom, otherMember, "첫 번째 메시지"));
+                ChatMessage latestMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(richPartyChatRoom, otherMember, "읽지 않은 최근 메시지"));
+
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(firstMessage.getId(), member.getId(), richPartyChatRoom.getId()));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(latestMessage.getId(), member.getId(), richPartyChatRoom.getId()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(richPartyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].unreadCount").value(2))
+                        .andExpect(jsonPath("$.data.content[0].partyImgUrl").value("https://storage.googleapis.com/test-bucket/party/test-image.png"))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("이미지 있는 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("읽지 않은 최근 메시지"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/parties/search - 모임 채팅방 이름 검색")
+    class SearchPartyChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - name query param으로 매칭된 모임 채팅방만 반환한다")
+            void searchPartyChatRooms_filtersByName() throws Exception {
+                PartyAddr matchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party matchingParty = partyRepository.save(PartyFixture.createParty("배드 모임", member.getId(), matchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(matchingParty, member, Role.PARTY_MANAGER));
+
+                PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "마포구"));
+                Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("축구 모임", member.getId(), nonMatchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.PARTY_MANAGER));
+
+                ChatRoom matchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(matchingParty));
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(matchingRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(nonMatchingRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(matchingRoom, member, "배드 공지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, member, "축구 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "배드")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(matchingRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(matchingParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("배드 공지"));
+            }
+
+            @Test
+            @DisplayName("200 - 여러 검색 결과가 있으면 최근 메시지 방이 먼저 온다")
+            void searchPartyChatRooms_latestMessageRoomFirst() throws Exception {
+                PartyAddr secondAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+                Party secondMatchingParty = partyRepository.save(PartyFixture.createParty("배드 새 모임", member.getId(), secondAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(secondMatchingParty, member, Role.PARTY_MANAGER));
+
+                PartyAddr nonMatchAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "용산구"));
+                Party nonMatchingParty = partyRepository.save(PartyFixture.createParty("농구 모임", member.getId(), nonMatchAddr));
+                memberPartyRepository.save(MemberFixture.createMemberParty(nonMatchingParty, member, Role.PARTY_MANAGER));
+
+                ChatRoom secondMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(secondMatchingParty));
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createPartyChatRoom(nonMatchingParty));
+
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(secondMatchingRoom, member));
+                chatRoomMemberRepository.save(ChatRoomMember.create(nonMatchingRoom, member));
+
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "먼저 온 배드 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondMatchingRoom, member, "가장 최근 배드 메시지"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, member, "비매칭 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "배드")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(secondMatchingRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyId").value(secondMatchingParty.getId()))
+                        .andExpect(jsonPath("$.data.content[0].partyName").value("배드 새 모임"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("가장 최근 배드 메시지"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(partyChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyId").value(party.getId()))
+                        .andExpect(jsonPath("$.data.content[1].partyName").value("배드민턴 모임"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.content").value("먼저 온 배드 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - 검색 결과가 없으면 빈 목록과 hasNext false를 반환한다")
+            void searchPartyChatRooms_empty() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, member, "배드민턴 공지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/parties/search")
+                                .param("name", "농구")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/chats/direct - 개인 채팅방 생성 및 참여")
+    class CreateDirectChatRoom {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 새로운 개인 채팅방을 생성하고 요청자는 JOINED, 상대방은 PENDING 상태로 저장한다")
+            void createDirectChatRoom_success() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", otherMember.getId().toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.CREATED.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.CREATED.getMessage()))
+                        .andExpect(jsonPath("$.data.chatRoomId").isNumber())
+                        .andExpect(jsonPath("$.data.displayName").value(otherMember.getMemberName()))
+                        .andExpect(jsonPath("$.data.createdAt").exists())
+                        .andExpect(jsonPath("$.data.members", hasSize(2)))
+                        .andExpect(jsonPath("$.data.members[*].memberName",
+                                containsInAnyOrder(member.getMemberName(), otherMember.getMemberName())));
+            }
+
+            @Test
+            @DisplayName("200 - 이미 존재하는 개인 채팅방이 있으면 새로 만들지 않고 기존 채팅방을 반환한다")
+            void createDirectChatRoom_returnsExistingRoom() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, otherMember.getMemberName()));
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(directChatRoom, otherMember, member.getMemberName()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", otherMember.getId().toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.CREATED.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.CREATED.getMessage()))
+                        .andExpect(jsonPath("$.data.chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.displayName").value(otherMember.getMemberName()))
+                        .andExpect(jsonPath("$.data.createdAt").exists())
+                        .andExpect(jsonPath("$.data.members", hasSize(2)))
+                        .andExpect(jsonPath("$.data.members[*].memberName",
+                                containsInAnyOrder(member.getMemberName(), otherMember.getMemberName())));
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("400 - 자기 자신을 대상으로 요청하면 CANNOT_CHAT_WITH_SELF 에러를 반환한다")
+            void fail_cannotChatWithSelf() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", member.getId().toString()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.code").value(ChatErrorCode.CANNOT_CHAT_WITH_SELF.getCode()))
+                        .andExpect(jsonPath("$.message").value(ChatErrorCode.CANNOT_CHAT_WITH_SELF.getMessage()))
+                        .andExpect(jsonPath("$.data").doesNotExist());
+            }
+
+            @Test
+            @DisplayName("404 - 존재하지 않는 상대 회원이면 MEMBER_NOT_FOUND 에러를 반환한다")
+            void fail_targetMemberNotFound() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(post("/api/chats/direct")
+                                .param("targetMemberId", "999999"))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.success").value(false))
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()))
+                        .andExpect(jsonPath("$.data").doesNotExist());
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/direct - 개인 채팅방 목록 조회")
+    class GetDirectChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 최신 메시지 순으로 정렬된 개인 채팅방 목록과 상세 필드를 반환한다")
+            void getDirectChatRooms_success() throws Exception {
+                Member withdrawnCounterPart = memberRepository.save(
+                        MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L));
+
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 4004L));
+                latestCounterPart.updateProfileImg(ProfileImg.builder()
+                        .imgKey("member/direct-profile.png")
+                        .build());
+                latestCounterPart = memberRepository.saveAndFlush(latestCounterPart);
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "예전 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, withdrawnCounterPart, member.getMemberName()));
+                chatMessageRepository.save(
+                        ChatFixture.createTextMessage(directChatRoom, withdrawnCounterPart, "먼저 온 메시지"));
+
+                ChatRoom latestRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, latestCounterPart, member.getMemberName()));
+                ChatMessage unreadMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(latestRoom, latestCounterPart, "읽지 않은 메시지"));
+                ChatMessage latestMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(latestRoom, latestCounterPart, "가장 최근 메시지"));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(unreadMessage.getId(), member.getId(), latestRoom.getId()));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(latestMessage.getId(), member.getId(), latestRoom.getId()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.OK.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.OK.getMessage()))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"))
+                        .andExpect(jsonPath("$.data.content[0].profileImgUrl").value("https://storage.googleapis.com/test-bucket/member/direct-profile.png"))
+                        .andExpect(jsonPath("$.data.content[0].isWithdrawn").value(false))
+                        .andExpect(jsonPath("$.data.content[0].unreadCount").value(2))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("가장 최근 메시지"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.timestamp").exists())
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("예전 대화"))
+                        .andExpect(jsonPath("$.data.content[1].profileImgUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.content[1].isWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.content[1].unreadCount").value(0))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.content").value("먼저 온 메시지"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.messageType").value("TEXT"))
+                        .andExpect(jsonPath("$.data.content[1].lastMessage.timestamp").exists());
+            }
+
+            @Test
+            @DisplayName("200 - 현재 사용자가 JOINED 상태인 개인 채팅방만 반환한다")
+            void getDirectChatRooms_filtersPendingMemberships() throws Exception {
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+                Member pendingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.D, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "철수 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "먼저 온 메시지"));
+
+                ChatRoom latestJoinedRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestJoinedRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestJoinedRoom, latestCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(latestJoinedRoom, latestCounterPart, "최신 JOINED 메시지"));
+
+                ChatRoom pendingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingRoom, member, "보이면 안 되는 방"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingRoom, pendingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(pendingRoom, pendingCounterPart, "가장 최신이지만 제외되어야 하는 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.OK.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.OK.getMessage()))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestJoinedRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/chats/direct/search - 개인 채팅방 이름 검색")
+    class SearchDirectChatRooms {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 현재 사용자 membership displayName과 매칭되는 direct 채팅방만 반환한다")
+            void searchDirectChatRooms_filtersByCurrentMembershipDisplayName() throws Exception {
+                Member hiddenCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.C, 3003L));
+                Member nonMatchingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("최유리", Gender.FEMALE, Level.B, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "영희와의 최근 메시지"));
+
+                ChatRoom misleadingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(misleadingRoom, member, "숨김 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(misleadingRoom, hiddenCounterPart, "영희 채팅"));
+                chatMessageRepository.save(ChatFixture.createTextMessage(misleadingRoom, hiddenCounterPart, "상대방 displayName만 일치"));
+
+                ChatRoom nonMatchingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(nonMatchingRoom, member, "민수 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(nonMatchingRoom, nonMatchingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(nonMatchingRoom, nonMatchingCounterPart, "검색어 미포함 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.code").value(CommonSuccessCode.OK.getCode()))
+                        .andExpect(jsonPath("$.message").value(CommonSuccessCode.OK.getMessage()))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("영희와의 최근 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - DIRECT가 아닌 채팅방은 검색 결과에서 제외된다")
+            void searchDirectChatRooms_excludesNonDirectRooms() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "direct 메시지"));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(partyChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(partyChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(partyChatRoom, otherMember, "party 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - 현재 사용자가 JOINED 상태인 개인 채팅방만 검색된다")
+            void searchDirectChatRooms_filtersPendingMemberships() throws Exception {
+                Member joinedCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+                Member pendingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.D, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, joinedCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, joinedCounterPart, "JOINED 방 메시지"));
+
+                ChatRoom pendingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingRoom, member, "영희 보류 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingRoom, pendingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(pendingRoom, pendingCounterPart, "PENDING 방 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - 여러 검색 결과가 있으면 최신 메시지 순으로 반환한다")
+            void searchDirectChatRooms_latestMessageRoomFirst() throws Exception {
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 예전 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "먼저 온 영희 메시지"));
+
+                ChatRoom latestRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, member, "영희 최신 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, latestCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(latestRoom, latestCounterPart, "가장 최근 영희 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("영희 최신 채팅"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("영희 예전 채팅"));
+            }
+
+            @Test
+            @DisplayName("200 - paging 파라미터에 따라 slice와 hasNext를 반환한다")
+            void searchDirectChatRooms_supportsPaging() throws Exception {
+                Member firstCounterPart = memberRepository.save(
+                        MemberFixture.createMember("이영희", Gender.FEMALE, Level.C, 3003L));
+                Member secondCounterPart = memberRepository.save(
+                        MemberFixture.createMember("김영희", Gender.FEMALE, Level.B, 4004L));
+                Member thirdCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박영희", Gender.FEMALE, Level.A, 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "영희 첫 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, firstCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, firstCounterPart, "첫 번째 영희 메시지"));
+
+                ChatRoom secondRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(secondRoom, member, "영희 두번째 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(secondRoom, secondCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(secondRoom, secondCounterPart, "두 번째 영희 메시지"));
+
+                ChatRoom thirdRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(thirdRoom, member, "영희 세번째 채팅"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(thirdRoom, thirdCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(thirdRoom, thirdCounterPart, "세 번째 영희 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "0")
+                                .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(true))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(thirdRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(secondRoom.getId()));
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "영희")
+                                .param("page", "1")
+                                .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - 검색 결과가 없으면 빈 목록과 hasNext false를 반환한다")
+            void searchDirectChatRooms_empty() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "없는검색어")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(0)));
+            }
+
+            @Test
+            @DisplayName("200 - 빈 검색어면 현재 사용자가 JOINED인 개인 채팅방 전체를 최신순으로 반환한다")
+            void searchDirectChatRooms_blankNameReturnsAllJoinedDirectRooms() throws Exception {
+                Member latestCounterPart = memberRepository.save(
+                        MemberFixture.createMember("김영희", Gender.FEMALE, Level.C, 3003L));
+                Member pendingCounterPart = memberRepository.save(
+                        MemberFixture.createMember("박민수", Gender.MALE, Level.D, 4004L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "첫 번째 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, otherMember, "먼저 온 메시지"));
+
+                ChatRoom latestRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, member, "두 번째 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(latestRoom, latestCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(latestRoom, latestCounterPart, "가장 최근 메시지"));
+
+                ChatRoom pendingRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+                chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingRoom, member, "보이면 안 되는 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingRoom, pendingCounterPart, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(pendingRoom, pendingCounterPart, "최신이지만 제외되어야 하는 메시지"));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", "")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.content", hasSize(2)))
+                        .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("두 번째 대화"))
+                        .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("첫 번째 대화"));
+            }
+        }
     }
 
     @Nested

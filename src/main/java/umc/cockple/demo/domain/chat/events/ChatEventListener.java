@@ -13,6 +13,8 @@ import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionServic
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
+import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
 import java.util.HashMap;
@@ -27,6 +29,7 @@ public class ChatEventListener {
     private final SubscriptionService subscriptionService;
     private final ChatRoomListCacheService chatRoomListCacheService;
     private final ChatListSubscriptionService chatListSubscriptionService;
+    private final ChatPushNotificationService chatPushNotificationService;
 
 
     @EventListener
@@ -39,6 +42,17 @@ public class ChatEventListener {
                     .sendMessage(event.chatRoomId(), event.content(), event.files(), event.senderId());
         } catch (Exception e) {
             log.error("메시지 전송 이벤트 처리 중 오류 발생", e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleChatNotification(ChatNotificationEvent event) {
+        log.info("채팅 알림 이벤트 처리 - 채팅방: {}, 발신자: {}", event.chatRoomId(), event.senderId());
+        try {
+            chatPushNotificationService.sendPush(event);
+        } catch (Exception e) {
+            log.error("채팅 알림 이벤트 처리 중 오류 발생 - 채팅방: {}", event.chatRoomId(), e);
         }
     }
 
