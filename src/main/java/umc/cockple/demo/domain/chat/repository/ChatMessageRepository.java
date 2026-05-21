@@ -40,6 +40,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             LEFT JOIN FETCH m.sender
             LEFT JOIN FETCH m.chatMessageFiles
             WHERE m.chatRoom.id = :chatRoomId
+            AND m.isDeleted = false
             AND m.id < :cursor
             ORDER BY m.createdAt DESC
             """)
