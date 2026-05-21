@@ -31,10 +31,12 @@ public class ChatProcessor {
 
     private ChatCommonDTO.MessageInfo processAndConvertMessage(ChatMessage message, Long memberId) {
         Member sender = message.getSender();
-        String senderProfileImageUrl = generateProfileImageUrl(sender.getProfileImg());
+        String senderProfileImageUrl = sender != null
+                ? generateProfileImageUrl(sender.getProfileImg())
+                : null;
         List<ChatCommonDTO.FileInfo> processedFiles = processMessageFiles(message);
-        boolean isMyMessage = isMyMessage(sender.getId(), memberId);
-        boolean isSenderWithdrawn = sender.getIsActive() == MemberStatus.INACTIVE;
+        boolean isMyMessage = sender != null && isMyMessage(sender.getId(), memberId);
+        boolean isSenderWithdrawn = sender != null && sender.getIsActive() == MemberStatus.INACTIVE;
         return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedFiles, isMyMessage, isSenderWithdrawn);
     }
 

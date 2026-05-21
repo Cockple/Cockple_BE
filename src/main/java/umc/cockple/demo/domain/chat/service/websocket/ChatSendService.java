@@ -86,12 +86,23 @@ public class ChatSendService {
         ChatRoom chatRoom = findChatRoomByPartyId(partyId);
 
         ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
-        chatMessageRepository.save(systemMessage);
+        ChatMessage savedSystemMessage = chatMessageRepository.save(systemMessage);
+
+        messageReadCreationService.createReadStatusForNewMessage(savedSystemMessage, null);
+
+        List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoom.getId());
+        chatReadService.subscribersToReadStatus(
+                chatRoom.getId(),
+                savedSystemMessage.getId(),
+                activeSubscribers,
+                null
+        );
 
         WebSocketMessageDTO.MessageResponse broadcastSystemMessage
-                = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, systemMessage);
+                = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, savedSystemMessage);
 
         subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
+        publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
