@@ -173,7 +173,7 @@ public class ChatConverter {
             List<ChatCommonDTO.FileInfo> processedFiles,
             boolean isMyMessage,
             boolean isSenderWithdrawn) {
-        boolean isSystemMessage = message.getType() == MessageType.SYSTEM || message.getSender() == null;
+        boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
         Member sender = message.getSender();
 
         return ChatCommonDTO.MessageInfo.builder()

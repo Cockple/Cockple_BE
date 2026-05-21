@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.chat.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -35,6 +36,9 @@ import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -87,6 +91,56 @@ class ChatIntegrationTest extends IntegrationTestBase {
         partyAddrRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
+    }
+
+    @Nested
+    @DisplayName("ChatMessageRepository - 시스템 메시지 조회 쿼리")
+    class ChatMessageRepositoryQueries {
+
+        @Test
+        @DisplayName("findRecentMessagesWithFiles는 sender가 null인 시스템 메시지를 반환한다")
+        void findRecentMessagesWithFiles_returnsSystemMessageWithoutSender() {
+            ChatMessage systemMessage = chatMessageRepository.saveAndFlush(
+                    ChatFixture.createSystemMessage(partyChatRoom, "시스템 공지"));
+
+            List<ChatMessage> messages = chatMessageRepository.findRecentMessagesWithFiles(
+                    partyChatRoom.getId(),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(messages).extracting(ChatMessage::getId).contains(systemMessage.getId());
+            ChatMessage foundMessage = messages.stream()
+                    .filter(message -> message.getId().equals(systemMessage.getId()))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(foundMessage.getSender()).isNull();
+            assertThat(foundMessage.getType().name()).isEqualTo("SYSTEM");
+            assertThat(foundMessage.getContent()).isEqualTo("시스템 공지");
+        }
+
+        @Test
+        @DisplayName("findByRoomIdAndIdLessThanOrderByCreatedAtDesc는 sender가 null인 시스템 메시지를 반환한다")
+        void findPreviousMessages_returnsSystemMessageWithoutSender() {
+            ChatMessage olderMessage = chatMessageRepository.saveAndFlush(
+                    ChatFixture.createSystemMessage(partyChatRoom, "이전 시스템 공지"));
+            ChatMessage newerMessage = chatMessageRepository.saveAndFlush(
+                    ChatFixture.createTextMessage(partyChatRoom, member, "기준 메시지"));
+
+            List<ChatMessage> messages = chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(
+                    partyChatRoom.getId(),
+                    newerMessage.getId() + 1,
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(messages).extracting(ChatMessage::getId).contains(olderMessage.getId(), newerMessage.getId());
+            ChatMessage foundSystemMessage = messages.stream()
+                    .filter(message -> message.getId().equals(olderMessage.getId()))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(foundSystemMessage.getSender()).isNull();
+            assertThat(foundSystemMessage.getType().name()).isEqualTo("SYSTEM");
+            assertThat(foundSystemMessage.getContent()).isEqualTo("이전 시스템 공지");
+        }
     }
 
     @Nested

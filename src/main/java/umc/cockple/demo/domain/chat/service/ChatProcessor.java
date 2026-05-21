@@ -7,6 +7,9 @@ import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
+import umc.cockple.demo.domain.chat.enums.MessageType;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -31,6 +34,11 @@ public class ChatProcessor {
 
     private ChatCommonDTO.MessageInfo processAndConvertMessage(ChatMessage message, Long memberId) {
         Member sender = message.getSender();
+        if (sender == null && message.getType() != MessageType.SYSTEM) {
+            log.error("일반 채팅 메시지에 sender가 없습니다. messageId={}, type={}", message.getId(), message.getType());
+            throw new ChatException(ChatErrorCode.INVALID_MESSAGE_SENDER);
+        }
+
         String senderProfileImageUrl = sender != null
                 ? generateProfileImageUrl(sender.getProfileImg())
                 : null;
