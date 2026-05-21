@@ -138,6 +138,7 @@ class ChatSendServiceTest {
         assertThat(response.chatRoomId()).isEqualTo(roomId);
         assertThat(response.messageId()).isEqualTo(300L);
         assertThat(response.content()).isEqualTo(content);
+        assertThat(response.messageType()).isEqualTo(MessageType.SYSTEM);
         assertThat(response.senderId()).isNull();
         assertThat(response.senderName()).isEqualTo("시스템");
 
