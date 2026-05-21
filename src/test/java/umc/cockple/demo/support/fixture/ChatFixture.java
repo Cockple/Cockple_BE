@@ -54,6 +54,10 @@ public class ChatFixture {
         return ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
     }
 
+    public static ChatMessage createSystemMessage(ChatRoom chatRoom, String content) {
+        return ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
+    }
+
     public static ChatMessage createImageMessage(ChatRoom chatRoom, Member sender, List<ChatMessageFile> files) {
         ChatMessage message = ChatMessage.create(chatRoom, sender, null, MessageType.TEXT);
         message.getChatMessageFiles().addAll(files);
