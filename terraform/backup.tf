@@ -18,8 +18,8 @@ resource "google_storage_bucket" "cockple_db_backups" {
   depends_on = [google_project_service.storage]
 }
 
-resource "google_storage_bucket_iam_member" "app_db_backup_object_admin" {
+resource "google_storage_bucket_iam_member" "app_db_backup_object_creator" {
   bucket = google_storage_bucket.cockple_db_backups.name
-  role   = "roles/storage.objectAdmin"
+  role   = "roles/storage.objectCreator"
   member = "serviceAccount:${google_service_account.cockple_app.email}"
 }
