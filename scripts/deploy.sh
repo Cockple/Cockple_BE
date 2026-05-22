@@ -1,16 +1,19 @@
 #!/bin/bash
+set -euo pipefail
 
-DOCKER_REPO=$1
-BRANCH=$2
+DOCKER_REPO="${1:?DOCKER_REPO is required}"
+BRANCH="${2:?BRANCH is required}"
 
 cd /home/ubuntu/cockple
 
 if [ "$BRANCH" == "main" ]; then
   SERVICE="cockple-app"
   TAG="latest"
+  INSTALL_PROD_BACKUP="true"
 else
   SERVICE="cockple-app-staging"
   TAG="staging"
+  INSTALL_PROD_BACKUP="false"
 fi
 
 cat > .env << EOF
@@ -26,12 +29,6 @@ JWT_SECRET_KEY=${JWT_SECRET_KEY}
 FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
 EOF
 
-cat > .backup.env << EOF
-GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
-BACKUP_DATABASE=cockple
-GCS_OBJECT_PREFIX=prod
-LOCAL_RETENTION_DAYS=2
-EOF
 echo "${FIREBASE_SERVICE_ACCOUNT_KEY}" > /home/ubuntu/cockple/firebase-service-account.json
 
 echo "=== 배포 전 상태 ==="
@@ -77,9 +74,27 @@ for container in cockple-mysql cockple-redis $SERVICE; do
   done
 done
 
-chmod +x /home/ubuntu/cockple/scripts/backup_db.sh
-chmod +x /home/ubuntu/cockple/scripts/run_db_backup.sh
-chmod +x /home/ubuntu/cockple/scripts/install_backup_cron.sh
-bash /home/ubuntu/cockple/scripts/install_backup_cron.sh
+if [ "${INSTALL_PROD_BACKUP}" == "true" ]; then
+  : "${GCS_BACKUP_BUCKET:?GCS_BACKUP_BUCKET is required for prod backup setup}"
+
+  cat > .backup.env << EOF
+GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
+BACKUP_DATABASE=cockple
+GCS_OBJECT_PREFIX=prod
+LOCAL_RETENTION_DAYS=2
+EOF
+
+  chmod +x /home/ubuntu/cockple/scripts/backup_db.sh
+  chmod +x /home/ubuntu/cockple/scripts/run_db_backup.sh
+  chmod +x /home/ubuntu/cockple/scripts/install_backup_cron.sh
+
+  echo "=== 운영 DB 백업 cron 설치 ==="
+  bash /home/ubuntu/cockple/scripts/install_backup_cron.sh
+
+  echo "=== 운영 DB 백업 smoke test ==="
+  bash /home/ubuntu/cockple/scripts/run_db_backup.sh
+else
+  echo "=== staging 배포: 운영 DB 백업 설정은 건드리지 않음 ==="
+fi
 
 echo "=== 배포 성공 ==="
