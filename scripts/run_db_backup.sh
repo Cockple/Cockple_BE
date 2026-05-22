@@ -1,12 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-readonly APP_DIR="/home/ubuntu/cockple"
-readonly BACKUP_ENV_FILE="${APP_DIR}/.backup.env"
-readonly BACKUP_DIR="${APP_DIR}/backups"
-readonly LOG_DIR="${APP_DIR}/logs"
+readonly BACKUP_ENV_FILE="/etc/cockple/db-backup.env"
+readonly BACKUP_DIR="/var/lib/cockple/db-backups"
 readonly LOCK_FILE="${BACKUP_DIR}/.db-backup.lock"
-readonly DB_BACKUP_SCRIPT="${APP_DIR}/scripts/backup_db.sh"
+readonly DB_BACKUP_SCRIPT="/opt/cockple/backup/backup_db.sh"
 
 if [[ ! -f "${BACKUP_ENV_FILE}" ]]; then
   echo "Backup config not found: ${BACKUP_ENV_FILE}" >&2
@@ -22,7 +20,7 @@ BACKUP_DATABASE="${BACKUP_DATABASE:-cockple}"
 GCS_OBJECT_PREFIX="${GCS_OBJECT_PREFIX:-prod}"
 LOCAL_RETENTION_DAYS="${LOCAL_RETENTION_DAYS:-2}"
 
-mkdir -p "${BACKUP_DIR}" "${LOG_DIR}"
+mkdir -p "${BACKUP_DIR}"
 
 exec 9>"${LOCK_FILE}"
 if ! flock -n 9; then

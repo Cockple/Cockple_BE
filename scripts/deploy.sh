@@ -19,7 +19,6 @@ fi
 cat > .env << EOF
 DB_PASSWORD=${DB_PASSWORD}
 GCS_BUCKET=${GCS_BUCKET}
-GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
 KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
 KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
 KAKAO_REDIRECT_URI_PROD=${KAKAO_REDIRECT_URI_PROD}
@@ -77,24 +76,12 @@ done
 if [ "${INSTALL_PROD_BACKUP}" == "true" ]; then
   : "${GCS_BACKUP_BUCKET:?GCS_BACKUP_BUCKET is required for prod backup setup}"
 
-  cat > .backup.env << EOF
-GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
-BACKUP_DATABASE=cockple
-GCS_OBJECT_PREFIX=prod
-LOCAL_RETENTION_DAYS=2
-EOF
-
-  chmod +x /home/ubuntu/cockple/scripts/backup_db.sh
-  chmod +x /home/ubuntu/cockple/scripts/run_db_backup.sh
-  chmod +x /home/ubuntu/cockple/scripts/install_backup_cron.sh
-
-  echo "=== 운영 DB 백업 cron 설치 ==="
-  bash /home/ubuntu/cockple/scripts/install_backup_cron.sh
-
-  echo "=== 운영 DB 백업 smoke test ==="
-  bash /home/ubuntu/cockple/scripts/run_db_backup.sh
+  echo "=== 운영 DB 백업 systemd timer 설치 ==="
+  RUN_BACKUP_SMOKE_TEST=true \
+    GCS_BACKUP_BUCKET="${GCS_BACKUP_BUCKET}" \
+    bash /home/ubuntu/cockple/scripts/install_backup_systemd.sh
 else
-  echo "=== staging 배포: 운영 DB 백업 설정은 건드리지 않음 ==="
+  echo "=== staging 배포: 운영 DB 백업 runtime은 건드리지 않음 ==="
 fi
 
 echo "=== 배포 성공 ==="

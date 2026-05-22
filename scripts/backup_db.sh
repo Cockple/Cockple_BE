@@ -16,12 +16,18 @@ if [[ ! "${DATABASE_NAME}" =~ ^[A-Za-z0-9_]+$ ]]; then
   exit 1
 fi
 
-if ! sudo docker inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
+if [[ "${EUID}" -eq 0 ]]; then
+  DOCKER_CMD=(docker)
+else
+  DOCKER_CMD=(sudo docker)
+fi
+
+if ! "${DOCKER_CMD[@]}" inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
   echo "MySQL container not found: ${CONTAINER_NAME}" >&2
   exit 1
 fi
 
-CONTAINER_STATUS="$(sudo docker inspect --format='{{.State.Status}}' "${CONTAINER_NAME}")"
+CONTAINER_STATUS="$("${DOCKER_CMD[@]}" inspect --format='{{.State.Status}}' "${CONTAINER_NAME}")"
 if [[ "${CONTAINER_STATUS}" != "running" ]]; then
   echo "MySQL container is not running: status=${CONTAINER_STATUS}" >&2
   exit 1
@@ -40,7 +46,7 @@ cleanup_tmp() {
 
 trap cleanup_tmp EXIT
 
-sudo docker exec "${CONTAINER_NAME}" sh -c '
+"${DOCKER_CMD[@]}" exec "${CONTAINER_NAME}" sh -c '
   db_name="$1"
   exec mysqldump \
     --single-transaction \
