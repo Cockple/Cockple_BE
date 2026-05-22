@@ -16,6 +16,7 @@ fi
 cat > .env << EOF
 DB_PASSWORD=${DB_PASSWORD}
 GCS_BUCKET=${GCS_BUCKET}
+GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
 KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
 KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
 KAKAO_REDIRECT_URI_PROD=${KAKAO_REDIRECT_URI_PROD}
@@ -23,6 +24,13 @@ KAKAO_REDIRECT_URI_STAGING=${KAKAO_REDIRECT_URI_STAGING}
 KAKAO_ADMIN_KEY=${KAKAO_ADMIN_KEY}
 JWT_SECRET_KEY=${JWT_SECRET_KEY}
 FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
+EOF
+
+cat > .backup.env << EOF
+GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
+BACKUP_DATABASE=cockple
+GCS_OBJECT_PREFIX=prod
+LOCAL_RETENTION_DAYS=2
 EOF
 echo "${FIREBASE_SERVICE_ACCOUNT_KEY}" > /home/ubuntu/cockple/firebase-service-account.json
 
@@ -68,5 +76,10 @@ for container in cockple-mysql cockple-redis $SERVICE; do
     sleep 5
   done
 done
+
+chmod +x /home/ubuntu/cockple/scripts/backup_db.sh
+chmod +x /home/ubuntu/cockple/scripts/run_db_backup.sh
+chmod +x /home/ubuntu/cockple/scripts/install_backup_cron.sh
+bash /home/ubuntu/cockple/scripts/install_backup_cron.sh
 
 echo "=== 배포 성공 ==="
