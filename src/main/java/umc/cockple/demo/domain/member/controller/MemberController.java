@@ -130,13 +130,11 @@ public class MemberController {
     @PatchMapping(value = "/member")
     @Operation(summary = "회원 탈퇴 API",
             description = "사용자 회원 탈퇴")
-    public BaseResponse<String> withdraw(
-            @AuthenticationPrincipal CustomUserDetails member,
-            @CookieValue(value = "refreshToken", required = false) String refreshToken) {
+    public BaseResponse<String> withdraw(@AuthenticationPrincipal CustomUserDetails member) {
 
         Long memberId = member.getMemberId();
 
-        memberCommandService.withdrawMember(memberId, refreshToken);
+        memberCommandService.withdrawMember(memberId);
         return BaseResponse.success(CommonSuccessCode.NO_CONTENT);
     }
 

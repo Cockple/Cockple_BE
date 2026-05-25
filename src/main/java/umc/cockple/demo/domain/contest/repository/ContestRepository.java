@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.contest.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.contest.domain.Contest;
@@ -26,15 +25,4 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     @Query("SELECT COUNT(c) FROM Contest c WHERE c.member.id = :memberId AND c.medalType = 'BRONZE'")
     int countBronzeMedalsByMemberId(@Param("memberId") Long memberId);
 
-    @Modifying
-    @Query("DELETE FROM ContestVideo cv WHERE cv.contest.id IN (SELECT c.id FROM Contest c WHERE c.member.id IN :memberIds)")
-    void deleteContestVideosByMemberIds(@Param("memberIds") List<Long> memberIds);
-
-    @Modifying
-    @Query("DELETE FROM ContestImg ci WHERE ci.contest.id IN (SELECT c.id FROM Contest c WHERE c.member.id IN :memberIds)")
-    void deleteContestImgsByMemberIds(@Param("memberIds") List<Long> memberIds);
-
-    @Modifying
-    @Query("DELETE FROM Contest c WHERE c.member.id IN :memberIds")
-    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
 }

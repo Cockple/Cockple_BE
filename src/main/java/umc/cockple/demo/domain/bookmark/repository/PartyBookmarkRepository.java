@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.bookmark.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
@@ -38,8 +37,4 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
     List<PartyBookmark> findAllByMember(Member member);
 
     Optional<PartyBookmark> findFirstByMemberOrderByCreatedAtAsc(Member member);
-
-    @Modifying
-    @Query("DELETE FROM PartyBookmark pb WHERE pb.member.id IN :memberIds")
-    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
 }

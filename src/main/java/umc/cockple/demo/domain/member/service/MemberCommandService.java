@@ -19,7 +19,6 @@ import umc.cockple.demo.domain.file.service.FileService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import umc.cockple.demo.global.auth.RefreshTokenRepository;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
@@ -39,7 +38,6 @@ public class MemberCommandService {
 
     private final KakaoOauthService kakaoOauthService;
     private final FileService fileService;
-    private final RefreshTokenRepository refreshTokenRepository;
 
 
     // ==================== 회원 관련 ===================
@@ -78,7 +76,7 @@ public class MemberCommandService {
 
     }
 
-    public void withdrawMember(Long memberId, String refreshToken) {
+    public void withdrawMember(Long memberId) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
 
@@ -93,13 +91,8 @@ public class MemberCommandService {
         // 카카오 연결 끊기
         kakaoOauthService.unlinkAccess(member);
 
-        // 활성화 여부 해제
+        // 활성화 여부 해제, 리프레시 토큰 삭제
         member.withdraw();
-
-        // Redis 리프레시 토큰 즉시 삭제
-        if (refreshToken != null) {
-            refreshTokenRepository.delete(refreshToken);
-        }
     }
 
 

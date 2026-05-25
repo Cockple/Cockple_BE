@@ -180,7 +180,6 @@ public class Member extends BaseEntity {
 
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
-        this.deletedAt = LocalDateTime.now();
         this.fcmToken = null;
     }
 

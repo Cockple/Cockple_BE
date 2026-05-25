@@ -74,10 +74,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             @Param("status") ChatRoomMemberStatus status
     );
 
-    @Modifying
-    @Query("DELETE FROM ChatRoomMember crm WHERE crm.member.id IN :memberIds")
-    void deleteByMemberIds(@Param("memberIds") List<Long> memberIds);
-
     @Query("""
             SELECT counterPart FROM ChatRoomMember counterPart
             WHERE counterPart.chatRoom.type = 'DIRECT'
