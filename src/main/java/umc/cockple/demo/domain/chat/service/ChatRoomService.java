@@ -10,8 +10,14 @@ import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
+import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
+
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -21,6 +27,10 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final MessageReadStatusRepository messageReadStatusRepository;
+    private final ChatRoomListCacheService chatRoomListCacheService;
+    private final RedisSubscriptionService redisSubscriptionService;
+    private final ChatListSubscriptionService chatListSubscriptionService;
 
     public void createPartyChatRoom(Party party, Member owner) {
         log.info("[모임 채팅방 생성 시작] - partyId: {}", party.getId());
@@ -52,7 +62,25 @@ public class ChatRoomService {
     }
 
     public void deletePartyChatRoom(Long partyId) {
-        log.info("[모임 채팅방 삭제 진입] - partyId: {}", partyId);
+        log.info("[모임 채팅방 삭제 시작] - partyId: {}", partyId);
+
+        Optional<ChatRoom> chatRoomOptional = chatRoomRepository.findByPartyId(partyId);
+
+        if (chatRoomOptional.isEmpty()) {
+            log.warn("[모임 채팅방 삭제 스킵] - partyId: {}, 채팅방이 존재하지 않습니다.", partyId);
+            return;
+        }
+
+        ChatRoom chatRoom = chatRoomOptional.get();
+        Long chatRoomId = chatRoom.getId();
+
+        messageReadStatusRepository.deleteByChatRoomId(chatRoomId);
+        chatRoomListCacheService.evictLastMessage(chatRoomId);
+        redisSubscriptionService.clearRoomSubscribers(chatRoomId);
+        chatListSubscriptionService.clearChatListSubscribers(chatRoomId);
+        chatRoomRepository.delete(chatRoom);
+
+        log.info("[모임 채팅방 삭제 완료] - partyId: {}, chatRoomId: {}", partyId, chatRoomId);
     }
 
     private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {

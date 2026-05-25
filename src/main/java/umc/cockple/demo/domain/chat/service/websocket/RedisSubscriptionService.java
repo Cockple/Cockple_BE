@@ -76,4 +76,13 @@ public class RedisSubscriptionService {
             return Set.of();
         }
     }
+
+    public void clearRoomSubscribers(Long chatRoomId) {
+        try {
+            stringRedisTemplate.delete(CHAT_ROOM_SUBSCRIBERS + chatRoomId);
+            log.info("Redis 구독 키 삭제 - 채팅방: {}", chatRoomId);
+        } catch (Exception e) {
+            log.error("Redis 구독 키 삭제 실패 - 채팅방: {}", chatRoomId, e);
+        }
+    }
 }

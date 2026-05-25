@@ -61,4 +61,13 @@ public class ChatListSubscriptionService {
             return Set.of();
         }
     }
+
+    public void clearChatListSubscribers(Long chatRoomId) {
+        try {
+            stringRedisTemplate.delete(CHAT_LIST_SUBSCRIBERS + chatRoomId);
+            log.info("채팅방 목록 구독 키 삭제 - 채팅방: {}", chatRoomId);
+        } catch (Exception e) {
+            log.error("채팅방 목록 구독 키 삭제 실패 - 채팅방: {}", chatRoomId, e);
+        }
+    }
 }
