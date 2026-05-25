@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.*;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 
@@ -125,6 +126,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
                 .content(content)
+                .messageType(savedMessage.getType())
                 .images(files)
                 .senderId(sender.getId())
                 .senderName(sender.getMemberName())
@@ -141,6 +143,7 @@ public class ChatConverter {
                 .chatRoomId(chatRoomId)
                 .messageId(savedMessage.getId())
                 .content(content)
+                .messageType(savedMessage.getType())
                 .senderId(null)
                 .senderName("시스템")
                 .senderProfileImageUrl(null)
@@ -172,18 +175,20 @@ public class ChatConverter {
             List<ChatCommonDTO.FileInfo> processedFiles,
             boolean isMyMessage,
             boolean isSenderWithdrawn) {
+        boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
+        Member sender = message.getSender();
 
         return ChatCommonDTO.MessageInfo.builder()
                 .messageId(message.getId())
-                .senderId(message.getSender().getId())
-                .senderName(message.getSender().getMemberName())
-                .senderProfileImageUrl(senderProfileImageUrl)
-                .isSenderWithdrawn(isSenderWithdrawn)
+                .senderId(isSystemMessage ? null : sender.getId())
+                .senderName(isSystemMessage ? "시스템" : sender.getMemberName())
+                .senderProfileImageUrl(isSystemMessage ? null : senderProfileImageUrl)
+                .isSenderWithdrawn(isSystemMessage ? false : isSenderWithdrawn)
                 .content(message.getContent())
                 .messageType(message.getType())
                 .images(processedFiles)
                 .timestamp(message.getCreatedAt())
-                .isMyMessage(isMyMessage)
+                .isMyMessage(isSystemMessage ? false : isMyMessage)
                 .build();
     }
 
