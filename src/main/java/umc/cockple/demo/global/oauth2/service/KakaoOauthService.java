@@ -124,8 +124,8 @@ public class KakaoOauthService {
     }
 
     public TokenRefreshResponse validateMember(String refreshToken) {
-        // Redis에서 memberId 조회
-        Long memberId = refreshTokenRepository.findMemberIdByToken(refreshToken)
+        // Redis에서 memberId 조회 및 삭제 (GETDEL - 원자적 처리로 동시 요청 시 중복 발급 방지)
+        Long memberId = refreshTokenRepository.findAndDeleteByToken(refreshToken)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN));
 
         Member member = memberRepository.findById(memberId)
@@ -135,9 +135,6 @@ public class KakaoOauthService {
         if (member.getIsActive() == MemberStatus.INACTIVE) {
             throw new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN);
         }
-
-        // 기존 토큰 삭제 (Rotation)
-        refreshTokenRepository.delete(refreshToken);
 
         // 액세스 토큰 재발급
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());

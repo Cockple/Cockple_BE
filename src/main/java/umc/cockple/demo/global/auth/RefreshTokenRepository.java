@@ -26,8 +26,8 @@ public class RefreshTokenRepository {
         );
     }
 
-    public Optional<Long> findMemberIdByToken(String refreshToken) {
-        String value = stringRedisTemplate.opsForValue().get(KEY_PREFIX + refreshToken);
+    public Optional<Long> findAndDeleteByToken(String refreshToken) {
+        String value = stringRedisTemplate.opsForValue().getAndDelete(KEY_PREFIX + refreshToken);
         if (value == null) return Optional.empty();
         return Optional.of(Long.valueOf(value));
     }
