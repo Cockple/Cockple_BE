@@ -70,7 +70,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.KEY }}
           envs: >-
-            DB_PASSWORD,GCS_BUCKET,
+            DB_PASSWORD,GCS_BUCKET,GCS_BACKUP_BUCKET,
             KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI_PROD,KAKAO_REDIRECT_URI_STAGING,KAKAO_ADMIN_KEY,
             JWT_SECRET_KEY,FIREBASE_SERVICE_ACCOUNT_KEY
           script: |
@@ -81,6 +81,7 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+          GCS_BACKUP_BUCKET: ${{ secrets.GCS_BACKUP_BUCKET }}
           KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           KAKAO_REDIRECT_URI_PROD: ${{ secrets.KAKAO_REDIRECT_URI_PROD }}

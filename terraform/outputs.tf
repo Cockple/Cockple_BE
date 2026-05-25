@@ -12,3 +12,8 @@ output "app_service_account_email" {
   description = "앱 서비스 계정 이메일 (GCS 인증에 사용)"
   value       = google_service_account.cockple_app.email
 }
+
+output "db_backup_bucket_name" {
+  description = "DB 백업 전용 GCS 버킷 이름"
+  value       = google_storage_bucket.cockple_db_backups.name
+}

@@ -1,0 +1,9 @@
+[Unit]
+Description=Cockple MySQL backup to GCS
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/cockple/backup/run_db_backup.sh
