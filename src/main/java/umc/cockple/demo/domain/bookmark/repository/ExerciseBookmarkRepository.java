@@ -32,5 +32,4 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
 
     Optional<ExerciseBookmark> findFirstByMemberOrderByCreatedAtAsc(Member member);
 
-
 }

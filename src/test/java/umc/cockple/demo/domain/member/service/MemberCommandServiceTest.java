@@ -635,10 +635,9 @@ class MemberCommandServiceTest {
             }
 
             @Test
-            @DisplayName("탈퇴_후_회원_상태가_INACTIVE가_되고_refreshToken이_null이_된다")
-            void 탈퇴_후_회원_상태가_INACTIVE가_되고_refreshToken이_null이_된다() {
+            @DisplayName("탈퇴_후_회원_상태가_INACTIVE가_되고_deletedAt이_설정된다")
+            void 탈퇴_후_회원_상태가_INACTIVE가_되고_deletedAt이_설정된다() {
                 // given
-                normalMember.setRefreshToken("existing-refresh-token");
                 given(memberRepository.findById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
 
@@ -647,7 +646,7 @@ class MemberCommandServiceTest {
 
                 // then
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.INACTIVE);
-                assertThat(normalMember.getRefreshToken()).isNull();
+                assertThat(normalMember.getDeletedAt()).isNotNull();
             }
 
             @Test

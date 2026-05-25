@@ -24,4 +24,5 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
 
     @Query("SELECT COUNT(c) FROM Contest c WHERE c.member.id = :memberId AND c.medalType = 'BRONZE'")
     int countBronzeMedalsByMemberId(@Param("memberId") Long memberId);
+
 }

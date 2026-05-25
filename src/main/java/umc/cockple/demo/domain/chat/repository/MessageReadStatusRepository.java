@@ -63,4 +63,5 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
             ORDER BY mrs.chatMessageId ASC
             """)
     List<Long> findUnreadMessageIdsByMember(Long chatRoomId, Long memberId);
+
 }
