@@ -51,6 +51,10 @@ public class ChatRoomService {
         log.info("[모임 채팅방 퇴장 완료] - chatRoomId: {}", chatRoom.getId());
     }
 
+    public void deletePartyChatRoom(Long partyId) {
+        log.info("[모임 채팅방 삭제 진입] - partyId: {}", partyId);
+    }
+
     private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {
         return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
