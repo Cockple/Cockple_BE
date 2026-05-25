@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
+import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
@@ -34,6 +36,10 @@ class ChatRoomServiceTest {
 
     @Mock
     private ChatRoomRepository chatRoomRepository;
+    @Mock
+    private ChatFileRepository chatFileRepository;
+    @Mock
+    private ChatMessageRepository chatMessageRepository;
     @Mock
     private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock
@@ -69,13 +75,19 @@ class ChatRoomServiceTest {
                     chatRoomListCacheService,
                     redisSubscriptionService,
                     chatListSubscriptionService,
+                    chatFileRepository,
+                    chatMessageRepository,
+                    chatRoomMemberRepository,
                     chatRoomRepository
             );
             inOrder.verify(messageReadStatusRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomListCacheService).evictLastMessage(chatRoomId);
             inOrder.verify(redisSubscriptionService).clearRoomSubscribers(chatRoomId);
             inOrder.verify(chatListSubscriptionService).clearChatListSubscribers(chatRoomId);
-            inOrder.verify(chatRoomRepository).delete(chatRoom);
+            inOrder.verify(chatFileRepository).deleteByChatRoomId(chatRoomId);
+            inOrder.verify(chatMessageRepository).deleteByChatRoomId(chatRoomId);
+            inOrder.verify(chatRoomMemberRepository).deleteByChatRoomId(chatRoomId);
+            inOrder.verify(chatRoomRepository).deleteRoomById(chatRoomId);
         }
 
         @Test
@@ -90,7 +102,10 @@ class ChatRoomServiceTest {
             verify(chatRoomListCacheService, never()).evictLastMessage(org.mockito.ArgumentMatchers.anyLong());
             verify(redisSubscriptionService, never()).clearRoomSubscribers(org.mockito.ArgumentMatchers.anyLong());
             verify(chatListSubscriptionService, never()).clearChatListSubscribers(org.mockito.ArgumentMatchers.anyLong());
-            verify(chatRoomRepository, never()).delete(org.mockito.ArgumentMatchers.any(ChatRoom.class));
+            verify(chatFileRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
+            verify(chatMessageRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
+            verify(chatRoomMemberRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
+            verify(chatRoomRepository, never()).deleteRoomById(org.mockito.ArgumentMatchers.anyLong());
         }
     }
 }

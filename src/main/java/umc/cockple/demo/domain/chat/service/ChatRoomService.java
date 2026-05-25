@@ -8,6 +8,8 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
+import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
+import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
@@ -26,6 +28,8 @@ import java.util.Optional;
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatFileRepository chatFileRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomListCacheService chatRoomListCacheService;
@@ -78,7 +82,10 @@ public class ChatRoomService {
         chatRoomListCacheService.evictLastMessage(chatRoomId);
         redisSubscriptionService.clearRoomSubscribers(chatRoomId);
         chatListSubscriptionService.clearChatListSubscribers(chatRoomId);
-        chatRoomRepository.delete(chatRoom);
+        chatFileRepository.deleteByChatRoomId(chatRoomId);
+        chatMessageRepository.deleteByChatRoomId(chatRoomId);
+        chatRoomMemberRepository.deleteByChatRoomId(chatRoomId);
+        chatRoomRepository.deleteRoomById(chatRoomId);
 
         log.info("[모임 채팅방 삭제 완료] - partyId: {}, chatRoomId: {}", partyId, chatRoomId);
     }
