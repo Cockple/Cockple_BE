@@ -28,7 +28,6 @@ import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
-import umc.cockple.demo.global.auth.RefreshTokenRepository;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -63,7 +62,6 @@ class MemberCommandServiceTest {
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private FileService fileService;
     @Mock private KakaoOauthService kakaoOauthService;
-    @Mock private RefreshTokenRepository refreshTokenRepository;
 
     private Member normalMember;
 
@@ -605,7 +603,7 @@ class MemberCommandServiceTest {
             given(memberRepository.findById(normalMember.getId())).willReturn(Optional.of(normalMember));
 
             // when
-            memberCommandService.withdrawMember(normalMember.getId(), null);
+            memberCommandService.withdrawMember(normalMember.getId());
 
             // then
             then(memberExerciseRepository).should()
@@ -626,7 +624,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId(), null);
+                memberCommandService.withdrawMember(normalMember.getId());
 
                 // then
                 then(memberExerciseRepository).should()
@@ -644,7 +642,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId(), null);
+                memberCommandService.withdrawMember(normalMember.getId());
 
                 // then
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.INACTIVE);
@@ -659,7 +657,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId(), null);
+                memberCommandService.withdrawMember(normalMember.getId());
 
                 // then
                 then(kakaoOauthService).should().unlinkAccess(normalMember);
@@ -678,7 +676,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.empty());
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(999L, null))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(999L))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
             }
@@ -694,7 +692,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(withdrawnMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(withdrawnMember.getId(), null))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(withdrawnMember.getId()))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.ALREADY_WITHDRAW);
             }
@@ -714,7 +712,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId(), null))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MANAGER_CANNOT_LEAVE);
             }
@@ -734,7 +732,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when & then
-                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId(), null))
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.SUBMANAGER_CANNOT_LEAVE);
             }
@@ -754,7 +752,7 @@ class MemberCommandServiceTest {
                         .willReturn(Optional.of(normalMember));
 
                 // when
-                memberCommandService.withdrawMember(normalMember.getId(), null);
+                memberCommandService.withdrawMember(normalMember.getId());
 
                 // then: 예외 없이 탈퇴 처리됨
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.INACTIVE);
