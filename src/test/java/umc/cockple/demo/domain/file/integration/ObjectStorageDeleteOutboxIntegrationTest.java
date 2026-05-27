@@ -123,10 +123,11 @@ class ObjectStorageDeleteOutboxIntegrationTest extends IntegrationTestBase {
         assertThat(outbox.getStatus()).isEqualTo(ObjectStorageDeleteStatus.PENDING);
         assertThat(chatFileRepository.findObjectKeysByChatRoomId(chatRoom.getId())).isEmpty();
 
-        objectStorageDeleteOutboxProcessor.processOne(outbox.getId());
+        int processedCount = objectStorageDeleteOutboxProcessor.processPendingBatch();
         entityManager.flush();
         entityManager.clear();
 
+        assertThat(processedCount).isEqualTo(1);
         verify(objectStorageClient).delete(objectKey);
         ObjectStorageDeleteOutbox processedOutbox = objectStorageDeleteOutboxRepository.findById(outbox.getId()).orElseThrow();
         assertThat(processedOutbox.getStatus()).isEqualTo(ObjectStorageDeleteStatus.DONE);

@@ -56,6 +56,9 @@ public class ObjectStorageDeleteOutbox extends BaseEntity {
     @Column(name = "last_attempted_at")
     private LocalDateTime lastAttemptedAt;
 
+    @Column(name = "claim_token", length = 36)
+    private String claimToken;
+
     public static ObjectStorageDeleteOutbox pending(String objectKey, ObjectStorageDeleteSourceType sourceType, Long sourceId) {
         return ObjectStorageDeleteOutbox.builder()
                 .objectKey(objectKey)
@@ -70,6 +73,7 @@ public class ObjectStorageDeleteOutbox extends BaseEntity {
         this.status = ObjectStorageDeleteStatus.DONE;
         this.lastError = null;
         this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
     }
 
     public void markFailed(String errorMessage) {
@@ -77,6 +81,7 @@ public class ObjectStorageDeleteOutbox extends BaseEntity {
         this.retryCount++;
         this.lastError = truncate(errorMessage);
         this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
     }
 
     private String truncate(String value) {
