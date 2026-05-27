@@ -16,9 +16,11 @@ import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
+import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,6 +37,7 @@ public class ChatRoomService {
     private final ChatRoomListCacheService chatRoomListCacheService;
     private final RedisSubscriptionService redisSubscriptionService;
     private final ChatListSubscriptionService chatListSubscriptionService;
+    private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
 
     public void createPartyChatRoom(Party party, Member owner) {
         log.info("[모임 채팅방 생성 시작] - partyId: {}", party.getId());
@@ -77,6 +80,9 @@ public class ChatRoomService {
 
         ChatRoom chatRoom = chatRoomOptional.get();
         Long chatRoomId = chatRoom.getId();
+        List<String> objectKeys = chatFileRepository.findObjectKeysByChatRoomId(chatRoomId);
+
+        objectStorageDeleteOutboxService.enqueuePartyChatFiles(chatRoomId, objectKeys);
 
         messageReadStatusRepository.deleteByChatRoomId(chatRoomId);
         chatRoomListCacheService.evictLastMessage(chatRoomId);

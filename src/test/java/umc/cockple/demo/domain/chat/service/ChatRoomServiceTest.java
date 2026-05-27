@@ -17,9 +17,11 @@ import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
+import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
@@ -50,6 +52,8 @@ class ChatRoomServiceTest {
     private RedisSubscriptionService redisSubscriptionService;
     @Mock
     private ChatListSubscriptionService chatListSubscriptionService;
+    @Mock
+    private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
 
     @Nested
     @DisplayName("deletePartyChatRoom")
@@ -65,21 +69,26 @@ class ChatRoomServiceTest {
                     PartyFixture.createParty("테스트 모임", 10L, PartyFixture.createPartyAddr("서울", "강남"))
             );
             ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
+            List<String> objectKeys = List.of("chat/a.jpg", "chat/b.jpg");
 
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatFileRepository.findObjectKeysByChatRoomId(chatRoomId)).willReturn(objectKeys);
 
             chatRoomService.deletePartyChatRoom(partyId);
 
             var inOrder = inOrder(
+                    chatFileRepository,
+                    objectStorageDeleteOutboxService,
                     messageReadStatusRepository,
                     chatRoomListCacheService,
                     redisSubscriptionService,
                     chatListSubscriptionService,
-                    chatFileRepository,
                     chatMessageRepository,
                     chatRoomMemberRepository,
                     chatRoomRepository
             );
+            inOrder.verify(chatFileRepository).findObjectKeysByChatRoomId(chatRoomId);
+            inOrder.verify(objectStorageDeleteOutboxService).enqueuePartyChatFiles(chatRoomId, objectKeys);
             inOrder.verify(messageReadStatusRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomListCacheService).evictLastMessage(chatRoomId);
             inOrder.verify(redisSubscriptionService).clearRoomSubscribers(chatRoomId);
@@ -102,6 +111,11 @@ class ChatRoomServiceTest {
             verify(chatRoomListCacheService, never()).evictLastMessage(org.mockito.ArgumentMatchers.anyLong());
             verify(redisSubscriptionService, never()).clearRoomSubscribers(org.mockito.ArgumentMatchers.anyLong());
             verify(chatListSubscriptionService, never()).clearChatListSubscribers(org.mockito.ArgumentMatchers.anyLong());
+            verify(chatFileRepository, never()).findObjectKeysByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
+            verify(objectStorageDeleteOutboxService, never()).enqueuePartyChatFiles(
+                    org.mockito.ArgumentMatchers.anyLong(),
+                    org.mockito.ArgumentMatchers.any()
+            );
             verify(chatFileRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatMessageRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatRoomMemberRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
