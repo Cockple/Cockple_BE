@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
@@ -104,8 +104,6 @@ class PartyIntegrationTest extends IntegrationTestBase {
     ObjectMapper objectMapper;
     @PersistenceContext
     EntityManager entityManager;
-    @Autowired
-    JdbcTemplate jdbcTemplate;
 
     private Member manager;
     private Member normalMember;
@@ -814,20 +812,13 @@ class PartyIntegrationTest extends IntegrationTestBase {
             ChatRoom partyChatRoom = chatRoomRepository.findByPartyId(party.getId()).orElseThrow();
             Long chatRoomId = partyChatRoom.getId();
 
-            jdbcTemplate.update("""
-                    INSERT INTO chat_message (created_at, updated_at, chat_room_id, sender_id, content, type, is_deleted)
-                    VALUES (NOW(6), NOW(6), ?, ?, ?, ?, ?)
-                    """,
-                    chatRoomId, manager.getId(), "삭제 전 메시지", "TEXT", false
+            ChatMessage chatMessage = chatMessageRepository.save(
+                    ChatFixture.createTextMessage(partyChatRoom, manager, "삭제 전 메시지")
             );
-            Long chatMessageId = jdbcTemplate.queryForObject(
-                    "SELECT MAX(id) FROM chat_message WHERE chat_room_id = ?",
-                    Long.class,
-                    chatRoomId
-            );
+            Long chatMessageId = chatMessage.getId();
             String objectKey = "chat/delete-party-file.jpg";
             ChatMessageFile chatMessageFile = ChatFixture.createChatMessageFile(
-                    chatMessageRepository.findById(chatMessageId).orElseThrow(),
+                    chatMessage,
                     objectKey,
                     0,
                     "delete-party-file.jpg"
