@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.file.domain.ObjectStorageDeleteOutbox;
 import umc.cockple.demo.domain.file.enums.ObjectStorageDeleteSourceType;
+import umc.cockple.demo.domain.file.enums.ObjectStorageDeleteStatus;
 import umc.cockple.demo.domain.file.repository.ObjectStorageDeleteOutboxRepository;
 
 import java.util.List;
@@ -46,6 +47,8 @@ class ObjectStorageDeleteOutboxServiceTest {
                 .allSatisfy(outbox -> {
                     assertThat(outbox.getSourceType()).isEqualTo(ObjectStorageDeleteSourceType.PARTY_CHAT_ROOM);
                     assertThat(outbox.getSourceId()).isEqualTo(chatRoomId);
+                    assertThat(outbox.getStatus()).isEqualTo(ObjectStorageDeleteStatus.PENDING);
+                    assertThat(outbox.getRetryCount()).isZero();
                 });
     }
 
