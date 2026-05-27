@@ -86,7 +86,8 @@ public class ChatRoomService {
 
         messageReadStatusRepository.deleteByChatRoomId(chatRoomId);
         chatRoomListCacheService.evictLastMessage(chatRoomId);
-        tryClearRedisState(chatRoomId);
+        redisSubscriptionService.tryClearRoomSubscribers(chatRoomId);
+        chatListSubscriptionService.tryClearChatListSubscribers(chatRoomId);
         chatFileRepository.deleteByChatRoomId(chatRoomId);
         chatMessageRepository.deleteByChatRoomId(chatRoomId);
         chatRoomMemberRepository.deleteByChatRoomId(chatRoomId);
@@ -98,19 +99,5 @@ public class ChatRoomService {
     private ChatRoom findChatRoomByPartyIdOrThrow(Long partyId) {
         return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
-    }
-
-    private void tryClearRedisState(Long chatRoomId) {
-        try {
-            redisSubscriptionService.tryClearRoomSubscribers(chatRoomId);
-        } catch (Exception e) {
-            log.warn("[모임 채팅방 삭제] Redis 채팅방 구독 상태 best-effort 정리 실패 - chatRoomId: {}", chatRoomId, e);
-        }
-
-        try {
-            chatListSubscriptionService.tryClearChatListSubscribers(chatRoomId);
-        } catch (Exception e) {
-            log.warn("[모임 채팅방 삭제] Redis 채팅 목록 구독 상태 best-effort 정리 실패 - chatRoomId: {}", chatRoomId, e);
-        }
     }
 }
