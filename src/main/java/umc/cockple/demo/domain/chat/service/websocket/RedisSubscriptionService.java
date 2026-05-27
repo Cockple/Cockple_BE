@@ -77,12 +77,12 @@ public class RedisSubscriptionService {
         }
     }
 
-    public void clearRoomSubscribers(Long chatRoomId) {
+    public void tryClearRoomSubscribers(Long chatRoomId) {
         try {
             stringRedisTemplate.delete(CHAT_ROOM_SUBSCRIBERS + chatRoomId);
-            log.info("Redis 구독 키 삭제 - 채팅방: {}", chatRoomId);
+            log.info("Redis 구독 키 best-effort 삭제 완료 - 채팅방: {}", chatRoomId);
         } catch (Exception e) {
-            log.error("Redis 구독 키 삭제 실패 - 채팅방: {}", chatRoomId, e);
+            log.warn("Redis 구독 키 best-effort 삭제 실패 - 채팅방: {}, TTL 만료를 기다립니다.", chatRoomId, e);
         }
     }
 }

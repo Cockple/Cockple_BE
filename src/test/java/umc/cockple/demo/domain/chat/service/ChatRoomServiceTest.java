@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -91,12 +92,41 @@ class ChatRoomServiceTest {
             inOrder.verify(objectStorageDeleteOutboxService).enqueuePartyChatFiles(chatRoomId, objectKeys);
             inOrder.verify(messageReadStatusRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomListCacheService).evictLastMessage(chatRoomId);
-            inOrder.verify(redisSubscriptionService).clearRoomSubscribers(chatRoomId);
-            inOrder.verify(chatListSubscriptionService).clearChatListSubscribers(chatRoomId);
+            inOrder.verify(redisSubscriptionService).tryClearRoomSubscribers(chatRoomId);
+            inOrder.verify(chatListSubscriptionService).tryClearChatListSubscribers(chatRoomId);
             inOrder.verify(chatFileRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatMessageRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomMemberRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomRepository).deleteRoomById(chatRoomId);
+        }
+
+        @Test
+        @DisplayName("성공 - Redis best-effort 정리 실패는 채팅방 삭제 흐름을 막지 않는다")
+        void success_deletePartyChatRoom_whenRedisCleanupFails() {
+            Long partyId = 1L;
+            Long chatRoomId = 2L;
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(
+                    PartyFixture.createParty("테스트 모임", 10L, PartyFixture.createPartyAddr("서울", "강남"))
+            );
+            ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
+            List<String> objectKeys = List.of("chat/a.jpg");
+
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatFileRepository.findObjectKeysByChatRoomId(chatRoomId)).willReturn(objectKeys);
+            willThrow(new RuntimeException("redis down"))
+                    .given(redisSubscriptionService)
+                    .tryClearRoomSubscribers(chatRoomId);
+            willThrow(new RuntimeException("redis down"))
+                    .given(chatListSubscriptionService)
+                    .tryClearChatListSubscribers(chatRoomId);
+
+            chatRoomService.deletePartyChatRoom(partyId);
+
+            verify(chatFileRepository).deleteByChatRoomId(chatRoomId);
+            verify(chatMessageRepository).deleteByChatRoomId(chatRoomId);
+            verify(chatRoomMemberRepository).deleteByChatRoomId(chatRoomId);
+            verify(chatRoomRepository).deleteRoomById(chatRoomId);
         }
 
         @Test
@@ -109,8 +139,8 @@ class ChatRoomServiceTest {
 
             verify(messageReadStatusRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatRoomListCacheService, never()).evictLastMessage(org.mockito.ArgumentMatchers.anyLong());
-            verify(redisSubscriptionService, never()).clearRoomSubscribers(org.mockito.ArgumentMatchers.anyLong());
-            verify(chatListSubscriptionService, never()).clearChatListSubscribers(org.mockito.ArgumentMatchers.anyLong());
+            verify(redisSubscriptionService, never()).tryClearRoomSubscribers(org.mockito.ArgumentMatchers.anyLong());
+            verify(chatListSubscriptionService, never()).tryClearChatListSubscribers(org.mockito.ArgumentMatchers.anyLong());
             verify(chatFileRepository, never()).findObjectKeysByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(objectStorageDeleteOutboxService, never()).enqueuePartyChatFiles(
                     org.mockito.ArgumentMatchers.anyLong(),

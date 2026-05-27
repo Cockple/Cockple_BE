@@ -62,12 +62,12 @@ public class ChatListSubscriptionService {
         }
     }
 
-    public void clearChatListSubscribers(Long chatRoomId) {
+    public void tryClearChatListSubscribers(Long chatRoomId) {
         try {
             stringRedisTemplate.delete(CHAT_LIST_SUBSCRIBERS + chatRoomId);
-            log.info("채팅방 목록 구독 키 삭제 - 채팅방: {}", chatRoomId);
+            log.info("채팅방 목록 구독 키 best-effort 삭제 완료 - 채팅방: {}", chatRoomId);
         } catch (Exception e) {
-            log.error("채팅방 목록 구독 키 삭제 실패 - 채팅방: {}", chatRoomId, e);
+            log.warn("채팅방 목록 구독 키 best-effort 삭제 실패 - 채팅방: {}, TTL 만료를 기다립니다.", chatRoomId, e);
         }
     }
 }
