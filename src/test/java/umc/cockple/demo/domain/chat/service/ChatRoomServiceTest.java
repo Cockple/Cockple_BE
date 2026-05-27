@@ -7,16 +7,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
 import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,20 +47,16 @@ class ChatRoomServiceTest {
     @Mock
     private MessageReadStatusRepository messageReadStatusRepository;
     @Mock
-    private ChatRoomListCacheService chatRoomListCacheService;
-    @Mock
-    private RedisSubscriptionService redisSubscriptionService;
-    @Mock
-    private ChatListSubscriptionService chatListSubscriptionService;
-    @Mock
     private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Nested
     @DisplayName("deletePartyChatRoom")
     class DeletePartyChatRoom {
 
         @Test
-        @DisplayName("성공 - 채팅방이 있으면 읽음 상태, 캐시/구독 정리 후 채팅방을 삭제한다")
+        @DisplayName("성공 - 채팅방이 있으면 읽음 상태, 파일, 메시지, 멤버, 방을 삭제하고 Redis 정리 이벤트를 발행한다")
         void success_deletePartyChatRoom() {
             Long partyId = 1L;
             Long chatRoomId = 2L;
@@ -80,23 +76,19 @@ class ChatRoomServiceTest {
                     chatFileRepository,
                     objectStorageDeleteOutboxService,
                     messageReadStatusRepository,
-                    chatRoomListCacheService,
-                    redisSubscriptionService,
-                    chatListSubscriptionService,
                     chatMessageRepository,
                     chatRoomMemberRepository,
-                    chatRoomRepository
+                    chatRoomRepository,
+                    applicationEventPublisher
             );
             inOrder.verify(chatFileRepository).findObjectKeysByChatRoomId(chatRoomId);
             inOrder.verify(objectStorageDeleteOutboxService).enqueuePartyChatFiles(chatRoomId, objectKeys);
             inOrder.verify(messageReadStatusRepository).deleteByChatRoomId(chatRoomId);
-            inOrder.verify(chatRoomListCacheService).evictLastMessage(chatRoomId);
-            inOrder.verify(redisSubscriptionService).tryClearRoomSubscribers(chatRoomId);
-            inOrder.verify(chatListSubscriptionService).tryClearChatListSubscribers(chatRoomId);
             inOrder.verify(chatFileRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatMessageRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomMemberRepository).deleteByChatRoomId(chatRoomId);
             inOrder.verify(chatRoomRepository).deleteRoomById(chatRoomId);
+            inOrder.verify(applicationEventPublisher).publishEvent(new ChatRoomRedisCleanupEvent(chatRoomId));
         }
 
         @Test
@@ -108,9 +100,6 @@ class ChatRoomServiceTest {
             chatRoomService.deletePartyChatRoom(partyId);
 
             verify(messageReadStatusRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
-            verify(chatRoomListCacheService, never()).evictLastMessage(org.mockito.ArgumentMatchers.anyLong());
-            verify(redisSubscriptionService, never()).tryClearRoomSubscribers(org.mockito.ArgumentMatchers.anyLong());
-            verify(chatListSubscriptionService, never()).tryClearChatListSubscribers(org.mockito.ArgumentMatchers.anyLong());
             verify(chatFileRepository, never()).findObjectKeysByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(objectStorageDeleteOutboxService, never()).enqueuePartyChatFiles(
                     org.mockito.ArgumentMatchers.anyLong(),
@@ -120,6 +109,7 @@ class ChatRoomServiceTest {
             verify(chatMessageRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatRoomMemberRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatRoomRepository, never()).deleteRoomById(org.mockito.ArgumentMatchers.anyLong());
+            verify(applicationEventPublisher, never()).publishEvent(any(ChatRoomRedisCleanupEvent.class));
         }
     }
 }

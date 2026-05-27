@@ -2,10 +2,12 @@ package umc.cockple.demo.domain.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
@@ -13,9 +15,6 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -34,10 +33,8 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
-    private final ChatRoomListCacheService chatRoomListCacheService;
-    private final RedisSubscriptionService redisSubscriptionService;
-    private final ChatListSubscriptionService chatListSubscriptionService;
     private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public void createPartyChatRoom(Party party, Member owner) {
         log.info("[모임 채팅방 생성 시작] - partyId: {}", party.getId());
@@ -85,13 +82,11 @@ public class ChatRoomService {
         objectStorageDeleteOutboxService.enqueuePartyChatFiles(chatRoomId, objectKeys);
 
         messageReadStatusRepository.deleteByChatRoomId(chatRoomId);
-        chatRoomListCacheService.evictLastMessage(chatRoomId);
-        redisSubscriptionService.tryClearRoomSubscribers(chatRoomId);
-        chatListSubscriptionService.tryClearChatListSubscribers(chatRoomId);
         chatFileRepository.deleteByChatRoomId(chatRoomId);
         chatMessageRepository.deleteByChatRoomId(chatRoomId);
         chatRoomMemberRepository.deleteByChatRoomId(chatRoomId);
         chatRoomRepository.deleteRoomById(chatRoomId);
+        applicationEventPublisher.publishEvent(ChatRoomRedisCleanupEvent.of(chatRoomId));
 
         log.info("[모임 채팅방 삭제 완료] - partyId: {}, chatRoomId: {}", partyId, chatRoomId);
     }
