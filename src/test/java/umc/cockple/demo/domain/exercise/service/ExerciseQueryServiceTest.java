@@ -1905,7 +1905,7 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq(mainAddr.getLatitude()), eq(mainAddr.getLongitude()), eq(3)))
+                        eq(monthStart), eq(monthEnd), eq("POINT(127.039 37.501)"), any(), eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when
@@ -1922,8 +1922,8 @@ class ExerciseQueryServiceTest {
             }
 
             @Test
-            @DisplayName("명시 좌표가 있으면 대표주소 대신 해당 좌표와 절삭 반경으로 조회한다")
-            void 명시_좌표가_있으면_대표주소_대신_해당_좌표와_절삭_반경으로_조회한다() {
+            @DisplayName("명시 좌표가 있으면 대표주소 대신 해당 좌표와 소수 반경으로 조회한다")
+            void 명시_좌표가_있으면_대표주소_대신_해당_좌표와_소수_반경으로_조회한다() {
                 // given
                 LocalDate targetDate = LocalDate.of(2026, 4, 15);
                 LocalDate monthStart = LocalDate.of(2026, 4, 1);
@@ -1932,7 +1932,7 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq(37.55), eq(127.11), eq(3)))
+                        eq(monthStart), eq(monthEnd), eq("POINT(127.11 37.55)"), any(), eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when

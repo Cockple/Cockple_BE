@@ -221,26 +221,51 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
             """)
     List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date);
 
+    default List<Exercise> findExercisesByMonthAndRadius(
+            LocalDate startDate,
+            LocalDate endDate,
+            String centerPointWkt,
+            String boundingBoxWkt,
+            Double radiusKm) {
+        List<Long> exerciseIds = findExerciseIdsByMonthAndRadius(
+                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+
+        if (exerciseIds.isEmpty()) {
+            return List.of();
+        }
+
+        return findExercisesByIdsForMonthlyMap(exerciseIds);
+    }
+
+    @Query(value = """
+            SELECT e.id
+            FROM exercise_addr addr
+            JOIN exercise e ON e.addr_id = addr.id
+            WHERE e.date BETWEEN :startDate AND :endDate
+            AND MBRWithin(
+                addr.location,
+                ST_GeomFromText(:boundingBoxWkt, 4326, 'axis-order=long-lat')
+            )
+            AND ST_Distance_Sphere(
+                addr.location,
+                ST_GeomFromText(:centerPointWkt, 4326, 'axis-order=long-lat')
+            ) <= (:radiusKm * 1000.0)
+            ORDER BY e.date ASC, e.start_time ASC
+            """, nativeQuery = true)
+    List<Long> findExerciseIdsByMonthAndRadius(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("centerPointWkt") String centerPointWkt,
+            @Param("boundingBoxWkt") String boundingBoxWkt,
+            @Param("radiusKm") Double radiusKm);
+
     @Query("""
             SELECT e FROM Exercise e
             JOIN FETCH e.exerciseAddr addr
-            WHERE e.date BETWEEN :startDate AND :endDate
-            AND (
-                (6371 * acos(
-                    LEAST(1.0, cos(radians(:latitude)) * cos(radians(addr.latitude)) *
-                    cos(radians(addr.longitude) - radians(:longitude)) +
-                    sin(radians(:latitude)) * sin(radians(addr.latitude)))
-                )) <= :radiusKm
-                OR (addr.latitude = :latitude AND addr.longitude = :longitude)
-            )
+            WHERE e.id IN :exerciseIds
             ORDER BY e.date ASC, e.startTime ASC
             """)
-    List<Exercise> findExercisesByMonthAndRadius(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate end,
-            @Param("latitude") Double latitude,
-            @Param("longitude") Double longitude,
-            @Param("radiusKm") Integer radiusKm);
+    List<Exercise> findExercisesByIdsForMonthlyMap(@Param("exerciseIds") List<Long> exerciseIds);
 
 
     @Query("""

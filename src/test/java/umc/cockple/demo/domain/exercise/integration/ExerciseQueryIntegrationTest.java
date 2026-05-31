@@ -1294,6 +1294,8 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                     37.501, 127.001, LocalTime.of(13, 0));
             saveMapExercise(LocalDate.of(2026, 4, 4), "A빌딩", "서울특별시 강남구 테헤란로 10",
                     37.5005, 127.0005, LocalTime.of(10, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 7), "소수반경빌딩", "서울특별시 강남구 테헤란로 390",
+                    37.535, 127.0, LocalTime.of(15, 0));
             saveMapExercise(LocalDate.of(2026, 4, 5), "반경밖빌딩", "부산광역시 해운대구 센텀로 1",
                     35.17, 129.13, LocalTime.of(12, 0));
             saveMapExercise(LocalDate.of(2026, 4, 6), "부산빌딩", "부산광역시 해운대구 센텀로 2",
@@ -1340,6 +1342,28 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.buildings['2026-04-04'].length()").value(1))
                         .andExpect(jsonPath("$.data.buildings['2026-04-04'][0].buildingName").value("A빌딩"))
                         .andExpect(jsonPath("$.data.buildings['2026-04-05']").doesNotExist());
+            }
+
+            @Test
+            @DisplayName("3.0km 밖이지만 3.9km 안인 건물은 소수 반경을 절사하지 않고 반환한다")
+            void 삼키로미터_밖_삼점구키로미터_안_건물은_소수_반경을_절사하지_않고_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "3.9"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07'][0].buildingName").value("소수반경빌딩"));
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "3.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07']").doesNotExist());
             }
 
             @Test
