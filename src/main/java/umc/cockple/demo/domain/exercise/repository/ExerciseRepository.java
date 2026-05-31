@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseMapSpatialSearchCondition;
 import umc.cockple.demo.domain.party.dto.PartyExerciseInfoDTO;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -232,11 +233,18 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
     default List<Exercise> findExercisesByMonthAndRadius(
             LocalDate startDate,
             LocalDate endDate,
-            String centerPointWkt,
-            String boundingBoxWkt,
+            Double latitude,
+            Double longitude,
             Double radiusKm) {
+        ExerciseMapSpatialSearchCondition searchCondition =
+                ExerciseMapSpatialSearchCondition.from(latitude, longitude, radiusKm);
+
         List<Long> exerciseIds = findExerciseIdsByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate,
+                endDate,
+                searchCondition.centerPointWkt(),
+                searchCondition.boundingBoxWkt(),
+                searchCondition.radiusKm());
 
         if (exerciseIds.isEmpty()) {
             return List.of();

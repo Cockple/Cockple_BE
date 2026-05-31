@@ -1905,7 +1905,11 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq("POINT(127.039 37.501)"), any(), eq(radiusKm)))
+                        eq(monthStart),
+                        eq(monthEnd),
+                        eq(37.501),
+                        eq(127.039),
+                        eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when
@@ -1932,7 +1936,11 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq("POINT(127.11 37.55)"), any(), eq(radiusKm)))
+                        eq(monthStart),
+                        eq(monthEnd),
+                        eq(37.55),
+                        eq(127.11),
+                        eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when
@@ -1964,7 +1972,8 @@ class ExerciseQueryServiceTest {
 
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
-                given(exerciseRepository.findExercisesByMonthAndRadius(any(), any(), any(), any(), any()))
+                given(exerciseRepository.findExercisesByMonthAndRadius(
+                        any(), any(), any(), any(), any()))
                         .willReturn(List.of(dayOneMorning, dayOneEveningSameBuilding, dayOneOtherBuilding, dayTwoBuilding));
 
                 // when

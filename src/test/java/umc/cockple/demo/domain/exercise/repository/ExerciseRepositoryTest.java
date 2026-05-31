@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseMapSpatialSearchCondition;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,25 +30,35 @@ class ExerciseRepositoryTest {
                 withSettings().defaultAnswer(CALLS_REAL_METHODS));
         LocalDate startDate = LocalDate.of(2026, 4, 1);
         LocalDate endDate = LocalDate.of(2026, 4, 30);
-        String centerPointWkt = "POINT(127.0 37.5)";
-        String boundingBoxWkt = "POLYGON((126.9 37.4,127.1 37.4,127.1 37.6,126.9 37.6,126.9 37.4))";
-        Double radiusKm = 3.9;
+        double latitude = 37.5;
+        double longitude = 127.0;
+        double radiusKm = 3.9;
+        ExerciseMapSpatialSearchCondition searchCondition =
+                ExerciseMapSpatialSearchCondition.from(latitude, longitude, radiusKm);
         List<Long> exerciseIds = List.of(10L, 20L);
         List<Exercise> expectedExercises = List.of(mock(Exercise.class), mock(Exercise.class));
 
         doReturn(exerciseIds).when(exerciseRepository).findExerciseIdsByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate,
+                endDate,
+                searchCondition.centerPointWkt(),
+                searchCondition.boundingBoxWkt(),
+                searchCondition.radiusKm());
         doReturn(expectedExercises).when(exerciseRepository).findExercisesByIdsForMonthlyMap(exerciseIds);
 
         // when
         List<Exercise> exercises = exerciseRepository.findExercisesByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate, endDate, latitude, longitude, radiusKm);
 
         // then
         assertThat(exercises).isSameAs(expectedExercises);
         var inOrder = inOrder(exerciseRepository);
         inOrder.verify(exerciseRepository).findExerciseIdsByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate,
+                endDate,
+                searchCondition.centerPointWkt(),
+                searchCondition.boundingBoxWkt(),
+                searchCondition.radiusKm());
         inOrder.verify(exerciseRepository).findExercisesByIdsForMonthlyMap(exerciseIds);
     }
 
@@ -60,16 +71,22 @@ class ExerciseRepositoryTest {
                 withSettings().defaultAnswer(CALLS_REAL_METHODS));
         LocalDate startDate = LocalDate.of(2026, 4, 1);
         LocalDate endDate = LocalDate.of(2026, 4, 30);
-        String centerPointWkt = "POINT(127.0 37.5)";
-        String boundingBoxWkt = "POLYGON((126.9 37.4,127.1 37.4,127.1 37.6,126.9 37.6,126.9 37.4))";
-        Double radiusKm = 3.9;
+        double latitude = 37.5;
+        double longitude = 127.0;
+        double radiusKm = 3.9;
+        ExerciseMapSpatialSearchCondition searchCondition =
+                ExerciseMapSpatialSearchCondition.from(latitude, longitude, radiusKm);
 
         doReturn(List.of()).when(exerciseRepository).findExerciseIdsByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate,
+                endDate,
+                searchCondition.centerPointWkt(),
+                searchCondition.boundingBoxWkt(),
+                searchCondition.radiusKm());
 
         // when
         List<Exercise> exercises = exerciseRepository.findExercisesByMonthAndRadius(
-                startDate, endDate, centerPointWkt, boundingBoxWkt, radiusKm);
+                startDate, endDate, latitude, longitude, radiusKm);
 
         // then
         assertThat(exercises).isEmpty();

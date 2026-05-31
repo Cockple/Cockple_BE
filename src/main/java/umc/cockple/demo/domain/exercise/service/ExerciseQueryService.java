@@ -48,9 +48,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExerciseQueryService {
 
-    private static final double KILOMETERS_PER_LATITUDE_DEGREE = 111.045;
-    private static final double MIN_LONGITUDE_COSINE = 1.0e-12;
-
     private final ExerciseRepository exerciseRepository;
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
@@ -805,13 +802,11 @@ public class ExerciseQueryService {
 
     private List<Exercise> findExercisesByMonthAndRadius(
             DateRange dateRange, ExerciseMapBuildingsDTO.Query searchQuery) {
-        SpatialSearchBounds bounds = SpatialSearchBounds.from(searchQuery);
-
         return exerciseRepository.findExercisesByMonthAndRadius(
                 dateRange.start(),
                 dateRange.end(),
-                bounds.centerPointWkt(),
-                bounds.boundingBoxWkt(),
+                searchQuery.latitude(),
+                searchQuery.longitude(),
                 searchQuery.radiusKm()
         );
     }
@@ -954,40 +949,6 @@ public class ExerciseQueryService {
     }
 
     private record ExerciseWithDistance(Exercise exercise, double distance) {
-    }
-
-    private record SpatialSearchBounds(String centerPointWkt, String boundingBoxWkt) {
-        private static SpatialSearchBounds from(ExerciseMapBuildingsDTO.Query query) {
-            double deltaLatitude = query.radiusKm() / KILOMETERS_PER_LATITUDE_DEGREE;
-            double latitudeCosine = Math.cos(Math.toRadians(query.latitude()));
-            double safeLatitudeCosine = Math.max(Math.abs(latitudeCosine), MIN_LONGITUDE_COSINE);
-            double deltaLongitude = query.radiusKm() / (KILOMETERS_PER_LATITUDE_DEGREE * safeLatitudeCosine);
-
-            double minLatitude = query.latitude() - deltaLatitude;
-            double maxLatitude = query.latitude() + deltaLatitude;
-            double minLongitude = query.longitude() - deltaLongitude;
-            double maxLongitude = query.longitude() + deltaLongitude;
-
-            return new SpatialSearchBounds(
-                    pointWkt(query.longitude(), query.latitude()),
-                    polygonWkt(minLongitude, minLatitude, maxLongitude, maxLatitude)
-            );
-        }
-
-        private static String pointWkt(double longitude, double latitude) {
-            return String.format(Locale.ROOT, "POINT(%s %s)", longitude, latitude);
-        }
-
-        private static String polygonWkt(double minLongitude, double minLatitude,
-                                         double maxLongitude, double maxLatitude) {
-            return String.format(Locale.ROOT,
-                    "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                    minLongitude, minLatitude,
-                    maxLongitude, minLatitude,
-                    maxLongitude, maxLatitude,
-                    minLongitude, maxLatitude,
-                    minLongitude, minLatitude);
-        }
     }
 
     private record BuildingKey(
