@@ -221,6 +221,14 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
             """)
     List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date);
 
+    /*
+     * 월간 지도 조회는 의도적으로 두 단계로 나눈다.
+     * 1. native spatial query로 조건에 맞는 Exercise ID 후보군만 먼저 조회한다.
+     * 2. 조회된 ID로 JPQL fetch join을 다시 수행해 실제 Exercise 엔티티를 로딩한다.
+     *
+     * native query에서 엔티티를 직접 조회하면 JPA fetch join과 연관 로딩 제어가 어려워지므로
+     * 공간 검색 조건과 엔티티 로딩 책임을 분리한다.
+     */
     default List<Exercise> findExercisesByMonthAndRadius(
             LocalDate startDate,
             LocalDate endDate,
@@ -238,6 +246,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
     }
 
     /*
+     * 1단계 ID 후보군 조회 전용 쿼리다.
+     *
      * 좌표 순서 계약:
      * - API/DTO 필드는 latitude, longitude 순서다.
      * - MySQL spatial WKT는 axis-order=long-lat와 함께 POINT(longitude latitude) 순서로 만든다.
@@ -266,6 +276,10 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
             @Param("boundingBoxWkt") String boundingBoxWkt,
             @Param("radiusKm") Double radiusKm);
 
+    /*
+     * 2단계 엔티티 조회 전용 쿼리다.
+     * 1단계에서 확정한 ID 후보군을 기준으로 Exercise와 월간 지도 응답에 필요한 주소를 로딩한다.
+     */
     @Query("""
             SELECT e FROM Exercise e
             JOIN FETCH e.exerciseAddr addr
