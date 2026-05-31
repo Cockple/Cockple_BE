@@ -43,7 +43,7 @@ class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("월간 지도 spatial 후보 조회는 exercise_addr location 공간 인덱스를 사용할 수 있는 형태를 유지한다")
+    @DisplayName("월간 지도 spatial 후보 조회는 location 공간 인덱스를 사용할 수 있는 형태를 유지한다")
     void 월간_지도_spatial_후보_조회는_exercise_addr_location_공간_인덱스를_사용할_수_있는_형태를_유지한다() {
         String centerPointWkt = "POINT(127.0 37.5)";
         String boundingBoxWkt = "POLYGON((126.95 37.45,127.05 37.45,127.05 37.55,126.95 37.55,126.95 37.45))";
@@ -79,9 +79,14 @@ class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
         String selectedKey = Objects.toString(addrPlan.get("key"), "");
         String accessType = Objects.toString(addrPlan.get("type"), "");
 
-        assertThat(possibleKeys).contains("idx_exercise_addr_location");
-        assertThat(selectedKey).isEqualTo("idx_exercise_addr_location");
-        assertThat(accessType).isEqualTo("range");
+        /*
+         * Testcontainers의 데이터량과 통계값은 운영 DB와 다르므로 optimizer가 고른 key/type을
+         * 정확히 고정하지 않는다. 이 테스트는 쿼리가 spatial index를 사용할 수 있는 형태인지
+         * possible_keys 기준으로 확인하는 smoke 테스트다.
+         */
+        assertThat(possibleKeys)
+                .as("공간 인덱스가 후보에 있어야 한다. selectedKey=%s, accessType=%s", selectedKey, accessType)
+                .contains("idx_exercise_addr_location");
     }
 
     private Long insertExerciseAddr(String buildingName, double latitude, double longitude) {
