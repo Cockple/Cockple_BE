@@ -1472,6 +1472,35 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             }
 
             @Test
+            @DisplayName("좌표 범위를 벗어나면 400을 반환한다")
+            void 좌표_범위를_벗어나면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "91.0")
+                                .param("longitude", "127.0"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getMessage()));
+            }
+
+            @Test
+            @DisplayName("반경이 양수가 아니면 400을 반환한다")
+            void 반경이_양수가_아니면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "0"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getMessage()));
+            }
+
+            @Test
             @DisplayName("날짜 형식이 잘못되면 400을 반환한다")
             void 날짜_형식이_잘못되면_400을_반환한다() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
