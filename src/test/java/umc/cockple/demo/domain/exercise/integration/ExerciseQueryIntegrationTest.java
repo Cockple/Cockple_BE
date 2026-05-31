@@ -38,9 +38,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.sql.DataSource;
-
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,7 +56,6 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired GuestRepository guestRepository;
     @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
-    @Autowired DataSource dataSource;
 
     private Member manager;
     private Member subManager;
@@ -1381,6 +1377,26 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.centerLongitude").value(129.13))
                         .andExpect(jsonPath("$.data.radiusKm").value(5.0))
                         .andExpect(jsonPath("$.data.buildings['2026-04-06'][0].buildingName").value("부산빌딩"));
+            }
+
+            @Test
+            @DisplayName("MySQL POINT는 longitude latitude 순서로 생성되어 부산 좌표가 서울 결과와 섞이지 않는다")
+            void mysql_point는_longitude_latitude_순서로_생성되어_부산_좌표가_서울_결과와_섞이지_않는다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "35.17")
+                                .param("longitude", "129.13")
+                                .param("radiusKm", "1.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.centerLatitude").value(35.17))
+                        .andExpect(jsonPath("$.data.centerLongitude").value(129.13))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-05'][0].buildingName").value("반경밖빌딩"))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-06'][0].buildingName").value("부산빌딩"))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-03']").doesNotExist())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-04']").doesNotExist())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07']").doesNotExist());
             }
 
             @Test

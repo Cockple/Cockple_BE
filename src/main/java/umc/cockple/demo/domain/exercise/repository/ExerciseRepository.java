@@ -237,6 +237,13 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
         return findExercisesByIdsForMonthlyMap(exerciseIds);
     }
 
+    /*
+     * 좌표 순서 계약:
+     * - API/DTO 필드는 latitude, longitude 순서다.
+     * - MySQL spatial WKT는 axis-order=long-lat와 함께 POINT(longitude latitude) 순서로 만든다.
+     * - MBRWithin은 공간 인덱스를 타기 위한 bounding box 후보 필터다.
+     * - ST_Distance_Sphere는 최종 원형 반경을 보장하는 정밀 거리 필터다.
+     */
     @Query(value = """
             SELECT e.id
             FROM exercise_addr addr
