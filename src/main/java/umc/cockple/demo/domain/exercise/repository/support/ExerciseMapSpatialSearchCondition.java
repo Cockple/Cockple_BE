@@ -1,5 +1,7 @@
 package umc.cockple.demo.domain.exercise.repository.support;
 
+import umc.cockple.demo.domain.exercise.utils.ExerciseMapBoundingBox;
+
 import java.util.Locale;
 
 /*
@@ -18,11 +20,8 @@ public record ExerciseMapSpatialSearchCondition(
         String boundingBoxWkt
 ) {
 
-    private static final double KILOMETERS_PER_LATITUDE_DEGREE = 111.045;
-    private static final double MIN_LONGITUDE_COSINE = 1.0e-12;
-
     public static ExerciseMapSpatialSearchCondition from(double latitude, double longitude, double radiusKm) {
-        BoundingBox boundingBox = BoundingBox.from(latitude, longitude, radiusKm);
+        ExerciseMapBoundingBox boundingBox = ExerciseMapBoundingBox.from(latitude, longitude, radiusKm);
 
         return new ExerciseMapSpatialSearchCondition(
                 latitude,
@@ -50,26 +49,5 @@ public record ExerciseMapSpatialSearchCondition(
                 maxLongitude, maxLatitude,
                 minLongitude, maxLatitude,
                 minLongitude, minLatitude);
-    }
-
-    private record BoundingBox(
-            double minLatitude,
-            double maxLatitude,
-            double minLongitude,
-            double maxLongitude
-    ) {
-        private static BoundingBox from(double latitude, double longitude, double radiusKm) {
-            double deltaLatitude = radiusKm / KILOMETERS_PER_LATITUDE_DEGREE;
-            double latitudeCosine = Math.cos(Math.toRadians(latitude));
-            double safeLatitudeCosine = Math.max(Math.abs(latitudeCosine), MIN_LONGITUDE_COSINE);
-            double deltaLongitude = radiusKm / (KILOMETERS_PER_LATITUDE_DEGREE * safeLatitudeCosine);
-
-            return new BoundingBox(
-                    latitude - deltaLatitude,
-                    latitude + deltaLatitude,
-                    longitude - deltaLongitude,
-                    longitude + deltaLongitude
-            );
-        }
     }
 }

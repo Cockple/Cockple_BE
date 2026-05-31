@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.dto;
 import lombok.Builder;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.utils.ExerciseMapBoundingBox;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -10,8 +11,6 @@ import java.util.Map;
 
 public class ExerciseMapBuildingsDTO {
 
-    private static final double KILOMETERS_PER_LATITUDE_DEGREE = 111.045;
-    private static final double MIN_LONGITUDE_COSINE = 1.0e-12;
     private static final double MIN_LATITUDE = -90.0;
     private static final double MAX_LATITUDE = 90.0;
     private static final double MIN_LONGITUDE = -180.0;
@@ -69,15 +68,7 @@ public class ExerciseMapBuildingsDTO {
                 return;
             }
 
-            double deltaLatitude = radiusKm / KILOMETERS_PER_LATITUDE_DEGREE;
-            double latitudeCosine = Math.cos(Math.toRadians(latitude));
-            double safeLatitudeCosine = Math.max(Math.abs(latitudeCosine), MIN_LONGITUDE_COSINE);
-            double deltaLongitude = radiusKm / (KILOMETERS_PER_LATITUDE_DEGREE * safeLatitudeCosine);
-
-            if (!isValidLatitude(latitude - deltaLatitude)
-                    || !isValidLatitude(latitude + deltaLatitude)
-                    || !isValidLongitude(longitude - deltaLongitude)
-                    || !isValidLongitude(longitude + deltaLongitude)) {
+            if (!ExerciseMapBoundingBox.from(latitude, longitude, radiusKm).isWithinCoordinateRange()) {
                 throw new ExerciseException(ExerciseErrorCode.INVALID_LOCATION_INFO);
             }
         }
