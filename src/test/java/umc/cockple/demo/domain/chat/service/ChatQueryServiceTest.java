@@ -1182,6 +1182,49 @@ class ChatQueryServiceTest {
         }
 
         @Test
+        @DisplayName("시스템 메시지는 sender 없이도 조회되고 시스템 기본값으로 매핑된다")
+        void systemMessage_isMappedWithSystemDefaults() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me);
+            ReflectionTestUtils.setField(myMembership, "id", 1L);
+
+            ChatMessage systemMessage = ChatFixture.createSystemMessage(chatRoom, "공지 메시지");
+            ReflectionTestUtils.setField(systemMessage, "id", 1L);
+
+            given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(systemMessage));
+            given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
+            given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
+
+            // when
+            ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+            // then
+            assertThat(result.messages()).hasSize(1);
+            ChatRoomDetailDTO.MessageInfo message = result.messages().get(0);
+            assertThat(message.messageType()).isEqualTo(MessageType.SYSTEM);
+            assertThat(message.senderId()).isNull();
+            assertThat(message.senderName()).isEqualTo("시스템");
+            assertThat(message.senderProfileImageUrl()).isNull();
+            assertThat(message.isMyMessage()).isFalse();
+            assertThat(message.isSenderWithdrawn()).isFalse();
+            assertThat(message.content()).isEqualTo("공지 메시지");
+        }
+
+        @Test
         @DisplayName("이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
         void imageMessage_containsFileInfo() {
             // given
@@ -1494,6 +1537,45 @@ class ChatQueryServiceTest {
 
             // then
             assertThat(result.messages().get(0).isSenderWithdrawn()).isTrue();
+        }
+
+        @Test
+        @DisplayName("시스템 메시지는 sender 없이도 과거 메시지 응답에 포함된다")
+        void systemMessage_includedInPreviousMessages() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+            Long cursor = 100L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatMessage systemMessage = ChatFixture.createSystemMessage(chatRoom, "홍길동님이 모임에 참여하셨습니다.");
+            ReflectionTestUtils.setField(systemMessage, "id", 1L);
+
+            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId)).willReturn(true);
+            given(chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(eq(roomId), eq(cursor), any()))
+                    .willReturn(List.of(systemMessage));
+
+            // when
+            ChatMessageDTO.Response result = chatQueryService.getChatMessages(roomId, memberId, cursor, 10);
+
+            // then
+            assertThat(result.messages()).hasSize(1);
+            ChatMessageDTO.MessageInfo message = result.messages().get(0);
+            assertThat(message.messageType()).isEqualTo(MessageType.SYSTEM);
+            assertThat(message.senderId()).isNull();
+            assertThat(message.senderName()).isEqualTo("시스템");
+            assertThat(message.senderProfileImageUrl()).isNull();
+            assertThat(message.isMyMessage()).isFalse();
+            assertThat(message.isSenderWithdrawn()).isFalse();
+            assertThat(message.content()).isEqualTo("홍길동님이 모임에 참여하셨습니다.");
         }
 
         @Test

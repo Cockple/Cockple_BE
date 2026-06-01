@@ -10,22 +10,11 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    // 안 읽은 메시지 수 세기
-    @Query("""
-            SELECT COUNT(m) FROM ChatMessage m
-            WHERE m.chatRoom.id = :chatRoomId
-            AND m.id > :lastReadMessageId
-            """)
-    int countUnreadMessages(
-            @Param("chatRoomId") Long chatRoomId,
-            @Param("lastReadMessageId") Long lastReadMessageId
-    );
-
     ChatMessage findTop1ByChatRoom_IdOrderByCreatedAtDesc(Long chatRoomId);
 
     @Query("""
             SELECT m FROM ChatMessage m 
-            JOIN FETCH m.sender
+            LEFT JOIN FETCH m.sender
             LEFT JOIN FETCH m.chatMessageFiles
             WHERE m.chatRoom.id = :chatRoomId 
             AND m.isDeleted = false
@@ -37,9 +26,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     @Query("""
             SELECT m FROM ChatMessage m
-            JOIN FETCH m.sender
+            LEFT JOIN FETCH m.sender
             LEFT JOIN FETCH m.chatMessageFiles
             WHERE m.chatRoom.id = :chatRoomId
+            AND m.isDeleted = false
             AND m.id < :cursor
             ORDER BY m.createdAt DESC
             """)

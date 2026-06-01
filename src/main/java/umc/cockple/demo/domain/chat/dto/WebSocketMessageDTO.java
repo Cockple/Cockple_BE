@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.dto;
 
 import lombok.Builder;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class WebSocketMessageDTO {
             Long chatRoomId,
             Long messageId,
             String content,
+            MessageType messageType,
             List<ChatCommonDTO.FileInfo> images,
             Long senderId,
             String senderName,

@@ -1,7 +1,6 @@
 package umc.cockple.demo.global.oauth2.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -10,12 +9,12 @@ import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.global.auth.RefreshTokenRepository;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.domain.KakaoClient;
 import umc.cockple.demo.global.oauth2.domain.info.KakaoClientInfo;
 
-import java.time.Duration;
 import java.util.Optional;
 
 import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
@@ -27,8 +26,7 @@ public class KakaoOauthService {
     private final KakaoClient kakaoClient;
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
-
-    private static final long EXPIRED = 7 * 24 * 60 * 60 * 1000L;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public KakaoLoginResponseDTO signup(String code) {
@@ -59,8 +57,8 @@ public class KakaoOauthService {
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
 
-        // 5. refresh는 db에 저장
-        member.setRefreshToken(refreshToken);
+        // 5. refresh는 redis에 저장
+        refreshTokenRepository.save(refreshToken, member.getId());
 
         // jwt개발할 때 넣기
         return new KakaoLoginResponseDTO(accessToken, refreshToken, member.getId(), member.getNickname(), newMember);
@@ -88,8 +86,8 @@ public class KakaoOauthService {
         // refreshToken: 기본 만료
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
 
-        // refreshToken DB에 저장
-        member.setRefreshToken(refreshToken);
+        // refreshToken Redis에 저장
+        refreshTokenRepository.save(refreshToken, member.getId());
 
         return KakaoLoginResponseDTO.builder()
                 .accessToken(accessToken)
@@ -112,8 +110,8 @@ public class KakaoOauthService {
         // refreshToken: 기본 만료
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
 
-        // refreshToken DB에 저장
-        member.setRefreshToken(refreshToken);
+        // refreshToken Redis에 저장
+        refreshTokenRepository.save(refreshToken, member.getId());
 
         return KakaoLoginResponseDTO.builder()
                 .accessToken(accessToken)
@@ -126,20 +124,25 @@ public class KakaoOauthService {
     }
 
     public TokenRefreshResponse validateMember(String refreshToken) {
-        Member member = memberRepository.findByRefreshToken(refreshToken)
+        // Redis에서 memberId 조회 및 삭제 (GETDEL - 원자적 처리로 동시 요청 시 중복 발급 방지)
+        Long memberId = refreshTokenRepository.findAndDeleteByToken(refreshToken)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        // 탈퇴한 회원 차단
+        if (member.getIsActive() == MemberStatus.INACTIVE) {
+            throw new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+        }
 
         // 액세스 토큰 재발급
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname());
 
-        // 리프레시 토큰 만료가 3일 이하로 남은 경우 갱신 (sliding session)
-        if (jwtTokenProvider.isTokenExpiringSoon(refreshToken, EXPIRED)) {
-            String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
-            member.setRefreshToken(newRefreshToken);
+        // 새 리프레시 토큰 발급 및 Redis 저장
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getNickname());
+        refreshTokenRepository.save(newRefreshToken, member.getId());
 
-            return new TokenRefreshResponse(newAccessToken, newRefreshToken);
-        }
-
-        return new TokenRefreshResponse(newAccessToken, refreshToken);
+        return new TokenRefreshResponse(newAccessToken, newRefreshToken);
     }
 }

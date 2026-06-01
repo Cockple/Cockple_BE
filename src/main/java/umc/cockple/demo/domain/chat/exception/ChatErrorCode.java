@@ -31,7 +31,8 @@ public enum ChatErrorCode implements BaseErrorCode {
     NOT_PARTY_MEMBER(HttpStatus.FORBIDDEN, "CHAT303", "해당 모임의 멤버만 채팅방에 접근할 수 있습니다."),
 
     // 5xx: 서버 내부 문제
-    RESPONSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CHAT501", "파일 다운로드 응답 생성에 실패했습니다.");
+    RESPONSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CHAT501", "파일 다운로드 응답 생성에 실패했습니다."),
+    INVALID_MESSAGE_SENDER(HttpStatus.INTERNAL_SERVER_ERROR, "CHAT502", "채팅 메시지 발신자 정보가 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

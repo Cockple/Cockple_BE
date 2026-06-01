@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Cockple MySQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 Asia/Seoul
+Persistent=true
+RandomizedDelaySec=5m
+Unit=cockple-db-backup.service
+
+[Install]
+WantedBy=timers.target

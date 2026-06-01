@@ -5,14 +5,15 @@ resource "google_compute_address" "prod" {
 
 resource "google_compute_instance" "prod" {
   name                      = "cockple-prod"
-  machine_type              = "e2-medium"  # 4GB RAM
+  machine_type              = "e2-medium" # 4GB RAM
   zone                      = "asia-northeast3-b"
   tags                      = ["cockple-prod"]
   allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
+      # latest 버전은 사용하지 않기.
+      image = "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20260520"
       size  = 30
     }
   }

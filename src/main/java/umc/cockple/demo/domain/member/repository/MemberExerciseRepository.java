@@ -61,4 +61,5 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
     List<Object[]> findLastExerciseDateByMemberIdsAndPartyId(
             @Param("memberIds") List<Long> memberIds,
             @Param("partyId") Long partyId);
+
 }

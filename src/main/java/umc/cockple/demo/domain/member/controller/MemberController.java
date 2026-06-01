@@ -103,7 +103,7 @@ public class MemberController {
 
     @PostMapping("/auth/refresh")
     @Operation(summary = "토큰 재발급 API",
-            description = "액세스 토큰을 재발급 하고 리프레시 토큰 또한 만료일이 3일 이하로 남았을 경우 재발급 해주는 api입니다. 리프레시토큰은 헤더에 쿠키로 들어갑니다.")
+            description = "액세스 토큰과 리프레시 토큰을 모두 재발급합니다 (Refresh Token Rotation). 리프레시 토큰은 응답 쿠키로 전달됩니다.")
     public ResponseEntity<TokenRefreshResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
 
         if (refreshToken == null || refreshToken.isBlank()) {
@@ -119,6 +119,7 @@ public class MemberController {
                 .path("/")
                 .maxAge(Duration.ofDays(7))
                 .sameSite("None")
+                .domain(".cockple.store")
                 .build();
 
         return ResponseEntity.ok()

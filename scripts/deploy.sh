@@ -1,16 +1,19 @@
 #!/bin/bash
+set -euo pipefail
 
-DOCKER_REPO=$1
-BRANCH=$2
+DOCKER_REPO="${1:?DOCKER_REPO is required}"
+BRANCH="${2:?BRANCH is required}"
 
 cd /home/ubuntu/cockple
 
 if [ "$BRANCH" == "main" ]; then
   SERVICE="cockple-app"
   TAG="latest"
+  INSTALL_PROD_BACKUP="true"
 else
   SERVICE="cockple-app-staging"
   TAG="staging"
+  INSTALL_PROD_BACKUP="false"
 fi
 
 cat > .env << EOF
@@ -24,6 +27,7 @@ KAKAO_ADMIN_KEY=${KAKAO_ADMIN_KEY}
 JWT_SECRET_KEY=${JWT_SECRET_KEY}
 FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
 EOF
+
 echo "${FIREBASE_SERVICE_ACCOUNT_KEY}" > /home/ubuntu/cockple/firebase-service-account.json
 
 echo "=== 배포 전 상태 ==="
@@ -68,5 +72,16 @@ for container in cockple-mysql cockple-redis $SERVICE; do
     sleep 5
   done
 done
+
+if [ "${INSTALL_PROD_BACKUP}" == "true" ]; then
+  : "${GCS_BACKUP_BUCKET:?GCS_BACKUP_BUCKET is required for prod backup setup}"
+
+  echo "=== 운영 DB 백업 systemd timer 설치 ==="
+  RUN_BACKUP_SMOKE_TEST=true \
+    GCS_BACKUP_BUCKET="${GCS_BACKUP_BUCKET}" \
+    bash /home/ubuntu/cockple/scripts/install_backup_systemd.sh
+else
+  echo "=== staging 배포: 운영 DB 백업 runtime은 건드리지 않음 ==="
+fi
 
 echo "=== 배포 성공 ==="

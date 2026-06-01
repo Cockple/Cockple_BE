@@ -82,7 +82,7 @@ kakao:
 
 jwt:
   secret: ${JWT_SECRET_KEY}
-  access-token-validity: 3600000
+  access-token-validity: 900000
   refresh-token-validity: 1209600000
 
 logging:
