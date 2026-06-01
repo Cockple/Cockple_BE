@@ -55,6 +55,16 @@ install_systemd_units() {
   "${SUDO[@]}" systemctl enable --now cockple-db-backup.timer
 }
 
+run_backup_smoke_test() {
+  if "${SUDO[@]}" systemctl start cockple-db-backup.service; then
+    return
+  fi
+
+  "${SUDO[@]}" systemctl status --no-pager cockple-db-backup.service || true
+  "${SUDO[@]}" journalctl -u cockple-db-backup.service -n 80 --no-pager || true
+  exit 1
+}
+
 cleanup_legacy_cron() {
   if [[ -f "${LEGACY_CRON_FILE}" ]]; then
     "${SUDO[@]}" rm -f "${LEGACY_CRON_FILE}"
@@ -62,7 +72,8 @@ cleanup_legacy_cron() {
 }
 
 stage_backup_runtime() {
-  "${SUDO[@]}" install -m 0755 -d "${BACKUP_ROOT}" "$(dirname "${BACKUP_ENV_FILE}")" "${BACKUP_STATE_DIR}"
+  "${SUDO[@]}" install -m 0755 -d "${BACKUP_ROOT}" "$(dirname "${BACKUP_ENV_FILE}")" "$(dirname "${BACKUP_STATE_DIR}")"
+  "${SUDO[@]}" install -m 0700 -d "${BACKUP_STATE_DIR}"
   "${SUDO[@]}" install -m 0755 "${SOURCE_DIR}/backup_db.sh" "${BACKUP_ROOT}/backup_db.sh"
   "${SUDO[@]}" install -m 0755 "${SOURCE_DIR}/run_db_backup.sh" "${BACKUP_ROOT}/run_db_backup.sh"
   "${SUDO[@]}" install -m 0644 "${SOURCE_DIR}/cockple-db-backup.service" "${BACKUP_ROOT}/cockple-db-backup.service"
@@ -71,6 +82,7 @@ stage_backup_runtime() {
 
 write_backup_env() {
   if [[ -n "${GCS_BACKUP_BUCKET:-}" ]]; then
+    "${SUDO[@]}" install -m 0644 /dev/null "${BACKUP_ENV_FILE}"
     cat <<EOF | "${SUDO[@]}" tee "${BACKUP_ENV_FILE}" >/dev/null
 GCS_BACKUP_BUCKET=${GCS_BACKUP_BUCKET}
 BACKUP_DATABASE=cockple
@@ -105,7 +117,7 @@ require_file "${TIMER_SOURCE}"
 install_systemd_units
 
 if [[ "${RUN_BACKUP_SMOKE_TEST:-false}" == "true" ]]; then
-  "/bin/bash" "${BACKUP_ROOT}/run_db_backup.sh"
+  run_backup_smoke_test
 fi
 
 echo "Backup systemd timer installed."
