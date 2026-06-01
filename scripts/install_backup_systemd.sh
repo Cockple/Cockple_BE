@@ -25,26 +25,13 @@ require_file() {
   fi
 }
 
-ensure_gcloud_installed() {
-  if command -v gcloud >/dev/null 2>&1; then
+ensure_curl_installed() {
+  if command -v curl >/dev/null 2>&1; then
     return
   fi
 
   "${SUDO[@]}" apt-get update -y
-  "${SUDO[@]}" apt-get install -y apt-transport-https ca-certificates gnupg curl
-
-  if [[ ! -f /usr/share/keyrings/cloud.google.gpg ]]; then
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-      | "${SUDO[@]}" gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-  fi
-
-  if [[ ! -f /etc/apt/sources.list.d/google-cloud-sdk.list ]]; then
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
-      | "${SUDO[@]}" tee /etc/apt/sources.list.d/google-cloud-sdk.list >/dev/null
-  fi
-
-  "${SUDO[@]}" apt-get update -y
-  "${SUDO[@]}" apt-get install -y google-cloud-cli
+  "${SUDO[@]}" apt-get install -y ca-certificates curl
 }
 
 install_systemd_units() {
@@ -105,7 +92,7 @@ require_file "${SOURCE_DIR}/cockple-db-backup.timer"
 
 stage_backup_runtime
 write_backup_env
-ensure_gcloud_installed
+ensure_curl_installed
 cleanup_legacy_cron
 
 require_file "${BACKUP_ENV_FILE}"
