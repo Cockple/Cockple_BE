@@ -368,9 +368,10 @@ public class ExerciseController {
             @RequestParam(defaultValue = "3.0") Double radiusKm
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
+        ExerciseMapBuildingsDTO.Query query = ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
 
         ExerciseMapBuildingsDTO.Response response = exerciseQueryService
-                .getExerciseMapCalendarSummary(date, latitude, longitude, radiusKm, memberId);
+                .getExerciseMapCalendarSummary(query, memberId);
 
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseMapSpatialSearchCondition;
 import umc.cockple.demo.domain.party.dto.PartyExerciseInfoDTO;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -221,26 +222,79 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
             """)
     List<Exercise> findExercisesByBuildingAndDate(String buildingName, String streetAddr, LocalDate date);
 
+    /*
+     * 월간 지도 조회는 의도적으로 두 단계로 나눈다.
+     * 1. native spatial query로 조건에 맞는 Exercise ID 후보군만 먼저 조회한다.
+     * 2. 조회된 ID로 JPQL fetch join을 다시 수행해 실제 Exercise 엔티티를 로딩한다.
+     *
+     * native query에서 엔티티를 직접 조회하면 JPA fetch join과 연관 로딩 제어가 어려워지므로
+     * 공간 검색 조건과 엔티티 로딩 책임을 분리한다.
+     */
+    default List<Exercise> findExercisesByMonthAndRadius(
+            LocalDate startDate,
+            LocalDate endDate,
+            Double latitude,
+            Double longitude,
+            Double radiusKm) {
+        ExerciseMapSpatialSearchCondition searchCondition =
+                ExerciseMapSpatialSearchCondition.from(latitude, longitude, radiusKm);
+
+        List<Long> exerciseIds = findExerciseIdsByMonthAndRadius(
+                startDate,
+                endDate,
+                searchCondition.centerPointWkt(),
+                searchCondition.boundingBoxWkt(),
+                searchCondition.radiusKm());
+
+        if (exerciseIds.isEmpty()) {
+            return List.of();
+        }
+
+        return findExercisesByIdsForMonthlyMap(exerciseIds);
+    }
+
+    /*
+     * 1단계 ID 후보군 조회 전용 쿼리다.
+     *
+     * 좌표 순서 계약:
+     * - API/DTO 필드는 latitude, longitude 순서다.
+     * - MySQL spatial WKT는 axis-order=long-lat와 함께 POINT(longitude latitude) 순서로 만든다.
+     * - MBRWithin은 공간 인덱스를 타기 위한 bounding box 후보 필터다.
+     * - ST_Distance_Sphere는 최종 원형 반경을 보장하는 정밀 거리 필터다.
+     */
+    @Query(value = """
+            SELECT e.id
+            FROM exercise_addr addr
+            JOIN exercise e ON e.addr_id = addr.id
+            WHERE e.date BETWEEN :startDate AND :endDate
+            AND MBRWithin(
+                addr.location,
+                ST_GeomFromText(:boundingBoxWkt, 4326, 'axis-order=long-lat')
+            )
+            AND ST_Distance_Sphere(
+                addr.location,
+                ST_GeomFromText(:centerPointWkt, 4326, 'axis-order=long-lat')
+            ) <= (:radiusKm * 1000.0)
+            ORDER BY e.date ASC, e.start_time ASC
+            """, nativeQuery = true)
+    List<Long> findExerciseIdsByMonthAndRadius(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("centerPointWkt") String centerPointWkt,
+            @Param("boundingBoxWkt") String boundingBoxWkt,
+            @Param("radiusKm") Double radiusKm);
+
+    /*
+     * 2단계 엔티티 조회 전용 쿼리다.
+     * 1단계에서 확정한 ID 후보군을 기준으로 Exercise와 월간 지도 응답에 필요한 주소를 로딩한다.
+     */
     @Query("""
             SELECT e FROM Exercise e
             JOIN FETCH e.exerciseAddr addr
-            WHERE e.date BETWEEN :startDate AND :endDate
-            AND (
-                (6371 * acos(
-                    LEAST(1.0, cos(radians(:latitude)) * cos(radians(addr.latitude)) *
-                    cos(radians(addr.longitude) - radians(:longitude)) +
-                    sin(radians(:latitude)) * sin(radians(addr.latitude)))
-                )) <= :radiusKm
-                OR (addr.latitude = :latitude AND addr.longitude = :longitude)
-            )
+            WHERE e.id IN :exerciseIds
             ORDER BY e.date ASC, e.startTime ASC
             """)
-    List<Exercise> findExercisesByMonthAndRadius(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate end,
-            @Param("latitude") Double latitude,
-            @Param("longitude") Double longitude,
-            @Param("radiusKm") Integer radiusKm);
+    List<Exercise> findExercisesByIdsForMonthlyMap(@Param("exerciseIds") List<Long> exerciseIds);
 
 
     @Query("""

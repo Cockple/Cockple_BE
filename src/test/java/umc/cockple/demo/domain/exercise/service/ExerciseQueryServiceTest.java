@@ -1905,12 +1905,16 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq(mainAddr.getLatitude()), eq(mainAddr.getLongitude()), eq(3)))
+                        eq(monthStart),
+                        eq(monthEnd),
+                        eq(37.501),
+                        eq(127.039),
+                        eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when
                 ExerciseMapBuildingsDTO.Response response = exerciseQueryService.getExerciseMapCalendarSummary(
-                        null, null, null, radiusKm, mapMember.getId());
+                        createMapQuery(null, null, null, radiusKm), mapMember.getId());
 
                 // then
                 assertThat(response.year()).isEqualTo(currentMonth.getYear());
@@ -1922,8 +1926,8 @@ class ExerciseQueryServiceTest {
             }
 
             @Test
-            @DisplayName("명시 좌표가 있으면 대표주소 대신 해당 좌표와 절삭 반경으로 조회한다")
-            void 명시_좌표가_있으면_대표주소_대신_해당_좌표와_절삭_반경으로_조회한다() {
+            @DisplayName("명시 좌표가 있으면 대표주소 대신 해당 좌표와 소수 반경으로 조회한다")
+            void 명시_좌표가_있으면_대표주소_대신_해당_좌표와_소수_반경으로_조회한다() {
                 // given
                 LocalDate targetDate = LocalDate.of(2026, 4, 15);
                 LocalDate monthStart = LocalDate.of(2026, 4, 1);
@@ -1932,12 +1936,16 @@ class ExerciseQueryServiceTest {
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
                 given(exerciseRepository.findExercisesByMonthAndRadius(
-                        eq(monthStart), eq(monthEnd), eq(37.55), eq(127.11), eq(3)))
+                        eq(monthStart),
+                        eq(monthEnd),
+                        eq(37.55),
+                        eq(127.11),
+                        eq(radiusKm)))
                         .willReturn(List.of());
 
                 // when
                 ExerciseMapBuildingsDTO.Response response = exerciseQueryService.getExerciseMapCalendarSummary(
-                        targetDate, 37.55, 127.11, radiusKm, mapMember.getId());
+                        createMapQuery(targetDate, 37.55, 127.11, radiusKm), mapMember.getId());
 
                 // then
                 assertThat(response.year()).isEqualTo(2026);
@@ -1964,12 +1972,13 @@ class ExerciseQueryServiceTest {
 
                 given(memberRepository.findMemberWithAddresses(mapMember.getId()))
                         .willReturn(Optional.of(mapMember));
-                given(exerciseRepository.findExercisesByMonthAndRadius(any(), any(), any(), any(), any()))
+                given(exerciseRepository.findExercisesByMonthAndRadius(
+                        any(), any(), any(), any(), any()))
                         .willReturn(List.of(dayOneMorning, dayOneEveningSameBuilding, dayOneOtherBuilding, dayTwoBuilding));
 
                 // when
                 ExerciseMapBuildingsDTO.Response response = exerciseQueryService.getExerciseMapCalendarSummary(
-                        targetDate, null, null, radiusKm, mapMember.getId());
+                        createMapQuery(targetDate, null, null, radiusKm), mapMember.getId());
 
                 // then
                 assertThat(response.year()).isEqualTo(2026);
@@ -2012,7 +2021,7 @@ class ExerciseQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseQueryService.getExerciseMapCalendarSummary(
-                        LocalDate.of(2026, 4, 1), null, null, radiusKm, 999L))
+                        createMapQuery(LocalDate.of(2026, 4, 1), null, null, radiusKm), 999L))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
@@ -2026,7 +2035,7 @@ class ExerciseQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseQueryService.getExerciseMapCalendarSummary(
-                        LocalDate.of(2026, 4, 1), null, null, radiusKm, memberWithoutMainAddr.getId()))
+                        createMapQuery(LocalDate.of(2026, 4, 1), null, null, radiusKm), memberWithoutMainAddr.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MAIN_ADDRESS_NULL);
             }
@@ -2040,24 +2049,16 @@ class ExerciseQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseQueryService.getExerciseMapCalendarSummary(
-                        LocalDate.of(2026, 4, 1), 37.5, 127.0, radiusKm, memberWithoutMainAddr.getId()))
+                        createMapQuery(LocalDate.of(2026, 4, 1), 37.5, 127.0, radiusKm), memberWithoutMainAddr.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MAIN_ADDRESS_NULL);
             }
 
-            @Test
-            @DisplayName("위도와 경도 중 하나만 주면 예외를 던진다")
-            void 위도와_경도_중_하나만_주면_예외를_던진다() {
-                // given
-                given(memberRepository.findMemberWithAddresses(mapMember.getId()))
-                        .willReturn(Optional.of(mapMember));
+        }
 
-                // when & then
-                assertThatThrownBy(() -> exerciseQueryService.getExerciseMapCalendarSummary(
-                        LocalDate.of(2026, 4, 1), 37.5, null, radiusKm, mapMember.getId()))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INCOMPLETE_LOCATION_INFO);
-            }
+        private ExerciseMapBuildingsDTO.Query createMapQuery(
+                LocalDate date, Double latitude, Double longitude, Double radiusKm) {
+            return ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
         }
 
         private Exercise createMapExercise(long id, LocalDate date, String buildingName,

@@ -38,9 +38,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.sql.DataSource;
-
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,7 +56,6 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired GuestRepository guestRepository;
     @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
-    @Autowired DataSource dataSource;
 
     private Member manager;
     private Member subManager;
@@ -1294,6 +1290,8 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                     37.501, 127.001, LocalTime.of(13, 0));
             saveMapExercise(LocalDate.of(2026, 4, 4), "A빌딩", "서울특별시 강남구 테헤란로 10",
                     37.5005, 127.0005, LocalTime.of(10, 0));
+            saveMapExercise(LocalDate.of(2026, 4, 7), "소수반경빌딩", "서울특별시 강남구 테헤란로 390",
+                    37.535, 127.0, LocalTime.of(15, 0));
             saveMapExercise(LocalDate.of(2026, 4, 5), "반경밖빌딩", "부산광역시 해운대구 센텀로 1",
                     35.17, 129.13, LocalTime.of(12, 0));
             saveMapExercise(LocalDate.of(2026, 4, 6), "부산빌딩", "부산광역시 해운대구 센텀로 2",
@@ -1343,6 +1341,28 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             }
 
             @Test
+            @DisplayName("3.0km 밖이지만 3.9km 안인 건물은 소수 반경을 절사하지 않고 반환한다")
+            void 삼키로미터_밖_삼점구키로미터_안_건물은_소수_반경을_절사하지_않고_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "3.9"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07'][0].buildingName").value("소수반경빌딩"));
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "3.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07']").doesNotExist());
+            }
+
+            @Test
             @DisplayName("명시 좌표는 대표주소 대신 응답 중심 좌표로 반영된다")
             void 명시_좌표는_대표주소_대신_응답_중심_좌표로_반영된다() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
@@ -1357,6 +1377,26 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.centerLongitude").value(129.13))
                         .andExpect(jsonPath("$.data.radiusKm").value(5.0))
                         .andExpect(jsonPath("$.data.buildings['2026-04-06'][0].buildingName").value("부산빌딩"));
+            }
+
+            @Test
+            @DisplayName("MySQL POINT는 longitude latitude 순서로 생성되어 부산 좌표가 서울 결과와 섞이지 않는다")
+            void mysql_point는_longitude_latitude_순서로_생성되어_부산_좌표가_서울_결과와_섞이지_않는다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "35.17")
+                                .param("longitude", "129.13")
+                                .param("radiusKm", "1.0"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.centerLatitude").value(35.17))
+                        .andExpect(jsonPath("$.data.centerLongitude").value(129.13))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-05'][0].buildingName").value("반경밖빌딩"))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-06'][0].buildingName").value("부산빌딩"))
+                        .andExpect(jsonPath("$.data.buildings['2026-04-03']").doesNotExist())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-04']").doesNotExist())
+                        .andExpect(jsonPath("$.data.buildings['2026-04-07']").doesNotExist());
             }
 
             @Test
@@ -1429,6 +1469,35 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO.getMessage()));
+            }
+
+            @Test
+            @DisplayName("좌표 범위를 벗어나면 400을 반환한다")
+            void 좌표_범위를_벗어나면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "91.0")
+                                .param("longitude", "127.0"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getMessage()));
+            }
+
+            @Test
+            @DisplayName("반경이 양수가 아니면 400을 반환한다")
+            void 반경이_양수가_아니면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/buildings/map/monthly")
+                                .param("date", targetDate.toString())
+                                .param("latitude", "37.5")
+                                .param("longitude", "127.0")
+                                .param("radiusKm", "0"))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INVALID_LOCATION_INFO.getMessage()));
             }
 
             @Test

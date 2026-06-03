@@ -23,6 +23,7 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     INCOMPLETE_DATE_RANGE(HttpStatus.BAD_REQUEST, "EXERCISE105", "시작 날짜와 종료 날짜는 둘 다 null이거나 둘 다 null이 아니어야 합니다."),
     INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "EXERCISE106", "종료 날짜는 시작 날짜보다 이후여야 합니다"),
     INCOMPLETE_LOCATION_INFO(HttpStatus.BAD_REQUEST, "EXERCISE107", "위도와 경도는 둘 다 null이거나 둘 다 null이 아니어야 합니다."),
+    INVALID_LOCATION_INFO(HttpStatus.BAD_REQUEST, "EXERCISE108", "위도, 경도 또는 반경 값이 유효하지 않습니다."),
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE201", "존재하지 않는 파티입니다."),
     EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE202", "존재하지 않는 운동입니다."),

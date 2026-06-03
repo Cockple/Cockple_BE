@@ -291,18 +291,19 @@ public class ExerciseQueryService {
     }
 
     public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
-            LocalDate date, Double latitude, Double longitude, Double radiusKm, Long memberId) {
+            ExerciseMapBuildingsDTO.Query query, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
-                date, latitude, longitude, radiusKm);
+                query.date(), query.latitude(), query.longitude(), query.radiusKm());
 
         Member member = findMemberWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = findMainAddrOrThrow(member);
+        ExerciseMapBuildingsDTO.Query searchQuery =
+                query.withFallbackLocation(mainAddr.getLatitude(), mainAddr.getLongitude());
 
-        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(date);
-        SearchLocation searchLocation = SearchLocation.createLocation(latitude, longitude, radiusKm, mainAddr);
+        DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(query.date());
 
-        List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchLocation);
+        List<Exercise> exercises = findExercisesByMonthAndRadius(dateRange, searchQuery);
 
         Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> dailyBuildings =
                 groupExercisesByDateAndBuilding(exercises);
@@ -311,7 +312,7 @@ public class ExerciseQueryService {
 
         return exerciseConverter.toMapCalendarSummaryResponse(
                 dateRange.start().getYear(), dateRange.start().getMonthValue(),
-                searchLocation.latitude(), searchLocation.longitude(), radiusKm, dailyBuildings);
+                searchQuery.latitude(), searchQuery.longitude(), searchQuery.radiusKm(), dailyBuildings);
     }
 
     public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
@@ -799,13 +800,14 @@ public class ExerciseQueryService {
                 .findExercisesByBuildingAndDate(buildingName, streetAddr, date);
     }
 
-    private List<Exercise> findExercisesByMonthAndRadius(DateRange dateRange, SearchLocation searchLocation) {
+    private List<Exercise> findExercisesByMonthAndRadius(
+            DateRange dateRange, ExerciseMapBuildingsDTO.Query searchQuery) {
         return exerciseRepository.findExercisesByMonthAndRadius(
                 dateRange.start(),
                 dateRange.end(),
-                searchLocation.latitude(),
-                searchLocation.longitude(),
-                searchLocation.radiusKm().intValue()
+                searchQuery.latitude(),
+                searchQuery.longitude(),
+                searchQuery.radiusKm()
         );
     }
 
@@ -947,20 +949,6 @@ public class ExerciseQueryService {
     }
 
     private record ExerciseWithDistance(Exercise exercise, double distance) {
-    }
-
-    private record SearchLocation(Double latitude, Double longitude, Double radiusKm) {
-        private static SearchLocation createLocation(Double latitude, Double longitude, Double radius, MemberAddr addr) {
-            if (latitude == null && longitude == null) {
-                return new SearchLocation(addr.getLatitude(), addr.getLongitude(), radius);
-            }
-
-            if (latitude == null || longitude == null) {
-                throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_LOCATION_INFO);
-            }
-
-            return new SearchLocation(latitude, longitude, radius);
-        }
     }
 
     private record BuildingKey(
