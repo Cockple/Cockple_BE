@@ -12,6 +12,13 @@ import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
 
+    @Modifying
+    @Query("""
+            DELETE FROM ChatRoomMember crm
+            WHERE crm.chatRoom.id = :chatRoomId
+            """)
+    int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
+
     // 채팅방 내 참여자 수
     @Query("SELECT COUNT(c) FROM ChatRoomMember c WHERE c.chatRoom.id = :chatRoomId")
     int countByChatRoomId(@Param("chatRoomId") Long chatRoomId);
@@ -84,4 +91,3 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     List<ChatRoomMember> findDirectChatCounterParts(@Param("memberId") Long memberId);
 }
-

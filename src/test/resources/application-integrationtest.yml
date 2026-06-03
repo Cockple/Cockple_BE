@@ -27,6 +27,11 @@ spring:
 gcs:
   bucket: test-bucket
 
+cockple:
+  object-storage-delete-outbox:
+    scheduler:
+      enabled: false
+
 kakao:
   client-id: test-client-id
   client-secret: test-client-secret

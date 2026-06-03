@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -739,6 +740,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(party.getStatus()).isEqualTo(PartyStatus.INACTIVE);
+            verify(applicationEventPublisher).publishEvent(any(PartyDeletedEvent.class));
         }
 
         @Test

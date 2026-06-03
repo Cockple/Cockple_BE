@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -112,6 +113,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         //Party 엔티티의 상태를 INACTIVE로 변경
         party.delete();
+        applicationEventPublisher.publishEvent(PartyDeletedEvent.deleted(partyId, memberId));
 
         createNotification(member, partyId, NotificationTarget.PARTY_DELETE);
 
