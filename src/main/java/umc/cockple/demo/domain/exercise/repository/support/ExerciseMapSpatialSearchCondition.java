@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.exercise.repository.support;
 
 import umc.cockple.demo.domain.exercise.utils.ExerciseMapBoundingBox;
 
+import java.math.BigDecimal;
 import java.util.Locale;
 
 /*
@@ -37,17 +38,23 @@ public record ExerciseMapSpatialSearchCondition(
     }
 
     private static String pointWkt(double longitude, double latitude) {
-        return String.format(Locale.ROOT, "POINT(%s %s)", longitude, latitude);
+        return String.format(Locale.ROOT, "POINT(%s %s)", plain(longitude), plain(latitude));
     }
 
     private static String polygonWkt(double minLongitude, double minLatitude,
                                      double maxLongitude, double maxLatitude) {
         return String.format(Locale.ROOT,
                 "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                minLongitude, minLatitude,
-                maxLongitude, minLatitude,
-                maxLongitude, maxLatitude,
-                minLongitude, maxLatitude,
-                minLongitude, minLatitude);
+                plain(minLongitude), plain(minLatitude),
+                plain(maxLongitude), plain(minLatitude),
+                plain(maxLongitude), plain(maxLatitude),
+                plain(minLongitude), plain(maxLatitude),
+                plain(minLongitude), plain(minLatitude));
+    }
+
+    private static String plain(double value) {
+        return BigDecimal.valueOf(value)
+                .stripTrailingZeros()
+                .toPlainString();
     }
 }
