@@ -12,14 +12,14 @@ import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             DELETE FROM ChatRoomMember crm
             WHERE crm.chatRoom.id = :chatRoomId
             """)
     int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             UPDATE ChatRoomMember crm
             SET crm.member = null
@@ -35,7 +35,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     List<Long> findDirectChatRoomIdsByMemberId(@Param("memberId") Long memberId);
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             UPDATE ChatRoomMember crm
             SET crm.displayName = :displayName
