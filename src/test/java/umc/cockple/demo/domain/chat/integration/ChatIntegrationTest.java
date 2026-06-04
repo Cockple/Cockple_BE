@@ -505,7 +505,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"))
                         .andExpect(jsonPath("$.data.content[0].lastMessage.timestamp").exists())
                         .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
-                        .andExpect(jsonPath("$.data.content[1].displayName").value("예전 대화"))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("알 수 없는 사용자"))
                         .andExpect(jsonPath("$.data.content[1].profileImgUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.content[1].isWithdrawn").value(true))
                         .andExpect(jsonPath("$.data.content[1].unreadCount").value(0))
@@ -870,6 +870,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/chats/rooms/{roomId}", directChatRoom.getId()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.chatRoomInfo.displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.profileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.chatRoomInfo.isCounterPartWithdrawn").value(true));
             }
 
@@ -941,6 +943,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/chats/rooms/{roomId}", partyChatRoom.getId()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
             }
 
@@ -1182,6 +1186,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/chats/rooms/{roomId}/messages/previous", partyChatRoom.getId())
                                 .param("cursor", cursor.toString()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
             }
 

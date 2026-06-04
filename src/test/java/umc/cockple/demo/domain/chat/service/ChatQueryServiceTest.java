@@ -612,6 +612,9 @@ class ChatQueryServiceTest {
 
                 Member withdrawnCounterPart = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 2002L);
                 ReflectionTestUtils.setField(withdrawnCounterPart, "id", 20L);
+                withdrawnCounterPart.updateProfileImg(ProfileImg.builder()
+                        .imgKey("member/withdrawn-direct.png")
+                        .build());
 
                 ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
                 ReflectionTestUtils.setField(chatRoom, "id", roomId);
@@ -635,7 +638,11 @@ class ChatQueryServiceTest {
 
                 // then
                 assertThat(result.content()).hasSize(1);
-                assertThat(result.content().get(0).isWithdrawn()).isTrue();
+                DirectChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
+                assertThat(roomInfo.displayName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+                assertThat(roomInfo.profileImgUrl()).isNull();
+                assertThat(roomInfo.isWithdrawn()).isTrue();
+                verify(fileService, never()).getUrlFromKey("member/withdrawn-direct.png");
             }
 
             @Test
@@ -765,9 +772,6 @@ class ChatQueryServiceTest {
                 given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 40L))
                         .willReturn(2);
                 given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
-                given(fileService.getUrlFromKey("member/search-profile.png"))
-                        .willReturn("https://cdn.example.com/member/search-profile.png");
-
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 0, 5);
 
@@ -777,8 +781,8 @@ class ChatQueryServiceTest {
 
                 DirectChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
                 assertThat(roomInfo.chatRoomId()).isEqualTo(roomId);
-                assertThat(roomInfo.displayName()).isEqualTo("영희 채팅");
-                assertThat(roomInfo.profileImgUrl()).isEqualTo("https://cdn.example.com/member/search-profile.png");
+                assertThat(roomInfo.displayName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+                assertThat(roomInfo.profileImgUrl()).isNull();
                 assertThat(roomInfo.isWithdrawn()).isTrue();
                 assertThat(roomInfo.unreadCount()).isEqualTo(2);
                 assertThat(roomInfo.lastMessage()).isNotNull();
@@ -788,8 +792,8 @@ class ChatQueryServiceTest {
 
                 verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 5));
                 verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 40L);
+                verify(fileService, never()).getUrlFromKey("member/search-profile.png");
                 verify(chatRoomListCacheService).getLastMessage(roomId);
-                verify(fileService).getUrlFromKey("member/search-profile.png");
             }
 
             @Test
@@ -988,6 +992,9 @@ class ChatQueryServiceTest {
 
             Member withdrawnCounterPart = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 2002L);
             ReflectionTestUtils.setField(withdrawnCounterPart, "id", counterPartId);
+            withdrawnCounterPart.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-detail.png")
+                    .build());
 
             ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
             ReflectionTestUtils.setField(chatRoom, "id", roomId);
@@ -1011,7 +1018,12 @@ class ChatQueryServiceTest {
             ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
 
             // then
+            assertThat(result.chatRoomInfo().displayName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(result.chatRoomInfo().profileImageUrl()).isNull();
             assertThat(result.chatRoomInfo().isCounterPartWithdrawn()).isTrue();
+            assertThat(result.participants().get(1).memberName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(result.participants().get(1).profileImgUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-detail.png");
         }
 
         @Test
@@ -1152,6 +1164,9 @@ class ChatQueryServiceTest {
 
             Member withdrawn = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L);
             ReflectionTestUtils.setField(withdrawn, "id", withdrawnId);
+            withdrawn.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-message.png")
+                    .build());
 
             Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
             ReflectionTestUtils.setField(party, "id", 100L);
@@ -1178,7 +1193,11 @@ class ChatQueryServiceTest {
             ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
 
             // then
-            assertThat(result.messages().get(0).isSenderWithdrawn()).isTrue();
+            ChatRoomDetailDTO.MessageInfo messageInfo = result.messages().get(0);
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-message.png");
         }
 
         @Test
@@ -1518,6 +1537,9 @@ class ChatQueryServiceTest {
 
             Member withdrawn = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L);
             ReflectionTestUtils.setField(withdrawn, "id", withdrawnId);
+            withdrawn.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-previous.png")
+                    .build());
 
             Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
             ReflectionTestUtils.setField(party, "id", 100L);
@@ -1536,7 +1558,11 @@ class ChatQueryServiceTest {
             ChatMessageDTO.Response result = chatQueryService.getChatMessages(roomId, memberId, cursor, 10);
 
             // then
-            assertThat(result.messages().get(0).isSenderWithdrawn()).isTrue();
+            ChatMessageDTO.MessageInfo messageInfo = result.messages().get(0);
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-previous.png");
         }
 
         @Test

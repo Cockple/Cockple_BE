@@ -244,6 +244,9 @@ class ChatProcessorTest {
         void isSenderWithdrawn_true_whenSenderIsInactive() {
             Member withdrawn = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L);
             ReflectionTestUtils.setField(withdrawn, "id", 30L);
+            withdrawn.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-profile.png")
+                    .build());
 
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, withdrawn, "탈퇴자 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
@@ -251,7 +254,11 @@ class ChatProcessorTest {
             List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).isSenderWithdrawn()).isTrue();
+            ChatCommonDTO.MessageInfo messageInfo = result.get(0);
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-profile.png");
         }
 
         @Test

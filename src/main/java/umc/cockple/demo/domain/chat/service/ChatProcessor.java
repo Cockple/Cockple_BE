@@ -13,7 +13,6 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.enums.MemberStatus;
 
 import java.util.Comparator;
 import java.util.List;
@@ -39,12 +38,12 @@ public class ChatProcessor {
             throw new ChatException(ChatErrorCode.INVALID_MESSAGE_SENDER);
         }
 
-        String senderProfileImageUrl = sender != null
+        boolean isSenderWithdrawn = sender != null && sender.isWithdrawn();
+        String senderProfileImageUrl = sender != null && !isSenderWithdrawn
                 ? generateProfileImageUrl(sender.getProfileImg())
                 : null;
         List<ChatCommonDTO.FileInfo> processedFiles = processMessageFiles(message);
         boolean isMyMessage = sender != null && isMyMessage(sender.getId(), memberId);
-        boolean isSenderWithdrawn = sender != null && sender.getIsActive() == MemberStatus.INACTIVE;
         return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedFiles, isMyMessage, isSenderWithdrawn);
     }
 
