@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.integration;
 
 import org.junit.jupiter.api.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -20,6 +21,7 @@ import umc.cockple.demo.domain.chat.service.ChatMemberHardDeleteCleanupService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -60,6 +62,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
     @Autowired MessageReadStatusRepository messageReadStatusRepository;
     @Autowired ChatRoomListCacheService chatRoomListCacheService;
     @Autowired ChatMemberHardDeleteCleanupService chatMemberHardDeleteCleanupService;
+    @Autowired ApplicationEventPublisher applicationEventPublisher;
 
     private Member member;
     private Member otherMember;
@@ -560,7 +563,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
                 Member target = memberRepository.save(
                         MemberFixture.createWithdrawnMember("삭제대상", "삭제", 5005L));
 
-                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "삭제 대상과의 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, target.getMemberName()));
                 chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, target, member.getMemberName()));
                 ChatMessage targetMessage = chatMessageRepository.save(
                         ChatFixture.createTextMessage(directChatRoom, target, "삭제 대상 메시지"));
@@ -647,6 +650,31 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
                         .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"))
                         .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("영희와의 최근 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - 회원 탈퇴 이벤트로 익명화된 direct 채팅방은 삭제 전 이름으로 검색되지 않는다")
+            void searchDirectChatRooms_excludesWithdrawnMemberNameAfterAnonymizationEvent() throws Exception {
+                Member target = memberRepository.save(
+                        MemberFixture.createMember("삭제대상", Gender.FEMALE, Level.C, 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, target.getMemberName()));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, target, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, target, "탈퇴 전 메시지"));
+
+                target.withdraw();
+                memberRepository.saveAndFlush(target);
+                applicationEventPublisher.publishEvent(MemberWithdrawnEvent.withdrawn(target.getId()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", target.getMemberName())
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(0)))
+                        .andExpect(jsonPath("$.data.hasNext").value(false));
             }
 
             @Test
