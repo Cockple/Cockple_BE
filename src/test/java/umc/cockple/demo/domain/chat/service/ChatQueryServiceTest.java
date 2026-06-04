@@ -646,6 +646,43 @@ class ChatQueryServiceTest {
             }
 
             @Test
+            @DisplayName("상대방 회원이 hard delete되어 membership member가 null이면 알 수 없는 사용자로 매핑한다")
+            void mapsUnknownUser_whenCounterPartMemberIsNull() {
+                // given
+                Long memberId = 10L;
+                Long roomId = 44L;
+
+                Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+                ReflectionTestUtils.setField(me, "id", memberId);
+
+                ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
+                ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+                ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me, "삭제된 상대와의 대화");
+                ReflectionTestUtils.setField(myMembership, "id", 47L);
+                ChatRoomMember deletedCounterPartMembership = ChatRoomMember.createJoined(chatRoom, null, "홍길동");
+                ReflectionTestUtils.setField(deletedCounterPartMembership, "id", 48L);
+                chatRoom.addChatRoomMember(myMembership);
+                chatRoom.addChatRoomMember(deletedCounterPartMembership);
+
+                Slice<ChatRoom> chatRooms = new SliceImpl<>(List.of(chatRoom), PageRequest.of(0, 10), false);
+
+                given(chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
+                        .willReturn(chatRooms);
+                given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
+                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(0);
+
+                // when
+                DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
+
+                // then
+                DirectChatRoomDTO.ChatRoomInfo roomInfo = result.content().get(0);
+                assertThat(roomInfo.displayName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+                assertThat(roomInfo.profileImgUrl()).isNull();
+                assertThat(roomInfo.isWithdrawn()).isTrue();
+            }
+
+            @Test
             @DisplayName("채팅방 목록은 repository가 반환한 최신 메시지 순서를 유지한다")
             void preservesRepositoryOrder() {
                 // given
@@ -1024,6 +1061,46 @@ class ChatQueryServiceTest {
             assertThat(result.participants().get(1).memberName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
             assertThat(result.participants().get(1).profileImgUrl()).isNull();
             verify(fileService, never()).getUrlFromKey("member/withdrawn-detail.png");
+        }
+
+        @Test
+        @DisplayName("개인 채팅방에서 상대방 회원이 hard delete된 경우 알 수 없는 사용자로 조회된다")
+        void directChatRoom_counterPartMemberNull() {
+            // given
+            Long roomId = 4L;
+            Long memberId = 10L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me);
+            ReflectionTestUtils.setField(myMembership, "id", 1L);
+
+            ChatRoomMember deletedCounterPartMembership = ChatRoomMember.createJoined(chatRoom, null, "홍길동");
+            ReflectionTestUtils.setField(deletedCounterPartMembership, "id", 2L);
+
+            List<ChatRoomMember> participants = List.of(myMembership, deletedCounterPartMembership);
+
+            given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
+            given(chatRoomMemberRepository.findCounterPartWithMember(roomId, memberId)).willReturn(Optional.of(deletedCounterPartMembership));
+            given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(2);
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of());
+            given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(participants);
+
+            // when
+            ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+            // then
+            assertThat(result.chatRoomInfo().displayName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(result.chatRoomInfo().profileImageUrl()).isNull();
+            assertThat(result.chatRoomInfo().isCounterPartWithdrawn()).isTrue();
+            assertThat(result.participants().get(1).memberId()).isNull();
+            assertThat(result.participants().get(1).memberName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(result.participants().get(1).profileImgUrl()).isNull();
         }
 
         @Test

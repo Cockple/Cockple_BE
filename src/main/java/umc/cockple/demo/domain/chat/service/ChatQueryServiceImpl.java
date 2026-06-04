@@ -228,7 +228,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
                     // 상대방 찾기 (나 제외)
                     ChatRoomMember displayMember = chatRoom.getChatRoomMembers().stream()
-                            .filter(crm -> !crm.getMember().getId().equals(memberId))
+                            .filter(crm -> crm.getMember() == null || !crm.getMember().getId().equals(memberId))
                             .findFirst()
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
@@ -243,7 +243,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
                     Member counterPartMember = displayMember.getMember();
-                    boolean isWithdrawn = counterPartMember.isWithdrawn();
+                    boolean isWithdrawn = isWithdrawn(counterPartMember);
                     String displayProfileImgUrl = isWithdrawn ? null : getImageUrl(counterPartMember.getProfileImg());
 
                     return chatConverter.toDirectChatRoomInfo(
@@ -268,7 +268,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
             Member member = counterPart.getMember();
-            isCounterPartWithdrawn = member.isWithdrawn();
+            isCounterPartWithdrawn = isWithdrawn(member);
 
             displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
             profileImageUrl = isCounterPartWithdrawn ? null : getImageUrl(member.getProfileImg());
@@ -297,11 +297,14 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
         Member member = chatRoomMember.getMember();
-        String memberProfileImgUrl = member.isWithdrawn() ? null : getImageUrl(member.getProfileImg());
+        String memberProfileImgUrl = isWithdrawn(member) ? null : getImageUrl(member.getProfileImg());
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
     }
 
+    private boolean isWithdrawn(Member member) {
+        return member == null || member.isWithdrawn();
+    }
 
     private String getImageUrl(PartyImg partyImg) {
         if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {

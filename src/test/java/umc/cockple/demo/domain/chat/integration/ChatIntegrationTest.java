@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.ChatMemberHardDeleteCleanupService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -58,6 +59,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
     @Autowired ChatMessageRepository chatMessageRepository;
     @Autowired MessageReadStatusRepository messageReadStatusRepository;
     @Autowired ChatRoomListCacheService chatRoomListCacheService;
+    @Autowired ChatMemberHardDeleteCleanupService chatMemberHardDeleteCleanupService;
 
     private Member member;
     private Member otherMember;
@@ -550,6 +552,52 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content", hasSize(2)))
                         .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestJoinedRoom.getId()))
                         .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - hard delete 전처리 후 삭제된 상대방은 알 수 없는 사용자로 조회된다")
+            void hardDeletedCounterPart_isMappedToUnknownUser() throws Exception {
+                Member target = memberRepository.save(
+                        MemberFixture.createWithdrawnMember("삭제대상", "삭제", 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "삭제 대상과의 대화"));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, target, member.getMemberName()));
+                ChatMessage targetMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(directChatRoom, target, "삭제 대상 메시지"));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(targetMessage.getId(), member.getId(), directChatRoom.getId()));
+                messageReadStatusRepository.save(MessageReadStatus.createRead(targetMessage.getId(), target.getId(), directChatRoom.getId()));
+
+                ChatMemberHardDeleteCleanupService.Result cleanupResult =
+                        chatMemberHardDeleteCleanupService.prepareMemberHardDelete(target.getId());
+                memberRepository.delete(target);
+                memberRepository.flush();
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.content[0].profileImgUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.content[0].isWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("삭제 대상 메시지"));
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}", directChatRoom.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.chatRoomInfo.displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.profileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.isCounterPartWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+
+                assertThat(cleanupResult.clearedMessages()).isEqualTo(1);
+                assertThat(cleanupResult.clearedChatRoomMembers()).isEqualTo(1);
+                assertThat(cleanupResult.deletedReadStatuses()).isEqualTo(1);
+                assertThat(messageReadStatusRepository.findAll())
+                        .noneMatch(status -> target.getId().equals(status.getMemberId()));
             }
         }
     }

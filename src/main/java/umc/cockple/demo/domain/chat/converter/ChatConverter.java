@@ -220,9 +220,9 @@ public class ChatConverter {
     }
 
     public ChatRoomDetailDTO.MemberInfo toChatRoomDetailMemberInfo(Member member, String memberProfileImgUrl) {
-        boolean isWithdrawn = member.isWithdrawn();
+        boolean isWithdrawn = member == null || member.isWithdrawn();
         return ChatRoomDetailDTO.MemberInfo.builder()
-                .memberId(member.getId())
+                .memberId(isWithdrawn ? null : member.getId())
                 .memberName(isWithdrawn ? UNKNOWN_USER_NAME : member.getMemberName())
                 .profileImgUrl(isWithdrawn ? null : memberProfileImgUrl)
                 .build();

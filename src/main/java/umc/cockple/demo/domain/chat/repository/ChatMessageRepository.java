@@ -18,6 +18,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             """)
     int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
 
+    @Modifying
+    @Query("""
+            UPDATE ChatMessage cm
+            SET cm.sender = null
+            WHERE cm.sender.id = :memberId
+            """)
+    int clearSenderByMemberId(@Param("memberId") Long memberId);
+
     ChatMessage findTop1ByChatRoom_IdOrderByCreatedAtDesc(Long chatRoomId);
 
     @Query("""

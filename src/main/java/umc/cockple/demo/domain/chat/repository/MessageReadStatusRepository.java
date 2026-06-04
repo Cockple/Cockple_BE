@@ -19,6 +19,13 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
 
     @Modifying
     @Query("""
+            DELETE FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            """)
+    int deleteByMemberId(@Param("memberId") Long memberId);
+
+    @Modifying
+    @Query("""
             UPDATE MessageReadStatus mrs
             SET mrs.isRead = true
             WHERE mrs.chatMessageId = :messageId
