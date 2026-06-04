@@ -180,17 +180,18 @@ public class ChatConverter {
             boolean isSenderWithdrawn) {
         boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
         Member sender = message.getSender();
+        boolean shouldAnonymizeSender = !isSystemMessage && (isSenderWithdrawn || sender == null);
         String senderName = isSystemMessage
                 ? SYSTEM_USER_NAME
-                : isSenderWithdrawn ? UNKNOWN_USER_NAME : sender.getMemberName();
-        String displayProfileImageUrl = isSystemMessage || isSenderWithdrawn ? null : senderProfileImageUrl;
+                : shouldAnonymizeSender ? UNKNOWN_USER_NAME : sender.getMemberName();
+        String displayProfileImageUrl = isSystemMessage || shouldAnonymizeSender ? null : senderProfileImageUrl;
 
         return ChatCommonDTO.MessageInfo.builder()
                 .messageId(message.getId())
-                .senderId(isSystemMessage ? null : sender.getId())
+                .senderId(isSystemMessage || shouldAnonymizeSender ? null : sender.getId())
                 .senderName(senderName)
                 .senderProfileImageUrl(displayProfileImageUrl)
-                .isSenderWithdrawn(isSystemMessage ? false : isSenderWithdrawn)
+                .isSenderWithdrawn(shouldAnonymizeSender)
                 .content(message.getContent())
                 .messageType(message.getType())
                 .images(processedFiles)

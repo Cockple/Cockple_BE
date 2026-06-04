@@ -1,15 +1,12 @@
 package umc.cockple.demo.domain.chat.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
-import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -19,7 +16,6 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class ChatProcessor {
 
     private final FileService fileService;
@@ -33,17 +29,13 @@ public class ChatProcessor {
 
     private ChatCommonDTO.MessageInfo processAndConvertMessage(ChatMessage message, Long memberId) {
         Member sender = message.getSender();
-        if (sender == null && message.getType() != MessageType.SYSTEM) {
-            log.error("일반 채팅 메시지에 sender가 없습니다. messageId={}, type={}", message.getId(), message.getType());
-            throw new ChatException(ChatErrorCode.INVALID_MESSAGE_SENDER);
-        }
-
-        boolean isSenderWithdrawn = sender != null && sender.isWithdrawn();
+        boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
+        boolean isSenderWithdrawn = !isSystemMessage && (sender == null || sender.isWithdrawn());
         String senderProfileImageUrl = sender != null && !isSenderWithdrawn
                 ? generateProfileImageUrl(sender.getProfileImg())
                 : null;
         List<ChatCommonDTO.FileInfo> processedFiles = processMessageFiles(message);
-        boolean isMyMessage = sender != null && isMyMessage(sender.getId(), memberId);
+        boolean isMyMessage = sender != null && !isSenderWithdrawn && isMyMessage(sender.getId(), memberId);
         return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedFiles, isMyMessage, isSenderWithdrawn);
     }
 

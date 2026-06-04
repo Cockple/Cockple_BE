@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -949,6 +950,24 @@ class ChatIntegrationTest extends IntegrationTestBase {
             }
 
             @Test
+            @DisplayName("200 - sender가 null인 일반 메시지는 알 수 없는 사용자로 조회된다")
+            void nullSenderTextMessage_isMappedToUnknownUser() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(
+                        ChatMessage.create(partyChatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}", partyChatRoom.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(false));
+            }
+
+            @Test
             @DisplayName("200 - 이미지 메시지 조회 시 images 필드에 파일 정보가 포함된다")
             void imageMessage_containsFileInfo() throws Exception {
                 chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
@@ -1189,6 +1208,26 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
                         .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+            }
+
+            @Test
+            @DisplayName("200 - sender가 null인 일반 과거 메시지는 알 수 없는 사용자로 조회된다")
+            void nullSenderPreviousMessage_isMappedToUnknownUser() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                ChatMessage deletedSenderMessage = chatMessageRepository.save(
+                        ChatMessage.create(partyChatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT));
+                Long cursor = deletedSenderMessage.getId() + 1;
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}/messages/previous", partyChatRoom.getId())
+                                .param("cursor", cursor.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(false));
             }
 
             @Test

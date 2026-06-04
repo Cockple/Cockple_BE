@@ -1201,6 +1201,46 @@ class ChatQueryServiceTest {
         }
 
         @Test
+        @DisplayName("sender가 null인 일반 메시지는 알 수 없는 사용자로 조회된다")
+        void message_nullSender_isMappedToUnknownUser() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatRoomMember myMembership = ChatFixture.createJoinedMember(chatRoom, me);
+            ReflectionTestUtils.setField(myMembership, "id", 1L);
+
+            ChatMessage deletedSenderMessage = ChatMessage.create(chatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT);
+            ReflectionTestUtils.setField(deletedSenderMessage, "id", 1L);
+
+            given(chatRoomRepository.findChatRoomWithPartyById(roomId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
+            given(chatMessageRepository.findRecentMessagesWithFiles(eq(roomId), any())).willReturn(List.of(deletedSenderMessage));
+            given(chatRoomMemberRepository.findChatRoomMembersWithMemberById(roomId)).willReturn(List.of(myMembership));
+            given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
+
+            // when
+            ChatRoomDetailDTO.Response result = chatQueryService.getChatRoomDetail(roomId, memberId);
+
+            // then
+            ChatRoomDetailDTO.MessageInfo messageInfo = result.messages().get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.isMyMessage()).isFalse();
+        }
+
+        @Test
         @DisplayName("시스템 메시지는 sender 없이도 조회되고 시스템 기본값으로 매핑된다")
         void systemMessage_isMappedWithSystemDefaults() {
             // given
@@ -1563,6 +1603,39 @@ class ChatQueryServiceTest {
             assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
             assertThat(messageInfo.senderProfileImageUrl()).isNull();
             verify(fileService, never()).getUrlFromKey("member/withdrawn-previous.png");
+        }
+
+        @Test
+        @DisplayName("sender가 null인 일반 과거 메시지는 알 수 없는 사용자로 조회된다")
+        void nullSenderPreviousMessage_isMappedToUnknownUser() {
+            // given
+            Long roomId = 1L;
+            Long memberId = 10L;
+            Long cursor = 100L;
+
+            Party party = PartyFixture.createParty("모임", memberId, PartyFixture.createPartyAddr("서울", "강남구"));
+            ReflectionTestUtils.setField(party, "id", 100L);
+
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+            ChatMessage deletedSenderMessage = ChatMessage.create(chatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT);
+            ReflectionTestUtils.setField(deletedSenderMessage, "id", 1L);
+
+            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId)).willReturn(true);
+            given(chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(eq(roomId), eq(cursor), any()))
+                    .willReturn(List.of(deletedSenderMessage));
+
+            // when
+            ChatMessageDTO.Response result = chatQueryService.getChatMessages(roomId, memberId, cursor, 10);
+
+            // then
+            ChatMessageDTO.MessageInfo messageInfo = result.messages().get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.isMyMessage()).isFalse();
         }
 
         @Test
