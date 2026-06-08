@@ -11,12 +11,20 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             DELETE FROM ChatMessage cm
             WHERE cm.chatRoom.id = :chatRoomId
             """)
     int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ChatMessage cm
+            SET cm.sender = null
+            WHERE cm.sender.id = :memberId
+            """)
+    int clearSenderByMemberId(@Param("memberId") Long memberId);
 
     ChatMessage findTop1ByChatRoom_IdOrderByCreatedAtDesc(Long chatRoomId);
 

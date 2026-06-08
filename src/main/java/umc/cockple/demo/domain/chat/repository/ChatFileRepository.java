@@ -16,7 +16,7 @@ public interface ChatFileRepository extends JpaRepository<ChatMessageFile, Long>
             """)
     List<String> findObjectKeysByChatRoomId(@Param("chatRoomId") Long chatRoomId);
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             DELETE FROM ChatMessageFile cmf
             WHERE cmf.chatMessage.chatRoom.id = :chatRoomId

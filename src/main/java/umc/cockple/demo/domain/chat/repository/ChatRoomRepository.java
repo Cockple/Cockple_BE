@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             DELETE FROM ChatRoom cr
             WHERE cr.id = :chatRoomId

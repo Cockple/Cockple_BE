@@ -98,7 +98,7 @@ public class Member extends BaseEntity {
     @Builder.Default
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "member")
     @Builder.Default
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 

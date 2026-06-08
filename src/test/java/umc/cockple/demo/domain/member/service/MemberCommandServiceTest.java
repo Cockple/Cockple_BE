@@ -5,9 +5,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -23,6 +25,7 @@ import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
@@ -60,6 +63,7 @@ class MemberCommandServiceTest {
     @Mock private MemberKeywordRepository memberKeywordRepository;
     @Mock private MemberAddrRepository memberAddrRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
     @Mock private FileService fileService;
     @Mock private KakaoOauthService kakaoOauthService;
 
@@ -661,6 +665,23 @@ class MemberCommandServiceTest {
 
                 // then
                 then(kakaoOauthService).should().unlinkAccess(normalMember);
+            }
+
+            @Test
+            @DisplayName("탈퇴_시_회원_탈퇴_이벤트를_발행한다")
+            void 탈퇴_시_회원_탈퇴_이벤트를_발행한다() {
+                // given
+                given(memberRepository.findById(normalMember.getId()))
+                        .willReturn(Optional.of(normalMember));
+
+                // when
+                memberCommandService.withdrawMember(normalMember.getId());
+
+                // then
+                ArgumentCaptor<MemberWithdrawnEvent> eventCaptor = ArgumentCaptor.forClass(MemberWithdrawnEvent.class);
+                then(applicationEventPublisher).should().publishEvent(eventCaptor.capture());
+                assertThat(eventCaptor.getValue().memberId()).isEqualTo(normalMember.getId());
+                assertThat(eventCaptor.getValue().occurredAt()).isNotNull();
             }
         }
 

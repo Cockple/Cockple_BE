@@ -23,7 +23,6 @@ import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
@@ -229,7 +228,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
                     // 상대방 찾기 (나 제외)
                     ChatRoomMember displayMember = chatRoom.getChatRoomMembers().stream()
-                            .filter(crm -> !crm.getMember().getId().equals(memberId))
+                            .filter(crm -> crm.getMember() == null || !crm.getMember().getId().equals(memberId))
                             .findFirst()
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
@@ -244,8 +243,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
                     Member counterPartMember = displayMember.getMember();
-                    String displayProfileImgUrl = getImageUrl(counterPartMember.getProfileImg());
-                    boolean isWithdrawn = counterPartMember.getIsActive() == MemberStatus.INACTIVE;
+                    boolean isWithdrawn = isWithdrawn(counterPartMember);
+                    String displayProfileImgUrl = isWithdrawn ? null : getImageUrl(counterPartMember.getProfileImg());
 
                     return chatConverter.toDirectChatRoomInfo(
                             chatRoom,
@@ -269,10 +268,10 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
             Member member = counterPart.getMember();
+            isCounterPartWithdrawn = isWithdrawn(member);
 
-            displayName = member.getMemberName();
-            profileImageUrl = getImageUrl(member.getProfileImg());
-            isCounterPartWithdrawn = member.getIsActive() == MemberStatus.INACTIVE;
+            displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
+            profileImageUrl = isCounterPartWithdrawn ? null : getImageUrl(member.getProfileImg());
         } else {
             displayName = chatRoom.getParty().getPartyName();
             profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -298,9 +297,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
         Member member = chatRoomMember.getMember();
-        String memberProfileImgUrl = getImageUrl(member.getProfileImg());
+        String memberProfileImgUrl = isWithdrawn(member) ? null : getImageUrl(member.getProfileImg());
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
+    }
+
+    private boolean isWithdrawn(Member member) {
+        return member == null || member.isWithdrawn();
     }
 
     private String getImageUrl(PartyImg partyImg) {

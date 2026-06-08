@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -12,6 +13,7 @@ import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.file.service.FileService;
@@ -35,6 +37,7 @@ public class MemberCommandService {
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private final KakaoOauthService kakaoOauthService;
     private final FileService fileService;
@@ -93,6 +96,7 @@ public class MemberCommandService {
 
         // 활성화 여부 해제, 리프레시 토큰 삭제
         member.withdraw();
+        applicationEventPublisher.publishEvent(MemberWithdrawnEvent.withdrawn(member.getId()));
     }
 
 
