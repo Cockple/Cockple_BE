@@ -21,7 +21,7 @@ import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/exercises/{exerciseId}/participants")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Exercise Participation", description = "운동 참여 신청/취소 API")
@@ -29,7 +29,7 @@ public class ExerciseParticipationController {
 
     private final ExerciseCommandService exerciseCommandService;
 
-    @PostMapping("/exercises/{exerciseId}/participants")
+    @PostMapping
     @Operation(summary = "운동 신청",
             description = "모임에서 생성한 운동에 신청합니다. 외부 게스트 허용일 경우 모임 멤버가 아니어도 가능합니다.")
     @ApiResponse(responseCode = "200", description = "운동 신청 성공")
@@ -46,7 +46,7 @@ public class ExerciseParticipationController {
         return BaseResponse.of(CommonSuccessCode.CREATED, response);
     }
 
-    @DeleteMapping("/exercises/{exerciseId}/participants/my")
+    @DeleteMapping("/my")
     @Operation(summary = "운동 참여 취소",
             description = "사용자가 본인의 운동 참여를 취소합니다.")
     @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
@@ -63,7 +63,7 @@ public class ExerciseParticipationController {
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
-    @DeleteMapping("/exercises/{exerciseId}/participants/{participantId}")
+    @DeleteMapping("/{participantId}")
     @Operation(summary = "특정 참여자 운동 취소",
             description = "모임장이나 부모임장이 특정 참여자의 운동 참여를 취소합니다.")
     @ApiResponse(responseCode = "200", description = "운동 참여 취소 성공")
