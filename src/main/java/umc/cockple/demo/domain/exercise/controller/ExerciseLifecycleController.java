@@ -95,7 +95,7 @@ public class ExerciseLifecycleController {
             description = "운동의 상세 정보를 조회합니다. 권한, 멤버 여부, 게스트 여부에 따라 반환되는 값이 달라집니다.")
     @ApiResponse(responseCode = "200", description = "운동 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseDetailDTO.Response> getExerciseDetail(
+    public ResponseEntity<BaseResponse<ExerciseDetailDTO.Response>> getExerciseDetail(
             @PathVariable Long exerciseId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
@@ -103,7 +103,7 @@ public class ExerciseLifecycleController {
         ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
                 exerciseId, memberId);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/exercises/{exerciseId}/for-edit")
@@ -112,11 +112,11 @@ public class ExerciseLifecycleController {
     @ApiResponse(responseCode = "200", description = "운동 수정용 상세 조회 성공")
     @ApiResponse(responseCode = "403", description = "권한 없음 (모임장/부모임장이 아님)")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseEditDetailDTO.Response> getExerciseForEdit(
+    public ResponseEntity<BaseResponse<ExerciseEditDetailDTO.Response>> getExerciseForEdit(
             @PathVariable Long exerciseId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         ExerciseEditDetailDTO.Response response = exerciseQueryService.getExerciseForEdit(exerciseId, memberId);
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 }
