@@ -75,7 +75,7 @@ public class ExerciseGuestController {
             description = "내가 초대한 운동 게스트 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "내가 초대한 운동 게스트 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
-    public BaseResponse<ExerciseMyGuestListDTO.Response> getMyInvitedGuests(
+    public ResponseEntity<BaseResponse<ExerciseMyGuestListDTO.Response>> getMyInvitedGuests(
             @PathVariable Long exerciseId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
@@ -83,6 +83,6 @@ public class ExerciseGuestController {
         ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
                 exerciseId, memberId);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 }

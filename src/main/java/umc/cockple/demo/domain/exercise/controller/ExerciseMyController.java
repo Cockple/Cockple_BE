@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,7 +40,7 @@ public class ExerciseMyController {
             description = "내 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.")
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    public BaseResponse<MyExerciseCalendarDTO.Response> getMyExerciseCalender(
+    public ResponseEntity<BaseResponse<MyExerciseCalendarDTO.Response>> getMyExerciseCalender(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate
     ) {
@@ -48,19 +49,19 @@ public class ExerciseMyController {
         MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
                 memberId, startDate, endDate);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/parties/my")
     @Operation(summary = "내 모임 운동 조회",
             description = "내 모임의 운동 목록을 조회합니다. 시작하지 않은 운동만 표시되며, 최대 6개의 운동만 반환합니다.")
     @ApiResponse(responseCode = "200", description = "내 모임 운동 조회 성공")
-    public BaseResponse<MyPartyExerciseDTO.Response> getMyPartyExercise() {
+    public ResponseEntity<BaseResponse<MyPartyExerciseDTO.Response>> getMyPartyExercise() {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(memberId);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/parties/my/calendar")
@@ -72,7 +73,7 @@ public class ExerciseMyController {
                     """)
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    public BaseResponse<MyPartyExerciseCalendarDTO.Response> getMyPartyExerciseCalendar(
+    public ResponseEntity<BaseResponse<MyPartyExerciseCalendarDTO.Response>> getMyPartyExerciseCalendar(
             @RequestParam(defaultValue = "LATEST") MyPartyExerciseOrderType orderType,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate
@@ -82,7 +83,7 @@ public class ExerciseMyController {
         MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
                 memberId, orderType, startDate, endDate);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/my")
@@ -95,7 +96,7 @@ public class ExerciseMyController {
                     """)
     @ApiResponse(responseCode = "200", description = "내 참여 운동 조회 성공")
     @ApiResponse(responseCode = "400", description = "잘못된 필터 타입 또는 정렬 타입")
-    public BaseResponse<MyExerciseListDTO.Response> getMyExercises(
+    public ResponseEntity<BaseResponse<MyExerciseListDTO.Response>> getMyExercises(
             @RequestParam(defaultValue = "ALL") MyExerciseFilterType filterType,
             @RequestParam(defaultValue = "LATEST") MyExerciseOrderType orderType,
             @PageableDefault(size = 15) Pageable pageable
@@ -105,6 +106,6 @@ public class ExerciseMyController {
         MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
                 memberId, filterType, orderType, pageable);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 }

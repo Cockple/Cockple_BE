@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +34,7 @@ public class PartyExerciseController {
     @ApiResponse(responseCode = "200", description = "모임 운동 캘린더 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
-    public BaseResponse<PartyExerciseCalendarDTO.Response> getPartyExerciseCalender(
+    public ResponseEntity<BaseResponse<PartyExerciseCalendarDTO.Response>> getPartyExerciseCalender(
             @PathVariable Long partyId,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate
@@ -43,6 +44,6 @@ public class PartyExerciseController {
         PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
                 partyId, memberId, startDate, endDate);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 }

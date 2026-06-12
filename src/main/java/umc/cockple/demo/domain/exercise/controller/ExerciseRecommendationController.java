@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,12 +45,12 @@ public class ExerciseRecommendationController {
                     정렬 기준은 위치, 날짜, 시간 순입니다.
                     """)
     @ApiResponse(responseCode = "200", description = "내 운동 캘린더 성공")
-    public BaseResponse<ExerciseRecommendationDTO.Response> getRecommendedExercises() {
+    public ResponseEntity<BaseResponse<ExerciseRecommendationDTO.Response>> getRecommendedExercises() {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 
     @GetMapping("/calendar")
@@ -61,7 +62,7 @@ public class ExerciseRecommendationController {
                     기본 기간: 과거 1주 ~ 미래 3주
                     """)
     @ApiResponse(responseCode = "200", description = "사용자 추천 운동 캘린더 조회 성공")
-    public BaseResponse<ExerciseRecommendationCalendarDTO.Response> getRecommendedExerciseCalendar(
+    public ResponseEntity<BaseResponse<ExerciseRecommendationCalendarDTO.Response>> getRecommendedExerciseCalendar(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
             @RequestParam(defaultValue = "true") Boolean isCockpleRecommend,
@@ -87,6 +88,6 @@ public class ExerciseRecommendationController {
         ExerciseRecommendationCalendarDTO.Response response = exerciseQueryService
                 .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterSortType);
 
-        return BaseResponse.success(CommonSuccessCode.OK, response);
+        return BaseResponse.of(CommonSuccessCode.OK, response);
     }
 }
