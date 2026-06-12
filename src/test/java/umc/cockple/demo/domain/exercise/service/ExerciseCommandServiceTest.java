@@ -245,6 +245,8 @@ class ExerciseCommandServiceTest {
                     "11:00",
                     "13:00",
                     12,
+                    false,
+                    true,
                     "공지사항"
             );
         }
