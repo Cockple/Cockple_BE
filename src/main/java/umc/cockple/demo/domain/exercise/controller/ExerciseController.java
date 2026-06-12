@@ -29,25 +29,6 @@ public class ExerciseController {
 
     private final ExerciseQueryService exerciseQueryService;
 
-    @GetMapping("/parties/{partyId}/exercises/calender")
-    @Operation(summary = "모임 운동 캘린더 조회",
-            description = "모임 운동 캘린더를 조회합니다. 시작 날짜 ~ 종료 날짜까지의 데이터를 불러옵니다. 파라미터가 없으면 과거 1주 ~ 미래 3주까지의 데이터를 불러옵니다.")
-    @ApiResponse(responseCode = "200", description = "모임 운동 캘린더 성공")
-    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 비즈니스 룰 위반")
-    @ApiResponse(responseCode = "404", description = "존재하지 않는 모임")
-    public BaseResponse<PartyExerciseCalendarDTO.Response> getPartyExerciseCalender(
-            @PathVariable Long partyId,
-            @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate
-    ) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(
-                partyId, memberId, startDate, endDate);
-
-        return BaseResponse.success(CommonSuccessCode.OK, response);
-    }
-
     @GetMapping("/exercises/recommendations")
     @Operation(summary = "사용자 추천 운동 조회",
             description = """
