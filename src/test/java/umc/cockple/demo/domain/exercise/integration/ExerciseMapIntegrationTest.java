@@ -18,33 +18,25 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
-import umc.cockple.demo.domain.party.enums.ActivityTime;
-import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
-import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
-import umc.cockple.demo.support.fixture.GuestFixture;
-import umc.cockple.demo.support.fixture.MemberAddrFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class ExerciseQueryIntegrationTest extends IntegrationTestBase {
+class ExerciseMapIntegrationTest extends IntegrationTestBase {
 
     @Autowired MockMvc mockMvc;
     @Autowired MemberRepository memberRepository;
@@ -497,7 +489,5 @@ class ExerciseQueryIntegrationTest extends IntegrationTestBase {
             return exerciseRepository.save(exercise);
         }
     }
-
-
-
 }
+
