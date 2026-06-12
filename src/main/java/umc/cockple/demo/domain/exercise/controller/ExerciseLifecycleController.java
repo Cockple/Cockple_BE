@@ -30,7 +30,7 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Exercise Lifecycle", description = "운동 생성/조회/수정/삭제 API")
+@Tag(name = "Exercise", description = "운동 관리 API")
 public class ExerciseLifecycleController {
 
     private final ExerciseCommandService exerciseCommandService;

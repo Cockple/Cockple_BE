@@ -27,7 +27,7 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 @RequestMapping("/api/exercises/{exerciseId}/guests")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Exercise Guest", description = "운동 게스트 초대/조회/취소 API")
+@Tag(name = "Exercise", description = "운동 관리 API")
 public class ExerciseGuestController {
 
     private final ExerciseCommandService exerciseCommandService;
