@@ -37,6 +37,7 @@ import umc.cockple.demo.support.fixture.GuestFixture;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -345,6 +346,8 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
                     "11:00",
                     "13:00",
                     12,
+                    false,
+                    true,
                     "공지사항"
             );
         }
@@ -363,6 +366,10 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()));
+
+                Exercise updatedExercise = exerciseRepository.findById(exercise.getId()).orElseThrow();
+                assertThat(updatedExercise.getPartyGuestAccept()).isFalse();
+                assertThat(updatedExercise.getOutsideGuestAccept()).isTrue();
             }
 
             @Test
@@ -444,7 +451,7 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
 
                 ExerciseUpdateDTO.Request invalidTimeRequest = new ExerciseUpdateDTO.Request(
                         "2099-12-31", null, null, null, null,
-                        "13:00", "11:00", null, null
+                        "13:00", "11:00", null, null, null, null
                 );
 
                 mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
@@ -462,7 +469,7 @@ class ExerciseCommandIntegrationTest extends IntegrationTestBase {
 
                 ExerciseUpdateDTO.Request pastDateRequest = new ExerciseUpdateDTO.Request(
                         "2000-01-01", null, null, null, null,
-                        "10:00", "12:00", null, null
+                        "10:00", "12:00", null, null, null, null
                 );
 
                 mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())

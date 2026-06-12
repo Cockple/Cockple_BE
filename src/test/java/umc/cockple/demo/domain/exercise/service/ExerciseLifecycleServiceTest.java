@@ -346,6 +346,8 @@ class ExerciseLifecycleServiceTest {
                     "11:00",
                     "13:00",
                     12,
+                    false,
+                    true,
                     "공지사항"
             );
         }
@@ -374,6 +376,8 @@ class ExerciseLifecycleServiceTest {
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(exercise.getPartyGuestAccept()).isFalse();
+                assertThat(exercise.getOutsideGuestAccept()).isTrue();
                 then(exerciseRepository).should().save(exercise);
             }
 
@@ -405,6 +409,35 @@ class ExerciseLifecycleServiceTest {
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
+            }
+
+            @Test
+            @DisplayName("게스트 허용 옵션이 null이면 기존 설정을 유지한다")
+            void nullGuestPolicyFields_keepExistingValues() {
+                // given
+                ExerciseUpdateDTO.Request partialRequest = new ExerciseUpdateDTO.Request(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "공지사항만 수정"
+                );
+                given(exerciseRepository.save(any(Exercise.class))).willReturn(exercise);
+
+                // when
+                ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(exercise, manager, partialRequest);
+
+                // then
+                assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(exercise.getPartyGuestAccept()).isTrue();
+                assertThat(exercise.getOutsideGuestAccept()).isFalse();
+                assertThat(exercise.getNotice()).isEqualTo("공지사항만 수정");
             }
         }
 
@@ -457,7 +490,7 @@ class ExerciseLifecycleServiceTest {
             void invalidTime_throwsException() {
                 ExerciseUpdateDTO.Request invalidTimeRequest = new ExerciseUpdateDTO.Request(
                         "2099-12-31", null, null, null, null,
-                        "13:00", "11:00", null, null
+                        "13:00", "11:00", null, null, null, null
                 );
 
                 assertThatThrownBy(() ->
@@ -472,7 +505,7 @@ class ExerciseLifecycleServiceTest {
             void pastDate_throwsException() {
                 ExerciseUpdateDTO.Request pastDateRequest = new ExerciseUpdateDTO.Request(
                         "2000-01-01", null, null, null, null,
-                        "10:00", "12:00", null, null
+                        "10:00", "12:00", null, null, null, null
                 );
 
                 assertThatThrownBy(() ->
