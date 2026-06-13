@@ -23,10 +23,7 @@ public class ExerciseMapController implements ExerciseMapApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseBuildingDetailDTO.Response>> getBuildingExerciseDetails(
-            LocalDate date,
-            String buildingName,
-            String streetAddr
-    ) {
+            LocalDate date, String buildingName, String streetAddr) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseBuildingDetailDTO.Response response = exerciseQueryService
@@ -37,11 +34,7 @@ public class ExerciseMapController implements ExerciseMapApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseMapBuildingsDTO.Response>> getMonthlyExerciseBuildings(
-            LocalDate date,
-            Double latitude,
-            Double longitude,
-            Double radiusKm
-    ) {
+            LocalDate date, Double latitude, Double longitude, Double radiusKm) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         ExerciseMapBuildingsDTO.Query query = ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
 

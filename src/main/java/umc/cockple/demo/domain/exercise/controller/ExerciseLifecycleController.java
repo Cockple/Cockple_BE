@@ -26,9 +26,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseCreateDTO.Response>> createExercise(
-            Long partyId,
-            ExerciseCreateDTO.Request request
-    ) {
+            Long partyId, ExerciseCreateDTO.Request request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
@@ -38,9 +36,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
     }
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseDeleteDTO.Response>> deleteExercise(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseDeleteDTO.Response>> deleteExercise(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
@@ -51,9 +47,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseUpdateDTO.Response>> updateExercise(
-            Long exerciseId,
-            ExerciseUpdateDTO.Request request
-    ) {
+            Long exerciseId, ExerciseUpdateDTO.Request request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
@@ -63,9 +57,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
     }
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseDetailDTO.Response>> getExerciseDetail(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseDetailDTO.Response>> getExerciseDetail(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
@@ -75,9 +67,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
     }
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseEditDetailDTO.Response>> getExerciseForEdit(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseEditDetailDTO.Response>> getExerciseForEdit(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         ExerciseEditDetailDTO.Response response = exerciseQueryService.getExerciseForEdit(exerciseId, memberId);
         return BaseResponse.of(CommonSuccessCode.OK, response);

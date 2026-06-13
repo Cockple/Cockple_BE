@@ -22,10 +22,7 @@ public class PartyExerciseController implements PartyExerciseApi {
 
     @Override
     public ResponseEntity<BaseResponse<PartyExerciseCalendarDTO.Response>> getPartyExerciseCalender(
-            Long partyId,
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
+            Long partyId, LocalDate startDate, LocalDate endDate) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         PartyExerciseCalendarDTO.Response response = exerciseQueryService.getPartyExerciseCalendar(

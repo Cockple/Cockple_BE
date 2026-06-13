@@ -24,9 +24,7 @@ public class ExerciseGuestController implements ExerciseGuestApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseGuestInviteDTO.Response>> inviteGuest(
-            Long exerciseId,
-            ExerciseGuestInviteDTO.Request request
-    ) {
+            Long exerciseId, ExerciseGuestInviteDTO.Request request) {
         Long inviterId = SecurityUtil.getCurrentMemberId();
 
         ExerciseGuestInviteDTO.Response response = exerciseCommandService.inviteGuest(
@@ -37,9 +35,7 @@ public class ExerciseGuestController implements ExerciseGuestApi {
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelGuestInvitation(
-            Long exerciseId,
-            Long guestId
-    ) {
+            Long exerciseId, Long guestId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseCancelDTO.Response response = exerciseCommandService.cancelGuestInvitation(
@@ -49,9 +45,7 @@ public class ExerciseGuestController implements ExerciseGuestApi {
     }
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseMyGuestListDTO.Response>> getMyInvitedGuests(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseMyGuestListDTO.Response>> getMyInvitedGuests(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(

@@ -20,9 +20,7 @@ public class ExerciseParticipationController implements ExerciseParticipationApi
     private final ExerciseCommandService exerciseCommandService;
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseJoinDTO.Response>> joinExercise(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseJoinDTO.Response>> joinExercise(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseJoinDTO.Response response = exerciseCommandService.joinExercise(
@@ -32,9 +30,7 @@ public class ExerciseParticipationController implements ExerciseParticipationApi
     }
 
     @Override
-    public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelParticipation(
-            Long exerciseId
-    ) {
+    public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelParticipation(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipation(
@@ -45,10 +41,7 @@ public class ExerciseParticipationController implements ExerciseParticipationApi
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelParticipationByManager(
-            Long exerciseId,
-            Long participantId,
-            ExerciseCancelDTO.ByManagerRequest request
-    ) {
+            Long exerciseId, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         ExerciseCancelDTO.Response response = exerciseCommandService.cancelParticipationByManager(

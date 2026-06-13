@@ -29,9 +29,7 @@ public class ExerciseMyController implements ExerciseMyApi {
 
     @Override
     public ResponseEntity<BaseResponse<MyExerciseCalendarDTO.Response>> getMyExerciseCalender(
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
+            LocalDate startDate, LocalDate endDate) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
@@ -51,10 +49,7 @@ public class ExerciseMyController implements ExerciseMyApi {
 
     @Override
     public ResponseEntity<BaseResponse<MyPartyExerciseCalendarDTO.Response>> getMyPartyExerciseCalendar(
-            MyPartyExerciseOrderType orderType,
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
+            MyPartyExerciseOrderType orderType, LocalDate startDate, LocalDate endDate) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
@@ -65,10 +60,7 @@ public class ExerciseMyController implements ExerciseMyApi {
 
     @Override
     public ResponseEntity<BaseResponse<MyExerciseListDTO.Response>> getMyExercises(
-            MyExerciseFilterType filterType,
-            MyExerciseOrderType orderType,
-            Pageable pageable
-    ) {
+            MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
         MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
