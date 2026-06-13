@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.controller.api.ExerciseGuestApi;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
+import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseCommandService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
@@ -20,7 +20,7 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 public class ExerciseGuestController implements ExerciseGuestApi {
 
     private final ExerciseCommandService exerciseCommandService;
-    private final ExerciseQueryService exerciseQueryService;
+    private final ExerciseGuestQueryService exerciseGuestQueryService;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseGuestInviteDTO.Response>> inviteGuest(
@@ -48,7 +48,7 @@ public class ExerciseGuestController implements ExerciseGuestApi {
     public ResponseEntity<BaseResponse<ExerciseMyGuestListDTO.Response>> getMyInvitedGuests(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseMyGuestListDTO.Response response = exerciseQueryService.getMyInvitedGuests(
+        ExerciseMyGuestListDTO.Response response = exerciseGuestQueryService.getMyInvitedGuests(
                 exerciseId, memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
