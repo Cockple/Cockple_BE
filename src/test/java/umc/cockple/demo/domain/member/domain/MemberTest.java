@@ -78,20 +78,6 @@ class MemberTest {
             assertThat(member.isProfileCompleted()).isFalse();
         }
 
-        @Test
-        @DisplayName("재가입(rejoin)하면_필수정보가_초기화되어_다시_false가_된다")
-        void 재가입하면_false() {
-            // given
-            Member member = completedMember();
-            assertThat(member.isProfileCompleted()).isTrue();
-
-            // when - 재가입 시 상세정보가 초기화된다
-            member.rejoin();
-
-            // then
-            assertThat(member.isProfileCompleted()).isFalse();
-        }
-
         private Member completedMember() {
             return Member.builder()
                     .memberName("강와나")
@@ -109,9 +95,9 @@ class MemberTest {
     class Rejoin {
 
         @Test
-        @DisplayName("탈퇴한_회원이_재가입하면_활성화되고_탈퇴시각과_상세정보가_초기화된다")
-        void 재가입하면_탈퇴상태가_초기화된다() {
-            // given - 가입 후 탈퇴한 회원
+        @DisplayName("탈퇴한_회원이_재가입하면_활성화되고_탈퇴시각이_초기화되며_프로필은_보존된다")
+        void 재가입하면_활성화되고_프로필은_보존된다() {
+            // given - 상세정보까지 입력했다가 탈퇴한 회원
             Member member = Member.builder()
                     .memberName("강와나")
                     .gender(Gender.FEMALE)
@@ -128,10 +114,10 @@ class MemberTest {
             // when
             member.rejoin();
 
-            // then
+            // then - 계정이 복원되고 기존 프로필이 유지되어 온보딩 없이 홈으로 진입한다
             assertThat(member.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
             assertThat(member.getDeletedAt()).isNull();
-            assertThat(member.isProfileCompleted()).isFalse();
+            assertThat(member.isProfileCompleted()).isTrue();
         }
     }
 }

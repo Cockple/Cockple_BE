@@ -200,16 +200,13 @@ public class Member extends BaseEntity {
         this.fcmToken = fcmToken;
     }
 
+    /**
+     * 탈퇴한 회원의 재가입(계정 복원).
+     * 탈퇴 시점의 프로필(이름/성별/생년월일/급수)은 그대로 보존되므로
+     * 재가입 회원은 온보딩 없이 바로 홈으로 진입한다.
+     */
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
         this.deletedAt = null;
-        initField();
-    }
-
-    private void initField() {
-        this.memberName = null;
-        this.gender = null;
-        this.birth = null;
-        this.level = null;
     }
 }
