@@ -12,18 +12,13 @@ import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO.ParticipantInfo;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseBookmarkReader;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.GuestReader;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.enums.PartyStatus;
-import umc.cockple.demo.domain.party.exception.PartyErrorCode;
-import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
@@ -41,9 +36,7 @@ public class ExerciseQueryService {
     private final ExerciseReader exerciseReader;
     private final GuestReader guestReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
-    private final ExerciseBookmarkReader exerciseBookmarkReader;
     private final MemberLookupService memberLookupService;
-    private final PartyLookupService partyLookupService;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -95,41 +88,6 @@ public class ExerciseQueryService {
         return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
     }
 
-    public PartyExerciseCalendarDTO.Response getPartyExerciseCalendar(Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
-
-        log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
-                partyId, memberId, startDate, endDate);
-
-        Party party = partyLookupService.findByIdWithLevelsOrThrow(partyId);
-        Member member = memberLookupService.findByIdOrThrow(memberId);
-        validateGetPartyExerciseCalender(startDate, endDate, party);
-
-        Boolean isMember = isPartyMember(party, member);
-        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
-
-        List<Exercise> exercises = exerciseReader.findByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
-
-        if (exercises.isEmpty()) {
-            log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
-                    partyId, dateRange.start(), dateRange.end());
-
-            return exerciseConverter.toEmptyPartyCalendarResponse(
-                    dateRange.start(), dateRange.end(), isMember, party);
-        }
-
-        Map<Long, Integer> participantCounts = exerciseParticipantReader.getParticipantCountsMap(
-                partyId, dateRange.start(), dateRange.end());
-
-        List<Long> exerciseIds = getExerciseIds(exercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
-        Map<Long, Boolean> participatingStatus = exerciseParticipantReader.getParticipatingStatus(memberId, exerciseIds);
-
-        log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
-
-        return exerciseConverter.toPartyCalendarResponse(
-                exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus, participatingStatus);
-    }
-
     public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
         log.info("운동 수정용 상세조회 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
         Exercise exercise = exerciseReader.findExerciseWithBasicInfoOrThrow(exerciseId);
@@ -137,34 +95,7 @@ public class ExerciseQueryService {
         return exerciseConverter.toEditDetailResponse(exercise);
     }
 
-    // ========== 검증 메서드들 ==========
-
-    private void validateGetPartyExerciseCalender(LocalDate startDate, LocalDate endDate, Party party) {
-        validatePartyIsActive(party);
-        validateDateRange(startDate, endDate);
-    }
-
-    // ========== 세부 검증 메서드들 ==========
-
-    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null && endDate == null) {
-            return;
-        }
-
-        if (startDate == null || endDate == null) {
-            throw new ExerciseException(ExerciseErrorCode.INCOMPLETE_DATE_RANGE);
-        }
-
-        if (!startDate.isBefore(endDate)) {
-            throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_RANGE);
-        }
-    }
-
-    private void validatePartyIsActive(Party party) {
-        if (party.getStatus() == PartyStatus.INACTIVE) {
-            throw new PartyException(PartyErrorCode.PARTY_IS_DELETED);
-        }
-    }
+    // ========== 비즈니스 메서드 ==========
 
     // ========== 비즈니스 메서드 ==========
 
@@ -273,10 +204,6 @@ public class ExerciseQueryService {
         return new ExerciseMyGuestListDTO.GuestStatistics(totalCount, maleCount, femaleCount);
     }
 
-    private boolean isPartyMember(Party party, Member member) {
-        return exerciseParticipantReader.isPartyMember(party, member);
-    }
-
     // ========== 세부 비즈니스 메서드 ==========
 
     private List<ParticipantInfo> buildMemberParticipantInfos(List<MemberExercise> memberExercises, Party party) {
@@ -382,30 +309,12 @@ public class ExerciseQueryService {
                 .count();
     }
 
-    private static List<Long> getExerciseIds(List<Exercise> exercises) {
-        return exercises.stream().map(Exercise::getId).toList();
-    }
-
     private record ParticipantGroups(
             List<ExerciseDetailDTO.ParticipantInfo> participants,
             List<ExerciseDetailDTO.ParticipantInfo> waiting
     ) {
     }
 
-    private record DateRange(LocalDate start, LocalDate end) {
-        private static DateRange calculateDateRange(LocalDate startDate, LocalDate endDate) {
-            if (startDate != null && endDate != null) {
-                return new DateRange(startDate, endDate);
-            }
-
-            LocalDate today = LocalDate.now();
-            LocalDate thisWeekMonday = today.minusDays(today.getDayOfWeek().getValue() - 1);
-            LocalDate defaultStart = thisWeekMonday.minusWeeks(1);
-            LocalDate defaultEnd = thisWeekMonday.plusWeeks(3).plusDays(6);
-
-            return new DateRange(defaultStart, defaultEnd);
-        }
-    }
 
 
 }
