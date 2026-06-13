@@ -19,9 +19,9 @@ import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseBookmarkReader;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantReader;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 
