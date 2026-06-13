@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
@@ -100,6 +101,37 @@ class MemberTest {
                     .nickname("kakao_nick")
                     .socialId(1001L)
                     .build();
+        }
+    }
+
+    @Nested
+    @DisplayName("rejoin")
+    class Rejoin {
+
+        @Test
+        @DisplayName("탈퇴한_회원이_재가입하면_활성화되고_탈퇴시각과_상세정보가_초기화된다")
+        void 재가입하면_탈퇴상태가_초기화된다() {
+            // given - 가입 후 탈퇴한 회원
+            Member member = Member.builder()
+                    .memberName("강와나")
+                    .gender(Gender.FEMALE)
+                    .birth(LocalDate.of(2000, 1, 1))
+                    .level(Level.A)
+                    .nickname("kakao_nick")
+                    .socialId(1001L)
+                    .isActive(MemberStatus.ACTIVE)
+                    .build();
+            member.withdraw();
+            assertThat(member.isWithdrawn()).isTrue();
+            assertThat(member.getDeletedAt()).isNotNull();
+
+            // when
+            member.rejoin();
+
+            // then
+            assertThat(member.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
+            assertThat(member.getDeletedAt()).isNull();
+            assertThat(member.isProfileCompleted()).isFalse();
         }
     }
 }

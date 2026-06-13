@@ -202,6 +202,7 @@ public class Member extends BaseEntity {
 
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
+        this.deletedAt = null;
         initField();
     }
 
