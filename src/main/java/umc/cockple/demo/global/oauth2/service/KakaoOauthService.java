@@ -60,8 +60,11 @@ public class KakaoOauthService {
         // 5. refresh는 redis에 저장
         refreshTokenRepository.save(refreshToken, member.getId());
 
+        // 온보딩(상세정보 입력) 필요 여부 - 신규/미완성/재가입 회원 모두 true
+        boolean needsOnboarding = !member.isProfileCompleted();
+
         // jwt개발할 때 넣기
-        return new KakaoLoginResponseDTO(accessToken, refreshToken, member.getId(), member.getNickname(), newMember);
+        return new KakaoLoginResponseDTO(accessToken, refreshToken, member.getId(), member.getNickname(), newMember, needsOnboarding);
     }
 
     public void unlinkAccess(Member member) {
@@ -95,6 +98,7 @@ public class KakaoOauthService {
                 .memberId(member.getId())
                 .nickname(member.getNickname())
                 .isNewMember(false)
+                .needsOnboarding(!member.isProfileCompleted())
                 .build()
                 ;
     }
@@ -119,6 +123,7 @@ public class KakaoOauthService {
                 .memberId(member.getId())
                 .nickname(member.getNickname())
                 .isNewMember(false)
+                .needsOnboarding(!member.isProfileCompleted())
                 .build()
                 ;
     }

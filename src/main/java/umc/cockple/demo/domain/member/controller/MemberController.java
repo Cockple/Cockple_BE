@@ -64,7 +64,8 @@ public class MemberController {
                         null,
                         response.memberId(),
                         response.nickname(),
-                        response.isNewMember()
+                        response.isNewMember(),
+                        response.needsOnboarding()
                 ));
     }
 
@@ -149,6 +150,17 @@ public class MemberController {
     public BaseResponse<GetProfileResponseDTO> getProfile(@PathVariable Long memberId) {
 
         return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getProfile(memberId));
+    }
+
+    @GetMapping(value = "/my/onboarding-status")
+    @Operation(summary = "온보딩 필요 여부 조회 API",
+            description = "앱 부팅(저장된 토큰으로 재진입) 시 상세정보 입력이 끝났는지 확인합니다. " +
+                    "needsOnboarding=true 이면 온보딩 화면으로 이동시켜야 합니다.")
+    public BaseResponse<OnboardingStatusResponseDTO> getOnboardingStatus() {
+
+        Long memberId = SecurityUtil.getCurrentMemberId();
+
+        return BaseResponse.success(CommonSuccessCode.OK, memberQueryService.getOnboardingStatus(memberId));
     }
 
     @GetMapping(value = "/my/profile")
