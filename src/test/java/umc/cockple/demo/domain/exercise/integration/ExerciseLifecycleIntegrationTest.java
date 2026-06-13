@@ -803,6 +803,17 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()))
                         .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getMessage()));
             }
+
+            @Test
+            @DisplayName("모임장이나 부모임장이 아니면 권한 없음 에러를 반환한다")
+            void 모임장이나_부모임장이_아니면_권한_없음_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/{exerciseId}/for-edit", exercise.getId()))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getMessage()));
+            }
         }
     }
 

@@ -137,6 +137,7 @@ class ExerciseLifecycleQueryServiceTest {
                         exerciseConverter
                 ),
                 memberLookupService,
+                new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
                 exerciseConverter
         );
     }
@@ -712,6 +713,33 @@ class ExerciseLifecycleQueryServiceTest {
                 assertThat(response.allowExternalGuests()).isFalse();
                 assertThat(response.notice()).isEqualTo("수정 공지사항");
             }
+
+            @Test
+            @DisplayName("부모임장이면 수정용 상세 정보를 조회할 수 있다")
+            void 부모임장이면_수정용_상세_정보를_조회할_수_있다() {
+                // given
+                Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 2003L);
+                ReflectionTestUtils.setField(subManager, "id", 21L);
+
+                Exercise exerciseForEdit = ExerciseFixture.createExerciseForEdit(party, LocalDate.of(2026, 3, 24));
+                ReflectionTestUtils.setField(exerciseForEdit, "id", 101L);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exerciseForEdit.getId()))
+                        .willReturn(Optional.of(exerciseForEdit));
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), subManager.getId(), Role.PARTY_MANAGER))
+                        .willReturn(false);
+                given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+                        party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
+                        .willReturn(true);
+
+                // when
+                ExerciseEditDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseForEdit(
+                        exerciseForEdit.getId(), subManager.getId());
+
+                // then
+                assertThat(response.date()).isEqualTo(LocalDate.of(2026, 3, 24));
+            }
         }
 
         @Nested
@@ -730,10 +758,26 @@ class ExerciseLifecycleQueryServiceTest {
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
             }
+
+            @Test
+            @DisplayName("모임장이나 부모임장이 아니면 예외를 던진다")
+            void 모임장이나_부모임장이_아니면_예외를_던진다() {
+                // given
+                Member normalMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.C, 2004L);
+                ReflectionTestUtils.setField(normalMember, "id", 22L);
+
+                Exercise exerciseForEdit = ExerciseFixture.createExerciseForEdit(party, LocalDate.of(2026, 3, 24));
+                ReflectionTestUtils.setField(exerciseForEdit, "id", 101L);
+
+                given(exerciseRepository.findExerciseWithBasicInfo(exerciseForEdit.getId()))
+                        .willReturn(Optional.of(exerciseForEdit));
+
+                // when & then
+                assertThatThrownBy(() -> exerciseLifecycleQueryService.getExerciseForEdit(
+                        exerciseForEdit.getId(), normalMember.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.INSUFFICIENT_PERMISSION);
+            }
         }
     }
-
-
-
-
 }

@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.*;
+import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
@@ -27,6 +28,7 @@ public class ExerciseLifecycleQueryService {
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseParticipantInfoAssembler participantInfoAssembler;
     private final MemberLookupService memberLookupService;
+    private final ExerciseValidator exerciseValidator;
 
     private final ExerciseConverter exerciseConverter;
 
@@ -54,6 +56,7 @@ public class ExerciseLifecycleQueryService {
     public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
         log.info("운동 수정용 상세조회 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
         Exercise exercise = exerciseReader.findExerciseWithBasicInfoOrThrow(exerciseId);
+        exerciseValidator.validateExerciseManagementPermission(exercise, memberId);
         log.info("운동 수정용 상세조회 완료 - exerciseId: {}", exerciseId);
         return exerciseConverter.toEditDetailResponse(exercise);
     }
