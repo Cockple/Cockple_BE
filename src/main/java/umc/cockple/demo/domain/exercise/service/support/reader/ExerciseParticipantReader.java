@@ -59,12 +59,20 @@ public class ExerciseParticipantReader {
     }
 
     public Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds, LocalDate start, LocalDate end) {
+        if (exerciseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
         List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
                 exerciseIds, start, end);
         return toCountMap(countResults);
     }
 
     public Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds) {
+        if (exerciseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
         List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(exerciseIds);
         return toCountMap(countResults);
     }

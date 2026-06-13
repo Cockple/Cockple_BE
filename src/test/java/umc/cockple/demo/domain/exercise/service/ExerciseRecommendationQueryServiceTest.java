@@ -499,6 +499,7 @@ class ExerciseRecommendationQueryServiceTest {
                 assertThat(response.weeks()).hasSize(2);
                 assertThat(response.weeks().get(0).days()).hasSize(7);
                 assertThat(response.weeks().get(0).days().get(0).exercises()).isEmpty();
+                verify(exerciseRepository, never()).findExerciseParticipantCountsByExerciseIds(any());
             }
 
             @Test
