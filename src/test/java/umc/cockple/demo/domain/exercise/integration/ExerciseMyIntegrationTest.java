@@ -213,7 +213,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
 
                 Exercise pastExercise = exerciseRepository.save(
                         ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1)));
-                Exercise startedTodayExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.now());
+                Exercise startedTodayExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1));
                 ReflectionTestUtils.setField(startedTodayExercise, "startTime", LocalTime.now().minusMinutes(30));
                 startedTodayExercise = exerciseRepository.save(startedTodayExercise);
                 Exercise firstExercise = exerciseRepository.save(
