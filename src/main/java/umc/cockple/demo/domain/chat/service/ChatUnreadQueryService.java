@@ -7,8 +7,6 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,16 +33,10 @@ public class ChatUnreadQueryService {
     }
 
     public int countPartyUnreadMessages(Long memberId) {
-        return countUnreadMessages(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId));
+        return messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId);
     }
 
     public int countDirectUnreadMessages(Long memberId) {
-        return countUnreadMessages(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId));
-    }
-
-    private int countUnreadMessages(List<ChatRoomMember> chatRoomMembers) {
-        return chatRoomMembers.stream()
-                .mapToInt(this::countUnreadMessages)
-                .sum();
+        return messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId);
     }
 }

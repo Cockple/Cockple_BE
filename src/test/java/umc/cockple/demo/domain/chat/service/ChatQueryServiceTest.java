@@ -102,21 +102,8 @@ class ChatQueryServiceTest {
         void getUnreadSummary_addsPartyAndDirectUnreadCounts() {
             // given
             Long memberId = 10L;
-            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
-            ReflectionTestUtils.setField(me, "id", memberId);
-
-            ChatRoom partyRoom = ChatFixture.createDirectChatRoom();
-            ReflectionTestUtils.setField(partyRoom, "id", 1L);
-            ChatRoomMember partyMembership = ChatFixture.createJoinedMember(partyRoom, me);
-
-            ChatRoom directRoom = ChatFixture.createDirectChatRoom();
-            ReflectionTestUtils.setField(directRoom, "id", 2L);
-            ChatRoomMember directMembership = ChatFixture.createJoinedMemberWithLastRead(directRoom, me, 30L);
-
-            given(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId)).willReturn(List.of(partyMembership));
-            given(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId)).willReturn(List.of(directMembership));
-            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(3);
-            given(messageReadStatusRepository.countUnreadMessagesAfter(2L, memberId, 30L)).willReturn(2);
+            given(messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId)).willReturn(3);
+            given(messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId)).willReturn(2);
 
             // when
             var result = chatQueryService.getUnreadSummary(memberId);
@@ -133,7 +120,7 @@ class ChatQueryServiceTest {
         void getPartyUnreadCount_returnsFalseWhenZero() {
             // given
             Long memberId = 10L;
-            given(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId)).willReturn(List.of());
+            given(messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId)).willReturn(0);
 
             // when
             var result = chatQueryService.getPartyUnreadCount(memberId);
@@ -148,15 +135,7 @@ class ChatQueryServiceTest {
         void getDirectUnreadCount_returnsTrueWhenUnreadExists() {
             // given
             Long memberId = 10L;
-            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
-            ReflectionTestUtils.setField(me, "id", memberId);
-
-            ChatRoom directRoom = ChatFixture.createDirectChatRoom();
-            ReflectionTestUtils.setField(directRoom, "id", 1L);
-            ChatRoomMember directMembership = ChatFixture.createJoinedMember(directRoom, me);
-
-            given(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId)).willReturn(List.of(directMembership));
-            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(7);
+            given(messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId)).willReturn(7);
 
             // when
             var result = chatQueryService.getDirectUnreadCount(memberId);

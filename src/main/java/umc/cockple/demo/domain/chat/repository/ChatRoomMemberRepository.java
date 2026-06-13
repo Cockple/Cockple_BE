@@ -63,23 +63,6 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
-            JOIN FETCH crm.chatRoom cr
-            WHERE crm.member.id = :memberId
-            AND cr.type = 'PARTY'
-            """)
-    List<ChatRoomMember> findPartyChatRoomMembersByMemberId(@Param("memberId") Long memberId);
-
-    @Query("""
-            SELECT crm FROM ChatRoomMember crm
-            JOIN FETCH crm.chatRoom cr
-            WHERE crm.member.id = :memberId
-            AND cr.type = 'DIRECT'
-            AND crm.status = 'JOINED'
-            """)
-    List<ChatRoomMember> findJoinedDirectChatRoomMembersByMemberId(@Param("memberId") Long memberId);
-
-    @Query("""
-            SELECT crm FROM ChatRoomMember crm
             LEFT JOIN FETCH crm.member m
             LEFT JOIN FETCH m.profileImg
             WHERE crm.chatRoom.id = :chatRoomId

@@ -63,6 +63,35 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
 
     @Query("""
             SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = :memberId
+                AND crm.chatRoom.type = 'PARTY'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    int countPartyUnreadMessagesByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+            SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = :memberId
+                AND crm.chatRoom.type = 'DIRECT'
+                AND crm.status = 'JOINED'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    int countDirectUnreadMessagesByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+            SELECT COUNT(mrs) FROM MessageReadStatus mrs
             WHERE mrs.chatMessageId = :messageId
             AND mrs.isRead = false
             """)
