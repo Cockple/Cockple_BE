@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseMapApi;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
+import umc.cockple.demo.domain.exercise.service.query.ExerciseMapQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -19,14 +19,14 @@ import java.time.LocalDate;
 @Validated
 public class ExerciseMapController implements ExerciseMapApi {
 
-    private final ExerciseQueryService exerciseQueryService;
+    private final ExerciseMapQueryService exerciseMapQueryService;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseBuildingDetailDTO.Response>> getBuildingExerciseDetails(
             LocalDate date, String buildingName, String streetAddr) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseBuildingDetailDTO.Response response = exerciseQueryService
+        ExerciseBuildingDetailDTO.Response response = exerciseMapQueryService
                 .getBuildingExerciseDetails(buildingName, streetAddr, date, memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
@@ -38,7 +38,7 @@ public class ExerciseMapController implements ExerciseMapApi {
         Long memberId = SecurityUtil.getCurrentMemberId();
         ExerciseMapBuildingsDTO.Query query = ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
 
-        ExerciseMapBuildingsDTO.Response response = exerciseQueryService
+        ExerciseMapBuildingsDTO.Response response = exerciseMapQueryService
                 .getExerciseMapCalendarSummary(query, memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
