@@ -18,8 +18,8 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
@@ -39,13 +39,13 @@ public class ChatSendService {
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
-    private final MessageReadStatusRepository messageReadStatusRepository;
 
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
+    private final ChatUnreadQueryService chatUnreadQueryService;
     private final ApplicationEventPublisher eventPublisher;
 
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
@@ -187,22 +187,7 @@ public class ChatSendService {
 
         for (Long memberId : memberIds) {
             try {
-                Optional<ChatRoomMember> memberOpt = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-
-                int unreadCount;
-                if (memberOpt.isPresent()) {
-                    Long lastReadMessageId = memberOpt.get().getLastReadMessageId();
-
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
-                } else {
-                    unreadCount = 0;
-                }
-
-                unreadCounts.put(memberId, unreadCount);
+                unreadCounts.put(memberId, chatUnreadQueryService.countUnreadMessagesOrZero(chatRoomId, memberId));
 
             } catch (Exception e) {
                 log.error("멤버 {} 안 읽은 메시지 수 계산 실패 - 채팅방: {}", memberId, chatRoomId, e);

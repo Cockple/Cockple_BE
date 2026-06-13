@@ -60,21 +60,23 @@ class ChatSendServiceTest {
 
     private ChatSendService chatSendService;
     private ChatConverter chatConverter;
+    private ChatUnreadQueryService chatUnreadQueryService;
 
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatRoomMemberRepository);
         chatSendService = new ChatSendService(
                 chatRoomRepository,
                 memberRepository,
                 chatMessageRepository,
                 chatRoomMemberRepository,
-                messageReadStatusRepository,
                 subscriptionService,
                 messageReadCreationService,
                 chatProcessor,
                 chatConverter,
                 chatReadService,
+                chatUnreadQueryService,
                 eventPublisher
         );
     }

@@ -18,7 +18,6 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -44,8 +43,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatMessageRepository chatMessageRepository;
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
-    private final MessageReadStatusRepository messageReadStatusRepository;
 
+    private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
     private final FileService fileService;
     private final ChatProcessor chatProcessor;
@@ -189,13 +188,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
-                    int unreadCount;
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
+                    int unreadCount = chatUnreadQueryService.countUnreadMessages(chatRoomMember);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -232,13 +225,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                             .findFirst()
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
-                    Long lastReadMessageId = myMember.getLastReadMessageId();
-                    int unreadCount;
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
+                    int unreadCount = chatUnreadQueryService.countUnreadMessages(myMember);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 

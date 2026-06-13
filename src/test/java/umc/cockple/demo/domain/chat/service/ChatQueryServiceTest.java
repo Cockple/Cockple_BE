@@ -71,19 +71,21 @@ class ChatQueryServiceTest {
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
+    private ChatUnreadQueryService chatUnreadQueryService;
     private ChatQueryServiceImpl chatQueryService;
 
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
         chatProcessor = new ChatProcessor(fileService, chatConverter);
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatRoomMemberRepository);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
                 chatMessageRepository,
                 partyRepository,
                 memberPartyRepository,
-                messageReadStatusRepository,
+                chatUnreadQueryService,
                 chatConverter,
                 fileService,
                 chatProcessor,
