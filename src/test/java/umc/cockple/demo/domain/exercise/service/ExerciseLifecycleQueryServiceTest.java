@@ -39,6 +39,7 @@ import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoA
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.GuestReader;
+import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryService;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
@@ -83,10 +84,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ExerciseQueryService")
-class ExerciseQueryServiceTest {
+@DisplayName("ExerciseLifecycleQueryService")
+class ExerciseLifecycleQueryServiceTest {
 
-    private ExerciseQueryService exerciseQueryService;
+    private ExerciseLifecycleQueryService exerciseLifecycleQueryService;
 
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberRepository memberRepository;
@@ -106,7 +107,7 @@ class ExerciseQueryServiceTest {
     @BeforeEach
     void setUp() {
         exerciseConverter = new ExerciseConverter(fileService);
-        exerciseQueryService = createExerciseQueryService(exerciseConverter);
+        exerciseLifecycleQueryService = createExerciseLifecycleQueryService(exerciseConverter);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -121,12 +122,12 @@ class ExerciseQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
 
-    private ExerciseQueryService createExerciseQueryService(ExerciseConverter exerciseConverter) {
+    private ExerciseLifecycleQueryService createExerciseLifecycleQueryService(ExerciseConverter exerciseConverter) {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 exerciseRepository, memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
 
-        return new ExerciseQueryService(
+        return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
                 exerciseParticipantReader,
                 new ExerciseParticipantInfoAssembler(
@@ -165,7 +166,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -192,7 +193,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), subManager.getId());
 
                 // then
@@ -219,7 +220,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), normalMember.getId());
 
                 // then
@@ -246,7 +247,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), outsider.getId());
 
                 // then
@@ -279,7 +280,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -315,7 +316,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of(memberParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -346,7 +347,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -407,7 +408,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -462,7 +463,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of(firstParty, secondParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -493,7 +494,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -538,7 +539,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of(firstParty, secondParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -587,7 +588,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of(maleParty, femaleParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -632,7 +633,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(List.of(maleParty, femaleParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseQueryService.getExerciseDetail(
+                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -653,7 +654,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Optional.empty());
 
                 // when & then
-                assertThatThrownBy(() -> exerciseQueryService.getExerciseDetail(999L, manager.getId()))
+                assertThatThrownBy(() -> exerciseLifecycleQueryService.getExerciseDetail(999L, manager.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
             }
@@ -668,7 +669,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Optional.empty());
 
                 // when & then
-                assertThatThrownBy(() -> exerciseQueryService.getExerciseDetail(exercise.getId(), 999L))
+                assertThatThrownBy(() -> exerciseLifecycleQueryService.getExerciseDetail(exercise.getId(), 999L))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
             }
@@ -695,7 +696,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Optional.of(exerciseForEdit));
 
                 // when
-                ExerciseEditDetailDTO.Response response = exerciseQueryService.getExerciseForEdit(
+                ExerciseEditDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseForEdit(
                         exerciseForEdit.getId(), manager.getId());
 
                 // then
@@ -725,7 +726,7 @@ class ExerciseQueryServiceTest {
                         .willReturn(Optional.empty());
 
                 // when & then
-                assertThatThrownBy(() -> exerciseQueryService.getExerciseForEdit(999L, manager.getId()))
+                assertThatThrownBy(() -> exerciseLifecycleQueryService.getExerciseForEdit(999L, manager.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.EXERCISE_NOT_FOUND);
             }

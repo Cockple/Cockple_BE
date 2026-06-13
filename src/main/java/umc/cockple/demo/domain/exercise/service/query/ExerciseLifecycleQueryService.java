@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service;
+package umc.cockple.demo.domain.exercise.service.query;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import java.util.*;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Slf4j
-public class ExerciseQueryService {
+public class ExerciseLifecycleQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
@@ -174,7 +174,4 @@ public class ExerciseQueryService {
             List<ExerciseDetailDTO.ParticipantInfo> waiting
     ) {
     }
-
-
-
 }
