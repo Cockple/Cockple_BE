@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
+import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -156,6 +157,51 @@ class MemberQueryServiceTest {
         }
     }
 
+
+    @Nested
+    @DisplayName("getOnboardingStatus")
+    class GetOnboardingStatus {
+
+        @Test
+        @DisplayName("상세정보가_모두_입력된_회원은_needsOnboarding이_false다")
+        void 완성된_회원은_false() {
+            // given - setUp의 member는 이름/성별/생년월일/급수가 모두 채워진 완성 회원
+            given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+
+            // when
+            OnboardingStatusResponseDTO response = memberQueryService.getOnboardingStatus(member.getId());
+
+            // then
+            assertThat(response.needsOnboarding()).isFalse();
+        }
+
+        @Test
+        @DisplayName("상세정보_미입력_회원은_needsOnboarding이_true다")
+        void 미입력_회원은_true() {
+            // given - 소셜로그인 직후 상세정보 미입력 상태
+            Member pendingMember = MemberFixture.createOnboardingPendingMember("kakao_nick", 2002L);
+            ReflectionTestUtils.setField(pendingMember, "id", 2L);
+            given(memberRepository.findById(pendingMember.getId())).willReturn(Optional.of(pendingMember));
+
+            // when
+            OnboardingStatusResponseDTO response = memberQueryService.getOnboardingStatus(pendingMember.getId());
+
+            // then
+            assertThat(response.needsOnboarding()).isTrue();
+        }
+
+        @Test
+        @DisplayName("존재하지_않는_회원이면_예외가_발생한다")
+        void 회원이_없으면_예외() {
+            // given
+            given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> memberQueryService.getOnboardingStatus(999L))
+                    .isInstanceOf(MemberException.class)
+                    .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
+        }
+    }
 
     @Nested
     @DisplayName("getMyProfile")

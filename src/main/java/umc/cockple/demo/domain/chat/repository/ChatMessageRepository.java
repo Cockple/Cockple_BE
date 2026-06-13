@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.chat.repository;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -9,6 +10,21 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM ChatMessage cm
+            WHERE cm.chatRoom.id = :chatRoomId
+            """)
+    int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ChatMessage cm
+            SET cm.sender = null
+            WHERE cm.sender.id = :memberId
+            """)
+    int clearSenderByMemberId(@Param("memberId") Long memberId);
 
     ChatMessage findTop1ByChatRoom_IdOrderByCreatedAtDesc(Long chatRoomId);
 

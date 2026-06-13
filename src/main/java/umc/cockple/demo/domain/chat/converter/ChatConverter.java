@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatConverter {
 
+    public static final String UNKNOWN_USER_NAME = "알 수 없는 사용자";
+    private static final String SYSTEM_USER_NAME = "시스템";
+
     // ===모임 채팅방 목록===
     public PartyChatRoomDTO.Response toPartyChatRoomListResponse(List<PartyChatRoomDTO.ChatRoomInfo> chatRoomInfos, boolean hasNext) {
         return PartyChatRoomDTO.Response.builder()
@@ -80,8 +83,8 @@ public class ChatConverter {
                                                                String imgUrl) {
         return DirectChatRoomDTO.ChatRoomInfo.builder()
                 .chatRoomId(chatRoom.getId())
-                .displayName(chatRoomMember.getDisplayName())
-                .profileImgUrl(imgUrl)
+                .displayName(isWithdrawn ? UNKNOWN_USER_NAME : chatRoomMember.getDisplayName())
+                .profileImgUrl(isWithdrawn ? null : imgUrl)
                 .isWithdrawn(isWithdrawn)
                 .unreadCount(unreadCount)
                 .lastMessage(lastMessageInfo)
@@ -145,7 +148,7 @@ public class ChatConverter {
                 .content(content)
                 .messageType(savedMessage.getType())
                 .senderId(null)
-                .senderName("시스템")
+                .senderName(SYSTEM_USER_NAME)
                 .senderProfileImageUrl(null)
                 .timestamp(savedMessage.getCreatedAt())
                 .build();
@@ -177,13 +180,18 @@ public class ChatConverter {
             boolean isSenderWithdrawn) {
         boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
         Member sender = message.getSender();
+        boolean shouldAnonymizeSender = !isSystemMessage && (isSenderWithdrawn || sender == null);
+        String senderName = isSystemMessage
+                ? SYSTEM_USER_NAME
+                : shouldAnonymizeSender ? UNKNOWN_USER_NAME : sender.getMemberName();
+        String displayProfileImageUrl = isSystemMessage || shouldAnonymizeSender ? null : senderProfileImageUrl;
 
         return ChatCommonDTO.MessageInfo.builder()
                 .messageId(message.getId())
-                .senderId(isSystemMessage ? null : sender.getId())
-                .senderName(isSystemMessage ? "시스템" : sender.getMemberName())
-                .senderProfileImageUrl(isSystemMessage ? null : senderProfileImageUrl)
-                .isSenderWithdrawn(isSystemMessage ? false : isSenderWithdrawn)
+                .senderId(isSystemMessage || shouldAnonymizeSender ? null : sender.getId())
+                .senderName(senderName)
+                .senderProfileImageUrl(displayProfileImageUrl)
+                .isSenderWithdrawn(shouldAnonymizeSender)
                 .content(message.getContent())
                 .messageType(message.getType())
                 .images(processedFiles)
@@ -212,10 +220,11 @@ public class ChatConverter {
     }
 
     public ChatRoomDetailDTO.MemberInfo toChatRoomDetailMemberInfo(Member member, String memberProfileImgUrl) {
+        boolean isWithdrawn = member == null || member.isWithdrawn();
         return ChatRoomDetailDTO.MemberInfo.builder()
-                .memberId(member.getId())
-                .memberName(member.getMemberName())
-                .profileImgUrl(memberProfileImgUrl)
+                .memberId(isWithdrawn ? null : member.getId())
+                .memberName(isWithdrawn ? UNKNOWN_USER_NAME : member.getMemberName())
+                .profileImgUrl(isWithdrawn ? null : memberProfileImgUrl)
                 .build();
     }
 

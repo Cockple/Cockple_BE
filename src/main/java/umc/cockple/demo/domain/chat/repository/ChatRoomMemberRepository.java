@@ -12,6 +12,39 @@ import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
 
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM ChatRoomMember crm
+            WHERE crm.chatRoom.id = :chatRoomId
+            """)
+    int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ChatRoomMember crm
+            SET crm.member = null
+            WHERE crm.member.id = :memberId
+            """)
+    int clearMemberByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+            SELECT DISTINCT crm.chatRoom.id
+            FROM ChatRoomMember crm
+            WHERE crm.member.id = :memberId
+            AND crm.chatRoom.type = 'DIRECT'
+            """)
+    List<Long> findDirectChatRoomIdsByMemberId(@Param("memberId") Long memberId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ChatRoomMember crm
+            SET crm.displayName = :displayName
+            WHERE crm.chatRoom.id IN :chatRoomIds
+            """)
+    int updateDisplayNameByChatRoomIds(
+            @Param("chatRoomIds") List<Long> chatRoomIds,
+            @Param("displayName") String displayName);
+
     // 채팅방 내 참여자 수
     @Query("SELECT COUNT(c) FROM ChatRoomMember c WHERE c.chatRoom.id = :chatRoomId")
     int countByChatRoomId(@Param("chatRoomId") Long chatRoomId);
@@ -30,10 +63,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
-            JOIN FETCH crm.member m
+            LEFT JOIN FETCH crm.member m
             LEFT JOIN FETCH m.profileImg
             WHERE crm.chatRoom.id = :chatRoomId
-            AND crm.member.id != :myId
+            AND (m.id IS NULL OR m.id != :myId)
             """)
     Optional<ChatRoomMember> findCounterPartWithMember(
             @Param("chatRoomId") Long chatRoomId,
@@ -42,7 +75,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     @Query("""
             SELECT crm FROM ChatRoomMember crm
-            JOIN FETCH crm.member m
+            LEFT JOIN FETCH crm.member m
             LEFT JOIN FETCH m.profileImg
             WHERE crm.chatRoom.id = :chatRoomId
             ORDER BY m.memberName ASC
@@ -60,7 +93,11 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     Optional<ChatRoomMember> findPendingMemberInDirect(Long chatRoomId, Long senderId);
 
-    @Query("SELECT crm.member.id FROM ChatRoomMember crm WHERE crm.chatRoom.id = :chatRoomId")
+    @Query("""
+            SELECT crm.member.id FROM ChatRoomMember crm
+            WHERE crm.chatRoom.id = :chatRoomId
+            AND crm.member.id IS NOT NULL
+            """)
     List<Long> findMemberIdsByChatRoomId(Long chatRoomId);
 
     @Query("""
@@ -84,4 +121,3 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             """)
     List<ChatRoomMember> findDirectChatCounterParts(@Param("memberId") Long memberId);
 }
-

@@ -2,23 +2,29 @@ package umc.cockple.demo.domain.exercise.integration;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
+import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.enums.ActivityTime;
+import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
@@ -27,7 +33,9 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,11 +51,13 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired GuestRepository guestRepository;
+    @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
 
     // 조회 대상 회원 (모임 외부인, 추천 운동 수신 대상)
     private Member outsider;
     // 모임장 (모임 소속, 추천에서 제외)
     private Member manager;
+    private Member subManager;
     private Party party;
 
     @BeforeEach
@@ -57,11 +67,14 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                 MemberFixture.createMember("외부회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15)));
 
         // 대표 주소 저장 (서울 강남구, lat=37.5, lon=127.0)
-        MemberAddr addr = memberAddrRepository.save(MemberAddrFixture.createMainAddr(outsider));
+        memberAddrRepository.save(MemberAddrFixture.createMainAddr(outsider));
 
         // 모임장 (모임 소속)
         manager = memberRepository.save(
                 MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1002L, LocalDate.of(1995, 1, 1)));
+
+        subManager = memberRepository.save(
+                MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1003L, LocalDate.of(1995, 1, 1)));
 
         // 모임 생성 (minBirthYear=1990, maxBirthYear=2005)
         PartyAddr partyAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "강남구"));
@@ -78,6 +91,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
+        exerciseBookmarkRepository.deleteAll();
         memberExerciseRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
@@ -276,6 +290,230 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/exercises/recommendations"))
                         .andExpect(status().isBadRequest());
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/exercises/recommendations/calendar - 사용자 추천 운동 캘린더 조회")
+    class GetRecommendedExerciseCalendar {
+
+        private Member recommendationMember;
+        private Member memberWithoutMainAddr;
+        private Party filteredParty;
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private Exercise filteredEarlyExercise;
+        private Exercise filteredPopularExercise;
+
+        @BeforeEach
+        void setUp() {
+            recommendationMember = memberRepository.save(
+                    MemberFixture.createMember("추천캘린더회원", Gender.MALE, Level.A, 1201L, LocalDate.of(1995, 6, 15)));
+            memberAddrRepository.save(MemberAddrFixture.createMainAddr(recommendationMember));
+
+            memberWithoutMainAddr = memberRepository.save(
+                    MemberFixture.createMember("주소없는추천회원", Gender.MALE, Level.A, 1202L, LocalDate.of(1995, 6, 15)));
+
+
+            PartyAddr filteredAddr = partyAddrRepository.save(PartyFixture.createPartyAddr("서울특별시", "송파구"));
+            filteredParty = PartyFixture.createParty("필터 모임", manager.getId(), filteredAddr);
+            ReflectionTestUtils.setField(filteredParty, "partyType", ParticipationType.SINGLE);
+            ReflectionTestUtils.setField(filteredParty, "activityTime", ActivityTime.AFTERNOON);
+            filteredParty = partyRepository.save(filteredParty);
+            filteredParty.addLevel(Gender.MALE, Level.B);
+            filteredParty = partyRepository.save(filteredParty);
+            memberPartyRepository.save(MemberFixture.createMemberParty(filteredParty, manager, Role.PARTY_MANAGER));
+
+            startDate = LocalDate.of(2026, 3, 23);
+            endDate = LocalDate.of(2026, 4, 5);
+
+            filteredEarlyExercise = saveRecommendableExercise(filteredParty, LocalDate.of(2026, 3, 25),
+                    37.51, 127.01, "필터 이른 체육관", LocalTime.of(9, 0), LocalTime.of(11, 0));
+            filteredPopularExercise = saveRecommendableExercise(filteredParty, LocalDate.of(2026, 3, 25),
+                    37.52, 127.02, "필터 인기 체육관", LocalTime.of(18, 0), LocalTime.of(20, 0));
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(manager, filteredPopularExercise));
+            memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, filteredPopularExercise));
+            exerciseBookmarkRepository.save(ExerciseBookmark.builder()
+                    .member(recommendationMember)
+                    .exercise(filteredPopularExercise)
+                    .build());
+        }
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("기본 요청은 기본 기간의 콕플 추천 캘린더를 거리순으로 반환한다")
+            void 기본_요청은_기본_기간의_콕플_추천_캘린더를_거리순으로_반환한다() throws Exception {
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate defaultExerciseDate = expectedStart.plusDays(9);
+                int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
+                int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
+
+                Exercise nearExercise = saveRecommendableExercise(party, defaultExerciseDate,
+                        37.5, 127.0, "가까운 체육관", LocalTime.of(11, 0), LocalTime.of(13, 0));
+                Exercise farExercise = saveRecommendableExercise(party, defaultExerciseDate,
+                        35.1, 129.1, "먼 체육관", LocalTime.of(9, 0), LocalTime.of(11, 0));
+
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value(expectedStart.toString()))
+                        .andExpect(jsonPath("$.data.endDate").value(ExerciseCalendarTestHelper.expectedDefaultEndDate().toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].date").value(defaultExerciseDate.toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].exerciseId").value(nearExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].buildingName").value("가까운 체육관"))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].distance").value(0.0))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[1].exerciseId").value(farExercise.getId()));
+            }
+
+            @Test
+            @DisplayName("필터 추천 최신순은 필터 조건에 맞는 운동만 시간순으로 반환한다")
+            void 필터_추천_최신순은_필터_조건에_맞는_운동만_시간순으로_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString())
+                                .param("isCockpleRecommend", "false")
+                                .param("levels", "B")
+                                .param("participationTypes", "SINGLE")
+                                .param("activityTimes", "AFTERNOON")
+                                .param("sortType", "LATEST"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-04-05"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(filteredEarlyExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyId").value(filteredParty.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].partyName").value("필터 모임"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].isBookmarked").value(false))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].distance").value(nullValue()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[1].exerciseId").value(filteredPopularExercise.getId()));
+            }
+
+            @Test
+            @DisplayName("필터 추천 인기순은 참가자 수가 많은 운동을 먼저 반환한다")
+            void 필터_추천_인기순은_참가자_수가_많은_운동을_먼저_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString())
+                                .param("isCockpleRecommend", "false")
+                                .param("levels", "B")
+                                .param("participationTypes", "SINGLE")
+                                .param("activityTimes", "AFTERNOON")
+                                .param("sortType", "POPULARITY"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(filteredPopularExercise.getId()))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].isBookmarked").value(true))
+                        .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[1].exerciseId").value(filteredEarlyExercise.getId()));
+            }
+
+            @Test
+            @DisplayName("추천 운동이 없으면 기간 메타데이터와 빈 일자별 캘린더를 반환한다")
+            void 추천_운동이_없으면_기간_메타데이터와_빈_일자별_캘린더를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", "2030-01-05")
+                                .param("endDate", "2030-01-11"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2030-01-05"))
+                        .andExpect(jsonPath("$.data.endDate").value("2030-01-11"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[0].date").value("2029-12-31"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[5].date").value("2030-01-05"))
+                        .andExpect(jsonPath("$.data.weeks[0].days[5].exercises").isEmpty());
+            }
+
+            @Test
+            @DisplayName("startDate만 주어져도 기본 기간이 적용된다")
+            void startDate만_주어져도_기본_기간이_적용된다() throws Exception {
+                LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
+                LocalDate defaultExerciseDate = expectedStart.plusDays(9);
+                int weekIndex = ExerciseCalendarTestHelper.weekIndexFor(expectedStart, defaultExerciseDate);
+                int dayIndex = ExerciseCalendarTestHelper.dayIndexFor(defaultExerciseDate);
+
+                Exercise defaultExercise = saveRecommendableExercise(party, defaultExerciseDate,
+                        37.5, 127.0, "기본기간 체육관", LocalTime.of(10, 0), LocalTime.of(12, 0));
+
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", "2026-03-25"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value(expectedStart.toString()))
+                        .andExpect(jsonPath("$.data.endDate").value(ExerciseCalendarTestHelper.expectedDefaultEndDate().toString()))
+                        .andExpect(jsonPath("$.data.weeks[" + weekIndex + "].days[" + dayIndex + "].exercises[0].exerciseId").value(defaultExercise.getId()));
+            }
+
+            @Test
+            @DisplayName("종료일이 시작일보다 이전이어도 빈 캘린더를 반환한다")
+            void 종료일이_시작일보다_이전이어도_빈_캘린더를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", "2026-04-05")
+                                .param("endDate", "2026-03-23"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.startDate").value("2026-04-05"))
+                        .andExpect(jsonPath("$.data.endDate").value("2026-03-23"))
+                        .andExpect(jsonPath("$.data.weeks").isEmpty());
+            }
+        }
+
+        @Nested
+        @DisplayName("실패 케이스")
+        class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
+            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(999L, "없는멤버");
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+            }
+
+            @Test
+            @DisplayName("대표 주소가 없으면 에러를 반환한다")
+            void 대표_주소가_없으면_에러를_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(memberWithoutMainAddr.getId(), memberWithoutMainAddr.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", startDate.toString())
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+            }
+
+            @Test
+            @DisplayName("날짜 형식이 잘못되면 400을 반환한다")
+            void 날짜_형식이_잘못되면_400을_반환한다() throws Exception {
+                SecurityContextHelper.setAuthentication(recommendationMember.getId(), recommendationMember.getNickname());
+
+                mockMvc.perform(get("/api/exercises/recommendations/calendar")
+                                .param("startDate", "invalid-date")
+                                .param("endDate", endDate.toString()))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
+        private Exercise saveRecommendableExercise(Party exerciseParty, LocalDate date,
+                                                   double latitude, double longitude,
+                                                   String buildingName, LocalTime startTime, LocalTime endTime) {
+            Exercise exercise = ExerciseFixture.createRecommendableExercise(
+                    exerciseParty, date, latitude, longitude, buildingName);
+            ReflectionTestUtils.setField(exercise, "startTime", startTime);
+            ReflectionTestUtils.setField(exercise, "endTime", endTime);
+            return exerciseRepository.save(exercise);
         }
     }
 }

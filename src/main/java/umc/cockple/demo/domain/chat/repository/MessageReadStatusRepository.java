@@ -10,7 +10,21 @@ import java.util.List;
 
 public interface MessageReadStatusRepository extends JpaRepository<MessageReadStatus, Long> {
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM MessageReadStatus mrs
+            WHERE mrs.chatRoomId = :chatRoomId
+            """)
+    int deleteByChatRoomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            """)
+    int deleteByMemberId(@Param("memberId") Long memberId);
+
+    @Modifying(flushAutomatically = true)
     @Query("""
             UPDATE MessageReadStatus mrs
             SET mrs.isRead = true

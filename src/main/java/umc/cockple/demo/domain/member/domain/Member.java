@@ -98,7 +98,7 @@ public class Member extends BaseEntity {
     @Builder.Default
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "member")
     @Builder.Default
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 
@@ -178,6 +178,17 @@ public class Member extends BaseEntity {
         return this.isActive == MemberStatus.INACTIVE;
     }
 
+    /**
+     * 온보딩(상세정보 입력) 완료 여부.
+     */
+    public boolean isProfileCompleted() {
+        return this.memberName != null
+                && this.gender != null
+                && this.birth != null
+                && this.level != null
+        ;
+    }
+
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
         this.deletedAt = LocalDateTime.now();
@@ -189,15 +200,13 @@ public class Member extends BaseEntity {
         this.fcmToken = fcmToken;
     }
 
+    /**
+     * 탈퇴한 회원의 재가입(계정 복원).
+     * 탈퇴 시점의 프로필(이름/성별/생년월일/급수)은 그대로 보존되므로
+     * 재가입 회원은 온보딩 없이 바로 홈으로 진입한다.
+     */
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
-        initField();
-    }
-
-    public void initField() {
-        this.memberName = null;
-        this.gender = null;
-        this.birth = null;
-        this.level = null;
+        this.deletedAt = null;
     }
 }

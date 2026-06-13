@@ -4,6 +4,8 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.WebpushConfig;
+import com.google.firebase.messaging.WebpushFcmOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,6 +72,9 @@ public class FcmService {
                         .build())
                 .putData("chatRoomId", chatRoomId.toString())
                 .putData("chatRoomType", chatRoomType.name())
+                .setWebpushConfig(WebpushConfig.builder()
+                        .setFcmOptions(WebpushFcmOptions.withLink(buildChatLink(chatRoomType, chatRoomId)))
+                        .build())
                 .build();
 
         try {
@@ -79,5 +84,16 @@ public class FcmService {
         } catch (FirebaseMessagingException e) {
             log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * 채팅 알림 클릭 시 이동할 경로(상대경로)를 생성한다.
+     * webpush.fcm_options.link 로 전달되어 FCM이 클릭 시 네이티브로 이동시킨다.
+     */
+    private String buildChatLink(ChatRoomType chatRoomType, Long chatRoomId) {
+        return switch (chatRoomType) {
+            case PARTY -> "/chat/group/" + chatRoomId;
+            case DIRECT -> "/chat/personal/" + chatRoomId;
+        };
     }
 }

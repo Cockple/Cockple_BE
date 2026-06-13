@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetNowAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
+import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -39,6 +40,13 @@ public class MemberQueryService {
     /*
      * 프로필 관련 조회 메서드
      * */
+    public OnboardingStatusResponseDTO getOnboardingStatus(Long memberId) {
+        Member member = findByMemberId(memberId);
+        return OnboardingStatusResponseDTO.builder()
+                .needsOnboarding(!member.isProfileCompleted())
+                .build();
+    }
+
     public GetMyProfileResponseDTO getMyProfile(Long memberId) {
         // 회원 조회
         Member member = findByMemberId(memberId);

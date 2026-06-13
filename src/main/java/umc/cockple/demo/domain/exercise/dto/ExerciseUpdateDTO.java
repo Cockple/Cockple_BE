@@ -39,6 +39,10 @@ public class ExerciseUpdateDTO {
             @Max(value = 45, message = "모집 인원은 최대 45명 이하입니다.")
             Integer maxCapacity,
 
+            Boolean allowMemberGuestsInvitation,
+
+            Boolean allowExternalGuests,
+
             @Size(max = 45, message = "공지사항은 45자를 초과할 수 없습니다")
             String notice
     ) {

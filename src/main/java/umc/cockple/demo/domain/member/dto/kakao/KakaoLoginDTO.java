@@ -15,6 +15,7 @@ public class KakaoLoginDTO {
             String refreshToken,
             Long memberId,
             String nickname,
-            Boolean isNewMember
+            boolean isNewMember,
+            boolean needsOnboarding
     ){}
 }

@@ -14,8 +14,6 @@ import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
-import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -28,7 +26,6 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -229,14 +226,22 @@ class ChatProcessorTest {
         }
 
         @Test
-        @DisplayName("SYSTEM이 아닌데 sender가 null이면 예외를 던진다")
-        void throwsException_whenNonSystemMessageHasNullSender() {
-            ChatMessage malformedMessage = ChatMessage.create(chatRoom, null, "깨진 메시지", MessageType.TEXT);
-            ReflectionTestUtils.setField(malformedMessage, "id", 999L);
+        @DisplayName("SYSTEM이 아닌데 sender가 null이면 알 수 없는 사용자로 매핑한다")
+        void mapsUnknownUser_whenNonSystemMessageHasNullSender() {
+            ChatMessage message = ChatMessage.create(chatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT);
+            ReflectionTestUtils.setField(message, "id", 999L);
 
-            assertThatThrownBy(() -> chatProcessor.processMessages(sender.getId(), List.of(malformedMessage)))
-                    .isInstanceOf(ChatException.class)
-                    .satisfies(e -> assertThat(((ChatException) e).getCode()).isEqualTo(ChatErrorCode.INVALID_MESSAGE_SENDER));
+            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+
+            assertThat(result).hasSize(1);
+            ChatCommonDTO.MessageInfo messageInfo = result.get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.isMyMessage()).isFalse();
+            assertThat(messageInfo.content()).isEqualTo("삭제된 사용자 메시지");
+            assertThat(messageInfo.messageType()).isEqualTo(MessageType.TEXT);
         }
 
         @Test
@@ -244,6 +249,9 @@ class ChatProcessorTest {
         void isSenderWithdrawn_true_whenSenderIsInactive() {
             Member withdrawn = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L);
             ReflectionTestUtils.setField(withdrawn, "id", 30L);
+            withdrawn.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-profile.png")
+                    .build());
 
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, withdrawn, "탈퇴자 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
@@ -251,7 +259,12 @@ class ChatProcessorTest {
             List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).isSenderWithdrawn()).isTrue();
+            ChatCommonDTO.MessageInfo messageInfo = result.get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-profile.png");
         }
 
         @Test

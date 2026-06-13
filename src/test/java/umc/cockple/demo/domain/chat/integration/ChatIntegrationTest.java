@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.chat.integration;
 
 import org.junit.jupiter.api.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -10,14 +11,17 @@ import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.ChatMemberHardDeleteCleanupService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -57,6 +61,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
     @Autowired ChatMessageRepository chatMessageRepository;
     @Autowired MessageReadStatusRepository messageReadStatusRepository;
     @Autowired ChatRoomListCacheService chatRoomListCacheService;
+    @Autowired ChatMemberHardDeleteCleanupService chatMemberHardDeleteCleanupService;
+    @Autowired ApplicationEventPublisher applicationEventPublisher;
 
     private Member member;
     private Member otherMember;
@@ -505,7 +511,7 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content[0].lastMessage.messageType").value("TEXT"))
                         .andExpect(jsonPath("$.data.content[0].lastMessage.timestamp").exists())
                         .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()))
-                        .andExpect(jsonPath("$.data.content[1].displayName").value("예전 대화"))
+                        .andExpect(jsonPath("$.data.content[1].displayName").value("알 수 없는 사용자"))
                         .andExpect(jsonPath("$.data.content[1].profileImgUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.content[1].isWithdrawn").value(true))
                         .andExpect(jsonPath("$.data.content[1].unreadCount").value(0))
@@ -549,6 +555,52 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content", hasSize(2)))
                         .andExpect(jsonPath("$.data.content[0].chatRoomId").value(latestJoinedRoom.getId()))
                         .andExpect(jsonPath("$.data.content[1].chatRoomId").value(directChatRoom.getId()));
+            }
+
+            @Test
+            @DisplayName("200 - hard delete 전처리 후 삭제된 상대방은 알 수 없는 사용자로 조회된다")
+            void hardDeletedCounterPart_isMappedToUnknownUser() throws Exception {
+                Member target = memberRepository.save(
+                        MemberFixture.createWithdrawnMember("삭제대상", "삭제", 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, target.getMemberName()));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, target, member.getMemberName()));
+                ChatMessage targetMessage = chatMessageRepository.save(
+                        ChatFixture.createTextMessage(directChatRoom, target, "삭제 대상 메시지"));
+                messageReadStatusRepository.save(MessageReadStatus.createUnread(targetMessage.getId(), member.getId(), directChatRoom.getId()));
+                messageReadStatusRepository.save(MessageReadStatus.createRead(targetMessage.getId(), target.getId(), directChatRoom.getId()));
+
+                ChatMemberHardDeleteCleanupService.Result cleanupResult =
+                        chatMemberHardDeleteCleanupService.prepareMemberHardDelete(target.getId());
+                memberRepository.delete(target);
+                memberRepository.flush();
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct")
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(1)))
+                        .andExpect(jsonPath("$.data.content[0].displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.content[0].profileImgUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.content[0].isWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("삭제 대상 메시지"));
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}", directChatRoom.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.chatRoomInfo.displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.profileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.isCounterPartWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+
+                assertThat(cleanupResult.clearedMessages()).isEqualTo(1);
+                assertThat(cleanupResult.clearedChatRoomMembers()).isEqualTo(1);
+                assertThat(cleanupResult.deletedReadStatuses()).isEqualTo(1);
+                assertThat(messageReadStatusRepository.findAll())
+                        .noneMatch(status -> target.getId().equals(status.getMemberId()));
             }
         }
     }
@@ -598,6 +650,31 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.content[0].chatRoomId").value(directChatRoom.getId()))
                         .andExpect(jsonPath("$.data.content[0].displayName").value("영희 채팅"))
                         .andExpect(jsonPath("$.data.content[0].lastMessage.content").value("영희와의 최근 메시지"));
+            }
+
+            @Test
+            @DisplayName("200 - 회원 탈퇴 이벤트로 익명화된 direct 채팅방은 삭제 전 이름으로 검색되지 않는다")
+            void searchDirectChatRooms_excludesWithdrawnMemberNameAfterAnonymizationEvent() throws Exception {
+                Member target = memberRepository.save(
+                        MemberFixture.createMember("삭제대상", Gender.FEMALE, Level.C, 5005L));
+
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, target.getMemberName()));
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, target, member.getMemberName()));
+                chatMessageRepository.save(ChatFixture.createTextMessage(directChatRoom, target, "탈퇴 전 메시지"));
+
+                target.withdraw();
+                memberRepository.saveAndFlush(target);
+                applicationEventPublisher.publishEvent(MemberWithdrawnEvent.withdrawn(target.getId()));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/direct/search")
+                                .param("name", target.getMemberName())
+                                .param("page", "0")
+                                .param("size", "10"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.content", hasSize(0)))
+                        .andExpect(jsonPath("$.data.hasNext").value(false));
             }
 
             @Test
@@ -870,6 +947,8 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/chats/rooms/{roomId}", directChatRoom.getId()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.chatRoomInfo.displayName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.chatRoomInfo.profileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.chatRoomInfo.isCounterPartWithdrawn").value(true));
             }
 
@@ -941,7 +1020,27 @@ class ChatIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(get("/api/chats/rooms/{roomId}", partyChatRoom.getId()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+            }
+
+            @Test
+            @DisplayName("200 - sender가 null인 일반 메시지는 알 수 없는 사용자로 조회된다")
+            void nullSenderTextMessage_isMappedToUnknownUser() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                chatMessageRepository.save(
+                        ChatMessage.create(partyChatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT));
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}", partyChatRoom.getId()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(false));
             }
 
             @Test
@@ -1182,7 +1281,29 @@ class ChatIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/chats/rooms/{roomId}/messages/previous", partyChatRoom.getId())
                                 .param("cursor", cursor.toString()))
                         .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
                         .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true));
+            }
+
+            @Test
+            @DisplayName("200 - sender가 null인 일반 과거 메시지는 알 수 없는 사용자로 조회된다")
+            void nullSenderPreviousMessage_isMappedToUnknownUser() throws Exception {
+                chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, member));
+                ChatMessage deletedSenderMessage = chatMessageRepository.save(
+                        ChatMessage.create(partyChatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT));
+                Long cursor = deletedSenderMessage.getId() + 1;
+
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/chats/rooms/{roomId}/messages/previous", partyChatRoom.getId())
+                                .param("cursor", cursor.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.messages[0].senderId").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].senderName").value("알 수 없는 사용자"))
+                        .andExpect(jsonPath("$.data.messages[0].senderProfileImageUrl").value(nullValue()))
+                        .andExpect(jsonPath("$.data.messages[0].isSenderWithdrawn").value(true))
+                        .andExpect(jsonPath("$.data.messages[0].isMyMessage").value(false));
             }
 
             @Test

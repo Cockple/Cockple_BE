@@ -1,6 +1,8 @@
 package umc.cockple.demo.domain.party.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,12 +12,22 @@ import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
+import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.file.domain.ObjectStorageDeleteOutbox;
+import umc.cockple.demo.domain.file.enums.ObjectStorageDeleteSourceType;
+import umc.cockple.demo.domain.file.enums.ObjectStorageDeleteStatus;
+import umc.cockple.demo.domain.file.repository.ObjectStorageDeleteOutboxRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -40,6 +52,7 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
+import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
@@ -76,11 +89,21 @@ class PartyIntegrationTest extends IntegrationTestBase {
     @Autowired
     ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired
+    ChatMessageRepository chatMessageRepository;
+    @Autowired
+    MessageReadStatusRepository messageReadStatusRepository;
+    @Autowired
+    ChatFileRepository chatFileRepository;
+    @Autowired
+    ObjectStorageDeleteOutboxRepository objectStorageDeleteOutboxRepository;
+    @Autowired
     PartyJoinRequestRepository partyJoinRequestRepository;
     @Autowired
     PartyInvitationRepository partyInvitationRepository;
     @Autowired
     ObjectMapper objectMapper;
+    @PersistenceContext
+    EntityManager entityManager;
 
     private Member manager;
     private Member normalMember;
@@ -786,15 +809,49 @@ class PartyIntegrationTest extends IntegrationTestBase {
         void success_deleteParty() throws Exception {
             // given
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+            ChatRoom partyChatRoom = chatRoomRepository.findByPartyId(party.getId()).orElseThrow();
+            Long chatRoomId = partyChatRoom.getId();
+
+            ChatMessage chatMessage = chatMessageRepository.save(
+                    ChatFixture.createTextMessage(partyChatRoom, manager, "삭제 전 메시지")
+            );
+            Long chatMessageId = chatMessage.getId();
+            String objectKey = "chat/delete-party-file.jpg";
+            ChatMessageFile chatMessageFile = ChatFixture.createChatMessageFile(
+                    chatMessage,
+                    objectKey,
+                    0,
+                    "delete-party-file.jpg"
+            );
+            chatFileRepository.save(chatMessageFile);
+            messageReadStatusRepository.save(MessageReadStatus.createRead(chatMessageId, manager.getId(), chatRoomId));
+            messageReadStatusRepository.save(MessageReadStatus.createUnread(chatMessageId, normalMember.getId(), chatRoomId));
+            entityManager.flush();
+            entityManager.clear();
 
             // when & then
             mockMvc.perform(patch("/api/parties/{partyId}/status", party.getId()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("COMMON200"));
+            entityManager.flush();
+            entityManager.clear();
 
             // 검증
             Party deletedParty = partyRepository.findById(party.getId()).orElseThrow();
             assertThat(deletedParty.getStatus()).isEqualTo(PartyStatus.INACTIVE);
+            assertThat(chatRoomRepository.findByPartyId(party.getId())).isEmpty();
+            assertThat(chatRoomMemberRepository.findByChatRoomId(chatRoomId)).isEmpty();
+            assertThat(chatMessageRepository.countByChatRoomId(chatRoomId)).isZero();
+            assertThat(chatFileRepository.findObjectKeysByChatRoomId(chatRoomId)).isEmpty();
+            assertThat(messageReadStatusRepository.findAll())
+                    .noneMatch(readStatus -> readStatus.getChatRoomId().equals(chatRoomId));
+            List<ObjectStorageDeleteOutbox> outboxes = objectStorageDeleteOutboxRepository.findAll();
+            assertThat(outboxes).hasSize(1);
+            ObjectStorageDeleteOutbox outbox = outboxes.get(0);
+            assertThat(outbox.getObjectKey()).isEqualTo(objectKey);
+            assertThat(outbox.getSourceType()).isEqualTo(ObjectStorageDeleteSourceType.PARTY_CHAT_ROOM);
+            assertThat(outbox.getSourceId()).isEqualTo(chatRoomId);
+            assertThat(outbox.getStatus()).isEqualTo(ObjectStorageDeleteStatus.PENDING);
         }
 
         @Test

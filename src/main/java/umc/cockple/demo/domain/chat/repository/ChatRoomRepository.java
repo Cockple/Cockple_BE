@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.chat.repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
@@ -10,6 +11,13 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM ChatRoom cr
+            WHERE cr.id = :chatRoomId
+            """)
+    int deleteRoomById(@Param("chatRoomId") Long chatRoomId);
 
     @Query("""
             SELECT cr FROM ChatRoom cr

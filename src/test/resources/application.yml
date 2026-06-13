@@ -25,3 +25,8 @@ spring:
 
 gcs:
   bucket: test-bucket
+
+cockple:
+  object-storage-delete-outbox:
+    scheduler:
+      enabled: false
