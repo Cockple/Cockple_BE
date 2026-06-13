@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.exercise.controller.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RequestMapping("/api/exercises/recommendations")
-@Tag(name = "Exercise", description = "운동 관리 API")
+@ExerciseApiTag
 public interface ExerciseRecommendationApi {
 
     @GetMapping
