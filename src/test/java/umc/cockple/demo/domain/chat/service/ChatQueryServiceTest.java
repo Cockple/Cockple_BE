@@ -94,6 +94,80 @@ class ChatQueryServiceTest {
     }
 
     @Nested
+    @DisplayName("안 읽은 메시지 수 조회")
+    class GetUnreadCounts {
+
+        @Test
+        @DisplayName("요약 조회는 모임과 개인 안읽음 수를 합산한다")
+        void getUnreadSummary_addsPartyAndDirectUnreadCounts() {
+            // given
+            Long memberId = 10L;
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            ChatRoom partyRoom = ChatFixture.createDirectChatRoom();
+            ReflectionTestUtils.setField(partyRoom, "id", 1L);
+            ChatRoomMember partyMembership = ChatFixture.createJoinedMember(partyRoom, me);
+
+            ChatRoom directRoom = ChatFixture.createDirectChatRoom();
+            ReflectionTestUtils.setField(directRoom, "id", 2L);
+            ChatRoomMember directMembership = ChatFixture.createJoinedMemberWithLastRead(directRoom, me, 30L);
+
+            given(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId)).willReturn(List.of(partyMembership));
+            given(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId)).willReturn(List.of(directMembership));
+            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(3);
+            given(messageReadStatusRepository.countUnreadMessagesAfter(2L, memberId, 30L)).willReturn(2);
+
+            // when
+            var result = chatQueryService.getUnreadSummary(memberId);
+
+            // then
+            assertThat(result.partyUnreadCount()).isEqualTo(3);
+            assertThat(result.directUnreadCount()).isEqualTo(2);
+            assertThat(result.totalUnreadCount()).isEqualTo(5);
+            assertThat(result.hasUnread()).isTrue();
+        }
+
+        @Test
+        @DisplayName("모임 안읽음 수가 0이면 hasUnread false를 반환한다")
+        void getPartyUnreadCount_returnsFalseWhenZero() {
+            // given
+            Long memberId = 10L;
+            given(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId)).willReturn(List.of());
+
+            // when
+            var result = chatQueryService.getPartyUnreadCount(memberId);
+
+            // then
+            assertThat(result.unreadCount()).isZero();
+            assertThat(result.hasUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("개인 안읽음 수가 있으면 hasUnread true를 반환한다")
+        void getDirectUnreadCount_returnsTrueWhenUnreadExists() {
+            // given
+            Long memberId = 10L;
+            Member me = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(me, "id", memberId);
+
+            ChatRoom directRoom = ChatFixture.createDirectChatRoom();
+            ReflectionTestUtils.setField(directRoom, "id", 1L);
+            ChatRoomMember directMembership = ChatFixture.createJoinedMember(directRoom, me);
+
+            given(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId)).willReturn(List.of(directMembership));
+            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(7);
+
+            // when
+            var result = chatQueryService.getDirectUnreadCount(memberId);
+
+            // then
+            assertThat(result.unreadCount()).isEqualTo(7);
+            assertThat(result.hasUnread()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("getPartyChatRooms - 모임 채팅방 목록 조회")
     class GetPartyChatRooms {
 

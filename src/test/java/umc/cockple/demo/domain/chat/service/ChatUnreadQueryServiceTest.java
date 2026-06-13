@@ -18,6 +18,7 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +94,47 @@ class ChatUnreadQueryServiceTest {
 
             // then
             assertThat(result).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("타입별 안읽음 수")
+    class CountUnreadMessagesByType {
+
+        @Test
+        @DisplayName("모임 채팅 안읽음 수는 모임 채팅방 멤버십들의 안읽음 수를 합산한다")
+        void countPartyUnreadMessages_sumsPartyMembershipUnreadCounts() {
+            // given
+            Long memberId = 10L;
+            ChatRoomMember firstMembership = joinedMember(1L, memberId, null);
+            ChatRoomMember secondMembership = joinedMember(2L, memberId, 30L);
+            given(chatRoomMemberRepository.findPartyChatRoomMembersByMemberId(memberId))
+                    .willReturn(List.of(firstMembership, secondMembership));
+            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(3);
+            given(messageReadStatusRepository.countUnreadMessagesAfter(2L, memberId, 30L)).willReturn(2);
+
+            // when
+            int result = chatUnreadQueryService.countPartyUnreadMessages(memberId);
+
+            // then
+            assertThat(result).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("개인 채팅 안읽음 수는 JOINED 개인 채팅방 멤버십들의 안읽음 수를 합산한다")
+        void countDirectUnreadMessages_sumsJoinedDirectMembershipUnreadCounts() {
+            // given
+            Long memberId = 10L;
+            ChatRoomMember directMembership = joinedMember(1L, memberId, null);
+            given(chatRoomMemberRepository.findJoinedDirectChatRoomMembersByMemberId(memberId))
+                    .willReturn(List.of(directMembership));
+            given(messageReadStatusRepository.countAllUnreadMessages(1L, memberId)).willReturn(4);
+
+            // when
+            int result = chatUnreadQueryService.countDirectUnreadMessages(memberId);
+
+            // then
+            assertThat(result).isEqualTo(4);
         }
     }
 

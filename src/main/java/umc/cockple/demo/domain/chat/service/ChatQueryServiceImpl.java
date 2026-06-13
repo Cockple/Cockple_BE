@@ -91,6 +91,38 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     @Override
+    public ChatUnreadSummaryDTO.Response getUnreadSummary(Long memberId) {
+        log.info("[채팅 안읽음 요약 조회 시작]- 요청자: {}", memberId);
+        int partyUnreadCount = chatUnreadQueryService.countPartyUnreadMessages(memberId);
+        int directUnreadCount = chatUnreadQueryService.countDirectUnreadMessages(memberId);
+        int totalUnreadCount = partyUnreadCount + directUnreadCount;
+        log.info("[채팅 안읽음 요약 조회 완료]- total: {}", totalUnreadCount);
+
+        return ChatUnreadSummaryDTO.Response.builder()
+                .totalUnreadCount(totalUnreadCount)
+                .partyUnreadCount(partyUnreadCount)
+                .directUnreadCount(directUnreadCount)
+                .hasUnread(totalUnreadCount > 0)
+                .build();
+    }
+
+    @Override
+    public ChatUnreadCountDTO.Response getPartyUnreadCount(Long memberId) {
+        log.info("[모임 채팅 안읽음 수 조회 시작]- 요청자: {}", memberId);
+        int unreadCount = chatUnreadQueryService.countPartyUnreadMessages(memberId);
+        log.info("[모임 채팅 안읽음 수 조회 완료]- unreadCount: {}", unreadCount);
+        return toUnreadCountResponse(unreadCount);
+    }
+
+    @Override
+    public ChatUnreadCountDTO.Response getDirectUnreadCount(Long memberId) {
+        log.info("[개인 채팅 안읽음 수 조회 시작]- 요청자: {}", memberId);
+        int unreadCount = chatUnreadQueryService.countDirectUnreadMessages(memberId);
+        log.info("[개인 채팅 안읽음 수 조회 완료]- unreadCount: {}", unreadCount);
+        return toUnreadCountResponse(unreadCount);
+    }
+
+    @Override
     public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
         log.info("[초기 채팅방 조회 시작] - roomId: {}, memberId: {}", roomId, memberId);
 
@@ -245,6 +277,13 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                 .collect(Collectors.toList());
 
         return chatConverter.toDirectChatRoomListResponse(roomInfos, chatRooms.hasNext());
+    }
+
+    private ChatUnreadCountDTO.Response toUnreadCountResponse(int unreadCount) {
+        return ChatUnreadCountDTO.Response.builder()
+                .unreadCount(unreadCount)
+                .hasUnread(unreadCount > 0)
+                .build();
     }
 
     private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {

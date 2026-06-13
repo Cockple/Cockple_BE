@@ -27,6 +27,15 @@ public class ChatController {
     private final ChatCommandService chatCommandService;
     private final ChatFileService chatFileService;
 
+    @GetMapping("/unread/summary")
+    @Operation(summary = "채팅 안 읽은 메시지 요약 조회", description = "내비 바 표시를 위해 모임/개인 채팅의 안 읽은 메시지 수를 합산하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatUnreadSummaryDTO.Response> getUnreadSummary() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatUnreadSummaryDTO.Response response = chatQueryService.getUnreadSummary(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @GetMapping(value = "/parties")
     @Operation(summary = "모임 채팅방 목록 조회", description = "회원이 자신의 모임 채팅방 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -49,6 +58,15 @@ public class ChatController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/parties/unread-count")
+    @Operation(summary = "모임 채팅 안 읽은 메시지 수 조회", description = "회원의 모임 채팅방 안 읽은 메시지 수 합계를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatUnreadCountDTO.Response> getPartyUnreadCount() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatUnreadCountDTO.Response response = chatQueryService.getPartyUnreadCount(memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -85,6 +103,15 @@ public class ChatController {
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
         DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    @GetMapping("/direct/unread-count")
+    @Operation(summary = "개인 채팅 안 읽은 메시지 수 조회", description = "회원의 개인 채팅방 안 읽은 메시지 수 합계를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatUnreadCountDTO.Response> getDirectUnreadCount() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatUnreadCountDTO.Response response = chatQueryService.getDirectUnreadCount(memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 

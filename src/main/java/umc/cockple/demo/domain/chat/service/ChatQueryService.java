@@ -11,6 +11,12 @@ public interface ChatQueryService {
 
     DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, int page, int size);
 
+    ChatUnreadSummaryDTO.Response getUnreadSummary(Long memberId);
+
+    ChatUnreadCountDTO.Response getPartyUnreadCount(Long memberId);
+
+    ChatUnreadCountDTO.Response getDirectUnreadCount(Long memberId);
+
     ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId);
 
     ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size);
