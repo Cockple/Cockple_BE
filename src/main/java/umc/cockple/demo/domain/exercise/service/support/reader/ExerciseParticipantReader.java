@@ -14,8 +14,10 @@ import umc.cockple.demo.global.enums.Role;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,11 +86,12 @@ public class ExerciseParticipantReader {
 
         List<Long> participatingExerciseIds = memberExerciseRepository
                 .findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
+        Set<Long> participatingExerciseIdSet = new HashSet<>(participatingExerciseIds);
 
         return exerciseIds.stream()
                 .collect(Collectors.toMap(
                         exerciseId -> exerciseId,
-                        participatingExerciseIds::contains
+                        participatingExerciseIdSet::contains
                 ));
     }
 

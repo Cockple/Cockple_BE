@@ -6,8 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,11 +26,12 @@ public class ExerciseBookmarkReader {
 
         List<Long> bookmarkedExerciseIds = exerciseBookmarkRepository
                 .findAllExerciseIdsByMemberIdAndExerciseIds(memberId, exerciseIds);
+        Set<Long> bookmarkedExerciseIdSet = new HashSet<>(bookmarkedExerciseIds);
 
         return exerciseIds.stream()
                 .collect(Collectors.toMap(
                         exerciseId -> exerciseId,
-                        bookmarkedExerciseIds::contains
+                        bookmarkedExerciseIdSet::contains
                 ));
     }
 }
