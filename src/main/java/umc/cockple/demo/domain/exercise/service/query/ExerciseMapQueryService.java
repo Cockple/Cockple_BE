@@ -37,7 +37,6 @@ public class ExerciseMapQueryService {
 
         log.info("건물 운동 상세 조회 시작 - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
 
-        Member member = memberLookupService.findByIdOrThrow(memberId);
         List<Exercise> exercises = exerciseReader.findByBuildingAndDate(buildingName, streetAddr, date);
 
         if (exercises.isEmpty()) {

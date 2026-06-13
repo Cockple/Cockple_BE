@@ -22,8 +22,6 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,7 +37,6 @@ public class ExerciseMyQueryService {
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseBookmarkReader exerciseBookmarkReader;
-    private final MemberLookupService memberLookupService;
     private final ExerciseConverter exerciseConverter;
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
@@ -47,7 +44,6 @@ public class ExerciseMyQueryService {
         log.info("내 운동 캘린더 조회 시작 - memberId = {}, startDate = {}, endDate = {}",
                 memberId, startDate, endDate);
 
-        Member member = memberLookupService.findByIdOrThrow(memberId);
         validateDateRange(startDate, endDate);
 
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
@@ -69,7 +65,6 @@ public class ExerciseMyQueryService {
 
         log.info("내 모임 운동 조회 시작 - memberId = {}", memberId);
 
-        Member member = memberLookupService.findByIdOrThrow(memberId);
 
         List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
 
@@ -91,7 +86,6 @@ public class ExerciseMyQueryService {
 
         log.info("내 모임 운동 캘린더 조회 시작 - memberId = {}, orderType = {}, 기간 = {}~{}", memberId, orderType, startDate, endDate);
 
-        Member member = memberLookupService.findByIdOrThrow(memberId);
         List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
 
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
@@ -126,7 +120,6 @@ public class ExerciseMyQueryService {
         log.info("내 참여 운동 조회 시작 - memberId: {}, filterType: {}, orderType: {}",
                 memberId, filterType, orderType);
 
-        Member member = memberLookupService.findByIdOrThrow(memberId);
 
         Pageable sortedPageable = createSortedPageable(pageable, filterType, orderType);
 

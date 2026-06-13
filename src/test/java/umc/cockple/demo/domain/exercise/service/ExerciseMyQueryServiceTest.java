@@ -39,7 +39,6 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -47,7 +46,6 @@ import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -89,7 +87,6 @@ class ExerciseMyQueryServiceTest {
     private ExerciseMyQueryService exerciseMyQueryService;
 
     @Mock private ExerciseRepository exerciseRepository;
-    @Mock private MemberRepository memberRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
@@ -104,7 +101,6 @@ class ExerciseMyQueryServiceTest {
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(exerciseRepository, memberExerciseRepository, memberPartyRepository),
                 new ExerciseBookmarkReader(exerciseBookmarkRepository),
-                new MemberLookupService(memberRepository),
                 exerciseConverter
         );
 
@@ -145,8 +141,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("내 운동 캘린더를 주차별_일자별로 반환한다")
             void 내_운동_캘린더를_주차별_일자별로_반환한다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), startDate, endDate))
                         .willReturn(List.of(myExercise));
 
@@ -179,8 +173,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("기간 내 참여 운동이 없으면 빈 캘린더를 반환한다")
             void 기간_내_참여_운동이_없으면_빈_캘린더를_반환한다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), startDate, endDate))
                         .willReturn(List.of());
 
@@ -200,9 +192,6 @@ class ExerciseMyQueryServiceTest {
                 // given
                 LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
                 LocalDate expectedEnd = ExerciseCalendarTestHelper.expectedDefaultEndDate();
-
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(exerciseRepository.findByMemberIdAndDateRange(calendarMember.getId(), expectedStart, expectedEnd))
                         .willReturn(List.of());
 
@@ -222,24 +211,9 @@ class ExerciseMyQueryServiceTest {
         class Failure {
 
             @Test
-            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
-            void 존재하지_않는_멤버면_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L))
-                        .willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> exerciseMyQueryService.getMyExerciseCalendar(999L, startDate, endDate))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
-            }
-
-            @Test
             @DisplayName("시작일과 종료일이 함께 오지 않으면 예외를 던진다")
             void 시작일과_종료일이_함께_오지_않으면_예외를_던진다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
 
                 // when & then
                 assertThatThrownBy(() -> exerciseMyQueryService.getMyExerciseCalendar(
@@ -252,8 +226,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("시작일이 종료일과 같거나 늦으면 예외를 던진다")
             void 시작일이_종료일과_같거나_늦으면_예외를_던진다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
 
                 // when & then
                 assertThatThrownBy(() -> exerciseMyQueryService.getMyExerciseCalendar(
@@ -292,8 +264,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("내 모임의 예정된 운동 목록을 반환한다")
             void 내_모임의_예정된_운동_목록을_반환한다() {
                 // given
-                given(memberRepository.findById(partyMember.getId()))
-                        .willReturn(Optional.of(partyMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(partyMember.getId()))
                         .willReturn(List.of(party.getId()));
                 given(exerciseRepository.findRecentExercisesByPartyIds(eq(List.of(party.getId())), argThat(
@@ -325,8 +295,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("속한 모임이 없으면 빈 응답을 반환한다")
             void 속한_모임이_없으면_빈_응답을_반환한다() {
                 // given
-                given(memberRepository.findById(partyMember.getId()))
-                        .willReturn(Optional.of(partyMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(partyMember.getId()))
                         .willReturn(List.of());
 
@@ -343,19 +311,6 @@ class ExerciseMyQueryServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
-
-            @Test
-            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
-            void 존재하지_않는_멤버면_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L))
-                        .willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> exerciseMyQueryService.getMyPartyExercise(999L))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
-            }
         }
     }
 
@@ -388,8 +343,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("내 모임 운동 캘린더를 주차별_일자별로 반환한다")
             void 내_모임_운동_캘린더를_주차별_일자별로_반환한다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
                         .willReturn(List.of(party.getId()));
                 given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
@@ -429,8 +382,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("북마크한 운동은 isBookmarked가 true로 반환된다")
             void 북마크한_운동은_isBookmarked가_true로_반환된다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
                         .willReturn(List.of(party.getId()));
                 given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
@@ -454,8 +405,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("속한 모임이 없으면 빈 캘린더를 반환한다")
             void 속한_모임이_없으면_빈_캘린더를_반환한다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
                         .willReturn(List.of());
 
@@ -474,8 +423,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("기간 내 내 모임 운동이 없으면 빈 캘린더를 반환한다")
             void 기간_내_내_모임_운동이_없으면_빈_캘린더를_반환한다() {
                 // given
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
                         .willReturn(List.of(party.getId()));
                 given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), startDate, endDate))
@@ -497,9 +444,6 @@ class ExerciseMyQueryServiceTest {
                 // given
                 LocalDate expectedStart = ExerciseCalendarTestHelper.expectedDefaultStartDate();
                 LocalDate expectedEnd = ExerciseCalendarTestHelper.expectedDefaultEndDate();
-
-                given(memberRepository.findById(calendarMember.getId()))
-                        .willReturn(Optional.of(calendarMember));
                 given(memberPartyRepository.findPartyIdsByMemberId(calendarMember.getId()))
                         .willReturn(List.of(party.getId()));
                 given(exerciseRepository.findByPartyIdsAndDateRange(List.of(party.getId()), expectedStart, expectedEnd))
@@ -519,20 +463,6 @@ class ExerciseMyQueryServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
-
-            @Test
-            @DisplayName("존재하지_않는_멤버면_예외를_던진다")
-            void 존재하지_않는_멤버면_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L))
-                        .willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> exerciseMyQueryService.getMyPartyExerciseCalendar(
-                        999L, MyPartyExerciseOrderType.LATEST, startDate, endDate))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
-            }
         }
     }
 
@@ -572,8 +502,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("ALL 최신순은 전체 운동 리포지토리를 날짜 내림차순으로 호출한다")
             void ALL_최신순은_전체_운동_리포지토리를_날짜_내림차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
                         .willReturn(emptySlice(firstPage));
@@ -595,8 +523,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("UPCOMING 최신순은 예정 운동 리포지토리를 날짜 오름차순으로 호출한다")
             void UPCOMING_최신순은_예정_운동_리포지토리를_날짜_오름차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
                         .willReturn(emptySlice(firstPage));
@@ -615,8 +541,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("COMPLETED 최신순은 완료 운동 리포지토리를 날짜 내림차순으로 호출한다")
             void COMPLETED_최신순은_완료_운동_리포지토리를_날짜_내림차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
                         .willReturn(emptySlice(firstPage));
@@ -635,8 +559,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("ALL 오래된순은 전체 운동 리포지토리를 날짜 오름차순으로 호출한다")
             void ALL_오래된순은_전체_운동_리포지토리를_날짜_오름차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
                         .willReturn(emptySlice(firstPage));
@@ -653,8 +575,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("UPCOMING 오래된순은 예정 운동 리포지토리를 날짜 내림차순으로 호출한다")
             void UPCOMING_오래된순은_예정_운동_리포지토리를_날짜_내림차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyUpcomingExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.DESC, Sort.Direction.DESC))))
                         .willReturn(emptySlice(firstPage));
@@ -671,8 +591,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("COMPLETED 오래된순은 완료 운동 리포지토리를 날짜 오름차순으로 호출한다")
             void COMPLETED_오래된순은_완료_운동_리포지토리를_날짜_오름차순으로_호출한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyCompletedExercisesWithPaging(eq(myExerciseMember.getId()), argThat(
                         pageable -> matchesSort(pageable, Sort.Direction.ASC, Sort.Direction.ASC))))
                         .willReturn(emptySlice(firstPage));
@@ -689,8 +607,6 @@ class ExerciseMyQueryServiceTest {
             @DisplayName("조회된 운동이 없으면 빈 응답을 반환한다")
             void 조회된_운동이_없으면_빈_응답을_반환한다() {
                 // given
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
                         .willReturn(emptySlice(firstPage));
 
@@ -711,9 +627,6 @@ class ExerciseMyQueryServiceTest {
             void 조회_결과를_DTO_필드와_hasNext_true로_매핑한다() {
                 // given
                 Slice<Exercise> exerciseSlice = sliceOf(List.of(futureLatestExercise, completedExercise), true, firstPage);
-
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
                         .willReturn(exerciseSlice);
                 given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(
@@ -765,9 +678,6 @@ class ExerciseMyQueryServiceTest {
                 // given
                 Pageable secondPage = PageRequest.of(1, 1);
                 Slice<Exercise> exerciseSlice = sliceOf(List.of(upcomingExercise), false, secondPage);
-
-                given(memberRepository.findById(myExerciseMember.getId()))
-                        .willReturn(Optional.of(myExerciseMember));
                 given(exerciseRepository.findMyExercisesWithPaging(eq(myExerciseMember.getId()), any(Pageable.class)))
                         .willReturn(exerciseSlice);
                 given(exerciseRepository.findExerciseParticipantCountsByExerciseIds(List.of(upcomingExercise.getId())))
@@ -788,24 +698,6 @@ class ExerciseMyQueryServiceTest {
             }
         }
 
-        @Nested
-        @DisplayName("실패 케이스")
-        class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 예외를 던진다")
-            void 존재하지_않는_멤버면_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L))
-                        .willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> exerciseMyQueryService.getMyExercises(
-                        999L, MyExerciseFilterType.ALL, MyExerciseOrderType.LATEST, firstPage))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
-            }
-        }
 
         private Exercise createMyExercise(long id, LocalDate date, LocalTime startTime,
                                           LocalTime endTime, int maxCapacity, boolean partyGuestAccept) {

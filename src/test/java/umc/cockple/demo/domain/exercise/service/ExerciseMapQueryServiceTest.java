@@ -104,8 +104,6 @@ class ExerciseMapQueryServiceTest {
             @DisplayName("해당 건물 운동이 없으면 메타데이터가 포함된 빈 응답을 반환한다")
             void 해당_건물_운동이_없으면_메타데이터가_포함된_빈_응답을_반환한다() {
                 // given
-                given(memberRepository.findById(buildingMember.getId()))
-                        .willReturn(Optional.of(buildingMember));
                 given(exerciseRepository.findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate))
                         .willReturn(List.of());
 
@@ -128,9 +126,6 @@ class ExerciseMapQueryServiceTest {
                 // given
                 Exercise morningExercise = createBuildingExercise(801L, LocalTime.of(9, 0), LocalTime.of(11, 0));
                 Exercise eveningExercise = createBuildingExercise(802L, LocalTime.of(19, 0), LocalTime.of(21, 0));
-
-                given(memberRepository.findById(buildingMember.getId()))
-                        .willReturn(Optional.of(buildingMember));
                 given(exerciseRepository.findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate))
                         .willReturn(List.of(morningExercise, eveningExercise));
                 given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
@@ -168,20 +163,6 @@ class ExerciseMapQueryServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 예외를 던진다")
-            void 존재하지_않는_멤버면_예외를_던진다() {
-                // given
-                given(memberRepository.findById(999L))
-                        .willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> exerciseMapQueryService.getBuildingExerciseDetails(
-                        buildingName, streetAddr, targetDate, 999L))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
-            }
         }
 
         private Exercise createBuildingExercise(long id, LocalTime startTime, LocalTime endTime) {
