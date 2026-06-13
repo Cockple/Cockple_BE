@@ -17,12 +17,16 @@ import java.time.LocalDateTime;
 
 public class MemberFixture {
 
+    // 온보딩이 완료된(=isProfileCompleted) 회원을 의미하도록 기본 birth를 채워둔다.
+    private static final LocalDate DEFAULT_BIRTH = LocalDate.of(2000, 1, 1);
+
     public static Member createMember(String nickname, Gender gender, Level level, Long socialId) {
         return Member.builder()
                 .memberName(nickname)
                 .nickname(nickname)
                 .gender(gender)
                 .level(level)
+                .birth(DEFAULT_BIRTH)
                 .isActive(MemberStatus.ACTIVE)
                 .socialId(socialId)
                 .build();
@@ -46,6 +50,7 @@ public class MemberFixture {
                 .nickname(nickname)
                 .gender(gender)
                 .level(level)
+                .birth(DEFAULT_BIRTH)
                 .isActive(MemberStatus.ACTIVE)
                 .socialId(socialId)
                 .build();
@@ -57,7 +62,20 @@ public class MemberFixture {
                 .nickname(nickname)
                 .gender(Gender.MALE)
                 .level(Level.C)
+                .birth(DEFAULT_BIRTH)
                 .isActive(MemberStatus.INACTIVE)
+                .socialId(socialId)
+                .build();
+    }
+
+    /**
+     * 소셜로그인 직후, 상세정보(이름/성별/생년월일/급수)를 아직 입력하지 않은 회원.
+     * isProfileCompleted() == false 인 온보딩 미완료 상태 검증용.
+     */
+    public static Member createOnboardingPendingMember(String nickname, Long socialId) {
+        return Member.builder()
+                .nickname(nickname)
+                .isActive(MemberStatus.ACTIVE)
                 .socialId(socialId)
                 .build();
     }

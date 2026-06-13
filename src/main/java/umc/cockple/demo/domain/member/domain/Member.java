@@ -178,6 +178,17 @@ public class Member extends BaseEntity {
         return this.isActive == MemberStatus.INACTIVE;
     }
 
+    /**
+     * 온보딩(상세정보 입력) 완료 여부.
+     */
+    public boolean isProfileCompleted() {
+        return this.memberName != null
+                && this.gender != null
+                && this.birth != null
+                && this.level != null
+        ;
+    }
+
     public void withdraw() {
         this.isActive = MemberStatus.INACTIVE;
         this.deletedAt = LocalDateTime.now();
@@ -191,10 +202,11 @@ public class Member extends BaseEntity {
 
     public void rejoin() {
         this.isActive = MemberStatus.ACTIVE;
+        this.deletedAt = null;
         initField();
     }
 
-    public void initField() {
+    private void initField() {
         this.memberName = null;
         this.gender = null;
         this.birth = null;
