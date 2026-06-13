@@ -78,14 +78,14 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("재가입(initField)으로_필수정보가_초기화되면_다시_false가_된다")
-        void 재가입으로_초기화되면_false() {
+        @DisplayName("재가입(rejoin)하면_필수정보가_초기화되어_다시_false가_된다")
+        void 재가입하면_false() {
             // given
             Member member = completedMember();
             assertThat(member.isProfileCompleted()).isTrue();
 
-            // when - rejoin 시 호출되는 필드 초기화
-            member.initField();
+            // when - 재가입 시 상세정보가 초기화된다
+            member.rejoin();
 
             // then
             assertThat(member.isProfileCompleted()).isFalse();

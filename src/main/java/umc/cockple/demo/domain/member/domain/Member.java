@@ -205,7 +205,7 @@ public class Member extends BaseEntity {
         initField();
     }
 
-    public void initField() {
+    private void initField() {
         this.memberName = null;
         this.gender = null;
         this.birth = null;
