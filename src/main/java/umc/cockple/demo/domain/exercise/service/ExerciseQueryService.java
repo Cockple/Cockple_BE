@@ -20,14 +20,12 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseBookmarkReader;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.GuestReader;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
@@ -51,7 +49,6 @@ public class ExerciseQueryService {
     private final GuestReader guestReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseBookmarkReader exerciseBookmarkReader;
-    private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
 
@@ -218,27 +215,6 @@ public class ExerciseQueryService {
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
-    public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
-
-        log.info("운동 추천 조회 시작 - memberId: {}", memberId);
-
-        Member member = memberLookupService.findWithAddressesOrThrow(memberId);
-        MemberAddr mainAddr = memberLookupService.findMainAddressOrThrow(member);
-
-        List<Exercise> candidateExercises = exerciseReader.findRecommendedExercises(
-                memberId, member.getGender(), member.getLevel(), member.getBirth().getYear());
-
-        List<ExerciseWithDistance> finalExercisesWithDistance = getFinalSortedExercises(candidateExercises, mainAddr);
-        List<Exercise> finalExercises = extractExercises(finalExercisesWithDistance);
-
-        List<Long> exerciseIds = getExerciseIds(finalExercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
-
-        log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
-
-        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
-    }
-
     public MyExerciseListDTO.Response getMyExercises(
             Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
 
@@ -266,39 +242,6 @@ public class ExerciseQueryService {
         log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
         return exerciseConverter.toMyExerciseListResponse(exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
-    }
-
-    public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
-            Long memberId,
-            LocalDate startDate,
-            LocalDate endDate,
-            Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
-
-        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터정렬: {}, 기간: {}~{}"
-                , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
-
-        Member member = memberLookupService.findWithAddressesOrThrow(memberId);
-        DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
-
-        List<Exercise> exercises;
-
-        if (isCockpleRecommend) {
-            exercises = exerciseReader.findCockpleRecommendedByDateRange(member, dateRange.start(), dateRange.end());
-        } else {
-            exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), filterSortType);
-        }
-
-        List<Long> exerciseIds = getExerciseIds(exercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
-        Map<Long, Integer> participantCountMap = exerciseParticipantReader.getParticipantCountsMap(exerciseIds);
-        MemberAddr mainAddr = memberLookupService.findMainAddressOrThrow(member);
-
-        log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
-
-        return exerciseConverter.toRecommendationCalendarResponse(
-                exercises, bookmarkStatus, participantCountMap, mainAddr
-                , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
     }
 
     public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
@@ -450,36 +393,6 @@ public class ExerciseQueryService {
 
     private boolean isPartyMember(Party party, Member member) {
         return exerciseParticipantReader.isPartyMember(party, member);
-    }
-
-    private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {
-        return candidateExercises.stream()
-                .map(exercise -> {
-                    double distance = calculateDistance(
-                            mainAddr.getLatitude(),
-                            mainAddr.getLongitude(),
-                            exercise.getExerciseAddr().getLatitude(),
-                            exercise.getExerciseAddr().getLongitude()
-                    );
-                    return new ExerciseWithDistance(exercise, distance);
-                })
-                .sorted(Comparator
-                        .comparing(ExerciseWithDistance::distance)
-                        .thenComparing(ewd -> ewd.exercise().getDate())
-                        .thenComparing(ewd -> ewd.exercise().getStartTime())
-                )
-                .limit(10)
-                .toList();
-    }
-
-    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
-        return exerciseDistanceCalculator.calculate(latitude, longitude, latitude1, longitude1);
-    }
-
-    private static List<Exercise> extractExercises(List<ExerciseWithDistance> finalExercisesWithDistance) {
-        return finalExercisesWithDistance.stream()
-                .map(ExerciseWithDistance::exercise)
-                .toList();
     }
 
     private Pageable createSortedPageable(
@@ -673,7 +586,5 @@ public class ExerciseQueryService {
         }
     }
 
-    private record ExerciseWithDistance(Exercise exercise, double distance) {
-    }
 
 }

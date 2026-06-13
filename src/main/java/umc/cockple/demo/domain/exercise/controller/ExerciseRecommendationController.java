@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.controller.api.ExerciseRecommendationApi
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
+import umc.cockple.demo.domain.exercise.service.query.ExerciseRecommendationQueryService;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
@@ -24,13 +24,13 @@ import java.util.List;
 @Validated
 public class ExerciseRecommendationController implements ExerciseRecommendationApi {
 
-    private final ExerciseQueryService exerciseQueryService;
+    private final ExerciseRecommendationQueryService exerciseRecommendationQueryService;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseRecommendationDTO.Response>> getRecommendedExercises() {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseRecommendationDTO.Response response = exerciseQueryService.getRecommendedExercises(memberId);
+        ExerciseRecommendationDTO.Response response = exerciseRecommendationQueryService.getRecommendedExercises(memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }
@@ -59,7 +59,7 @@ public class ExerciseRecommendationController implements ExerciseRecommendationA
                         .sortType(sortType)
                         .build();
 
-        ExerciseRecommendationCalendarDTO.Response response = exerciseQueryService
+        ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService
                 .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterSortType);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
