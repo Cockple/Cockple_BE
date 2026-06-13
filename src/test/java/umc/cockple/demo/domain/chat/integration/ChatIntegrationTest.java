@@ -150,6 +150,62 @@ class ChatIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("채팅 안 읽은 메시지 수 API")
+    class GetUnreadCounts {
+
+        @Test
+        @DisplayName("200 - 안 읽은 메시지가 없으면 요약 API는 0과 hasUnread false를 반환한다")
+        void getUnreadSummary_noUnreadMessages() throws Exception {
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/unread/summary"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.totalUnreadCount").value(0))
+                    .andExpect(jsonPath("$.data.partyUnreadCount").value(0))
+                    .andExpect(jsonPath("$.data.directUnreadCount").value(0))
+                    .andExpect(jsonPath("$.data.hasUnread").value(false));
+        }
+
+        @Test
+        @DisplayName("200 - 요약 API는 모임과 JOINED 개인 채팅 안읽음 수를 합산한다")
+        void getUnreadSummary_sumsPartyAndDirectUnreadCounts() throws Exception {
+            createUnreadCountScenario();
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/unread/summary"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.totalUnreadCount").value(3))
+                    .andExpect(jsonPath("$.data.partyUnreadCount").value(2))
+                    .andExpect(jsonPath("$.data.directUnreadCount").value(1))
+                    .andExpect(jsonPath("$.data.hasUnread").value(true));
+        }
+
+        @Test
+        @DisplayName("200 - 모임 채팅 안읽음 수 API는 모임 채팅만 합산한다")
+        void getPartyUnreadCount_returnsPartyUnreadOnly() throws Exception {
+            createUnreadCountScenario();
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/parties/unread-count"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.unreadCount").value(2))
+                    .andExpect(jsonPath("$.data.hasUnread").value(true));
+        }
+
+        @Test
+        @DisplayName("200 - 개인 채팅 안읽음 수 API는 JOINED 개인 채팅만 합산한다")
+        void getDirectUnreadCount_returnsJoinedDirectUnreadOnly() throws Exception {
+            createUnreadCountScenario();
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/direct/unread-count"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.unreadCount").value(1))
+                    .andExpect(jsonPath("$.data.hasUnread").value(true));
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/chats/parties - 모임 채팅방 목록 조회")
     class GetPartyChatRooms {
 
@@ -1443,5 +1499,41 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.code").value(ChatErrorCode.INVALID_DOWNLOAD_TOKEN.getCode()));
             }
         }
+    }
+
+    private void createUnreadCountScenario() {
+        ChatRoomMember partyMembership = chatRoomMemberRepository.save(
+                ChatRoomMember.create(partyChatRoom, member));
+        chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, otherMember));
+
+        ChatMessage alreadyReadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "이미 읽은 모임 메시지"));
+        ChatMessage firstUnreadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "읽지 않은 모임 메시지 1"));
+        ChatMessage secondUnreadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "읽지 않은 모임 메시지 2"));
+
+        partyMembership.updateLastReadMessageId(alreadyReadPartyMessage.getId());
+        chatRoomMemberRepository.saveAndFlush(partyMembership);
+
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "철수 채팅"));
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+        ChatMessage unreadDirectMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(directChatRoom, otherMember, "읽지 않은 개인 메시지"));
+
+        ChatRoom pendingDirectRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+        chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingDirectRoom, member, "보류 중인 채팅"));
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingDirectRoom, otherMember, member.getMemberName()));
+        ChatMessage pendingDirectMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(pendingDirectRoom, otherMember, "제외되어야 하는 개인 메시지"));
+
+        messageReadStatusRepository.saveAll(List.of(
+                MessageReadStatus.createUnread(alreadyReadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(firstUnreadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(secondUnreadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(secondUnreadPartyMessage.getId(), otherMember.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(unreadDirectMessage.getId(), member.getId(), directChatRoom.getId()),
+                MessageReadStatus.createUnread(pendingDirectMessage.getId(), member.getId(), pendingDirectRoom.getId())
+        ));
     }
 }
