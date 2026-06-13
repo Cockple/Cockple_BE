@@ -62,7 +62,7 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
     );
 
     @Query("""
-            SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            SELECT CASE WHEN COUNT(mrs) > 0 THEN true ELSE false END FROM MessageReadStatus mrs
             WHERE mrs.memberId = :memberId
             AND mrs.isRead = false
             AND EXISTS (
@@ -73,10 +73,10 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
                 AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
             )
             """)
-    int countPartyUnreadMessagesByMemberId(@Param("memberId") Long memberId);
+    boolean existsPartyUnreadMessagesByMemberId(@Param("memberId") Long memberId);
 
     @Query("""
-            SELECT COUNT(mrs) FROM MessageReadStatus mrs
+            SELECT CASE WHEN COUNT(mrs) > 0 THEN true ELSE false END FROM MessageReadStatus mrs
             WHERE mrs.memberId = :memberId
             AND mrs.isRead = false
             AND EXISTS (
@@ -88,7 +88,7 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
                 AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
             )
             """)
-    int countDirectUnreadMessagesByMemberId(@Param("memberId") Long memberId);
+    boolean existsDirectUnreadMessagesByMemberId(@Param("memberId") Long memberId);
 
     @Query("""
             SELECT COUNT(mrs) FROM MessageReadStatus mrs

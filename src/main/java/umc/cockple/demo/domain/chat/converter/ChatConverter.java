@@ -101,6 +101,14 @@ public class ChatConverter {
                 .build();
     }
 
+    public ChatUnreadStatusDTO.Response toUnreadStatusResponse(boolean hasPartyUnread, boolean hasDirectUnread) {
+        return ChatUnreadStatusDTO.Response.builder()
+                .hasUnread(hasPartyUnread || hasDirectUnread)
+                .hasPartyUnread(hasPartyUnread)
+                .hasDirectUnread(hasDirectUnread)
+                .build();
+    }
+
     // ===개인 채팅방 생성===
     public DirectChatRoomCreateDTO.Response toDirectChatRoomCreateDTO(ChatRoom chatRoom, List<ChatRoomMember> members, String displayName) {
         return DirectChatRoomCreateDTO.Response.builder()

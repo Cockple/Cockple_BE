@@ -94,55 +94,58 @@ class ChatQueryServiceTest {
     }
 
     @Nested
-    @DisplayName("안 읽은 메시지 수 조회")
-    class GetUnreadCounts {
+    @DisplayName("안 읽은 메시지 여부 조회")
+    class GetUnreadStatus {
 
         @Test
-        @DisplayName("요약 조회는 모임과 개인 안읽음 수를 합산한다")
-        void getUnreadSummary_addsPartyAndDirectUnreadCounts() {
+        @DisplayName("모임과 개인 안읽음 여부를 함께 반환한다")
+        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId)).willReturn(3);
-            given(messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId)).willReturn(2);
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
 
             // when
-            var result = chatQueryService.getUnreadSummary(memberId);
+            var result = chatQueryService.getUnreadStatus(memberId);
 
             // then
-            assertThat(result.partyUnreadCount()).isEqualTo(3);
-            assertThat(result.directUnreadCount()).isEqualTo(2);
-            assertThat(result.totalUnreadCount()).isEqualTo(5);
             assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isTrue();
+            assertThat(result.hasDirectUnread()).isFalse();
         }
 
         @Test
-        @DisplayName("모임 안읽음 수가 0이면 hasUnread false를 반환한다")
-        void getPartyUnreadCount_returnsFalseWhenZero() {
+        @DisplayName("모임과 개인 모두 안읽음이 없으면 전체 안읽음 여부가 false이다")
+        void getUnreadStatus_returnsFalseWhenNoUnreadExists() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId)).willReturn(0);
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
 
             // when
-            var result = chatQueryService.getPartyUnreadCount(memberId);
+            var result = chatQueryService.getUnreadStatus(memberId);
 
             // then
-            assertThat(result.unreadCount()).isZero();
             assertThat(result.hasUnread()).isFalse();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isFalse();
         }
 
         @Test
-        @DisplayName("개인 안읽음 수가 있으면 hasUnread true를 반환한다")
-        void getDirectUnreadCount_returnsTrueWhenUnreadExists() {
+        @DisplayName("개인 안읽음만 있으면 전체 안읽음 여부가 true이다")
+        void getUnreadStatus_returnsTrueWhenOnlyDirectUnreadExists() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId)).willReturn(7);
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(true);
 
             // when
-            var result = chatQueryService.getDirectUnreadCount(memberId);
+            var result = chatQueryService.getUnreadStatus(memberId);
 
             // then
-            assertThat(result.unreadCount()).isEqualTo(7);
             assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isTrue();
         }
     }
 

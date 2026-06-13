@@ -32,11 +32,11 @@ public class ChatUnreadQueryService {
                 .orElse(0);
     }
 
-    public int countPartyUnreadMessages(Long memberId) {
-        return messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId);
+    public boolean hasPartyUnreadMessages(Long memberId) {
+        return messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId);
     }
 
-    public int countDirectUnreadMessages(Long memberId) {
-        return messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId);
+    public boolean hasDirectUnreadMessages(Long memberId) {
+        return messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId);
     }
 }

@@ -97,37 +97,37 @@ class ChatUnreadQueryServiceTest {
     }
 
     @Nested
-    @DisplayName("타입별 안읽음 수")
-    class CountUnreadMessagesByType {
+    @DisplayName("타입별 안읽음 여부")
+    class HasUnreadMessagesByType {
 
         @Test
-        @DisplayName("모임 채팅 안읽음 수는 repository 집계 쿼리를 사용한다")
-        void countPartyUnreadMessages_usesRepositoryAggregate() {
+        @DisplayName("모임 채팅 안읽음 여부는 repository exists 쿼리를 사용한다")
+        void hasPartyUnreadMessages_usesRepositoryExists() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.countPartyUnreadMessagesByMemberId(memberId)).willReturn(5);
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
 
             // when
-            int result = chatUnreadQueryService.countPartyUnreadMessages(memberId);
+            boolean result = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
 
             // then
-            assertThat(result).isEqualTo(5);
-            verify(messageReadStatusRepository).countPartyUnreadMessagesByMemberId(memberId);
+            assertThat(result).isTrue();
+            verify(messageReadStatusRepository).existsPartyUnreadMessagesByMemberId(memberId);
         }
 
         @Test
-        @DisplayName("개인 채팅 안읽음 수는 repository 집계 쿼리를 사용한다")
-        void countDirectUnreadMessages_usesRepositoryAggregate() {
+        @DisplayName("개인 채팅 안읽음 여부는 repository exists 쿼리를 사용한다")
+        void hasDirectUnreadMessages_usesRepositoryExists() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.countDirectUnreadMessagesByMemberId(memberId)).willReturn(4);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
 
             // when
-            int result = chatUnreadQueryService.countDirectUnreadMessages(memberId);
+            boolean result = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
 
             // then
-            assertThat(result).isEqualTo(4);
-            verify(messageReadStatusRepository).countDirectUnreadMessagesByMemberId(memberId);
+            assertThat(result).isFalse();
+            verify(messageReadStatusRepository).existsDirectUnreadMessagesByMemberId(memberId);
         }
     }
 
