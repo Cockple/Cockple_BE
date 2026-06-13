@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +36,13 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
+import umc.cockple.demo.domain.exercise.service.support.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.GuestReader;
+import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
@@ -85,7 +91,6 @@ import static org.mockito.Mockito.verify;
 @DisplayName("ExerciseQueryService")
 class ExerciseQueryServiceTest {
 
-    @InjectMocks
     private ExerciseQueryService exerciseQueryService;
 
     @Mock private ExerciseRepository exerciseRepository;
@@ -106,7 +111,7 @@ class ExerciseQueryServiceTest {
     @BeforeEach
     void setUp() {
         exerciseConverter = new ExerciseConverter(fileService);
-        ReflectionTestUtils.setField(exerciseQueryService, "exerciseConverter", exerciseConverter);
+        exerciseQueryService = createExerciseQueryService(exerciseConverter);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -119,6 +124,19 @@ class ExerciseQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "id", 100L);
 
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
+    }
+
+    private ExerciseQueryService createExerciseQueryService(ExerciseConverter exerciseConverter) {
+        return new ExerciseQueryService(
+                new ExerciseReader(exerciseRepository),
+                new GuestReader(guestRepository),
+                new ExerciseParticipantReader(exerciseRepository, memberExerciseRepository, memberPartyRepository),
+                new ExerciseBookmarkReader(exerciseBookmarkRepository),
+                new ExerciseDistanceCalculator(),
+                new MemberLookupService(memberRepository),
+                new PartyLookupService(partyRepository),
+                exerciseConverter
+        );
     }
 
     @Nested
