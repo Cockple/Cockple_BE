@@ -26,6 +26,8 @@ import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -298,9 +300,9 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExercises(999L))
-                        .isInstanceOf(ExerciseException.class)
-                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
-                                .isEqualTo(ExerciseErrorCode.MEMBER_NOT_FOUND));
+                        .isInstanceOf(MemberException.class)
+                        .satisfies(e -> assertThat(((MemberException) e).getCode())
+                                .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
             }
 
             @Test
@@ -316,9 +318,9 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExercises(2L))
-                        .isInstanceOf(ExerciseException.class)
-                        .satisfies(e -> assertThat(((ExerciseException) e).getCode())
-                                .isEqualTo(ExerciseErrorCode.MAIN_ADDRESS_NULL));
+                        .isInstanceOf(MemberException.class)
+                        .satisfies(e -> assertThat(((MemberException) e).getCode())
+                                .isEqualTo(MemberErrorCode.MAIN_ADDRESS_NULL));
             }
         }
     }
@@ -565,8 +567,8 @@ class ExerciseRecommendationQueryServiceTest {
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         999L, startDate, endDate, true, recommendationFilter(MyPartyExerciseOrderType.LATEST)))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
             }
 
             @Test
@@ -582,8 +584,8 @@ class ExerciseRecommendationQueryServiceTest {
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         memberWithoutMainAddr.getId(), startDate, endDate, true, recommendationFilter(MyPartyExerciseOrderType.LATEST)))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MAIN_ADDRESS_NULL);
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MAIN_ADDRESS_NULL);
             }
         }
 

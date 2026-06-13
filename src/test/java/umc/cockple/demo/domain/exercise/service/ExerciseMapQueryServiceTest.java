@@ -22,6 +22,8 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -355,8 +357,8 @@ class ExerciseMapQueryServiceTest {
                 // when & then
                 assertThatThrownBy(() -> exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(LocalDate.of(2026, 4, 1), null, null, radiusKm), 999L))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MEMBER_NOT_FOUND);
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
             }
 
             @Test
@@ -369,8 +371,8 @@ class ExerciseMapQueryServiceTest {
                 // when & then
                 assertThatThrownBy(() -> exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(LocalDate.of(2026, 4, 1), null, null, radiusKm), memberWithoutMainAddr.getId()))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MAIN_ADDRESS_NULL);
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MAIN_ADDRESS_NULL);
             }
 
             @Test
@@ -383,8 +385,8 @@ class ExerciseMapQueryServiceTest {
                 // when & then
                 assertThatThrownBy(() -> exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(LocalDate.of(2026, 4, 1), 37.5, 127.0, radiusKm), memberWithoutMainAddr.getId()))
-                        .isInstanceOf(ExerciseException.class)
-                        .hasFieldOrPropertyWithValue("code", ExerciseErrorCode.MAIN_ADDRESS_NULL);
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MAIN_ADDRESS_NULL);
             }
 
         }

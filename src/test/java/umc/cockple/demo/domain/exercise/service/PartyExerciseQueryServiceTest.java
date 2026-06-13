@@ -45,6 +45,8 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -256,6 +258,37 @@ class PartyExerciseQueryServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
+
+            @Test
+            @DisplayName("존재하지 않는 모임이면 PartyException(PARTY_NOT_FOUND)을 던진다")
+            void 존재하지_않는_모임이면_예외를_던진다() {
+                // given
+                given(partyRepository.findByIdWithLevels(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> partyExerciseQueryService.getPartyExerciseCalendar(
+                        999L, partyMember.getId(), startDate, endDate))
+                        .isInstanceOf(PartyException.class)
+                        .hasFieldOrPropertyWithValue("code", PartyErrorCode.PARTY_NOT_FOUND);
+                verify(memberRepository, never()).findById(any());
+            }
+
+            @Test
+            @DisplayName("존재하지 않는 멤버면 MemberException(MEMBER_NOT_FOUND)을 던진다")
+            void 존재하지_않는_멤버면_예외를_던진다() {
+                // given
+                given(partyRepository.findByIdWithLevels(party.getId()))
+                        .willReturn(Optional.of(party));
+                given(memberRepository.findById(999L))
+                        .willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> partyExerciseQueryService.getPartyExerciseCalendar(
+                        party.getId(), 999L, startDate, endDate))
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
+            }
 
             @Test
             @DisplayName("시작일과 종료일이 함께 오지 않으면 예외를 던진다")

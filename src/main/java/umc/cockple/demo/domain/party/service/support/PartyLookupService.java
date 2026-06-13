@@ -3,9 +3,9 @@ package umc.cockple.demo.domain.party.service.support;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
-import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.exception.PartyErrorCode;
+import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 
 @Service
@@ -17,6 +17,6 @@ public class PartyLookupService {
 
     public Party findByIdWithLevelsOrThrow(Long partyId) {
         return partyRepository.findByIdWithLevels(partyId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.PARTY_NOT_FOUND));
+                .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
     }
 }
