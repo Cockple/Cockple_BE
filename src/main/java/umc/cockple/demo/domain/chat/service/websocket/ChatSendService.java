@@ -24,7 +24,6 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -161,7 +160,7 @@ public class ChatSendService {
         try {
             List<Long> chatRoomMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId());
 
-            Map<Long, Integer> memberUnreadCounts = calculateUnreadCountForMembers(
+            Map<Long, Integer> memberUnreadCounts = chatUnreadQueryService.countUnreadMessagesByMembers(
                     chatRoom.getId(), chatRoomMemberIds);
 
             ChatRoomListUpdateEvent listUpdateEvent = ChatRoomListUpdateEvent.create(
@@ -177,19 +176,6 @@ public class ChatSendService {
 
         } catch (Exception e) {
             log.error("채팅방 목록 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
-        }
-    }
-
-    private Map<Long, Integer> calculateUnreadCountForMembers(
-            Long chatRoomId, List<Long> memberIds) {
-
-        try {
-            return chatUnreadQueryService.countUnreadMessagesByMembers(chatRoomId, memberIds);
-        } catch (Exception e) {
-            log.error("멤버별 안 읽은 메시지 수 일괄 계산 실패 - 채팅방: {}", chatRoomId, e);
-            Map<Long, Integer> unreadCounts = new HashMap<>();
-            memberIds.forEach(memberId -> unreadCounts.put(memberId, 0));
-            return unreadCounts;
         }
     }
 

@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatSendService")
@@ -140,5 +141,40 @@ class ChatSendServiceTest {
         assertThat(event.timestamp()).isEqualTo(sentAt);
         assertThat(event.messageType()).isEqualTo(MessageType.SYSTEM.name());
         assertThat(event.memberUnreadCounts()).containsEntry(101L, 0).containsEntry(102L, 1);
+    }
+
+    @Test
+    @DisplayName("채팅방 목록 unread count 계산에 실패하면 0으로 만든 이벤트를 발행하지 않는다")
+    void sendSystemMessage_doesNotPublishListUpdate_whenUnreadCountBatchFails() {
+        // given
+        Long partyId = 10L;
+        Long roomId = 20L;
+        LocalDateTime sentAt = LocalDateTime.of(2026, 5, 21, 13, 15);
+        String content = "홍길동님이 모임에 참여하셨습니다.";
+
+        Party party = PartyFixture.createParty("배드민턴 모임", 101L, PartyFixture.createPartyAddr("서울", "강남구"));
+        ReflectionTestUtils.setField(party, "id", partyId);
+
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+        ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
+            ChatMessage savedMessage = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedMessage, "id", 300L);
+            ReflectionTestUtils.setField(savedMessage, "createdAt", sentAt);
+            return savedMessage;
+        });
+        given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(101L));
+        given(chatReadService.subscribersToReadStatus(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
+        given(chatRoomMemberRepository.findMemberIdsByChatRoomId(roomId)).willReturn(List.of(101L, 102L));
+        given(messageReadStatusRepository.countUnreadMessagesByMembers(roomId, List.of(101L, 102L)))
+                .willThrow(new RuntimeException("batch unread count failed"));
+
+        // when
+        chatSendService.sendSystemMessage(partyId, content);
+
+        // then
+        then(eventPublisher).should(never()).publishEvent(any(ChatRoomListUpdateEvent.class));
     }
 }
