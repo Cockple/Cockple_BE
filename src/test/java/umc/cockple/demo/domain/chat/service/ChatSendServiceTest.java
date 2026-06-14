@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.presentation.websocket.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
@@ -58,12 +58,12 @@ class ChatSendServiceTest {
     @Mock private ApplicationEventPublisher eventPublisher;
 
     private ChatSendService chatSendService;
-    private ChatConverter chatConverter;
+    private ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
     private ChatUnreadQueryService chatUnreadQueryService;
 
     @BeforeEach
     void setUp() {
-        chatConverter = new ChatConverter();
+        chatWebSocketResponseAssembler = new ChatWebSocketResponseAssembler();
         chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         chatSendService = new ChatSendService(
                 chatRoomRepository,
@@ -73,7 +73,7 @@ class ChatSendServiceTest {
                 subscriptionService,
                 messageReadCreationService,
                 chatProcessor,
-                chatConverter,
+                chatWebSocketResponseAssembler,
                 chatReadService,
                 chatUnreadQueryService,
                 eventPublisher

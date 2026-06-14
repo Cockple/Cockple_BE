@@ -1,11 +1,9 @@
 package umc.cockple.demo.domain.chat.converter;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.Collections;
@@ -13,7 +11,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class ChatConverter {
 
     public static final String UNKNOWN_USER_NAME = "알 수 없는 사용자";
@@ -126,40 +123,6 @@ public class ChatConverter {
                         .memberName(m.getMember().getMemberName())
                         .build()
                 ).collect(Collectors.toList());
-    }
-
-    public WebSocketMessageDTO.MessageResponse toSendMessageResponse(
-            Long chatRoomId, String content,
-            List<ChatCommonDTO.FileInfo> files,
-            ChatMessage savedMessage, Member sender, String senderProfileImageUrl, int unreadCount) {
-        return WebSocketMessageDTO.MessageResponse.builder()
-                .type(WebSocketMessageType.SEND)
-                .chatRoomId(chatRoomId)
-                .messageId(savedMessage.getId())
-                .content(content)
-                .messageType(savedMessage.getType())
-                .images(files)
-                .senderId(sender.getId())
-                .senderName(sender.getMemberName())
-                .senderProfileImageUrl(senderProfileImageUrl)
-                .timestamp(savedMessage.getCreatedAt())
-                .unreadCount(unreadCount)
-                .build();
-    }
-
-    public WebSocketMessageDTO.MessageResponse toSystemMessageResponse(
-            Long chatRoomId, String content, ChatMessage savedMessage) {
-        return WebSocketMessageDTO.MessageResponse.builder()
-                .type(WebSocketMessageType.SEND)
-                .chatRoomId(chatRoomId)
-                .messageId(savedMessage.getId())
-                .content(content)
-                .messageType(savedMessage.getType())
-                .senderId(null)
-                .senderName(SYSTEM_USER_NAME)
-                .senderProfileImageUrl(null)
-                .timestamp(savedMessage.getCreatedAt())
-                .build();
     }
 
     public ChatRoomDetailDTO.ChatRoomInfo toChatRoomDetailChatRoomInfo(

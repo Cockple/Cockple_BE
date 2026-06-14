@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.presentation.websocket.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
@@ -42,7 +42,7 @@ public class ChatSendService {
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
-    private final ChatConverter chatConverter;
+    private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
     private final ChatReadService chatReadService;
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ApplicationEventPublisher eventPublisher;
@@ -71,7 +71,7 @@ public class ChatSendService {
 
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
-                chatConverter.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
+                chatWebSocketResponseAssembler.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
 
@@ -98,7 +98,7 @@ public class ChatSendService {
         );
 
         WebSocketMessageDTO.MessageResponse broadcastSystemMessage
-                = chatConverter.toSystemMessageResponse(chatRoom.getId(), content, savedSystemMessage);
+                = chatWebSocketResponseAssembler.toSystemMessageResponse(chatRoom.getId(), content, savedSystemMessage);
 
         subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
         publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);

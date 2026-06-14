@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.converter;
+package umc.cockple.demo.domain.chat.presentation.websocket;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,10 +20,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("ChatConverter")
-class ChatConverterTest {
+@DisplayName("ChatWebSocketResponseAssembler")
+class ChatWebSocketResponseAssemblerTest {
 
-    private final ChatConverter chatConverter = new ChatConverter();
+    private final ChatWebSocketResponseAssembler assembler = new ChatWebSocketResponseAssembler();
 
     @Test
     @DisplayName("일반 WebSocket 메시지 응답에는 TEXT messageType이 포함된다")
@@ -40,7 +40,7 @@ class ChatConverterTest {
         ReflectionTestUtils.setField(message, "id", 100L);
         ReflectionTestUtils.setField(message, "createdAt", LocalDateTime.of(2026, 5, 21, 23, 0));
 
-        WebSocketMessageDTO.MessageResponse response = chatConverter.toSendMessageResponse(
+        WebSocketMessageDTO.MessageResponse response = assembler.toSendMessageResponse(
                 chatRoom.getId(),
                 "안녕하세요",
                 List.of(ChatCommonDTO.FileInfo.builder().imageId(1L).imageUrl("https://cdn.example.com/1").build()),
@@ -68,7 +68,7 @@ class ChatConverterTest {
         ReflectionTestUtils.setField(systemMessage, "id", 200L);
         ReflectionTestUtils.setField(systemMessage, "createdAt", LocalDateTime.of(2026, 5, 21, 23, 5));
 
-        WebSocketMessageDTO.MessageResponse response = chatConverter.toSystemMessageResponse(
+        WebSocketMessageDTO.MessageResponse response = assembler.toSystemMessageResponse(
                 chatRoom.getId(),
                 systemMessage.getContent(),
                 systemMessage

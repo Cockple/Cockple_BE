@@ -13,10 +13,11 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | WebSocket dispatch | `presentation/websocket/ChatWebSocketRequestDispatcher.java` | parses socket payloads and delegates authenticated requests |
 | WebSocket commands | `presentation/websocket/ChatWebSocketCommandHandler.java` | handles socket request types and publishes command events |
 | WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | serializes and sends socket responses |
+| WebSocket response assembly | `presentation/websocket/ChatWebSocketResponseAssembler.java` | shapes socket response payloads |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
 | Read/query flows | `service/ChatQueryServiceImpl.java` | room lists, unread counts, history |
 | Events | `events/` | send/subscription events bridge transport and async handlers |
-| DTO conversion | `converter/ChatConverter.java` | shapes REST/socket payloads |
+| DTO conversion | `converter/ChatConverter.java` | shapes REST/API and common message payloads |
 
 ## CONVENTIONS
 - `presentation/websocket/ChatWebSocketConfig` registers `/ws/chats` and wires the JWT interceptor.
