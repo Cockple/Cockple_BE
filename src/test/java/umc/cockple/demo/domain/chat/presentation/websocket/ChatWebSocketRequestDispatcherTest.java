@@ -8,26 +8,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatWebSocketRequestDispatcher")
 class ChatWebSocketRequestDispatcherTest {
 
-    @Mock private ChatValidator chatValidator;
     @Mock private WebSocketResponseSender webSocketResponseSender;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private ChatWebSocketCommandHandler commandHandler;
     @Mock private WebSocketSession session;
 
     private ChatWebSocketRequestDispatcher dispatcher;
@@ -36,15 +34,14 @@ class ChatWebSocketRequestDispatcherTest {
     void setUp() {
         dispatcher = new ChatWebSocketRequestDispatcher(
                 new ObjectMapper(),
-                chatValidator,
                 webSocketResponseSender,
-                eventPublisher
+                commandHandler
         );
     }
 
     @Test
-    @DisplayName("SEND 요청을 검증한 뒤 메시지 전송 이벤트로 라우팅한다")
-    void dispatch_routesSendRequestToChatMessageSendEvent() {
+    @DisplayName("인증된 요청을 파싱해 command handler에 위임한다")
+    void dispatch_delegatesAuthenticatedRequestToCommandHandler() {
         // given
         Long memberId = 10L;
         Long chatRoomId = 20L;
@@ -61,15 +58,14 @@ class ChatWebSocketRequestDispatcherTest {
         dispatcher.dispatch(session, payload);
 
         // then
-        then(chatValidator).should().validateSendRequest(chatRoomId, "hello", List.of(), memberId);
+        ArgumentCaptor<WebSocketMessageDTO.Request> requestCaptor = ArgumentCaptor.forClass(WebSocketMessageDTO.Request.class);
+        then(commandHandler).should().handle(eq(session), requestCaptor.capture(), eq(memberId));
 
-        ArgumentCaptor<ChatMessageSendEvent> eventCaptor = ArgumentCaptor.forClass(ChatMessageSendEvent.class);
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        ChatMessageSendEvent event = eventCaptor.getValue();
-        assertThat(event.chatRoomId()).isEqualTo(chatRoomId);
-        assertThat(event.senderId()).isEqualTo(memberId);
-        assertThat(event.content()).isEqualTo("hello");
-        assertThat(event.files()).isEmpty();
+        WebSocketMessageDTO.Request request = requestCaptor.getValue();
+        assertThat(request.type()).isEqualTo(WebSocketMessageType.SEND);
+        assertThat(request.chatRoomId()).isEqualTo(chatRoomId);
+        assertThat(request.content()).isEqualTo("hello");
+        assertThat(request.images()).isEmpty();
 
         then(webSocketResponseSender).shouldHaveNoInteractions();
     }
@@ -89,7 +85,6 @@ class ChatWebSocketRequestDispatcherTest {
         // then
         then(webSocketResponseSender).should()
                 .sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
-        then(chatValidator).shouldHaveNoInteractions();
-        then(eventPublisher).shouldHaveNoInteractions();
+        then(commandHandler).shouldHaveNoInteractions();
     }
 }
