@@ -87,4 +87,21 @@ class ChatWebSocketRequestDispatcherTest {
                 .sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
         then(commandHandler).shouldHaveNoInteractions();
     }
+
+    @Test
+    @DisplayName("파싱 실패 시 내부 예외 메시지 없이 일반 처리 오류 응답을 전송한다")
+    void dispatch_sendsGenericProcessingError_whenPayloadCannotBeParsed() {
+        // given
+        given(session.getId()).willReturn("session-1");
+        String invalidPayload = "{invalid-json";
+
+        // when
+        dispatcher.dispatch(session, invalidPayload);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다.");
+        then(commandHandler).shouldHaveNoInteractions();
+    }
+
 }

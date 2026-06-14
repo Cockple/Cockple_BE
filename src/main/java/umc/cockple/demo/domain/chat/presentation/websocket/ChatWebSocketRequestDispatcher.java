@@ -17,8 +17,7 @@ public class ChatWebSocketRequestDispatcher {
     private final ChatWebSocketCommandHandler commandHandler;
 
     public void dispatch(WebSocketSession session, String payload) {
-        log.info("메시지 수신");
-        log.info("메시지: {}", payload);
+        log.info("메시지 수신 - 세션 ID: {}, payloadSize: {}", session.getId(), payload == null ? 0 : payload.length());
 
         try {
             WebSocketMessageDTO.Request request = objectMapper.readValue(
@@ -36,7 +35,7 @@ public class ChatWebSocketRequestDispatcher {
 
         } catch (Exception e) {
             log.error("메시지 처리 중 에러 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
+            webSocketResponseSender.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다.");
         }
     }
 }
