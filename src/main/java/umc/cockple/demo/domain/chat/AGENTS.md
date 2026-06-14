@@ -10,7 +10,7 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 |------|----------|-------|
 | WebSocket ingress | `presentation/websocket/ChatWebSocketHandler.java` | handles connect/message/close/error |
 | Auth for sockets | `presentation/websocket/` | JWT auth is enforced before handler logic |
-| WebSocket responses | `presentation/websocket/WebSocketMessageService.java` | serializes and sends socket responses |
+| WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | serializes and sends socket responses |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
 | Read/query flows | `service/ChatQueryServiceImpl.java` | room lists, unread counts, history |
 | Events | `events/` | send/subscription events bridge transport and async handlers |

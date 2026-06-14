@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class WebSocketMessageService {
+public class WebSocketResponseSender {
 
     private final ObjectMapper objectMapper;
 

@@ -26,7 +26,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final SubscriptionService subscriptionService;
     private final MemberQueryService memberQueryService;
-    private final WebSocketMessageService webSocketMessageService;
+    private final WebSocketResponseSender webSocketResponseSender;
     private final ChatValidator chatValidator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
@@ -46,7 +46,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 subscriptionService.addSession(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
-                webSocketMessageService.sendConnectionSuccessMessage(session, memberInfo);
+                webSocketResponseSender.sendConnectionSuccessMessage(session, memberInfo);
             } else {
                 log.warn("memberId를 찾을 수 없습니다. 세션을 종료합니다.");
                 session.close();
@@ -69,7 +69,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             Long memberId = (Long) session.getAttributes().get("memberId");
             if (memberId == null) {
-                webSocketMessageService.sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
+                webSocketResponseSender.sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
                 return;
             }
 
@@ -92,12 +92,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     handleUnsubscribeChatList(session, request, memberId);
                     break;
                 default:
-                    webSocketMessageService.sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
+                    webSocketResponseSender.sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
             }
 
         } catch (Exception e) {
             log.error("메시지 처리 중 에러 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
+            webSocketResponseSender.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다:" + e.getMessage());
         }
     }
 
@@ -138,10 +138,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         } catch (ChatException e) {
             log.warn("메시지 전송 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("메시지 전송 처리 중 예외 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
+            webSocketResponseSender.sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -153,14 +153,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
             eventPublisher.publishEvent(subscribeEvent);
 
-            webSocketMessageService.sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+            webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
 
         } catch (ChatException e) {
             log.warn("구독 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("구독 처리 중 예외 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
+            webSocketResponseSender.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -172,14 +172,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
             eventPublisher.publishEvent(unsubscribeEvent);
 
-            webSocketMessageService.sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+            webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
 
         } catch (ChatException e) {
             log.warn("구독 해제 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("구독 해제 처리 중 예외 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
+            webSocketResponseSender.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -191,14 +191,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatListSubscriptionEvent.subscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(subscribeEvent);
 
-            webSocketMessageService.sendChatListSubscriptionMessage(session, request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
+            webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());
-            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("채팅방 목록 구독 처리 중 예외 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
+            webSocketResponseSender.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -210,14 +210,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     ChatListSubscriptionEvent.unsubscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(unsubscribeEvent);
 
-            webSocketMessageService.sendChatListSubscriptionMessage(session, request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
+            webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 해제 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());
-            webSocketMessageService.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("채팅방 목록 구독 해제 처리 중 예외 발생", e);
-            webSocketMessageService.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
+            webSocketResponseSender.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 
