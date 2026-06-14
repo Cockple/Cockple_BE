@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 
 import java.util.List;
 
@@ -59,6 +60,22 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
     int countAllUnreadMessages(
             @Param("chatRoomId") Long chatRoomId,
             @Param("memberId") Long memberId
+    );
+
+    @Query("""
+            SELECT new umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO(mrs.chatRoomId, COUNT(mrs))
+            FROM MessageReadStatus mrs, ChatRoomMember crm
+            WHERE crm.chatRoom.id = mrs.chatRoomId
+            AND crm.member.id = :memberId
+            AND mrs.memberId = :memberId
+            AND mrs.chatRoomId IN :chatRoomIds
+            AND mrs.isRead = false
+            AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            GROUP BY mrs.chatRoomId
+            """)
+    List<ChatRoomUnreadCountDTO> countUnreadMessagesByChatRooms(
+            @Param("memberId") Long memberId,
+            @Param("chatRoomIds") List<Long> chatRoomIds
     );
 
     @Query("""

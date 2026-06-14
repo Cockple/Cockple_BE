@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -18,9 +19,12 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -93,6 +97,43 @@ class ChatUnreadQueryServiceTest {
 
             // then
             assertThat(result).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("batch countUnreadMessages")
+    class BatchCountUnreadMessages {
+
+        @Test
+        @DisplayName("채팅방별 안읽음 수를 조회하고 결과가 없는 채팅방은 0으로 채운다")
+        void countUnreadMessagesByChatRooms_fillsMissingRoomsWithZero() {
+            // given
+            Long memberId = 10L;
+            List<Long> chatRoomIds = List.of(1L, 2L, 3L);
+            given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, chatRoomIds))
+                    .willReturn(List.of(
+                            new ChatRoomUnreadCountDTO(1L, 4L),
+                            new ChatRoomUnreadCountDTO(3L, 2L)
+                    ));
+
+            // when
+            Map<Long, Integer> result = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
+            // then
+            assertThat(result).containsEntry(1L, 4)
+                    .containsEntry(2L, 0)
+                    .containsEntry(3L, 2);
+        }
+
+        @Test
+        @DisplayName("입력 목록이 비어 있으면 repository를 호출하지 않고 빈 Map을 반환한다")
+        void countUnreadMessagesByChatRooms_returnsEmptyMap_whenChatRoomIdsAreEmpty() {
+            // when
+            Map<Long, Integer> result = chatUnreadQueryService.countUnreadMessagesByChatRooms(10L, List.of());
+
+            // then
+            assertThat(result).isEmpty();
+            verify(messageReadStatusRepository, never()).countUnreadMessagesByChatRooms(anyLong(), anyList());
         }
     }
 

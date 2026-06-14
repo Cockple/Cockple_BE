@@ -30,6 +30,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -191,15 +192,21 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRooms.isEmpty()) {
             return chatConverter.toEmptyPartyChatRoomInfos();
         }
-        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
+        List<ChatRoom> chatRoomList = chatRooms.getContent();
+        List<Long> chatRoomIds = chatRoomList.stream()
+                .map(ChatRoom::getId)
+                .toList();
+        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
+        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
-                    ChatRoomMember chatRoomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
+                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    int unreadCount = chatUnreadQueryService.countUnreadMessages(chatRoomMember);
+                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -221,8 +228,14 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRooms.isEmpty()) {
             return chatConverter.toEmptyDirectChatRoomInfos();
         }
+        List<ChatRoom> chatRoomList = chatRooms.getContent();
+        List<Long> chatRoomIds = chatRoomList.stream()
+                .map(ChatRoom::getId)
+                .toList();
+        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
         // 각 채팅방에 대해 ChatRoomInfo 생성
-        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
+        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
@@ -236,7 +249,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                             .findFirst()
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
-                    int unreadCount = chatUnreadQueryService.countUnreadMessages(myMember);
+                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
