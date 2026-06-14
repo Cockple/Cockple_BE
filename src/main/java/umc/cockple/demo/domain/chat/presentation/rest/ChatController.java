@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.controller;
+package umc.cockple.demo.domain.chat.presentation.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

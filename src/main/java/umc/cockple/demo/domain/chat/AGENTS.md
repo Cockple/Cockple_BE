@@ -8,15 +8,15 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| WebSocket ingress | `handler/ChatWebSocketHandler.java` | handles connect/message/close/error |
-| Auth for sockets | `interceptor/` | JWT auth is enforced before handler logic |
+| WebSocket ingress | `presentation/websocket/ChatWebSocketHandler.java` | handles connect/message/close/error |
+| Auth for sockets | `presentation/websocket/` | JWT auth is enforced before handler logic |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
 | Read/query flows | `service/ChatQueryServiceImpl.java` | room lists, unread counts, history |
 | Events | `events/` | send/subscription events bridge transport and async handlers |
 | DTO conversion | `converter/ChatConverter.java` | shapes REST/socket payloads |
 
 ## CONVENTIONS
-- `WebSocketConfig` registers `/ws/chats` and wires the JWT interceptor.
+- `presentation/websocket/ChatWebSocketConfig` registers `/ws/chats` and wires the JWT interceptor.
 - Request `type()` drives socket branching: send, subscribe, unsubscribe, and chat-list variants.
 - Party chat and direct chat share the slice but differ in display-name/image/read-status logic.
 - Room list freshness depends on `service/websocket/ChatRoomListCacheService`.
