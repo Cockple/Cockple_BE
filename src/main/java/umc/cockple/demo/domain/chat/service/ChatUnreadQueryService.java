@@ -3,8 +3,6 @@ package umc.cockple.demo.domain.chat.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
 import java.util.LinkedHashMap;
@@ -17,24 +15,6 @@ import java.util.Map;
 public class ChatUnreadQueryService {
 
     private final MessageReadStatusRepository messageReadStatusRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
-
-    public int countUnreadMessages(ChatRoomMember chatRoomMember) {
-        Long chatRoomId = chatRoomMember.getChatRoom().getId();
-        Long memberId = chatRoomMember.getMember().getId();
-        Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
-
-        if (lastReadMessageId == null) {
-            return messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-        }
-        return messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-    }
-
-    public int countUnreadMessagesOrZero(Long chatRoomId, Long memberId) {
-        return chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                .map(this::countUnreadMessages)
-                .orElse(0);
-    }
 
     public Map<Long, Integer> countUnreadMessagesByChatRooms(Long memberId, List<Long> chatRoomIds) {
         Map<Long, Integer> unreadCounts = initializeZeroCountMap(chatRoomIds);
@@ -44,6 +24,18 @@ public class ChatUnreadQueryService {
 
         messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, chatRoomIds)
                 .forEach(count -> unreadCounts.put(count.chatRoomId(), count.unreadCount().intValue()));
+
+        return unreadCounts;
+    }
+
+    public Map<Long, Integer> countUnreadMessagesByMembers(Long chatRoomId, List<Long> memberIds) {
+        Map<Long, Integer> unreadCounts = initializeZeroCountMap(memberIds);
+        if (memberIds.isEmpty()) {
+            return unreadCounts;
+        }
+
+        messageReadStatusRepository.countUnreadMessagesByMembers(chatRoomId, memberIds)
+                .forEach(count -> unreadCounts.put(count.memberId(), count.unreadCount().intValue()));
 
         return unreadCounts;
     }

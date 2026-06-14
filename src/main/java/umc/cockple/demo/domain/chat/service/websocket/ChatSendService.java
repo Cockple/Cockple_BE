@@ -183,19 +183,14 @@ public class ChatSendService {
     private Map<Long, Integer> calculateUnreadCountForMembers(
             Long chatRoomId, List<Long> memberIds) {
 
-        Map<Long, Integer> unreadCounts = new HashMap<>();
-
-        for (Long memberId : memberIds) {
-            try {
-                unreadCounts.put(memberId, chatUnreadQueryService.countUnreadMessagesOrZero(chatRoomId, memberId));
-
-            } catch (Exception e) {
-                log.error("멤버 {} 안 읽은 메시지 수 계산 실패 - 채팅방: {}", memberId, chatRoomId, e);
-                unreadCounts.put(memberId, 0);
-            }
+        try {
+            return chatUnreadQueryService.countUnreadMessagesByMembers(chatRoomId, memberIds);
+        } catch (Exception e) {
+            log.error("멤버별 안 읽은 메시지 수 일괄 계산 실패 - 채팅방: {}", chatRoomId, e);
+            Map<Long, Integer> unreadCounts = new HashMap<>();
+            memberIds.forEach(memberId -> unreadCounts.put(memberId, 0));
+            return unreadCounts;
         }
-
-        return unreadCounts;
     }
 
     // 채팅 알림 이벤트 발행

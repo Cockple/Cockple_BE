@@ -81,7 +81,7 @@ class ChatQueryServiceTest {
     void setUp() {
         chatConverter = new ChatConverter();
         chatProcessor = new ChatProcessor(fileService, chatConverter);
-        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatRoomMemberRepository);
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
@@ -223,8 +223,6 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.partyImgUrl()).isNull();
                 assertThat(roomInfo.lastMessage()).isNull();
                 verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(anyLong(), anyLong());
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
             }
 
             @Test
@@ -285,8 +283,6 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
 
                 verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(anyLong(), anyLong());
                 verify(chatRoomListCacheService).getLastMessage(roomId);
                 verify(fileService).getUrlFromKey("party/image.png");
             }
@@ -592,8 +588,6 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage()).isNull();
 
                 verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(anyLong(), anyLong());
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
                 verify(fileService, never()).getUrlFromKey(any());
             }
 
@@ -660,8 +654,6 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
 
                 verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(anyLong(), anyLong());
                 verify(chatRoomListCacheService).getLastMessage(roomId);
                 verify(fileService).getUrlFromKey("member/profile.png");
             }
@@ -891,7 +883,6 @@ class ChatQueryServiceTest {
 
                 verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 5));
                 verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
                 verify(fileService, never()).getUrlFromKey("member/search-profile.png");
                 verify(chatRoomListCacheService).getLastMessage(roomId);
             }
