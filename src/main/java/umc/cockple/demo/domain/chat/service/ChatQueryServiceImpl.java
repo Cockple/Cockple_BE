@@ -18,7 +18,6 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -31,6 +30,7 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -44,8 +44,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatMessageRepository chatMessageRepository;
     private final PartyRepository partyRepository;
     private final MemberPartyRepository memberPartyRepository;
-    private final MessageReadStatusRepository messageReadStatusRepository;
 
+    private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
     private final FileService fileService;
     private final ChatProcessor chatProcessor;
@@ -89,6 +89,17 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
         log.info("[개인 채팅방 이름 검색 완료]");
         return response;
+    }
+
+    @Override
+    public ChatUnreadStatusDTO.Response getUnreadStatus(Long memberId) {
+        log.info("[채팅 안읽음 여부 조회 시작]- 요청자: {}", memberId);
+        boolean hasPartyUnread = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
+        boolean hasDirectUnread = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
+        boolean hasUnread = hasPartyUnread || hasDirectUnread;
+        log.info("[채팅 안읽음 여부 조회 완료]- hasUnread: {}", hasUnread);
+
+        return chatConverter.toUnreadStatusResponse(hasPartyUnread, hasDirectUnread);
     }
 
     @Override
@@ -181,21 +192,21 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRooms.isEmpty()) {
             return chatConverter.toEmptyPartyChatRoomInfos();
         }
-        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
+        List<ChatRoom> chatRoomList = chatRooms.getContent();
+        List<Long> chatRoomIds = chatRoomList.stream()
+                .map(ChatRoom::getId)
+                .toList();
+        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
+        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
-                    ChatRoomMember chatRoomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
+                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    Long lastReadMessageId = chatRoomMember.getLastReadMessageId();
-                    int unreadCount;
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
+                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
                     String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
@@ -217,8 +228,14 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRooms.isEmpty()) {
             return chatConverter.toEmptyDirectChatRoomInfos();
         }
+        List<ChatRoom> chatRoomList = chatRooms.getContent();
+        List<Long> chatRoomIds = chatRoomList.stream()
+                .map(ChatRoom::getId)
+                .toList();
+        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
         // 각 채팅방에 대해 ChatRoomInfo 생성
-        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRooms.stream()
+        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
 
@@ -232,13 +249,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
                             .findFirst()
                             .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
-                    Long lastReadMessageId = myMember.getLastReadMessageId();
-                    int unreadCount;
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
+                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 

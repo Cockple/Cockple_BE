@@ -150,6 +150,49 @@ class ChatIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("GET /api/chats/unread-status - 채팅 안 읽은 메시지 여부 조회")
+    class GetUnreadStatus {
+
+        @Test
+        @DisplayName("200 - 안 읽은 메시지가 없으면 모든 여부를 false로 반환한다")
+        void getUnreadStatus_noUnreadMessages() throws Exception {
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/unread-status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasUnread").value(false))
+                    .andExpect(jsonPath("$.data.hasPartyUnread").value(false))
+                    .andExpect(jsonPath("$.data.hasDirectUnread").value(false));
+        }
+
+        @Test
+        @DisplayName("200 - 모임과 JOINED 개인 채팅 안읽음 여부를 한 번에 반환한다")
+        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() throws Exception {
+            createUnreadStatusScenario();
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/unread-status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasUnread").value(true))
+                    .andExpect(jsonPath("$.data.hasPartyUnread").value(true))
+                    .andExpect(jsonPath("$.data.hasDirectUnread").value(true));
+        }
+
+        @Test
+        @DisplayName("200 - 타 회원, PENDING 개인 채팅, 마지막 읽음 이전 메시지는 제외한다")
+        void getUnreadStatus_excludesInvisibleUnreadRows() throws Exception {
+            createExcludedUnreadStatusScenario();
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/unread-status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasUnread").value(false))
+                    .andExpect(jsonPath("$.data.hasPartyUnread").value(false))
+                    .andExpect(jsonPath("$.data.hasDirectUnread").value(false));
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/chats/parties - 모임 채팅방 목록 조회")
     class GetPartyChatRooms {
 
@@ -1443,5 +1486,64 @@ class ChatIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.code").value(ChatErrorCode.INVALID_DOWNLOAD_TOKEN.getCode()));
             }
         }
+    }
+
+    private void createUnreadStatusScenario() {
+        ChatRoomMember partyMembership = chatRoomMemberRepository.save(
+                ChatRoomMember.create(partyChatRoom, member));
+        chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, otherMember));
+
+        ChatMessage alreadyReadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "이미 읽은 모임 메시지"));
+        ChatMessage firstUnreadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "읽지 않은 모임 메시지 1"));
+        ChatMessage secondUnreadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "읽지 않은 모임 메시지 2"));
+
+        partyMembership.updateLastReadMessageId(alreadyReadPartyMessage.getId());
+        chatRoomMemberRepository.saveAndFlush(partyMembership);
+
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, member, "철수 채팅"));
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(directChatRoom, otherMember, member.getMemberName()));
+        ChatMessage unreadDirectMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(directChatRoom, otherMember, "읽지 않은 개인 메시지"));
+
+        ChatRoom pendingDirectRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+        chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingDirectRoom, member, "보류 중인 채팅"));
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingDirectRoom, otherMember, member.getMemberName()));
+        ChatMessage pendingDirectMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(pendingDirectRoom, otherMember, "제외되어야 하는 개인 메시지"));
+
+        messageReadStatusRepository.saveAll(List.of(
+                MessageReadStatus.createUnread(alreadyReadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(firstUnreadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(secondUnreadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(secondUnreadPartyMessage.getId(), otherMember.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(unreadDirectMessage.getId(), member.getId(), directChatRoom.getId()),
+                MessageReadStatus.createUnread(pendingDirectMessage.getId(), member.getId(), pendingDirectRoom.getId())
+        ));
+    }
+
+    private void createExcludedUnreadStatusScenario() {
+        ChatRoomMember partyMembership = chatRoomMemberRepository.save(
+                ChatRoomMember.create(partyChatRoom, member));
+        chatRoomMemberRepository.save(ChatRoomMember.create(partyChatRoom, otherMember));
+
+        ChatMessage lastReadPartyMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(partyChatRoom, otherMember, "마지막으로 읽은 모임 메시지"));
+        partyMembership.updateLastReadMessageId(lastReadPartyMessage.getId());
+        chatRoomMemberRepository.saveAndFlush(partyMembership);
+
+        ChatRoom pendingDirectRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+        chatRoomMemberRepository.save(ChatRoomMember.createPending(pendingDirectRoom, member, "보류 중인 채팅"));
+        chatRoomMemberRepository.save(ChatRoomMember.createJoined(pendingDirectRoom, otherMember, member.getMemberName()));
+        ChatMessage pendingDirectMessage = chatMessageRepository.save(
+                ChatFixture.createTextMessage(pendingDirectRoom, otherMember, "제외되어야 하는 개인 메시지"));
+
+        messageReadStatusRepository.saveAll(List.of(
+                MessageReadStatus.createUnread(lastReadPartyMessage.getId(), member.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(lastReadPartyMessage.getId(), otherMember.getId(), partyChatRoom.getId()),
+                MessageReadStatus.createUnread(pendingDirectMessage.getId(), member.getId(), pendingDirectRoom.getId())
+        ));
     }
 }

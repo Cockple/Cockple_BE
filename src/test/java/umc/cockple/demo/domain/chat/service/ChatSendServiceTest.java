@@ -12,7 +12,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
@@ -20,15 +19,14 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
 import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.support.fixture.ChatFixture;
-import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDateTime;
@@ -42,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatSendService")
@@ -60,21 +59,23 @@ class ChatSendServiceTest {
 
     private ChatSendService chatSendService;
     private ChatConverter chatConverter;
+    private ChatUnreadQueryService chatUnreadQueryService;
 
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         chatSendService = new ChatSendService(
                 chatRoomRepository,
                 memberRepository,
                 chatMessageRepository,
                 chatRoomMemberRepository,
-                messageReadStatusRepository,
                 subscriptionService,
                 messageReadCreationService,
                 chatProcessor,
                 chatConverter,
                 chatReadService,
+                chatUnreadQueryService,
                 eventPublisher
         );
     }
@@ -88,19 +89,11 @@ class ChatSendServiceTest {
         LocalDateTime sentAt = LocalDateTime.of(2026, 5, 21, 13, 15);
         String content = "홍길동님이 모임에 참여하셨습니다.";
 
-        Member memberA = MemberFixture.createMemberWithName("홍길동", "길동", umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.A, 1001L);
-        ReflectionTestUtils.setField(memberA, "id", 101L);
-        Member memberB = MemberFixture.createMemberWithName("김철수", "철수", umc.cockple.demo.global.enums.Gender.MALE, umc.cockple.demo.global.enums.Level.B, 1002L);
-        ReflectionTestUtils.setField(memberB, "id", 102L);
-
         Party party = PartyFixture.createParty("배드민턴 모임", 101L, PartyFixture.createPartyAddr("서울", "강남구"));
         ReflectionTestUtils.setField(party, "id", partyId);
 
         ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
         ReflectionTestUtils.setField(chatRoom, "id", roomId);
-
-        ChatRoomMember memberOne = ChatFixture.createJoinedMember(chatRoom, memberA);
-        ChatRoomMember memberTwo = ChatFixture.createJoinedMember(chatRoom, memberB);
 
         given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
@@ -112,10 +105,8 @@ class ChatSendServiceTest {
         given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(101L));
         given(chatReadService.subscribersToReadStatus(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
         given(chatRoomMemberRepository.findMemberIdsByChatRoomId(roomId)).willReturn(List.of(101L, 102L));
-        given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, 101L)).willReturn(Optional.of(memberOne));
-        given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, 102L)).willReturn(Optional.of(memberTwo));
-        given(messageReadStatusRepository.countAllUnreadMessages(roomId, 101L)).willReturn(0);
-        given(messageReadStatusRepository.countAllUnreadMessages(roomId, 102L)).willReturn(1);
+        given(messageReadStatusRepository.countUnreadMessagesByMembers(roomId, List.of(101L, 102L)))
+                .willReturn(List.of(new ChatMemberUnreadCountDTO(102L, 1L)));
 
         // when
         chatSendService.sendSystemMessage(partyId, content);
@@ -150,5 +141,40 @@ class ChatSendServiceTest {
         assertThat(event.timestamp()).isEqualTo(sentAt);
         assertThat(event.messageType()).isEqualTo(MessageType.SYSTEM.name());
         assertThat(event.memberUnreadCounts()).containsEntry(101L, 0).containsEntry(102L, 1);
+    }
+
+    @Test
+    @DisplayName("채팅방 목록 unread count 계산에 실패하면 0으로 만든 이벤트를 발행하지 않는다")
+    void sendSystemMessage_doesNotPublishListUpdate_whenUnreadCountBatchFails() {
+        // given
+        Long partyId = 10L;
+        Long roomId = 20L;
+        LocalDateTime sentAt = LocalDateTime.of(2026, 5, 21, 13, 15);
+        String content = "홍길동님이 모임에 참여하셨습니다.";
+
+        Party party = PartyFixture.createParty("배드민턴 모임", 101L, PartyFixture.createPartyAddr("서울", "강남구"));
+        ReflectionTestUtils.setField(party, "id", partyId);
+
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+        ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+        given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
+            ChatMessage savedMessage = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedMessage, "id", 300L);
+            ReflectionTestUtils.setField(savedMessage, "createdAt", sentAt);
+            return savedMessage;
+        });
+        given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(101L));
+        given(chatReadService.subscribersToReadStatus(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
+        given(chatRoomMemberRepository.findMemberIdsByChatRoomId(roomId)).willReturn(List.of(101L, 102L));
+        given(messageReadStatusRepository.countUnreadMessagesByMembers(roomId, List.of(101L, 102L)))
+                .willThrow(new RuntimeException("batch unread count failed"));
+
+        // when
+        chatSendService.sendSystemMessage(partyId, content);
+
+        // then
+        then(eventPublisher).should(never()).publishEvent(any(ChatRoomListUpdateEvent.class));
     }
 }

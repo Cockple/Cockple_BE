@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
+import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 
 import java.util.List;
 
@@ -37,29 +39,65 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
             @Param("memberIds") List<Long> memberIds);
 
     @Query("""
-            SELECT COUNT(mrs) FROM MessageReadStatus mrs
-            WHERE mrs.chatRoomId = :chatRoomId
+            SELECT new umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO(mrs.chatRoomId, COUNT(mrs))
+            FROM MessageReadStatus mrs, ChatRoomMember crm
+            WHERE crm.chatRoom.id = mrs.chatRoomId
+            AND crm.member.id = :memberId
             AND mrs.memberId = :memberId
-            AND mrs.chatMessageId > :lastReadMessageId
+            AND mrs.chatRoomId IN :chatRoomIds
             AND mrs.isRead = false
+            AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            GROUP BY mrs.chatRoomId
             """)
-    int countUnreadMessagesAfter(
-            @Param("chatRoomId") Long chatRoomId,
+    List<ChatRoomUnreadCountDTO> countUnreadMessagesByChatRooms(
             @Param("memberId") Long memberId,
-            @Param("lastReadMessageId") Long lastReadMessageId
+            @Param("chatRoomIds") List<Long> chatRoomIds
     );
-
 
     @Query("""
-            SELECT COUNT(mrs) FROM MessageReadStatus mrs
-            WHERE mrs.chatRoomId = :chatRoomId
-            AND mrs.memberId = :memberId
+            SELECT new umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO(mrs.memberId, COUNT(mrs))
+            FROM MessageReadStatus mrs, ChatRoomMember crm
+            WHERE crm.chatRoom.id = mrs.chatRoomId
+            AND crm.member.id = mrs.memberId
+            AND mrs.chatRoomId = :chatRoomId
+            AND mrs.memberId IN :memberIds
             AND mrs.isRead = false
+            AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            GROUP BY mrs.memberId
             """)
-    int countAllUnreadMessages(
+    List<ChatMemberUnreadCountDTO> countUnreadMessagesByMembers(
             @Param("chatRoomId") Long chatRoomId,
-            @Param("memberId") Long memberId
+            @Param("memberIds") List<Long> memberIds
     );
+
+    @Query("""
+            SELECT CASE WHEN COUNT(mrs) > 0 THEN true ELSE false END FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = :memberId
+                AND crm.chatRoom.type = 'PARTY'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    boolean existsPartyUnreadMessagesByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(mrs) > 0 THEN true ELSE false END FROM MessageReadStatus mrs
+            WHERE mrs.memberId = :memberId
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = :memberId
+                AND crm.chatRoom.type = 'DIRECT'
+                AND crm.status = 'JOINED'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    boolean existsDirectUnreadMessagesByMemberId(@Param("memberId") Long memberId);
 
     @Query("""
             SELECT COUNT(mrs) FROM MessageReadStatus mrs

@@ -27,6 +27,15 @@ public class ChatController {
     private final ChatCommandService chatCommandService;
     private final ChatFileService chatFileService;
 
+    @GetMapping("/unread-status")
+    @Operation(summary = "채팅 안 읽은 메시지 여부 조회", description = "내비 바와 채팅 탭 표시를 위해 모임/개인 채팅의 안 읽은 메시지 존재 여부를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    public BaseResponse<ChatUnreadStatusDTO.Response> getUnreadStatus() {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        ChatUnreadStatusDTO.Response response = chatQueryService.getUnreadStatus(memberId);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
     @GetMapping(value = "/parties")
     @Operation(summary = "모임 채팅방 목록 조회", description = "회원이 자신의 모임 채팅방 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")

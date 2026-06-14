@@ -18,13 +18,12 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,13 +38,13 @@ public class ChatSendService {
     private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
-    private final MessageReadStatusRepository messageReadStatusRepository;
 
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatConverter chatConverter;
     private final ChatReadService chatReadService;
+    private final ChatUnreadQueryService chatUnreadQueryService;
     private final ApplicationEventPublisher eventPublisher;
 
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
@@ -161,7 +160,7 @@ public class ChatSendService {
         try {
             List<Long> chatRoomMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId());
 
-            Map<Long, Integer> memberUnreadCounts = calculateUnreadCountForMembers(
+            Map<Long, Integer> memberUnreadCounts = chatUnreadQueryService.countUnreadMessagesByMembers(
                     chatRoom.getId(), chatRoomMemberIds);
 
             ChatRoomListUpdateEvent listUpdateEvent = ChatRoomListUpdateEvent.create(
@@ -178,39 +177,6 @@ public class ChatSendService {
         } catch (Exception e) {
             log.error("채팅방 목록 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
         }
-    }
-
-    private Map<Long, Integer> calculateUnreadCountForMembers(
-            Long chatRoomId, List<Long> memberIds) {
-
-        Map<Long, Integer> unreadCounts = new HashMap<>();
-
-        for (Long memberId : memberIds) {
-            try {
-                Optional<ChatRoomMember> memberOpt = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-
-                int unreadCount;
-                if (memberOpt.isPresent()) {
-                    Long lastReadMessageId = memberOpt.get().getLastReadMessageId();
-
-                    if (lastReadMessageId == null) {
-                        unreadCount = messageReadStatusRepository.countAllUnreadMessages(chatRoomId, memberId);
-                    } else {
-                        unreadCount = messageReadStatusRepository.countUnreadMessagesAfter(chatRoomId, memberId, lastReadMessageId);
-                    }
-                } else {
-                    unreadCount = 0;
-                }
-
-                unreadCounts.put(memberId, unreadCount);
-
-            } catch (Exception e) {
-                log.error("멤버 {} 안 읽은 메시지 수 계산 실패 - 채팅방: {}", memberId, chatRoomId, e);
-                unreadCounts.put(memberId, 0);
-            }
-        }
-
-        return unreadCounts;
     }
 
     // 채팅 알림 이벤트 발행
