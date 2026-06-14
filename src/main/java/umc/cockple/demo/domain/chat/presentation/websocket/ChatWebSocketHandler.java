@@ -17,7 +17,6 @@ import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.service.ChatValidator;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
-import umc.cockple.demo.domain.chat.service.websocket.WebSocketMessageService;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 
 @Component

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.presentation.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
