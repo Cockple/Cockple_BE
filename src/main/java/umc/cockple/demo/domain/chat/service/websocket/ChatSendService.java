@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.presentation.websocket.ChatWebSocketResponseAssembler;
+import umc.cockple.demo.domain.chat.converter.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;

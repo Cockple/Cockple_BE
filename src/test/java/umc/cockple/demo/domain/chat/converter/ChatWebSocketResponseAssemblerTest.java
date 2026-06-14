@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.presentation.websocket;
+package umc.cockple.demo.domain.chat.converter;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.presentation.websocket;
+package umc.cockple.demo.domain.chat.converter;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
