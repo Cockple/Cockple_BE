@@ -21,6 +21,7 @@ spring:
         show_sql: true
         format_sql: true
         generate_statistics: true   # 쿼리 카운트 테스트(N+1 회귀 방지)용. 테스트 프로파일에만 적용
+        default_batch_fetch_size: 1000   # 운영(application.yml)과 동일하게 정합 — 테스트가 운영의 배치 페치 동작을 반영
 
   cache:
     type: redis
