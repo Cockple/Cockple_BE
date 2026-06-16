@@ -30,7 +30,7 @@ public class ChatWebSocketRequestDispatcher {
                 return;
             }
 
-            log.info("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", memberId, session.getId(), memberId);
+            log.info("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", request.type(), session.getId(), memberId);
             commandHandler.handle(session, request, memberId);
 
         } catch (Exception e) {
