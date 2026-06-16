@@ -50,7 +50,7 @@ public class BookmarkQueryService {
         Member member = findByMemberId(memberId);
 
         // 찜한 운동 가져오기
-        List<ExerciseBookmark> bookmarks = exerciseBookmarkRepository.findAllByMember(member);
+        List<ExerciseBookmark> bookmarks = exerciseBookmarkRepository.findAllByMemberWithDetails(member);
 
         // orderType에 따른 정렬
         Comparator<ExerciseBookmark> comparator = Comparator.comparing(ExerciseBookmark::getCreatedAt);

@@ -18,6 +18,23 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
 
     List<ExerciseBookmark> findAllByMember(Member member);
 
+    /**
+     * 찜한 운동 목록 조회 시 사용. 연관 엔티티를 한 번에 가져와 N+1을 제거한다.
+     * - toOne(exercise, party, exerciseAddr)은 fetch join으로 즉시 로딩
+     * - 컬렉션은 한 쿼리에 여러 bag을 fetch join할 수 없어(MultipleBagFetchException)
+     *   levels만 fetch join하고, 나머지(memberExercises, guests)는 배치로 로딩된다.
+     */
+    @Query("""
+            SELECT DISTINCT eb
+            FROM ExerciseBookmark eb
+            JOIN FETCH eb.exercise e
+            JOIN FETCH e.party p
+            LEFT JOIN FETCH e.exerciseAddr
+            LEFT JOIN FETCH p.levels
+            WHERE eb.member = :member
+            """)
+    List<ExerciseBookmark> findAllByMemberWithDetails(@Param("member") Member member);
+
 
     @Query("""
             SELECT eb.exercise.id FROM ExerciseBookmark eb
