@@ -15,7 +15,7 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import static umc.cockple.demo.support.QueryCountAssert.assertQueryCount;
 
 /**
- * {@link QueryCountAssert} 헬퍼가 SQL 쿼리 수를 올바르게 세는지 검증하는 스모크 테스트.
+ * 헬퍼가 SQL 쿼리 수를 올바르게 세는지 검증하는 스모크 테스트.
  * (인프라 자체의 동작 보증용 — 도메인별 N+1 테스트는 각 도메인 PR에서 추가)
  */
 @DisplayName("QueryCountAssert 인프라 스모크 테스트")
