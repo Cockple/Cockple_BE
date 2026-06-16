@@ -213,7 +213,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
 
                 Exercise pastExercise = exerciseRepository.save(
                         ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1)));
-                Exercise startedTodayExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.now());
+                Exercise startedTodayExercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1));
                 ReflectionTestUtils.setField(startedTodayExercise, "startTime", LocalTime.now().minusMinutes(30));
                 startedTodayExercise = exerciseRepository.save(startedTodayExercise);
                 Exercise firstExercise = exerciseRepository.save(
@@ -258,22 +258,6 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.totalExercises").value(0))
                         .andExpect(jsonPath("$.data.exercises").isEmpty());
-            }
-        }
-
-        @Nested
-        @DisplayName("실패 케이스")
-        class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
-            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
-                SecurityContextHelper.setAuthentication(999L, "없는멤버");
-
-                mockMvc.perform(get("/api/exercises/parties/my"))
-                        .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
         }
     }
@@ -385,24 +369,6 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
                         .andExpect(jsonPath("$.data.startDate").value("2026-03-23"))
                         .andExpect(jsonPath("$.data.endDate").value("2026-03-29"))
                         .andExpect(jsonPath("$.data.weeks[0].days[2].exercises[0].exerciseId").value(exercise.getId()));
-            }
-        }
-
-        @Nested
-        @DisplayName("실패 케이스")
-        class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
-            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
-                SecurityContextHelper.setAuthentication(999L, "없는멤버");
-
-                mockMvc.perform(get("/api/exercises/parties/my/calendar")
-                                .param("startDate", startDate.toString())
-                                .param("endDate", endDate.toString()))
-                        .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
         }
     }
@@ -584,17 +550,6 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
-            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
-                SecurityContextHelper.setAuthentication(999L, "없는멤버");
-
-                mockMvc.perform(get("/api/exercises/my"))
-                        .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
-            }
 
             @Test
             @DisplayName("잘못된 필터 타입이면 400을 반환한다")

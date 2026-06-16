@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.service.ExerciseQueryService;
+import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -25,14 +25,14 @@ import java.time.LocalDate;
 @Validated
 public class ExerciseMyController implements ExerciseMyApi {
 
-    private final ExerciseQueryService exerciseQueryService;
+    private final ExerciseMyQueryService exerciseMyQueryService;
 
     @Override
     public ResponseEntity<BaseResponse<MyExerciseCalendarDTO.Response>> getMyExerciseCalender(
             LocalDate startDate, LocalDate endDate) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        MyExerciseCalendarDTO.Response response = exerciseQueryService.getMyExerciseCalendar(
+        MyExerciseCalendarDTO.Response response = exerciseMyQueryService.getMyExerciseCalendar(
                 memberId, startDate, endDate);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
@@ -42,7 +42,7 @@ public class ExerciseMyController implements ExerciseMyApi {
     public ResponseEntity<BaseResponse<MyPartyExerciseDTO.Response>> getMyPartyExercise() {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        MyPartyExerciseDTO.Response response = exerciseQueryService.getMyPartyExercise(memberId);
+        MyPartyExerciseDTO.Response response = exerciseMyQueryService.getMyPartyExercise(memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }
@@ -52,7 +52,7 @@ public class ExerciseMyController implements ExerciseMyApi {
             MyPartyExerciseOrderType orderType, LocalDate startDate, LocalDate endDate) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        MyPartyExerciseCalendarDTO.Response response = exerciseQueryService.getMyPartyExerciseCalendar(
+        MyPartyExerciseCalendarDTO.Response response = exerciseMyQueryService.getMyPartyExerciseCalendar(
                 memberId, orderType, startDate, endDate);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
@@ -63,7 +63,7 @@ public class ExerciseMyController implements ExerciseMyApi {
             MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        MyExerciseListDTO.Response response = exerciseQueryService.getMyExercises(
+        MyExerciseListDTO.Response response = exerciseMyQueryService.getMyExercises(
                 memberId, filterType, orderType, pageable);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
