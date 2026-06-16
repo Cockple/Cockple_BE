@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.presentation.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class WebSocketMessageService {
+public class WebSocketResponseSender {
 
     private final ObjectMapper objectMapper;
 
