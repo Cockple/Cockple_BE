@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -28,7 +29,9 @@ import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -41,6 +44,7 @@ public class BookmarkQueryService {
     private final PartyBookmarkRepository partyBookmarkRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
+    private final GuestRepository guestRepository;
     private final MemberRepository memberRepository;
     private final BookmarkConverter bookmarkConverter;
     private final FileService fileService;
@@ -64,14 +68,33 @@ public class BookmarkQueryService {
         List<Long> myParties = memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds);
         List<Long> myExercises = memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
 
+        // 현재 인원수: 컬렉션 로딩(over-fetch) 대신 count 쿼리로 집계 (N+1 제거)
+        Map<Long, Integer> nowCntByExerciseId = countNowMembers(exerciseIds);
+
         // bookmark -> dto 변환
         return bookmarks.stream()
                 .map(bookmark -> {
+                    Long exerciseId = bookmark.getExercise().getId();
                     boolean includeParty = myParties.contains(bookmark.getExercise().getParty().getId());
-                    boolean includeExercise = myExercises.contains(bookmark.getExercise().getId());
-                    return bookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise);
+                    boolean includeExercise = myExercises.contains(exerciseId);
+                    int nowMemberCnt = nowCntByExerciseId.getOrDefault(exerciseId, 0);
+                    return bookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise, nowMemberCnt);
                 })
                 .toList();
+    }
+
+    /**
+     * 운동별 현재 인원수(참여 회원 + 게스트)를 count 쿼리 2번으로 집계한다.
+     */
+    private Map<Long, Integer> countNowMembers(List<Long> exerciseIds) {
+        Map<Long, Integer> result = new HashMap<>();
+        if (exerciseIds.isEmpty()) return result;
+
+        memberExerciseRepository.countByExerciseIds(exerciseIds)
+                .forEach(row -> result.merge((Long) row[0], ((Long) row[1]).intValue(), Integer::sum));
+        guestRepository.countByExerciseIds(exerciseIds)
+                .forEach(row -> result.merge((Long) row[0], ((Long) row[1]).intValue(), Integer::sum));
+        return result;
     }
 
 

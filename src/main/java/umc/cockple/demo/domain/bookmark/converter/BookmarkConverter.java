@@ -20,7 +20,8 @@ import java.util.List;
 public class BookmarkConverter {
 
     public GetAllExerciseBookmarksResponseDTO exerciseBookmarkToDTO(ExerciseBookmark bookmark,
-                                                                           boolean includeParty, boolean includeExercise) {
+                                                                           boolean includeParty, boolean includeExercise,
+                                                                           int nowMemberCnt) {
         Exercise exercise = bookmark.getExercise();
 
         return GetAllExerciseBookmarksResponseDTO.builder()
@@ -34,7 +35,7 @@ public class BookmarkConverter {
                 .startExerciseTime(exercise.getStartTime())
                 .endExerciseTime(exercise.getEndTime())
                 .maxMemberCnt(exercise.getMaxCapacity())
-                .nowMemberCnt(exercise.getNowCapacity())
+                .nowMemberCnt(nowMemberCnt)
                 .includeParty(includeParty)
                 .includeExercise(includeExercise)
                 .build();
