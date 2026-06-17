@@ -34,28 +34,19 @@ import java.time.LocalDate;
 
 import static umc.cockple.demo.support.QueryCountAssert.assertQueryCount;
 
-/**
- * 찜 목록 조회의 N+1 회귀 방지 테스트.
- *
- * <p>같은 기대 쿼리 수를 서로 다른 찜 개수(N=2, N=8)에 대해 단언한다.
- * <ul>
- *   <li>두 N에서 쿼리 수가 같음 → 행 수에 비례하는 N+1이 없음(스케일 불변성)</li>
- *   <li>쿼리 수가 고정 상수 → fetch join 최적화가 유지됨. 누군가 fetch join을 제거하면
- *       (예: party의 역방향 @OneToOne partyImg/chatRoom) 쿼리 수가 늘어 테스트가 깨진다.</li>
- * </ul>
- */
+// 찜 목록 조회 N+1 회귀 방지 테스트
 @DisplayName("북마크 찜 목록 N+1 회귀 테스트")
 class BookmarkQueryCountTest extends IntegrationTestBase {
 
     /**
-     * 찜한 운동 목록 조회의 기대 쿼리 수.
+     * 찜한 운동 목록 조회의 기대 쿼리 수
      * 1) 회원 조회  2) 찜+운동+party+exerciseAddr+partyImg+chatRoom+levels fetch join
      * 3) 가입 모임 IN  4) 참여 운동 IN  5) 참여자 수 count  6) 게스트 수 count
      */
     private static final int EXERCISE_BOOKMARK_QUERY_COUNT = 6;
 
     /**
-     * 찜한 모임 목록 조회의 기대 쿼리 수.
+     * 찜한 모임 목록 조회의 기대 쿼리 수
      * 1) 회원 조회  2) 찜+party+partyAddr+partyImg+chatRoom+exercises fetch join  3) levels 배치 로딩
      */
     private static final int PARTY_BOOKMARK_QUERY_COUNT = 3;
@@ -112,7 +103,7 @@ class BookmarkQueryCountTest extends IntegrationTestBase {
                 bookmarkQueryService.getAllPartyBookmarks(large.getId(), PartyOrderType.LATEST));
     }
 
-    // === 시딩 (BookmarkIntegrationTest 패턴 미러링) ===
+    // === 시딩 ===
 
     private Member createMember(long socialId) {
         return memberRepository.save(

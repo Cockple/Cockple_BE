@@ -25,10 +25,7 @@ public interface GuestRepository extends JpaRepository<Guest, Long> {
     List<Guest> findByExerciseIdAndInviterId(@Param("exerciseId") Long exerciseId,
                                              @Param("inviterId") Long inviterId);
 
-    /**
-     * 운동별 게스트 수를 한 번에 집계한다. (over-fetch 대신 COUNT로 N+1 제거)
-     * 반환: [exerciseId, count]
-     */
+
     @Query("""
             SELECT g.exercise.id, COUNT(g)
             FROM Guest g

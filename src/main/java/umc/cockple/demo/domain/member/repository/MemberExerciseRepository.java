@@ -62,11 +62,7 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
             @Param("memberIds") List<Long> memberIds,
             @Param("partyId") Long partyId);
 
-    /**
-     * 운동별 참여 회원 수를 한 번에 집계한다.
-     * 컬렉션(memberExercises)을 로딩해 size()를 세는 over-fetch 대신 COUNT로 집계해 N+1을 제거한다.
-     * 반환: [exerciseId, count]
-     */
+
     @Query("""
             SELECT me.exercise.id, COUNT(me)
             FROM MemberExercise me

@@ -68,7 +68,7 @@ public class BookmarkQueryService {
         List<Long> myParties = memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds);
         List<Long> myExercises = memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
 
-        // 현재 인원수: 컬렉션 로딩(over-fetch) 대신 count 쿼리로 집계 (N+1 제거)
+        // 현재 인원수 count 쿼리로 집계 (N+1 제거)
         Map<Long, Integer> nowCntByExerciseId = countNowMembers(exerciseIds);
 
         // bookmark -> dto 변환
@@ -84,7 +84,7 @@ public class BookmarkQueryService {
     }
 
     /**
-     * 운동별 현재 인원수(참여 회원 + 게스트)를 count 쿼리 2번으로 집계한다.
+     * 운동별 현재 인원수(참여 회원 + 게스트)를 count 쿼리 2번으로 집계
      */
     private Map<Long, Integer> countNowMembers(List<Long> exerciseIds) {
         Map<Long, Integer> result = new HashMap<>();
