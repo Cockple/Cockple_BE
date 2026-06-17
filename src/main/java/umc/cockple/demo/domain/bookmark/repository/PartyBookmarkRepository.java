@@ -21,6 +21,8 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
     /**
      * 찜한 모임 목록 조회 시 사용. 연관 엔티티를 한 번에 가져와 N+1을 제거한다.
      * - toOne(partyAddr, partyImg)은 fetch join으로 즉시 로딩
+     * - party의 역방향 @OneToOne(chatRoom)은 LAZY여도 Hibernate가 party마다 즉시 조회하므로
+     *   (eager라 batch로도 안 묶임) 함께 fetch join해 N+1을 제거한다.
      * - 컬렉션은 한 쿼리에 여러 bag을 fetch join할 수 없어(MultipleBagFetchException)
      *   exercises만 fetch join하고, levels는 배치로 로딩된다.
      */
@@ -30,6 +32,7 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
         JOIN FETCH pb.party p
         LEFT JOIN FETCH p.partyAddr
         LEFT JOIN FETCH p.partyImg
+        LEFT JOIN FETCH p.chatRoom
         LEFT JOIN FETCH p.exercises
         WHERE pb.member = :member
         """)
