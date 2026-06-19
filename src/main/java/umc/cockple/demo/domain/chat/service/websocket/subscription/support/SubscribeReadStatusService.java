@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.service.websocket.subscription.support;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +17,13 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class SubscriptionReadProcessingService {
+public class SubscribeReadStatusService {
 
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public List<MessageUnreadUpdate> processUnreadMessagesOnSubscribe(Long chatRoomId, Long memberId) {
+    public List<MessageUnreadUpdate> markUnreadMessagesAsReadOnSubscribe(Long chatRoomId, Long memberId) {
         log.info("구독 시 안읽은 메시지 처리 시작 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
 
         List<Long> unreadMessageIds = messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId);

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.service.websocket.subscription.support;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,18 +28,18 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SubscriptionReadProcessingService")
-class SubscriptionReadProcessingServiceTest {
+@DisplayName("SubscribeReadStatusService")
+class SubscribeReadStatusServiceTest {
 
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    private SubscriptionReadProcessingService subscriptionReadProcessingService;
+    private SubscribeReadStatusService subscribeReadStatusService;
 
     @BeforeEach
     void setUp() {
-        subscriptionReadProcessingService = new SubscriptionReadProcessingService(
+        subscribeReadStatusService = new SubscribeReadStatusService(
                 messageReadStatusRepository,
                 chatRoomMemberRepository,
                 eventPublisher
@@ -48,7 +48,7 @@ class SubscriptionReadProcessingServiceTest {
 
     @Test
     @DisplayName("구독 시 unread 메시지를 읽음 처리하면 안읽음 상태 업데이트 이벤트를 발행한다")
-    void processUnreadMessagesOnSubscribe_publishesUnreadStatusUpdateEvent() {
+    void markUnreadMessagesAsReadOnSubscribe_publishesUnreadStatusUpdateEvent() {
         // given
         Long chatRoomId = 10L;
         Long memberId = 101L;
@@ -71,15 +71,15 @@ class SubscriptionReadProcessingServiceTest {
                 .willReturn(Optional.of(chatRoomMember));
 
         // when
-        List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates =
-                subscriptionReadProcessingService.processUnreadMessagesOnSubscribe(chatRoomId, memberId);
+        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+                subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         // then
         assertThat(updates)
-                .extracting(SubscriptionReadProcessingService.MessageUnreadUpdate::messageId)
+                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::messageId)
                 .containsExactly(firstMessageId, secondMessageId);
         assertThat(updates)
-                .extracting(SubscriptionReadProcessingService.MessageUnreadUpdate::newUnreadCount)
+                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::newUnreadCount)
                 .containsExactly(2, 1);
         assertThat(chatRoomMember.getLastReadMessageId()).isEqualTo(secondMessageId);
 
@@ -91,7 +91,7 @@ class SubscriptionReadProcessingServiceTest {
 
     @Test
     @DisplayName("구독 시 unread 메시지가 없으면 안읽음 상태 업데이트 이벤트를 발행하지 않는다")
-    void processUnreadMessagesOnSubscribe_doesNotPublishEventWhenNoUnreadMessages() {
+    void markUnreadMessagesAsReadOnSubscribe_doesNotPublishEventWhenNoUnreadMessages() {
         // given
         Long chatRoomId = 10L;
         Long memberId = 101L;
@@ -99,8 +99,8 @@ class SubscriptionReadProcessingServiceTest {
                 .willReturn(List.of());
 
         // when
-        List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates =
-                subscriptionReadProcessingService.processUnreadMessagesOnSubscribe(chatRoomId, memberId);
+        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+                subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         // then
         assertThat(updates).isEmpty();

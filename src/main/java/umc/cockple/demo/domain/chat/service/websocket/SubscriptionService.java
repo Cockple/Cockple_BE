@@ -10,6 +10,7 @@ import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class SubscriptionService {
 
     private final ObjectMapper objectMapper;
 
-    private final SubscriptionReadProcessingService subscriptionReadProcessingService;
+    private final SubscribeReadStatusService subscribeReadStatusService;
     private final RedisSubscriptionService redisSubscriptionService;
     private final ChatListSubscriptionService chatListSubscriptionService;
 
@@ -44,8 +45,8 @@ public class SubscriptionService {
         redisSubscriptionService.addSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
 
-        List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates =
-                subscriptionReadProcessingService.processUnreadMessagesOnSubscribe(chatRoomId, memberId);
+        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+                subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         if (!updates.isEmpty()) {
             broadcastUnreadCountUpdates(chatRoomId, updates, memberId);
@@ -145,13 +146,13 @@ public class SubscriptionService {
     }
 
     private void broadcastUnreadCountUpdates(
-            Long chatRoomId, List<SubscriptionReadProcessingService.MessageUnreadUpdate> updates, Long excludedMemberId) {
+            Long chatRoomId, List<SubscribeReadStatusService.MessageUnreadUpdate> updates, Long excludedMemberId) {
         List<Long> subscribers = getActiveSubscribers(chatRoomId);
         if (subscribers == null || subscribers.isEmpty()) {
             return;
         }
 
-        for (SubscriptionReadProcessingService.MessageUnreadUpdate update : updates) {
+        for (SubscribeReadStatusService.MessageUnreadUpdate update : updates) {
             try {
                 WebSocketMessageDTO.UnreadCountUpdateMessage updateMessage = WebSocketMessageDTO.UnreadCountUpdateMessage.builder()
                         .type(WebSocketMessageType.UNREAD_COUNT_UPDATE)
