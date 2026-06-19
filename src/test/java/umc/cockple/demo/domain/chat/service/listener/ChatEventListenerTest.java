@@ -13,8 +13,10 @@ import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
-import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.ChatRoomSubscriptionService;
 import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 
 import java.util.List;
@@ -29,9 +31,11 @@ import static org.mockito.Mockito.times;
 class ChatEventListenerTest {
 
     @Mock private ChatSendService chatSendService;
-    @Mock private SubscriptionService subscriptionService;
+    @Mock private ChatRoomSubscriptionService chatRoomSubscriptionService;
     @Mock private ChatRoomListCacheService chatRoomListCacheService;
+    @Mock private ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
     @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
+    @Mock private ChatMessageSender chatMessageSender;
     @Mock private ChatPushNotificationService chatPushNotificationService;
     @Mock private ChatUnreadQueryService chatUnreadQueryService;
 
@@ -61,8 +65,8 @@ class ChatEventListenerTest {
         ArgumentCaptor<WebSocketMessageDTO.UnreadStatusUpdateMessage> messageCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.UnreadStatusUpdateMessage.class);
 
-        then(subscriptionService).should(times(2))
-                .sendUnreadStatusUpdateToMember(memberIdCaptor.capture(), messageCaptor.capture());
+        then(chatMessageSender).should(times(2))
+                .send(memberIdCaptor.capture(), messageCaptor.capture());
 
         assertThat(memberIdCaptor.getAllValues()).containsExactly(partyUnreadMemberId, directUnreadMemberId);
 

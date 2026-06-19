@@ -18,7 +18,8 @@ import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.SentMessageReadStatusService;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
-import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;
@@ -36,7 +37,8 @@ public class ChatSendService {
     private final ChatMessageFileAppender chatMessageFileAppender;
     private final DirectChatRoomActivationService directChatRoomActivationService;
     private final ChatSendEventPublisher chatSendEventPublisher;
-    private final SubscriptionService subscriptionService;
+    private final ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
+    private final ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
@@ -58,7 +60,7 @@ public class ChatSendService {
         directChatRoomActivationService.joinPendingMemberOnFirstMessage(chatRoom, senderId);
         messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
 
-        List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
+        List<Long> activeSubscribers = activeChatRoomSubscriberReader.findActiveSubscribers(chatRoomId);
         int unreadCount = sentMessageReadStatusService.markActiveSubscribersAsRead(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
         List<ChatCommonDTO.FileInfo> responseFiles =
@@ -67,7 +69,7 @@ public class ChatSendService {
         log.info("메시지 브로드캐스트 시작 - 채팅방 ID: {}", chatRoomId);
         WebSocketMessageDTO.MessageResponse response =
                 chatWebSocketResponseAssembler.toSendMessageResponse(chatRoomId, content, responseFiles, savedMessage, sender, profileImageUrl, unreadCount);
-        subscriptionService.broadcastMessage(chatRoomId, response, senderId);
+        chatRoomMessageBroadcaster.broadcast(chatRoomId, response, activeSubscribers, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
 
         chatSendEventPublisher.publishChatNotificationEvent(chatRoom, savedMessage, sender, activeSubscribers);
@@ -83,7 +85,7 @@ public class ChatSendService {
 
         messageReadCreationService.createReadStatusForNewMessage(savedSystemMessage, null);
 
-        List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoom.getId());
+        List<Long> activeSubscribers = activeChatRoomSubscriberReader.findActiveSubscribers(chatRoom.getId());
         sentMessageReadStatusService.markActiveSubscribersAsRead(
                 chatRoom.getId(),
                 savedSystemMessage.getId(),
@@ -94,7 +96,7 @@ public class ChatSendService {
         WebSocketMessageDTO.MessageResponse broadcastSystemMessage
                 = chatWebSocketResponseAssembler.toSystemMessageResponse(chatRoom.getId(), content, savedSystemMessage);
 
-        subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
+        chatRoomMessageBroadcaster.broadcast(chatRoom.getId(), broadcastSystemMessage, activeSubscribers, null);
         chatSendEventPublisher.publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);
         chatSendEventPublisher.publishUnreadStatusUpdateEvent(chatRoom, null);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());

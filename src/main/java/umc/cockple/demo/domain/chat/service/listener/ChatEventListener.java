@@ -18,9 +18,11 @@ import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateData;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
-import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.ChatRoomSubscriptionService;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
@@ -35,9 +37,11 @@ import java.util.Map;
 public class ChatEventListener {
 
     private final ChatSendService chatSendService;
-    private final SubscriptionService subscriptionService;
+    private final ChatRoomSubscriptionService chatRoomSubscriptionService;
     private final ChatRoomListCacheService chatRoomListCacheService;
+    private final ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
+    private final ChatMessageSender chatMessageSender;
     private final ChatPushNotificationService chatPushNotificationService;
     private final ChatUnreadQueryService chatUnreadQueryService;
 
@@ -85,11 +89,11 @@ public class ChatEventListener {
         try {
             switch (event.action()) {
                 case "SUBSCRIBE" -> {
-                    subscriptionService.subscribeToChatRoom(event.chatRoomId(), event.memberId());
+                    chatRoomSubscriptionService.subscribeToChatRoom(event.chatRoomId(), event.memberId());
                     log.info("사용자 {}가 채팅방 {}를 구독했습니다.", event.memberId(), event.chatRoomId());
                 }
                 case "UNSUBSCRIBE" -> {
-                    subscriptionService.unsubscribeToChatRoom(event.chatRoomId(), event.memberId());
+                    chatRoomSubscriptionService.unsubscribeToChatRoom(event.chatRoomId(), event.memberId());
                     log.info("사용자 {}가 채팅방 {}를 구독해제했습니다.", event.memberId(), event.chatRoomId());
                 }
                 default -> log.warn("알 수 없는 구독 액션: {}", event.action());
@@ -150,7 +154,7 @@ public class ChatEventListener {
                         .build());
             }
 
-            subscriptionService.broadcastChatRoomListUpdateToMembers(event.chatRoomId(), memberUpdateData);
+            chatRoomListUpdateBroadcaster.broadcast(event.chatRoomId(), memberUpdateData);
 
             log.info("채팅방 목록 업데이트 이벤트 처리 완료 - 채팅방: {}", event.chatRoomId());
 
@@ -178,7 +182,7 @@ public class ChatEventListener {
                                 .timestamp(LocalDateTime.now())
                                 .build();
 
-                subscriptionService.sendUnreadStatusUpdateToMember(memberId, message);
+                chatMessageSender.send(memberId, message);
             } catch (Exception e) {
                 log.error("채팅 안읽음 상태 업데이트 처리 실패 - 멤버: {}", memberId, e);
             }

@@ -23,7 +23,8 @@ import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.SentMessageReadStatusService;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
-import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
@@ -53,7 +54,8 @@ class ChatSendServiceTest {
     @Mock private ChatMessageFileAppender chatMessageFileAppender;
     @Mock private DirectChatRoomActivationService directChatRoomActivationService;
     @Mock private ChatSendEventPublisher chatSendEventPublisher;
-    @Mock private SubscriptionService subscriptionService;
+    @Mock private ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
+    @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     @Mock private MessageReadCreationService messageReadCreationService;
     @Mock private ChatProcessor chatProcessor;
     @Mock private SentMessageReadStatusService sentMessageReadStatusService;
@@ -71,7 +73,8 @@ class ChatSendServiceTest {
                 chatMessageFileAppender,
                 directChatRoomActivationService,
                 chatSendEventPublisher,
-                subscriptionService,
+                activeChatRoomSubscriberReader,
+                chatRoomMessageBroadcaster,
                 messageReadCreationService,
                 chatProcessor,
                 chatWebSocketResponseAssembler,
@@ -103,7 +106,7 @@ class ChatSendServiceTest {
             ReflectionTestUtils.setField(savedMessage, "createdAt", sentAt);
             return savedMessage;
         });
-        given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(senderId));
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(roomId)).willReturn(List.of(senderId));
         given(sentMessageReadStatusService.markActiveSubscribersAsRead(roomId, 300L, List.of(senderId), senderId)).willReturn(2);
 
         // when
@@ -124,7 +127,8 @@ class ChatSendServiceTest {
 
         ArgumentCaptor<WebSocketMessageDTO.MessageResponse> messageResponseCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);
-        then(subscriptionService).should().broadcastMessage(eq(roomId), messageResponseCaptor.capture(), eq(senderId));
+        then(chatRoomMessageBroadcaster).should()
+                .broadcast(eq(roomId), messageResponseCaptor.capture(), eq(List.of(senderId)), eq(senderId));
         assertThat(messageResponseCaptor.getValue().messageId()).isEqualTo(300L);
         assertThat(messageResponseCaptor.getValue().unreadCount()).isEqualTo(2);
 
@@ -156,7 +160,7 @@ class ChatSendServiceTest {
             ReflectionTestUtils.setField(savedMessage, "createdAt", sentAt);
             return savedMessage;
         });
-        given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(101L));
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(roomId)).willReturn(List.of(101L));
         given(sentMessageReadStatusService.markActiveSubscribersAsRead(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
 
         // when
@@ -175,7 +179,8 @@ class ChatSendServiceTest {
 
         ArgumentCaptor<WebSocketMessageDTO.MessageResponse> messageResponseCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);
-        then(subscriptionService).should().broadcastSystemMessage(eq(roomId), messageResponseCaptor.capture());
+        then(chatRoomMessageBroadcaster).should()
+                .broadcast(eq(roomId), messageResponseCaptor.capture(), eq(List.of(101L)), isNull());
         WebSocketMessageDTO.MessageResponse response = messageResponseCaptor.getValue();
         assertThat(response.chatRoomId()).isEqualTo(roomId);
         assertThat(response.messageId()).isEqualTo(300L);
