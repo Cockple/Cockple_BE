@@ -14,14 +14,15 @@ import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,12 +43,12 @@ class ChatUnreadStatusUpdateEventListenerTest {
         Long partyUnreadMemberId = 101L;
         Long directUnreadMemberId = 102L;
         List<Long> targetMemberIds = List.of(partyUnreadMemberId, directUnreadMemberId);
+        Map<Long, ChatUnreadQueryService.UnreadStatus> unreadStatuses = new LinkedHashMap<>();
+        unreadStatuses.put(partyUnreadMemberId, new ChatUnreadQueryService.UnreadStatus(true, false));
+        unreadStatuses.put(directUnreadMemberId, new ChatUnreadQueryService.UnreadStatus(false, true));
 
         given(chatSessionRegistry.findOpenMemberIds(targetMemberIds)).willReturn(targetMemberIds);
-        given(chatUnreadQueryService.hasPartyUnreadMessages(partyUnreadMemberId)).willReturn(true);
-        given(chatUnreadQueryService.hasDirectUnreadMessages(partyUnreadMemberId)).willReturn(false);
-        given(chatUnreadQueryService.hasPartyUnreadMessages(directUnreadMemberId)).willReturn(false);
-        given(chatUnreadQueryService.hasDirectUnreadMessages(directUnreadMemberId)).willReturn(true);
+        given(chatUnreadQueryService.findUnreadStatusesByMembers(targetMemberIds)).willReturn(unreadStatuses);
 
         ChatUnreadStatusUpdateEvent event =
                 ChatUnreadStatusUpdateEvent.of(targetMemberIds);
@@ -87,8 +88,8 @@ class ChatUnreadStatusUpdateEventListenerTest {
         List<Long> targetMemberIds = List.of(openMemberId, offlineMemberId);
 
         given(chatSessionRegistry.findOpenMemberIds(targetMemberIds)).willReturn(List.of(openMemberId));
-        given(chatUnreadQueryService.hasPartyUnreadMessages(openMemberId)).willReturn(false);
-        given(chatUnreadQueryService.hasDirectUnreadMessages(openMemberId)).willReturn(true);
+        given(chatUnreadQueryService.findUnreadStatusesByMembers(List.of(openMemberId)))
+                .willReturn(Map.of(openMemberId, new ChatUnreadQueryService.UnreadStatus(false, true)));
 
         ChatUnreadStatusUpdateEvent event = ChatUnreadStatusUpdateEvent.of(targetMemberIds);
 
@@ -96,10 +97,7 @@ class ChatUnreadStatusUpdateEventListenerTest {
         listener.handleChatUnreadStatusUpdate(event);
 
         // then
-        then(chatUnreadQueryService).should().hasPartyUnreadMessages(openMemberId);
-        then(chatUnreadQueryService).should().hasDirectUnreadMessages(openMemberId);
-        then(chatUnreadQueryService).should(never()).hasPartyUnreadMessages(offlineMemberId);
-        then(chatUnreadQueryService).should(never()).hasDirectUnreadMessages(offlineMemberId);
+        then(chatUnreadQueryService).should().findUnreadStatusesByMembers(List.of(openMemberId));
         then(chatMessageSender).should(times(1))
                 .send(eq(openMemberId), any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class));
     }

@@ -100,6 +100,35 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
     boolean existsDirectUnreadMessagesByMemberId(@Param("memberId") Long memberId);
 
     @Query("""
+            SELECT DISTINCT mrs.memberId FROM MessageReadStatus mrs
+            WHERE mrs.memberId IN :memberIds
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = mrs.memberId
+                AND crm.chatRoom.type = 'PARTY'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    List<Long> findMemberIdsWithPartyUnreadMessages(@Param("memberIds") List<Long> memberIds);
+
+    @Query("""
+            SELECT DISTINCT mrs.memberId FROM MessageReadStatus mrs
+            WHERE mrs.memberId IN :memberIds
+            AND mrs.isRead = false
+            AND EXISTS (
+                SELECT 1 FROM ChatRoomMember crm
+                WHERE crm.chatRoom.id = mrs.chatRoomId
+                AND crm.member.id = mrs.memberId
+                AND crm.chatRoom.type = 'DIRECT'
+                AND crm.status = 'JOINED'
+                AND (crm.lastReadMessageId IS NULL OR mrs.chatMessageId > crm.lastReadMessageId)
+            )
+            """)
+    List<Long> findMemberIdsWithDirectUnreadMessages(@Param("memberIds") List<Long> memberIds);
+
+    @Query("""
             SELECT COUNT(mrs) FROM MessageReadStatus mrs
             WHERE mrs.chatMessageId = :messageId
             AND mrs.isRead = false

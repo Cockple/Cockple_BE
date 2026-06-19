@@ -122,6 +122,46 @@ class ChatUnreadQueryServiceTest {
             assertThat(result).isFalse();
             verify(messageReadStatusRepository).existsDirectUnreadMessagesByMemberId(memberId);
         }
+
+        @Test
+        @DisplayName("멤버 목록의 모임/개인 채팅 안읽음 여부를 batch 조회한다")
+        void findUnreadStatusesByMembers_usesBatchQueries() {
+            // given
+            List<Long> memberIds = List.of(10L, 20L, 30L);
+            given(messageReadStatusRepository.findMemberIdsWithPartyUnreadMessages(memberIds))
+                    .willReturn(List.of(10L));
+            given(messageReadStatusRepository.findMemberIdsWithDirectUnreadMessages(memberIds))
+                    .willReturn(List.of(20L));
+
+            // when
+            Map<Long, ChatUnreadQueryService.UnreadStatus> result =
+                    chatUnreadQueryService.findUnreadStatusesByMembers(memberIds);
+
+            // then
+            assertThat(result).containsOnlyKeys(10L, 20L, 30L);
+            assertThat(result.get(10L).hasUnread()).isTrue();
+            assertThat(result.get(10L).hasPartyUnread()).isTrue();
+            assertThat(result.get(10L).hasDirectUnread()).isFalse();
+            assertThat(result.get(20L).hasUnread()).isTrue();
+            assertThat(result.get(20L).hasPartyUnread()).isFalse();
+            assertThat(result.get(20L).hasDirectUnread()).isTrue();
+            assertThat(result.get(30L).hasUnread()).isFalse();
+            assertThat(result.get(30L).hasPartyUnread()).isFalse();
+            assertThat(result.get(30L).hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("멤버 목록이 비어 있으면 batch repository를 호출하지 않는다")
+        void findUnreadStatusesByMembers_returnsEmptyMap_whenMemberIdsAreEmpty() {
+            // when
+            Map<Long, ChatUnreadQueryService.UnreadStatus> result =
+                    chatUnreadQueryService.findUnreadStatusesByMembers(List.of());
+
+            // then
+            assertThat(result).isEmpty();
+            verify(messageReadStatusRepository, never()).findMemberIdsWithPartyUnreadMessages(anyList());
+            verify(messageReadStatusRepository, never()).findMemberIdsWithDirectUnreadMessages(anyList());
+        }
     }
 
 }

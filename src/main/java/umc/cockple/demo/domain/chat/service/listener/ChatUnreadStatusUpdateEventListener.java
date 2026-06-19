@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistr
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -36,17 +37,19 @@ public class ChatUnreadStatusUpdateEventListener {
             return;
         }
 
-        for (Long memberId : openMemberIds) {
-            try {
-                boolean hasPartyUnread = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
-                boolean hasDirectUnread = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
+        Map<Long, ChatUnreadQueryService.UnreadStatus> unreadStatuses =
+                chatUnreadQueryService.findUnreadStatusesByMembers(openMemberIds);
 
+        for (Map.Entry<Long, ChatUnreadQueryService.UnreadStatus> entry : unreadStatuses.entrySet()) {
+            Long memberId = entry.getKey();
+            ChatUnreadQueryService.UnreadStatus unreadStatus = entry.getValue();
+            try {
                 WebSocketMessageDTO.UnreadStatusUpdateMessage message =
                         WebSocketMessageDTO.UnreadStatusUpdateMessage.builder()
                                 .type(WebSocketMessageType.UNREAD_STATUS_UPDATE)
-                                .hasUnread(hasPartyUnread || hasDirectUnread)
-                                .hasPartyUnread(hasPartyUnread)
-                                .hasDirectUnread(hasDirectUnread)
+                                .hasUnread(unreadStatus.hasUnread())
+                                .hasPartyUnread(unreadStatus.hasPartyUnread())
+                                .hasDirectUnread(unreadStatus.hasDirectUnread())
                                 .timestamp(LocalDateTime.now())
                                 .build();
 
