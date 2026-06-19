@@ -2,9 +2,11 @@ package umc.cockple.demo.domain.chat.service.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
@@ -19,6 +21,7 @@ public class SubscriptionReadProcessingService {
 
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<MessageUnreadUpdate> processUnreadMessagesOnSubscribe(Long chatRoomId, Long memberId) {
         log.info("구독 시 안읽은 메시지 처리 시작 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
@@ -52,6 +55,10 @@ public class SubscriptionReadProcessingService {
 
         log.info("구독 시 안읽은 메시지 처리 완료 - 채팅방: {}, 멤버: {}, 처리된 메시지 수: {}",
                 chatRoomId, memberId, updates.size());
+
+        eventPublisher.publishEvent(ChatUnreadStatusUpdateEvent.of(List.of(memberId)));
+        log.info("구독 읽음 처리 후 안읽음 상태 업데이트 이벤트 발행 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
+
         return updates;
     }
 
