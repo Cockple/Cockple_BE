@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.service.websocket.send.support;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,13 +15,13 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ChatReadService {
+public class SentMessageReadStatusService {
 
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     @Transactional
-    public int subscribersToReadStatus(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
+    public int markActiveSubscribersAsRead(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
         log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
                 messageId, activeSubscribers.size(), senderId);
 

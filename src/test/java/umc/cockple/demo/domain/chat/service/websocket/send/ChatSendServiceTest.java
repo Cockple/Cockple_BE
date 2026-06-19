@@ -20,9 +20,9 @@ import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEvent
 import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
-import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.SentMessageReadStatusService;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
-import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -56,7 +56,7 @@ class ChatSendServiceTest {
     @Mock private SubscriptionService subscriptionService;
     @Mock private MessageReadCreationService messageReadCreationService;
     @Mock private ChatProcessor chatProcessor;
-    @Mock private ChatReadService chatReadService;
+    @Mock private SentMessageReadStatusService sentMessageReadStatusService;
 
     private ChatSendService chatSendService;
     private ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
@@ -75,7 +75,7 @@ class ChatSendServiceTest {
                 messageReadCreationService,
                 chatProcessor,
                 chatWebSocketResponseAssembler,
-                chatReadService
+                sentMessageReadStatusService
         );
     }
 
@@ -104,7 +104,7 @@ class ChatSendServiceTest {
             return savedMessage;
         });
         given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(senderId));
-        given(chatReadService.subscribersToReadStatus(roomId, 300L, List.of(senderId), senderId)).willReturn(2);
+        given(sentMessageReadStatusService.markActiveSubscribersAsRead(roomId, 300L, List.of(senderId), senderId)).willReturn(2);
 
         // when
         chatSendService.sendMessage(roomId, "안녕하세요", List.of(), senderId);
@@ -120,7 +120,7 @@ class ChatSendServiceTest {
         then(chatMessageFileAppender).should().append(savedMessage, List.of());
         then(directChatRoomActivationService).should().joinPendingMemberOnFirstMessage(chatRoom, senderId);
         then(messageReadCreationService).should().createReadStatusForNewMessage(savedMessage, senderId);
-        then(chatReadService).should().subscribersToReadStatus(roomId, 300L, List.of(senderId), senderId);
+        then(sentMessageReadStatusService).should().markActiveSubscribersAsRead(roomId, 300L, List.of(senderId), senderId);
 
         ArgumentCaptor<WebSocketMessageDTO.MessageResponse> messageResponseCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);
@@ -157,7 +157,7 @@ class ChatSendServiceTest {
             return savedMessage;
         });
         given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(101L));
-        given(chatReadService.subscribersToReadStatus(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
+        given(sentMessageReadStatusService.markActiveSubscribersAsRead(eq(roomId), anyLong(), eq(List.of(101L)), isNull())).willReturn(1);
 
         // when
         chatSendService.sendSystemMessage(partyId, content);
@@ -171,7 +171,7 @@ class ChatSendServiceTest {
         assertThat(savedMessage.getContent()).isEqualTo(content);
 
         then(messageReadCreationService).should().createReadStatusForNewMessage(savedMessage, null);
-        then(chatReadService).should().subscribersToReadStatus(roomId, 300L, List.of(101L), null);
+        then(sentMessageReadStatusService).should().markActiveSubscribersAsRead(roomId, 300L, List.of(101L), null);
 
         ArgumentCaptor<WebSocketMessageDTO.MessageResponse> messageResponseCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);

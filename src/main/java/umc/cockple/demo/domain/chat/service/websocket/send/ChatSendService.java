@@ -16,8 +16,8 @@ import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEvent
 import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
-import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
-import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.SentMessageReadStatusService;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.member.domain.Member;
 
@@ -40,7 +40,7 @@ public class ChatSendService {
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
-    private final ChatReadService chatReadService;
+    private final SentMessageReadStatusService sentMessageReadStatusService;
 
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
@@ -59,7 +59,7 @@ public class ChatSendService {
         messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
 
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
-        int unreadCount = chatReadService.subscribersToReadStatus(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
+        int unreadCount = sentMessageReadStatusService.markActiveSubscribersAsRead(chatRoom.getId(), savedMessage.getId(), activeSubscribers, senderId);
 
         List<ChatCommonDTO.FileInfo> responseFiles =
                 createResponseFileInfos(savedMessage.getChatMessageFiles());
@@ -84,7 +84,7 @@ public class ChatSendService {
         messageReadCreationService.createReadStatusForNewMessage(savedSystemMessage, null);
 
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoom.getId());
-        chatReadService.subscribersToReadStatus(
+        sentMessageReadStatusService.markActiveSubscribersAsRead(
                 chatRoom.getId(),
                 savedSystemMessage.getId(),
                 activeSubscribers,
