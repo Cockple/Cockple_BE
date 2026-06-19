@@ -10,12 +10,11 @@ import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpda
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +27,7 @@ public class SubscriptionService {
     private final UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
     private final ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
     private final ChatMessageSender messageSender;
-    private final ChatSessionRegistry sessionRegistry;
+    private final ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
 
     public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
         chatRoomSubscriptionStore.addSubscriber(chatRoomId, memberId);
@@ -68,9 +67,7 @@ public class SubscriptionService {
     }
 
     public List<Long> getActiveSubscribers(Long chatRoomId) {
-        Set<Long> redisSubscribers = chatRoomSubscriptionStore.getSubscribers(chatRoomId);
-
-        return sessionRegistry.findOpenMemberIds(redisSubscribers);
+        return activeChatRoomSubscriberReader.findActiveSubscribers(chatRoomId);
     }
 
     public void broadcastChatRoomListUpdateToMembers(

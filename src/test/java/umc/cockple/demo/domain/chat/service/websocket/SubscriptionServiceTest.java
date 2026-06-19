@@ -15,13 +15,12 @@ import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpda
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
+import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +36,7 @@ class SubscriptionServiceTest {
     @Mock private UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
     @Mock private ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
     @Mock private ChatMessageSender messageSender;
-    @Mock private ChatSessionRegistry sessionRegistry;
+    @Mock private ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
 
     private SubscriptionService subscriptionService;
 
@@ -50,7 +49,7 @@ class SubscriptionServiceTest {
                 unreadCountUpdateBroadcaster,
                 chatRoomListUpdateBroadcaster,
                 messageSender,
-                sessionRegistry
+                activeChatRoomSubscriberReader
         );
     }
 
@@ -59,9 +58,7 @@ class SubscriptionServiceTest {
     void getActiveSubscribers_returnsOpenSubscribers() {
         // given
         Long chatRoomId = 1L;
-        Set<Long> redisSubscribers = Set.of(10L, 20L);
-        given(chatRoomSubscriptionStore.getSubscribers(chatRoomId)).willReturn(redisSubscribers);
-        given(sessionRegistry.findOpenMemberIds(redisSubscribers)).willReturn(List.of(10L));
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(chatRoomId)).willReturn(List.of(10L));
 
         // when
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
@@ -98,12 +95,10 @@ class SubscriptionServiceTest {
         // given
         Long chatRoomId = 1L;
         Long senderId = 10L;
-        Set<Long> redisSubscribers = Set.of(senderId, 20L);
         List<Long> activeSubscribers = List.of(senderId, 20L);
         WebSocketMessageDTO.MessageResponse message = createMessage(chatRoomId, senderId);
 
-        given(chatRoomSubscriptionStore.getSubscribers(chatRoomId)).willReturn(redisSubscribers);
-        given(sessionRegistry.findOpenMemberIds(redisSubscribers)).willReturn(activeSubscribers);
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(chatRoomId)).willReturn(activeSubscribers);
 
         // when
         subscriptionService.broadcastMessage(chatRoomId, message, senderId);
@@ -119,15 +114,13 @@ class SubscriptionServiceTest {
         // given
         Long chatRoomId = 1L;
         Long memberId = 10L;
-        Set<Long> redisSubscribers = Set.of(memberId, 20L);
         List<Long> activeSubscribers = List.of(memberId, 20L);
         List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
                 List.of(new SubscribeReadStatusService.MessageUnreadUpdate(100L, 1));
 
         given(subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId))
                 .willReturn(updates);
-        given(chatRoomSubscriptionStore.getSubscribers(chatRoomId)).willReturn(redisSubscribers);
-        given(sessionRegistry.findOpenMemberIds(redisSubscribers)).willReturn(activeSubscribers);
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(chatRoomId)).willReturn(activeSubscribers);
 
         // when
         subscriptionService.subscribeToChatRoom(chatRoomId, memberId);
