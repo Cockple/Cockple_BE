@@ -185,5 +185,6 @@ class ChatSendServiceTest {
         assertThat(response.senderName()).isEqualTo("시스템");
 
         then(chatSendEventPublisher).should().publishChatRoomListUpdateEvent(chatRoom, savedMessage);
+        then(chatSendEventPublisher).should().publishUnreadStatusUpdateEvent(chatRoom, null);
     }
 }

@@ -74,7 +74,7 @@ public class ChatSendEventPublisher {
     public void publishUnreadStatusUpdateEvent(ChatRoom chatRoom, Long senderId) {
         try {
             List<Long> targetMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId()).stream()
-                    .filter(memberId -> !memberId.equals(senderId))
+                    .filter(memberId -> senderId == null || !memberId.equals(senderId))
                     .distinct()
                     .toList();
 

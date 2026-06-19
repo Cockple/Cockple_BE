@@ -158,4 +158,26 @@ class ChatSendEventPublisherTest {
         then(eventPublisher).should().publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().targetMemberIds()).containsExactly(102L, 103L);
     }
+
+    @Test
+    @DisplayName("시스템 메시지 안읽음 상태 업데이트 이벤트는 모든 멤버를 대상으로 발행한다")
+    void publishUnreadStatusUpdateEvent_publishesAllTargetsWhenSenderIsNull() {
+        // given
+        Long roomId = 20L;
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(
+                PartyFixture.createParty("배드민턴 모임", 101L, PartyFixture.createPartyAddr("서울", "강남구"))
+        );
+        ReflectionTestUtils.setField(chatRoom, "id", roomId);
+        given(chatRoomMemberRepository.findMemberIdsByChatRoomId(roomId))
+                .willReturn(List.of(101L, 102L, 102L));
+
+        // when
+        chatSendEventPublisher.publishUnreadStatusUpdateEvent(chatRoom, null);
+
+        // then
+        ArgumentCaptor<ChatUnreadStatusUpdateEvent> eventCaptor =
+                ArgumentCaptor.forClass(ChatUnreadStatusUpdateEvent.class);
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().targetMemberIds()).containsExactly(101L, 102L);
+    }
 }

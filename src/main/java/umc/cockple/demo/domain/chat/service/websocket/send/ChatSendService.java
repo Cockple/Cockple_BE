@@ -96,6 +96,7 @@ public class ChatSendService {
 
         subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
         chatSendEventPublisher.publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);
+        chatSendEventPublisher.publishUnreadStatusUpdateEvent(chatRoom, null);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
