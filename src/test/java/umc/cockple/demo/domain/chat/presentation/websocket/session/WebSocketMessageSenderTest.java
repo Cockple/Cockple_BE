@@ -1,6 +1,5 @@
 package umc.cockple.demo.domain.chat.presentation.websocket.session;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,10 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,27 +29,16 @@ class WebSocketMessageSenderTest {
 
     @BeforeEach
     void setUp() {
-        messageSender = new WebSocketMessageSender(
-                new ObjectMapper().findAndRegisterModules(),
-                sessionRegistry
-        );
+        messageSender = new WebSocketMessageSender(sessionRegistry);
     }
 
     @Test
-    @DisplayName("메시지를 JSON으로 변환해 열린 세션에 전송한다")
-    void send_serializesAndSendsToOpenSession() throws Exception {
+    @DisplayName("인코딩된 메시지를 열린 세션에 전송한다")
+    void send_sendsEncodedMessageToOpenSession() throws Exception {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.of(session));
-
-        WebSocketMessageDTO.UnreadStatusUpdateMessage message =
-                WebSocketMessageDTO.UnreadStatusUpdateMessage.builder()
-                        .type(WebSocketMessageType.UNREAD_STATUS_UPDATE)
-                        .hasUnread(true)
-                        .hasPartyUnread(true)
-                        .hasDirectUnread(false)
-                        .timestamp(LocalDateTime.of(2026, 5, 21, 13, 15))
-                        .build();
+        EncodedChatMessage message = new EncodedChatMessage("{\"type\":\"UNREAD_STATUS_UPDATE\"}");
 
         // when
         boolean sent = messageSender.send(memberId, message);
@@ -66,13 +52,13 @@ class WebSocketMessageSenderTest {
 
     @Test
     @DisplayName("대상 세션이 없으면 실패만 반환한다")
-    void sendSerialized_returnsFalseWhenSessionDoesNotExist() {
+    void send_returnsFalseWhenSessionDoesNotExist() {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.empty());
 
         // when
-        boolean sent = messageSender.sendSerialized(memberId, "{}");
+        boolean sent = messageSender.send(memberId, new EncodedChatMessage("{}"));
 
         // then
         assertThat(sent).isFalse();
@@ -82,7 +68,7 @@ class WebSocketMessageSenderTest {
 
     @Test
     @DisplayName("전송 중 예외가 발생하면 세션 저장소에서 제거하고 실패를 반환한다")
-    void sendSerialized_removesMemberWhenSendFails() throws Exception {
+    void send_removesMemberWhenSendFails() throws Exception {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.of(session));
@@ -91,7 +77,7 @@ class WebSocketMessageSenderTest {
                 .sendMessage(org.mockito.ArgumentMatchers.any(TextMessage.class));
 
         // when
-        boolean sent = messageSender.sendSerialized(memberId, "{}");
+        boolean sent = messageSender.send(memberId, new EncodedChatMessage("{}"));
 
         // then
         assertThat(sent).isFalse();

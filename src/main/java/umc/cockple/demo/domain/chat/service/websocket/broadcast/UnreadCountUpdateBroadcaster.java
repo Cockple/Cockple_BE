@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
@@ -16,6 +18,7 @@ import java.util.List;
 @Slf4j
 public class UnreadCountUpdateBroadcaster {
 
+    private final ChatMessageEncoder messageEncoder;
     private final ChatMessageSender messageSender;
 
     public void broadcast(
@@ -36,8 +39,8 @@ public class UnreadCountUpdateBroadcaster {
                     .timestamp(LocalDateTime.now())
                     .build();
 
-            String messageJson = messageSender.serialize(updateMessage).orElse(null);
-            if (messageJson == null) {
+            EncodedChatMessage encodedMessage = messageEncoder.encode(updateMessage).orElse(null);
+            if (encodedMessage == null) {
                 log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId());
                 continue;
             }
@@ -48,7 +51,7 @@ public class UnreadCountUpdateBroadcaster {
                     continue;
                 }
 
-                if (messageSender.sendSerialized(memberId, messageJson)) {
+                if (messageSender.send(memberId, encodedMessage)) {
                     successCount++;
                 } else {
                     log.error("안읽은 수 업데이트 브로드캐스트 실패 - 사용자: {}, 메시지: {}",

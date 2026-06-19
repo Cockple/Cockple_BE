@@ -11,10 +11,13 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,13 +29,14 @@ import static org.mockito.BDDMockito.then;
 class ChatRoomListUpdateBroadcasterTest {
 
     @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
+    @Mock private ChatMessageEncoder messageEncoder;
     @Mock private ChatMessageSender messageSender;
 
     private ChatRoomListUpdateBroadcaster broadcaster;
 
     @BeforeEach
     void setUp() {
-        broadcaster = new ChatRoomListUpdateBroadcaster(chatListSubscriptionStore, messageSender);
+        broadcaster = new ChatRoomListUpdateBroadcaster(chatListSubscriptionStore, messageEncoder, messageSender);
     }
 
     @Test
@@ -50,8 +54,10 @@ class ChatRoomListUpdateBroadcasterTest {
 
         given(chatListSubscriptionStore.getChatListSubscribers(chatRoomId))
                 .willReturn(Set.of(subscribedMemberId));
-        given(messageSender.send(org.mockito.ArgumentMatchers.eq(subscribedMemberId),
-                org.mockito.ArgumentMatchers.any(WebSocketMessageDTO.ChatRoomListUpdate.class)))
+        EncodedChatMessage encodedMessage = new EncodedChatMessage("list-update-json");
+        given(messageEncoder.encode(org.mockito.ArgumentMatchers.any(WebSocketMessageDTO.ChatRoomListUpdate.class)))
+                .willReturn(Optional.of(encodedMessage));
+        given(messageSender.send(subscribedMemberId, encodedMessage))
                 .willReturn(true);
 
         // when
@@ -60,7 +66,8 @@ class ChatRoomListUpdateBroadcasterTest {
         // then
         ArgumentCaptor<WebSocketMessageDTO.ChatRoomListUpdate> messageCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.ChatRoomListUpdate.class);
-        then(messageSender).should().send(org.mockito.ArgumentMatchers.eq(subscribedMemberId), messageCaptor.capture());
+        then(messageEncoder).should().encode(messageCaptor.capture());
+        then(messageSender).should().send(subscribedMemberId, encodedMessage);
         then(messageSender).shouldHaveNoMoreInteractions();
 
         WebSocketMessageDTO.ChatRoomListUpdate message = messageCaptor.getValue();

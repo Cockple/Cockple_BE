@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -18,6 +20,7 @@ import java.util.Set;
 public class ChatRoomListUpdateBroadcaster {
 
     private final ChatListSubscriptionStore chatListSubscriptionStore;
+    private final ChatMessageEncoder messageEncoder;
     private final ChatMessageSender messageSender;
 
     public void broadcast(Long chatRoomId, Map<Long, ChatRoomListUpdateData> memberUpdateData) {
@@ -44,7 +47,8 @@ public class ChatRoomListUpdateBroadcaster {
                     .timestamp(LocalDateTime.now())
                     .build();
 
-            if (messageSender.send(memberId, message)) {
+            EncodedChatMessage encodedMessage = messageEncoder.encode(message).orElse(null);
+            if (encodedMessage != null && messageSender.send(memberId, encodedMessage)) {
                 successCount++;
             } else {
                 log.error("채팅방 목록 업데이트 전송 실패 - 사용자: {}", memberId);

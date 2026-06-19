@@ -9,7 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,33 +24,35 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("ChatRoomMessageBroadcaster")
 class ChatRoomMessageBroadcasterTest {
 
+    @Mock private ChatMessageEncoder messageEncoder;
     @Mock private ChatMessageSender messageSender;
 
     private ChatRoomMessageBroadcaster broadcaster;
 
     @BeforeEach
     void setUp() {
-        broadcaster = new ChatRoomMessageBroadcaster(messageSender);
+        broadcaster = new ChatRoomMessageBroadcaster(messageEncoder, messageSender);
     }
 
     @Test
-    @DisplayName("제외 멤버를 건너뛰고 나머지 구독자에게 직렬화된 메시지를 전송한다")
-    void broadcast_sendsSerializedMessageExceptExcludedMember() {
+    @DisplayName("제외 멤버를 건너뛰고 나머지 구독자에게 인코딩된 메시지를 전송한다")
+    void broadcast_sendsEncodedMessageExceptExcludedMember() {
         // given
         Long chatRoomId = 1L;
         Long excludedMemberId = 10L;
         WebSocketMessageDTO.MessageResponse message = createMessage(chatRoomId);
-        given(messageSender.serialize(message)).willReturn(Optional.of("message-json"));
-        given(messageSender.sendSerialized(20L, "message-json")).willReturn(true);
-        given(messageSender.sendSerialized(30L, "message-json")).willReturn(false);
+        EncodedChatMessage encodedMessage = new EncodedChatMessage("message-json");
+        given(messageEncoder.encode(message)).willReturn(Optional.of(encodedMessage));
+        given(messageSender.send(20L, encodedMessage)).willReturn(true);
+        given(messageSender.send(30L, encodedMessage)).willReturn(false);
 
         // when
         broadcaster.broadcast(chatRoomId, message, List.of(excludedMemberId, 20L, 30L), excludedMemberId);
 
         // then
-        then(messageSender).should().serialize(message);
-        then(messageSender).should().sendSerialized(20L, "message-json");
-        then(messageSender).should().sendSerialized(30L, "message-json");
+        then(messageEncoder).should().encode(message);
+        then(messageSender).should().send(20L, encodedMessage);
+        then(messageSender).should().send(30L, encodedMessage);
         then(messageSender).shouldHaveNoMoreInteractions();
     }
 
@@ -63,6 +67,7 @@ class ChatRoomMessageBroadcasterTest {
         broadcaster.broadcast(chatRoomId, message, List.of(), null);
 
         // then
+        then(messageEncoder).shouldHaveNoInteractions();
         then(messageSender).shouldHaveNoInteractions();
     }
 

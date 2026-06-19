@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 @Slf4j
 public class ChatRoomMessageBroadcaster {
 
+    private final ChatMessageEncoder messageEncoder;
     private final ChatMessageSender messageSender;
 
     public void broadcast(
@@ -26,8 +29,8 @@ public class ChatRoomMessageBroadcaster {
             return;
         }
 
-        String messageJson = messageSender.serialize(message).orElse(null);
-        if (messageJson == null) {
+        EncodedChatMessage encodedMessage = messageEncoder.encode(message).orElse(null);
+        if (encodedMessage == null) {
             return;
         }
 
@@ -39,7 +42,7 @@ public class ChatRoomMessageBroadcaster {
                 continue;
             }
 
-            if (messageSender.sendSerialized(memberId, messageJson)) {
+            if (messageSender.send(memberId, encodedMessage)) {
                 successMembers.add(memberId);
             } else {
                 failedMembers.add(memberId);

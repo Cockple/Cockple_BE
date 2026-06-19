@@ -9,7 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.util.List;
@@ -24,13 +26,14 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("UnreadCountUpdateBroadcaster")
 class UnreadCountUpdateBroadcasterTest {
 
+    @Mock private ChatMessageEncoder messageEncoder;
     @Mock private ChatMessageSender messageSender;
 
     private UnreadCountUpdateBroadcaster broadcaster;
 
     @BeforeEach
     void setUp() {
-        broadcaster = new UnreadCountUpdateBroadcaster(messageSender);
+        broadcaster = new UnreadCountUpdateBroadcaster(messageEncoder, messageSender);
     }
 
     @Test
@@ -41,10 +44,11 @@ class UnreadCountUpdateBroadcasterTest {
         Long excludedMemberId = 10L;
         SubscribeReadStatusService.MessageUnreadUpdate update =
                 new SubscribeReadStatusService.MessageUnreadUpdate(100L, 2);
+        EncodedChatMessage encodedMessage = new EncodedChatMessage("unread-count-json");
 
-        given(messageSender.serialize(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
-                .willReturn(Optional.of("unread-count-json"));
-        given(messageSender.sendSerialized(20L, "unread-count-json")).willReturn(true);
+        given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
+                .willReturn(Optional.of(encodedMessage));
+        given(messageSender.send(20L, encodedMessage)).willReturn(true);
 
         // when
         broadcaster.broadcast(chatRoomId, List.of(update), List.of(excludedMemberId, 20L), excludedMemberId);
@@ -52,14 +56,14 @@ class UnreadCountUpdateBroadcasterTest {
         // then
         ArgumentCaptor<WebSocketMessageDTO.UnreadCountUpdateMessage> messageCaptor =
                 ArgumentCaptor.forClass(WebSocketMessageDTO.UnreadCountUpdateMessage.class);
-        then(messageSender).should().serialize(messageCaptor.capture());
+        then(messageEncoder).should().encode(messageCaptor.capture());
         WebSocketMessageDTO.UnreadCountUpdateMessage message = messageCaptor.getValue();
         assertThat(message.type()).isEqualTo(WebSocketMessageType.UNREAD_COUNT_UPDATE);
         assertThat(message.chatRoomId()).isEqualTo(chatRoomId);
         assertThat(message.messageId()).isEqualTo(update.messageId());
         assertThat(message.newUnreadCount()).isEqualTo(update.newUnreadCount());
 
-        then(messageSender).should().sendSerialized(20L, "unread-count-json");
+        then(messageSender).should().send(20L, encodedMessage);
         then(messageSender).shouldHaveNoMoreInteractions();
     }
 
@@ -74,6 +78,7 @@ class UnreadCountUpdateBroadcasterTest {
         broadcaster.broadcast(1L, List.of(update), List.of(), 10L);
 
         // then
+        then(messageEncoder).shouldHaveNoInteractions();
         then(messageSender).shouldHaveNoInteractions();
     }
 
@@ -83,14 +88,14 @@ class UnreadCountUpdateBroadcasterTest {
         // given
         SubscribeReadStatusService.MessageUnreadUpdate update =
                 new SubscribeReadStatusService.MessageUnreadUpdate(100L, 2);
-        given(messageSender.serialize(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
+        given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
                 .willReturn(Optional.empty());
 
         // when
         broadcaster.broadcast(1L, List.of(update), List.of(20L), 10L);
 
         // then
-        then(messageSender).should().serialize(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class));
+        then(messageEncoder).should().encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class));
         then(messageSender).shouldHaveNoMoreInteractions();
     }
 }
