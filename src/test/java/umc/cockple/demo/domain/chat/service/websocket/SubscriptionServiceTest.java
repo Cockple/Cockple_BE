@@ -12,6 +12,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
+import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
@@ -25,8 +27,8 @@ import static org.mockito.BDDMockito.then;
 class SubscriptionServiceTest {
 
     @Mock private SubscribeReadStatusService subscribeReadStatusService;
-    @Mock private RedisSubscriptionService redisSubscriptionService;
-    @Mock private ChatListSubscriptionService chatListSubscriptionService;
+    @Mock private ChatRoomSubscriptionStore chatRoomSubscriptionStore;
+    @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
     @Mock private WebSocketSession session;
 
     private SubscriptionService subscriptionService;
@@ -36,8 +38,8 @@ class SubscriptionServiceTest {
         subscriptionService = new SubscriptionService(
                 new ObjectMapper().findAndRegisterModules(),
                 subscribeReadStatusService,
-                redisSubscriptionService,
-                chatListSubscriptionService
+                chatRoomSubscriptionStore,
+                chatListSubscriptionStore
         );
     }
 

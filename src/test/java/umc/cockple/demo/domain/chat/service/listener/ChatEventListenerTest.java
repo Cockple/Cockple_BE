@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
@@ -31,7 +31,7 @@ class ChatEventListenerTest {
     @Mock private ChatSendService chatSendService;
     @Mock private SubscriptionService subscriptionService;
     @Mock private ChatRoomListCacheService chatRoomListCacheService;
-    @Mock private ChatListSubscriptionService chatListSubscriptionService;
+    @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
     @Mock private ChatPushNotificationService chatPushNotificationService;
     @Mock private ChatUnreadQueryService chatUnreadQueryService;
 

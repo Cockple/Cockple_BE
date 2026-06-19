@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.repository.redis;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,11 +13,11 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatListSubscriptionService 단위 테스트")
-class ChatListSubscriptionServiceTest {
+@DisplayName("ChatListSubscriptionStore 단위 테스트")
+class ChatListSubscriptionStoreTest {
 
     @InjectMocks
-    private ChatListSubscriptionService chatListSubscriptionService;
+    private ChatListSubscriptionStore chatListSubscriptionStore;
 
     @Mock
     private StringRedisTemplate stringRedisTemplate;
@@ -25,7 +25,7 @@ class ChatListSubscriptionServiceTest {
     @Test
     @DisplayName("채팅 목록 구독 키는 best-effort로 삭제한다")
     void tryClearChatListSubscribers_deletesKey() {
-        chatListSubscriptionService.tryClearChatListSubscribers(10L);
+        chatListSubscriptionStore.tryClearChatListSubscribers(10L);
 
         verify(stringRedisTemplate).delete("chatlist:subscribers:10");
     }
@@ -37,7 +37,7 @@ class ChatListSubscriptionServiceTest {
                 .given(stringRedisTemplate)
                 .delete("chatlist:subscribers:10");
 
-        assertThatCode(() -> chatListSubscriptionService.tryClearChatListSubscribers(10L))
+        assertThatCode(() -> chatListSubscriptionStore.tryClearChatListSubscribers(10L))
                 .doesNotThrowAnyException();
     }
 }

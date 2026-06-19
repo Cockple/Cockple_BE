@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
@@ -36,7 +36,7 @@ public class ChatEventListener {
     private final ChatSendService chatSendService;
     private final SubscriptionService subscriptionService;
     private final ChatRoomListCacheService chatRoomListCacheService;
-    private final ChatListSubscriptionService chatListSubscriptionService;
+    private final ChatListSubscriptionStore chatListSubscriptionStore;
     private final ChatPushNotificationService chatPushNotificationService;
     private final ChatUnreadQueryService chatUnreadQueryService;
 
@@ -107,11 +107,11 @@ public class ChatEventListener {
         try {
             switch (event.action()) {
                 case "SUBSCRIBE" -> {
-                    chatListSubscriptionService.subscribeToChatList(event.memberId(), event.chatRoomIds());
+                    chatListSubscriptionStore.subscribeToChatList(event.memberId(), event.chatRoomIds());
                     log.info("채팅방 목록 구독 완료 - 멤버: {}, 채팅방 수: {}", event.memberId(), event.chatRoomIds().size());
                 }
                 case "UNSUBSCRIBE" -> {
-                    chatListSubscriptionService.unsubscribeFromChatList(event.memberId(), event.chatRoomIds());
+                    chatListSubscriptionStore.unsubscribeFromChatList(event.memberId(), event.chatRoomIds());
                     log.info("채팅방 목록 구독 해제 완료 - 멤버: {}, 채팅방 수: {}", event.memberId(), event.chatRoomIds().size());
                 }
                 default -> log.warn("알 수 없는 채팅방 목록 구독 액션: {}", event.action());

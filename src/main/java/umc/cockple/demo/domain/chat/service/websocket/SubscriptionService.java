@@ -10,6 +10,8 @@ import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
+import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
@@ -27,8 +29,8 @@ public class SubscriptionService {
     private final ObjectMapper objectMapper;
 
     private final SubscribeReadStatusService subscribeReadStatusService;
-    private final RedisSubscriptionService redisSubscriptionService;
-    private final ChatListSubscriptionService chatListSubscriptionService;
+    private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
+    private final ChatListSubscriptionStore chatListSubscriptionStore;
 
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
@@ -42,7 +44,7 @@ public class SubscriptionService {
     }
 
     public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
-        redisSubscriptionService.addSubscriber(chatRoomId, memberId);
+        chatRoomSubscriptionStore.addSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
 
         List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
@@ -55,7 +57,7 @@ public class SubscriptionService {
     }
 
     public void unsubscribeToChatRoom(Long chatRoomId, Long memberId) {
-        redisSubscriptionService.removeSubscriber(chatRoomId, memberId);
+        chatRoomSubscriptionStore.removeSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 해제 완료 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
     }
 
@@ -90,7 +92,7 @@ public class SubscriptionService {
     }
 
     public List<Long> getActiveSubscribers(Long chatRoomId) {
-        Set<Long> redisSubscribers = redisSubscriptionService.getSubscribers(chatRoomId);
+        Set<Long> redisSubscribers = chatRoomSubscriptionStore.getSubscribers(chatRoomId);
 
         return redisSubscribers.stream()
                 .filter(memberId -> {
@@ -198,7 +200,7 @@ public class SubscriptionService {
             Map<Long, ChatRoomListUpdateData> memberUpdateData) {
         log.info("채팅방 목록 업데이트 개별 브로드캐스트 시작 - 채팅방: {}, 대상자: {}명", chatRoomId, memberUpdateData.size());
 
-        Set<Long> chatListSubscribers = chatListSubscriptionService.getChatListSubscribers(chatRoomId);
+        Set<Long> chatListSubscribers = chatListSubscriptionStore.getChatListSubscribers(chatRoomId);
 
         int successCount = 0;
         int failedCount = 0;

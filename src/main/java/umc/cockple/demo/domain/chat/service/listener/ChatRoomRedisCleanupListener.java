@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 
 @Component
 @RequiredArgsConstructor
@@ -17,8 +17,8 @@ import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
 public class ChatRoomRedisCleanupListener {
 
     private final ChatRoomListCacheService chatRoomListCacheService;
-    private final RedisSubscriptionService redisSubscriptionService;
-    private final ChatListSubscriptionService chatListSubscriptionService;
+    private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
+    private final ChatListSubscriptionStore chatListSubscriptionStore;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
@@ -32,8 +32,8 @@ public class ChatRoomRedisCleanupListener {
             log.warn("[채팅방 Redis 정리] 마지막 메시지 캐시 best-effort 삭제 실패 - chatRoomId: {}", chatRoomId, e);
         }
 
-        redisSubscriptionService.tryClearRoomSubscribers(chatRoomId);
-        chatListSubscriptionService.tryClearChatListSubscribers(chatRoomId);
+        chatRoomSubscriptionStore.tryClearRoomSubscribers(chatRoomId);
+        chatListSubscriptionStore.tryClearChatListSubscribers(chatRoomId);
 
         log.info("[채팅방 Redis 정리 완료] - chatRoomId: {}", chatRoomId);
     }

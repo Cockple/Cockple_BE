@@ -10,9 +10,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
-import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;
+import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 
 import java.lang.reflect.Method;
 
@@ -31,9 +31,9 @@ class ChatRoomRedisCleanupListenerTest {
     @Mock
     private ChatRoomListCacheService chatRoomListCacheService;
     @Mock
-    private RedisSubscriptionService redisSubscriptionService;
+    private ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     @Mock
-    private ChatListSubscriptionService chatListSubscriptionService;
+    private ChatListSubscriptionStore chatListSubscriptionStore;
 
     @Test
     @DisplayName("채팅방 Redis 정리 이벤트는 커밋 이후 비동기로 처리되도록 설정한다")
@@ -58,10 +58,10 @@ class ChatRoomRedisCleanupListenerTest {
 
         listener.handleChatRoomRedisCleanup(event);
 
-        var inOrder = inOrder(chatRoomListCacheService, redisSubscriptionService, chatListSubscriptionService);
+        var inOrder = inOrder(chatRoomListCacheService, chatRoomSubscriptionStore, chatListSubscriptionStore);
         inOrder.verify(chatRoomListCacheService).evictLastMessage(chatRoomId);
-        inOrder.verify(redisSubscriptionService).tryClearRoomSubscribers(chatRoomId);
-        inOrder.verify(chatListSubscriptionService).tryClearChatListSubscribers(chatRoomId);
+        inOrder.verify(chatRoomSubscriptionStore).tryClearRoomSubscribers(chatRoomId);
+        inOrder.verify(chatListSubscriptionStore).tryClearChatListSubscribers(chatRoomId);
     }
 
     @Test
@@ -74,7 +74,7 @@ class ChatRoomRedisCleanupListenerTest {
 
         listener.handleChatRoomRedisCleanup(ChatRoomRedisCleanupEvent.of(chatRoomId));
 
-        verify(redisSubscriptionService).tryClearRoomSubscribers(chatRoomId);
-        verify(chatListSubscriptionService).tryClearChatListSubscribers(chatRoomId);
+        verify(chatRoomSubscriptionStore).tryClearRoomSubscribers(chatRoomId);
+        verify(chatListSubscriptionStore).tryClearChatListSubscribers(chatRoomId);
     }
 }
