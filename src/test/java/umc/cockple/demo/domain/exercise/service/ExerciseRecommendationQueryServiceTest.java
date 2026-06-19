@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
@@ -106,7 +106,7 @@ class ExerciseRecommendationQueryServiceTest {
     private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseConverter exerciseConverter) {
         return new ExerciseRecommendationQueryService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseBookmarkReader(exerciseBookmarkRepository),
+                new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseDistanceCalculator(),
                 new MemberLookupService(memberRepository),

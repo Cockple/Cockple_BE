@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class ExerciseMapQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseBookmarkReader exerciseBookmarkReader;
+    private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final ExerciseConverter exerciseConverter;
 
@@ -45,7 +45,7 @@ public class ExerciseMapQueryService {
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
 
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
