@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
@@ -32,6 +33,7 @@ public class PartyExerciseQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
+    private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkReader exerciseBookmarkReader;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
@@ -60,7 +62,7 @@ public class PartyExerciseQueryService {
                     dateRange.start(), dateRange.end(), isMember, party);
         }
 
-        Map<Long, Integer> participantCounts = exerciseParticipantReader.getParticipantCountsMap(
+        Map<Long, Integer> participantCounts = exerciseParticipantCountLookupService.getParticipantCountsByPartyIdAndDateRange(
                 partyId, dateRange.start(), dateRange.end());
 
         List<Long> exerciseIds = getExerciseIds(exercises);

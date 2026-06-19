@@ -3,7 +3,6 @@ package umc.cockple.demo.domain.exercise.service.support.reader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -12,7 +11,6 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +23,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseParticipantReader {
 
-    private final ExerciseRepository exerciseRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final MemberPartyRepository memberPartyRepository;
 
@@ -55,30 +52,6 @@ public class ExerciseParticipantReader {
                 ));
     }
 
-    public Map<Long, Integer> getParticipantCountsMap(Long partyId, LocalDate start, LocalDate end) {
-        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCounts(partyId, start, end);
-        return toCountMap(countResults);
-    }
-
-    public Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds, LocalDate start, LocalDate end) {
-        if (exerciseIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(
-                exerciseIds, start, end);
-        return toCountMap(countResults);
-    }
-
-    public Map<Long, Integer> getParticipantCountsMap(List<Long> exerciseIds) {
-        if (exerciseIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<Object[]> countResults = exerciseRepository.findExerciseParticipantCountsByExerciseIds(exerciseIds);
-        return toCountMap(countResults);
-    }
-
     public Map<Long, Boolean> getParticipatingStatus(Long memberId, List<Long> exerciseIds) {
         if (exerciseIds.isEmpty()) {
             return Collections.emptyMap();
@@ -92,14 +65,6 @@ public class ExerciseParticipantReader {
                 .collect(Collectors.toMap(
                         exerciseId -> exerciseId,
                         participatingExerciseIdSet::contains
-                ));
-    }
-
-    private Map<Long, Integer> toCountMap(List<Object[]> countResults) {
-        return countResults.stream()
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).longValue(),
-                        row -> ((Number) row[1]).intValue()
                 ));
     }
 }

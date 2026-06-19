@@ -126,7 +126,7 @@ class ExerciseLifecycleQueryServiceTest {
 
     private ExerciseLifecycleQueryService createExerciseLifecycleQueryService(ExerciseConverter exerciseConverter) {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                exerciseRepository, memberExerciseRepository, memberPartyRepository);
+                memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
 
         return new ExerciseLifecycleQueryService(

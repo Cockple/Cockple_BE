@@ -8,9 +8,9 @@ import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -29,7 +29,7 @@ public class ExerciseRecommendationQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseBookmarkReader exerciseBookmarkReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
     private final ExerciseConverter exerciseConverter;
@@ -78,7 +78,7 @@ public class ExerciseRecommendationQueryService {
 
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
-        Map<Long, Integer> participantCountMap = exerciseParticipantReader.getParticipantCountsMap(exerciseIds);
+        Map<Long, Integer> participantCountMap = exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(exerciseIds);
         MemberAddr mainAddr = memberLookupService.findMainAddressOrThrow(member);
 
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());

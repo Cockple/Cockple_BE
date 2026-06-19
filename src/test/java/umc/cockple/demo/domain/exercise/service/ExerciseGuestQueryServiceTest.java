@@ -106,7 +106,7 @@ class ExerciseGuestQueryServiceTest {
     void setUp() {
         ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                exerciseRepository, memberExerciseRepository, memberPartyRepository);
+                memberExerciseRepository, memberPartyRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
 
