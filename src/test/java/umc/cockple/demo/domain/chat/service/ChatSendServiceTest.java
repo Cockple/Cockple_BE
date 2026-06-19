@@ -24,6 +24,7 @@ import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -56,6 +57,7 @@ class ChatSendServiceTest {
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
     @Mock private ChatRoomReader chatRoomReader;
     @Mock private ChatMemberReader chatMemberReader;
+    @Mock private ChatMessageFileAppender chatMessageFileAppender;
     @Mock private SubscriptionService subscriptionService;
     @Mock private MessageReadCreationService messageReadCreationService;
     @Mock private ChatProcessor chatProcessor;
@@ -75,6 +77,7 @@ class ChatSendServiceTest {
                 chatRoomMemberRepository,
                 chatRoomReader,
                 chatMemberReader,
+                chatMessageFileAppender,
                 subscriptionService,
                 messageReadCreationService,
                 chatProcessor,
@@ -131,6 +134,7 @@ class ChatSendServiceTest {
         then(subscriptionService).should().broadcastMessage(eq(roomId), messageResponseCaptor.capture(), eq(senderId));
         assertThat(messageResponseCaptor.getValue().messageId()).isEqualTo(300L);
         assertThat(messageResponseCaptor.getValue().unreadCount()).isEqualTo(2);
+        then(chatMessageFileAppender).should().append(any(ChatMessage.class), eq(List.of()));
 
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
         then(eventPublisher).should(times(3)).publishEvent(eventCaptor.capture());

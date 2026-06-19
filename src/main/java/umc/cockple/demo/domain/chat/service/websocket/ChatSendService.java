@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -38,6 +39,7 @@ public class ChatSendService {
 
     private final ChatRoomReader chatRoomReader;
     private final ChatMemberReader chatMemberReader;
+    private final ChatMessageFileAppender chatMessageFileAppender;
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
@@ -55,7 +57,7 @@ public class ChatSendService {
         String profileImageUrl = chatProcessor.generateProfileImageUrl(sender.getProfileImg());
 
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
-        attachFiles(chatMessage, files);
+        chatMessageFileAppender.append(chatMessage, files);
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
@@ -106,18 +108,6 @@ public class ChatSendService {
     }
 
     // ========== 비즈니스 메서드 ==========
-    private void attachFiles(ChatMessage message, List<WebSocketMessageDTO.Request.FileInfo> files) {
-        if (files != null && !files.isEmpty()) {
-            files.forEach(fileInfo -> {
-                ChatMessageFile messageFile = ChatMessageFile.create(
-                        message, fileInfo.imgKey(), fileInfo.imgOrder(),
-                        fileInfo.originalFileName(), fileInfo.fileSize(), fileInfo.fileType()
-                );
-                message.getChatMessageFiles().add(messageFile);
-            });
-        }
-    }
-
     private void checkFirstMessageInDirect(Long chatRoomId, Long senderId, ChatRoom chatRoom) {
         if (chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
             handleFirstDirectMessage(chatRoomId, senderId);
