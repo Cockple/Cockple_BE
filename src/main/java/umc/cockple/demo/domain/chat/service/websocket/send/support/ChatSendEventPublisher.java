@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.support;
+package umc.cockple.demo.domain.chat.service.websocket.send.support;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
+import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;

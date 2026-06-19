@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket;
+package umc.cockple.demo.domain.chat.service.websocket.send;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +11,14 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
-import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
-import umc.cockple.demo.domain.chat.service.support.ChatSendEventPublisher;
-import umc.cockple.demo.domain.chat.service.support.DirectChatRoomActivationService;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatMessageFileAppender;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEventPublisher;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
+import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
+import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
+import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.util.List;

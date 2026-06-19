@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.websocket.send;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,13 +14,14 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
-import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
-import umc.cockple.demo.domain.chat.service.support.ChatSendEventPublisher;
-import umc.cockple.demo.domain.chat.service.support.DirectChatRoomActivationService;
+import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatMessageFileAppender;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEventPublisher;
+import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
+import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.member.domain.Member;
