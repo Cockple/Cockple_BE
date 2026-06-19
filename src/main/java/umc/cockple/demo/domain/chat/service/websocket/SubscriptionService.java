@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.L
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -31,15 +31,14 @@ public class SubscriptionService {
     private final SubscribeReadStatusService subscribeReadStatusService;
     private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
-
-    private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
+    private final ChatWebSocketSessionRegistry sessionRegistry;
 
     public void addSession(Long memberId, WebSocketSession session) {
-        memberSessions.put(memberId, session);
+        sessionRegistry.register(memberId, session);
     }
 
     public void removeSession(Long memberId) {
-        memberSessions.remove(memberId);
+        sessionRegistry.remove(memberId);
         log.info("로컬 세션 제거 - 멤버: {}", memberId);
     }
 
@@ -72,10 +71,10 @@ public class SubscriptionService {
     public void sendUnreadStatusUpdateToMember(
             Long memberId,
             WebSocketMessageDTO.UnreadStatusUpdateMessage message) {
-        WebSocketSession session = memberSessions.get(memberId);
-        if (session == null || !session.isOpen()) {
+        WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
+        if (session == null) {
             log.debug("안읽음 상태 업데이트 대상 세션 없음 - 멤버: {}", memberId);
-            memberSessions.remove(memberId);
+            sessionRegistry.remove(memberId);
             return;
         }
 
@@ -87,19 +86,14 @@ public class SubscriptionService {
             log.debug("안읽음 상태 업데이트 전송 완료 - 멤버: {}", memberId);
         } catch (Exception e) {
             log.error("안읽음 상태 업데이트 전송 실패 - 멤버: {}", memberId, e);
-            memberSessions.remove(memberId);
+            sessionRegistry.remove(memberId);
         }
     }
 
     public List<Long> getActiveSubscribers(Long chatRoomId) {
         Set<Long> redisSubscribers = chatRoomSubscriptionStore.getSubscribers(chatRoomId);
 
-        return redisSubscribers.stream()
-                .filter(memberId -> {
-                    WebSocketSession session = memberSessions.get(memberId);
-                    return session != null && session.isOpen();
-                })
-                .toList();
+        return sessionRegistry.findOpenMemberIds(redisSubscribers);
     }
 
     private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
@@ -126,8 +120,8 @@ public class SubscriptionService {
                 continue;
             }
 
-            WebSocketSession session = memberSessions.get(memberId);
-            if (session != null && session.isOpen()) {
+            WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
+            if (session != null) {
                 try {
                     synchronized (session) {
                         session.sendMessage(new TextMessage(messageJson));
@@ -142,7 +136,7 @@ public class SubscriptionService {
             }
         }
 
-        failedMembers.forEach(memberSessions::remove);
+        failedMembers.forEach(sessionRegistry::remove);
 
         log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
     }
@@ -172,8 +166,8 @@ public class SubscriptionService {
                         continue;
                     }
 
-                    WebSocketSession session = memberSessions.get(memberId);
-                    if (session != null && session.isOpen()) {
+                    WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
+                    if (session != null) {
                         try {
                             synchronized (session) {
                                 session.sendMessage(new TextMessage(messageJson));
@@ -213,8 +207,8 @@ public class SubscriptionService {
             }
 
             ChatRoomListUpdateData updateData = entry.getValue();
-            WebSocketSession session = memberSessions.get(memberId);
-            if (session != null && session.isOpen()) {
+            WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
+            if (session != null) {
                 try {
                     WebSocketMessageDTO.ChatRoomListUpdate message = WebSocketMessageDTO.ChatRoomListUpdate.builder()
                             .type(WebSocketMessageType.CHAT_ROOM_LIST_UPDATE)
@@ -234,7 +228,7 @@ public class SubscriptionService {
                 } catch (Exception e) {
                     log.error("채팅방 목록 업데이트 전송 실패 - 사용자: {}", memberId, e);
                     failedCount++;
-                    memberSessions.remove(memberId);
+                    sessionRegistry.remove(memberId);
                 }
             } else {
                 failedCount++;
