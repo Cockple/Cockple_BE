@@ -1,18 +1,16 @@
 package umc.cockple.demo.domain.chat.service.websocket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatWebSocketSessionRegistry;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
@@ -26,21 +24,11 @@ import java.util.Set;
 @Slf4j
 public class SubscriptionService {
 
-    private final ObjectMapper objectMapper;
-
     private final SubscribeReadStatusService subscribeReadStatusService;
     private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
-    private final ChatWebSocketSessionRegistry sessionRegistry;
-
-    public void addSession(Long memberId, WebSocketSession session) {
-        sessionRegistry.register(memberId, session);
-    }
-
-    public void removeSession(Long memberId) {
-        sessionRegistry.remove(memberId);
-        log.info("로컬 세션 제거 - 멤버: {}", memberId);
-    }
+    private final ChatMessageSender messageSender;
+    private final ChatSessionRegistry sessionRegistry;
 
     public void subscribeToChatRoom(Long chatRoomId, Long memberId) {
         chatRoomSubscriptionStore.addSubscriber(chatRoomId, memberId);
@@ -71,22 +59,8 @@ public class SubscriptionService {
     public void sendUnreadStatusUpdateToMember(
             Long memberId,
             WebSocketMessageDTO.UnreadStatusUpdateMessage message) {
-        WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
-        if (session == null) {
-            log.debug("안읽음 상태 업데이트 대상 세션 없음 - 멤버: {}", memberId);
-            sessionRegistry.remove(memberId);
-            return;
-        }
-
-        try {
-            String messageJson = objectMapper.writeValueAsString(message);
-            synchronized (session) {
-                session.sendMessage(new TextMessage(messageJson));
-            }
+        if (messageSender.send(memberId, message)) {
             log.debug("안읽음 상태 업데이트 전송 완료 - 멤버: {}", memberId);
-        } catch (Exception e) {
-            log.error("안읽음 상태 업데이트 전송 실패 - 멤버: {}", memberId, e);
-            sessionRegistry.remove(memberId);
         }
     }
 
@@ -103,11 +77,8 @@ public class SubscriptionService {
             return;
         }
 
-        String messageJson;
-        try {
-            messageJson = objectMapper.writeValueAsString(message);
-        } catch (Exception e) {
-            log.error("메시지를 JSON으로 변환하는데 실패했습니다", e);
+        String messageJson = messageSender.serialize(message).orElse(null);
+        if (messageJson == null) {
             return;
         }
 
@@ -120,23 +91,12 @@ public class SubscriptionService {
                 continue;
             }
 
-            WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
-            if (session != null) {
-                try {
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(messageJson));
-                    }
-                    successMembers.add(memberId);
-                } catch (Exception e) {
-                    log.error("메시지 전송 실패 - 사용자: {}", memberId, e);
-                    failedMembers.add(memberId);
-                }
+            if (messageSender.sendSerialized(memberId, messageJson)) {
+                successMembers.add(memberId);
             } else {
                 failedMembers.add(memberId);
             }
         }
-
-        failedMembers.forEach(sessionRegistry::remove);
 
         log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
     }
@@ -158,7 +118,11 @@ public class SubscriptionService {
                         .timestamp(LocalDateTime.now())
                         .build();
 
-                String messageJson = objectMapper.writeValueAsString(updateMessage);
+                String messageJson = messageSender.serialize(updateMessage).orElse(null);
+                if (messageJson == null) {
+                    log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId());
+                    continue;
+                }
 
                 int successCount = 0;
                 for (Long memberId : subscribers) {
@@ -166,17 +130,11 @@ public class SubscriptionService {
                         continue;
                     }
 
-                    WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
-                    if (session != null) {
-                        try {
-                            synchronized (session) {
-                                session.sendMessage(new TextMessage(messageJson));
-                            }
-                            successCount++;
-                        } catch (Exception e) {
-                            log.error("안읽은 수 업데이트 브로드캐스트 실패 - 사용자: {}, 메시지: {}",
-                                    memberId, update.messageId(), e);
-                        }
+                    if (messageSender.sendSerialized(memberId, messageJson)) {
+                        successCount++;
+                    } else {
+                        log.error("안읽은 수 업데이트 브로드캐스트 실패 - 사용자: {}, 메시지: {}",
+                                memberId, update.messageId());
                     }
                 }
 
@@ -207,30 +165,18 @@ public class SubscriptionService {
             }
 
             ChatRoomListUpdateData updateData = entry.getValue();
-            WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
-            if (session != null) {
-                try {
-                    WebSocketMessageDTO.ChatRoomListUpdate message = WebSocketMessageDTO.ChatRoomListUpdate.builder()
-                            .type(WebSocketMessageType.CHAT_ROOM_LIST_UPDATE)
-                            .chatRoomId(chatRoomId)
-                            .lastMessage(updateData.lastMessage())
-                            .newUnreadCount(updateData.unreadCount())
-                            .timestamp(LocalDateTime.now())
-                            .build();
+            WebSocketMessageDTO.ChatRoomListUpdate message = WebSocketMessageDTO.ChatRoomListUpdate.builder()
+                    .type(WebSocketMessageType.CHAT_ROOM_LIST_UPDATE)
+                    .chatRoomId(chatRoomId)
+                    .lastMessage(updateData.lastMessage())
+                    .newUnreadCount(updateData.unreadCount())
+                    .timestamp(LocalDateTime.now())
+                    .build();
 
-                    String messageJson = objectMapper.writeValueAsString(message);
-
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(messageJson));
-                    }
-                    successCount++;
-
-                } catch (Exception e) {
-                    log.error("채팅방 목록 업데이트 전송 실패 - 사용자: {}", memberId, e);
-                    failedCount++;
-                    sessionRegistry.remove(memberId);
-                }
+            if (messageSender.send(memberId, message)) {
+                successCount++;
             } else {
+                log.error("채팅방 목록 업데이트 전송 실패 - 사용자: {}", memberId);
                 failedCount++;
             }
         }

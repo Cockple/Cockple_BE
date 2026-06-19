@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.websocket.session;
+package umc.cockple.demo.domain.chat.presentation.websocket.session;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,10 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@DisplayName("ChatWebSocketSessionRegistry")
-class ChatWebSocketSessionRegistryTest {
+@DisplayName("WebSocketSessionRegistry")
+class WebSocketSessionRegistryTest {
 
-    private final ChatWebSocketSessionRegistry sessionRegistry = new ChatWebSocketSessionRegistry();
+    private final WebSocketSessionRegistry sessionRegistry = new WebSocketSessionRegistry();
 
     @Test
     @DisplayName("멤버별 열린 세션을 저장하고 조회한다")

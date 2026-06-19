@@ -1,7 +1,8 @@
-package umc.cockple.demo.domain.chat.service.websocket.session;
+package umc.cockple.demo.domain.chat.presentation.websocket.session;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 
 import java.util.Collection;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class ChatWebSocketSessionRegistry {
+public class WebSocketSessionRegistry implements ChatSessionRegistry {
 
     private final Map<Long, WebSocketSession> memberSessions = new ConcurrentHashMap<>();
 
@@ -31,6 +32,7 @@ public class ChatWebSocketSessionRegistry {
         return Optional.of(session);
     }
 
+    @Override
     public List<Long> findOpenMemberIds(Collection<Long> memberIds) {
         return memberIds.stream()
                 .filter(memberId -> findOpenSession(memberId).isPresent())
