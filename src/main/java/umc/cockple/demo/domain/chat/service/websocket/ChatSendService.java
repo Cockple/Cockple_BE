@@ -14,15 +14,13 @@ import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
-import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
-import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
 import java.util.List;
@@ -35,11 +33,11 @@ import java.util.Optional;
 @Slf4j
 public class ChatSendService {
 
-    private final ChatRoomRepository chatRoomRepository;
-    private final MemberRepository memberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
+    private final ChatRoomReader chatRoomReader;
+    private final ChatMemberReader chatMemberReader;
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
@@ -51,8 +49,8 @@ public class ChatSendService {
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
 
-        ChatRoom chatRoom = findChatRoom(chatRoomId);
-        Member sender = findMemberWithProfile(senderId);
+        ChatRoom chatRoom = chatRoomReader.read(chatRoomId);
+        Member sender = chatMemberReader.readWithProfile(senderId);
 
         String profileImageUrl = chatProcessor.generateProfileImageUrl(sender.getProfileImg());
 
@@ -84,7 +82,7 @@ public class ChatSendService {
     }
 
     public void sendSystemMessage(Long partyId, String content) {
-        ChatRoom chatRoom = findChatRoomByPartyId(partyId);
+        ChatRoom chatRoom = chatRoomReader.readByPartyId(partyId);
 
         ChatMessage systemMessage = ChatMessage.create(chatRoom, null, content, MessageType.SYSTEM);
         ChatMessage savedSystemMessage = chatMessageRepository.save(systemMessage);
@@ -221,18 +219,4 @@ public class ChatSendService {
         ));
     }
 
-    private ChatRoom findChatRoom(Long chatRoomId) {
-        return chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
-    }
-
-    private ChatRoom findChatRoomByPartyId(Long partyId) {
-        return chatRoomRepository.findByPartyId(partyId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
-    }
-
-    private Member findMemberWithProfile(Long senderId) {
-        return memberRepository.findMemberWithProfileById(senderId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.MEMBER_NOT_FOUND));
-    }
 }

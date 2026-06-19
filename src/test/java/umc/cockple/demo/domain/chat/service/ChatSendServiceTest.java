@@ -18,15 +18,15 @@ import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
 import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -36,7 +36,6 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,11 +51,11 @@ import static org.mockito.Mockito.times;
 @DisplayName("ChatSendService")
 class ChatSendServiceTest {
 
-    @Mock private ChatRoomRepository chatRoomRepository;
-    @Mock private MemberRepository memberRepository;
     @Mock private ChatMessageRepository chatMessageRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
+    @Mock private ChatRoomReader chatRoomReader;
+    @Mock private ChatMemberReader chatMemberReader;
     @Mock private SubscriptionService subscriptionService;
     @Mock private MessageReadCreationService messageReadCreationService;
     @Mock private ChatProcessor chatProcessor;
@@ -72,10 +71,10 @@ class ChatSendServiceTest {
         chatWebSocketResponseAssembler = new ChatWebSocketResponseAssembler();
         chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         chatSendService = new ChatSendService(
-                chatRoomRepository,
-                memberRepository,
                 chatMessageRepository,
                 chatRoomMemberRepository,
+                chatRoomReader,
+                chatMemberReader,
                 subscriptionService,
                 messageReadCreationService,
                 chatProcessor,
@@ -105,8 +104,8 @@ class ChatSendServiceTest {
 
         List<Long> roomMemberIds = List.of(senderId, receiverId, anotherReceiverId);
 
-        given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(chatRoom));
-        given(memberRepository.findMemberWithProfileById(senderId)).willReturn(Optional.of(sender));
+        given(chatRoomReader.read(roomId)).willReturn(chatRoom);
+        given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
         given(chatProcessor.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
@@ -160,7 +159,7 @@ class ChatSendServiceTest {
         ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
         ReflectionTestUtils.setField(chatRoom, "id", roomId);
 
-        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomReader.readByPartyId(partyId)).willReturn(chatRoom);
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
@@ -223,7 +222,7 @@ class ChatSendServiceTest {
         ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
         ReflectionTestUtils.setField(chatRoom, "id", roomId);
 
-        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+        given(chatRoomReader.readByPartyId(partyId)).willReturn(chatRoom);
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
