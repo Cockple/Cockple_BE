@@ -3,7 +3,6 @@ package umc.cockple.demo.domain.chat.presentation.websocket.session;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
@@ -14,6 +13,7 @@ import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage
 public class WebSocketMessageSender implements ChatMessageSender {
 
     private final WebSocketSessionRegistry sessionRegistry;
+    private final WebSocketSessionMessageSender sessionMessageSender;
 
     @Override
     public boolean send(Long memberId, EncodedChatMessage message) {
@@ -23,15 +23,12 @@ public class WebSocketMessageSender implements ChatMessageSender {
             return false;
         }
 
-        try {
-            synchronized (session) {
-                session.sendMessage(new TextMessage(message.payload()));
-            }
+        if (sessionMessageSender.send(session, message)) {
             return true;
-        } catch (Exception e) {
-            log.error("WebSocket 메시지 전송 실패 - 멤버: {}", memberId, e);
-            sessionRegistry.remove(memberId, session);
-            return false;
         }
+
+        log.error("WebSocket 메시지 전송 실패 - 멤버: {}", memberId);
+        sessionRegistry.remove(memberId, session);
+        return false;
     }
 }

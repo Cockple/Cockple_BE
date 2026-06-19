@@ -1,14 +1,15 @@
 package umc.cockple.demo.domain.chat.presentation.websocket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
+import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebSocketResponseSender {
 
-    private final ObjectMapper objectMapper;
+    private final ChatMessageEncoder messageEncoder;
+    private final WebSocketSessionMessageSender sessionMessageSender;
 
     public void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
         WebSocketMessageDTO.ConnectionInfo connectionInfo = WebSocketMessageDTO.ConnectionInfo.builder()
@@ -96,15 +98,13 @@ public class WebSocketResponseSender {
         sendMessage(session, response);
     }
 
-
     private void sendMessage(WebSocketSession session, Object message) {
-        try {
-            String messageJson = objectMapper.writeValueAsString(message);
-            synchronized (session) {
-                session.sendMessage(new TextMessage(messageJson));
-            }
-        } catch (Exception e) {
-            log.error("메시지 전송 실패", e);
+        EncodedChatMessage encodedMessage = messageEncoder.encode(message).orElse(null);
+        if (encodedMessage == null) {
+            log.error("WebSocket 응답 메시지 인코딩 실패");
+            return;
         }
+
+        sessionMessageSender.send(session, encodedMessage);
     }
 }
