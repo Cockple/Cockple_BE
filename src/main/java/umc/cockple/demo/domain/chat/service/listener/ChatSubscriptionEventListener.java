@@ -15,6 +15,14 @@ import umc.cockple.demo.domain.chat.service.websocket.subscription.ChatRoomSubsc
 @Slf4j
 public class ChatSubscriptionEventListener {
 
+    /*
+     * 구독 이벤트 후속 처리는 best-effort 계약이다.
+     *
+     * WebSocket command handler는 요청 검증과 이벤트 발행이 끝나면 ACK를 보낸다. 이 listener는 Redis 구독 상태,
+     * 읽음 처리, unread-count 브로드캐스트 실패를 error log로 남기고 삼킨다. 현재 재시도나 보상 정책은 없으므로,
+     * ACK를 모든 후속 side effect 완료 보장으로 해석하면 안 된다.
+     */
+
     private final ChatRoomSubscriptionService chatRoomSubscriptionService;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
 

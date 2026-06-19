@@ -15,6 +15,13 @@ import java.util.List;
 @Slf4j
 public class ChatRoomSubscriptionService {
 
+    /*
+     * 이 서비스는 이미 접수된 WebSocket 구독 명령의 후속 side effect를 수행한다.
+     *
+     * 일관성 수준은 best-effort다. 읽음 처리나 unread-count 브로드캐스트가 실패해도 listener가 실패를 error log로
+     * 남기고 socket ACK 경로로 전파하지 않는다. Redis 구독 상태 변경을 먼저 시도하며, 현재 계약에는 재시도/보상이 없다.
+     */
+
     private final SubscribeReadStatusService subscribeReadStatusService;
     private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     private final UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
