@@ -9,12 +9,12 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.L
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +27,7 @@ public class SubscriptionService {
     private final SubscribeReadStatusService subscribeReadStatusService;
     private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
+    private final ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     private final ChatMessageSender messageSender;
     private final ChatSessionRegistry sessionRegistry;
 
@@ -49,11 +50,13 @@ public class SubscriptionService {
     }
 
     public void broadcastMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long senderId) {
-        broadcastToChatRoom(chatRoomId, message, senderId);
+        List<Long> subscribers = getActiveSubscribers(chatRoomId);
+        chatRoomMessageBroadcaster.broadcast(chatRoomId, message, subscribers, senderId);
     }
 
     public void broadcastSystemMessage(Long chatRoomId, WebSocketMessageDTO.MessageResponse message) {
-        broadcastToChatRoom(chatRoomId, message, null);
+        List<Long> subscribers = getActiveSubscribers(chatRoomId);
+        chatRoomMessageBroadcaster.broadcast(chatRoomId, message, subscribers, null);
     }
 
     public void sendUnreadStatusUpdateToMember(
@@ -68,37 +71,6 @@ public class SubscriptionService {
         Set<Long> redisSubscribers = chatRoomSubscriptionStore.getSubscribers(chatRoomId);
 
         return sessionRegistry.findOpenMemberIds(redisSubscribers);
-    }
-
-    private void broadcastToChatRoom(Long chatRoomId, WebSocketMessageDTO.MessageResponse message, Long excludedMemberId) {
-        List<Long> subscribers = getActiveSubscribers(chatRoomId);
-        if (subscribers == null || subscribers.isEmpty()) {
-            log.info("채팅방 {}에 구독 중인 사용자가 없습니다.", chatRoomId);
-            return;
-        }
-
-        String messageJson = messageSender.serialize(message).orElse(null);
-        if (messageJson == null) {
-            return;
-        }
-
-        List<Long> successMembers = new ArrayList<>();
-        List<Long> failedMembers = new ArrayList<>();
-
-        // 메시지 브로드캐스트
-        for (Long memberId : subscribers) {
-            if (memberId.equals(excludedMemberId)) {
-                continue;
-            }
-
-            if (messageSender.sendSerialized(memberId, messageJson)) {
-                successMembers.add(memberId);
-            } else {
-                failedMembers.add(memberId);
-            }
-        }
-
-        log.info("브로드캐스트 완료 - 채팅방: {}, 성공: {}명, 실패: {}명", chatRoomId, successMembers.size(), failedMembers.size());
     }
 
     private void broadcastUnreadCountUpdates(

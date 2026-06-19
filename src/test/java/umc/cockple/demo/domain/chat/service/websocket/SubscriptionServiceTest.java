@@ -7,9 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
@@ -29,6 +31,7 @@ class SubscriptionServiceTest {
     @Mock private SubscribeReadStatusService subscribeReadStatusService;
     @Mock private ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
+    @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     @Mock private ChatMessageSender messageSender;
     @Mock private ChatSessionRegistry sessionRegistry;
 
@@ -40,6 +43,7 @@ class SubscriptionServiceTest {
                 subscribeReadStatusService,
                 chatRoomSubscriptionStore,
                 chatListSubscriptionStore,
+                chatRoomMessageBroadcaster,
                 messageSender,
                 sessionRegistry
         );
@@ -81,5 +85,41 @@ class SubscriptionServiceTest {
 
         // then
         then(messageSender).should().send(memberId, message);
+    }
+
+    @Test
+    @DisplayName("채팅 메시지 브로드캐스트는 활성 구독자 조회 후 broadcaster에 위임한다")
+    void broadcastMessage_delegatesToChatRoomMessageBroadcaster() {
+        // given
+        Long chatRoomId = 1L;
+        Long senderId = 10L;
+        Set<Long> redisSubscribers = Set.of(senderId, 20L);
+        List<Long> activeSubscribers = List.of(senderId, 20L);
+        WebSocketMessageDTO.MessageResponse message = createMessage(chatRoomId, senderId);
+
+        given(chatRoomSubscriptionStore.getSubscribers(chatRoomId)).willReturn(redisSubscribers);
+        given(sessionRegistry.findOpenMemberIds(redisSubscribers)).willReturn(activeSubscribers);
+
+        // when
+        subscriptionService.broadcastMessage(chatRoomId, message, senderId);
+
+        // then
+        then(chatRoomMessageBroadcaster).should()
+                .broadcast(chatRoomId, message, activeSubscribers, senderId);
+    }
+
+    private WebSocketMessageDTO.MessageResponse createMessage(Long chatRoomId, Long senderId) {
+        return WebSocketMessageDTO.MessageResponse.builder()
+                .type(WebSocketMessageType.SEND)
+                .chatRoomId(chatRoomId)
+                .messageId(100L)
+                .content("hello")
+                .messageType(MessageType.TEXT)
+                .images(List.of())
+                .senderId(senderId)
+                .senderName("sender")
+                .timestamp(LocalDateTime.of(2026, 5, 21, 13, 15))
+                .unreadCount(1)
+                .build();
     }
 }
