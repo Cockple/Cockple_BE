@@ -9,6 +9,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
+import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
@@ -17,6 +19,7 @@ import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +33,7 @@ public class ChatEventListener {
     private final ChatRoomListCacheService chatRoomListCacheService;
     private final ChatListSubscriptionService chatListSubscriptionService;
     private final ChatPushNotificationService chatPushNotificationService;
+    private final ChatUnreadQueryService chatUnreadQueryService;
 
 
     @EventListener
@@ -146,6 +150,32 @@ public class ChatEventListener {
 
         } catch (Exception e) {
             log.error("채팅방 목록 업데이트 이벤트 처리 중 오류 발생 - 채팅방: {}", event.chatRoomId(), e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleChatUnreadStatusUpdate(ChatUnreadStatusUpdateEvent event) {
+        log.info("채팅 안읽음 상태 업데이트 이벤트 처리 시작 - 대상자: {}명", event.targetMemberIds().size());
+
+        for (Long memberId : event.targetMemberIds()) {
+            try {
+                boolean hasPartyUnread = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
+                boolean hasDirectUnread = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
+
+                WebSocketMessageDTO.UnreadStatusUpdateMessage message =
+                        WebSocketMessageDTO.UnreadStatusUpdateMessage.builder()
+                                .type(WebSocketMessageType.UNREAD_STATUS_UPDATE)
+                                .hasUnread(hasPartyUnread || hasDirectUnread)
+                                .hasPartyUnread(hasPartyUnread)
+                                .hasDirectUnread(hasDirectUnread)
+                                .timestamp(LocalDateTime.now())
+                                .build();
+
+                subscriptionService.sendUnreadStatusUpdateToMember(memberId, message);
+            } catch (Exception e) {
+                log.error("채팅 안읽음 상태 업데이트 처리 실패 - 멤버: {}", memberId, e);
+            }
         }
     }
 }

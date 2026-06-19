@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
+import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -79,6 +80,7 @@ public class ChatSendService {
         publishChatNotificationEvent(chatRoom, savedMessage, sender, activeSubscribers);
 
         publishChatRoomListUpdateEvent(chatRoom, savedMessage);
+        publishUnreadStatusUpdateEvent(chatRoom, senderId);
     }
 
     public void sendSystemMessage(Long partyId, String content) {
@@ -176,6 +178,26 @@ public class ChatSendService {
 
         } catch (Exception e) {
             log.error("채팅방 목록 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
+        }
+    }
+
+    private void publishUnreadStatusUpdateEvent(ChatRoom chatRoom, Long senderId) {
+        try {
+            List<Long> targetMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId()).stream()
+                    .filter(memberId -> !memberId.equals(senderId))
+                    .distinct()
+                    .toList();
+
+            if (targetMemberIds.isEmpty()) {
+                log.debug("안읽음 상태 업데이트 대상 없음 - 채팅방: {}", chatRoom.getId());
+                return;
+            }
+
+            eventPublisher.publishEvent(ChatUnreadStatusUpdateEvent.of(targetMemberIds));
+            log.info("안읽음 상태 업데이트 이벤트 발행 - 채팅방: {}, 대상자: {}명",
+                    chatRoom.getId(), targetMemberIds.size());
+        } catch (Exception e) {
+            log.error("안읽음 상태 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
         }
     }
 

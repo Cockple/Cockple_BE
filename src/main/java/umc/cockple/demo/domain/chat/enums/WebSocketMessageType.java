@@ -9,5 +9,6 @@ public enum WebSocketMessageType {
     UNSUBSCRIBE_CHAT_LIST,
     ERROR,
     UNREAD_COUNT_UPDATE,
+    UNREAD_STATUS_UPDATE,
     CHAT_ROOM_LIST_UPDATE,
 }

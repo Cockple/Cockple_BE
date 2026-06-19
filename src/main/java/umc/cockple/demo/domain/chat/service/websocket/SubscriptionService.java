@@ -66,6 +66,28 @@ public class SubscriptionService {
         broadcastToChatRoom(chatRoomId, message, null);
     }
 
+    public void sendUnreadStatusUpdateToMember(
+            Long memberId,
+            WebSocketMessageDTO.UnreadStatusUpdateMessage message) {
+        WebSocketSession session = memberSessions.get(memberId);
+        if (session == null || !session.isOpen()) {
+            log.debug("안읽음 상태 업데이트 대상 세션 없음 - 멤버: {}", memberId);
+            memberSessions.remove(memberId);
+            return;
+        }
+
+        try {
+            String messageJson = objectMapper.writeValueAsString(message);
+            synchronized (session) {
+                session.sendMessage(new TextMessage(messageJson));
+            }
+            log.debug("안읽음 상태 업데이트 전송 완료 - 멤버: {}", memberId);
+        } catch (Exception e) {
+            log.error("안읽음 상태 업데이트 전송 실패 - 멤버: {}", memberId, e);
+            memberSessions.remove(memberId);
+        }
+    }
+
     public List<Long> getActiveSubscribers(Long chatRoomId) {
         Set<Long> redisSubscribers = redisSubscriptionService.getSubscribers(chatRoomId);
 

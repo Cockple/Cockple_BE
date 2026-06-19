@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
+import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
@@ -24,9 +25,13 @@ import umc.cockple.demo.domain.chat.service.websocket.ChatReadService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
+import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDateTime;
@@ -41,6 +46,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatSendService")
@@ -78,6 +84,65 @@ class ChatSendServiceTest {
                 chatUnreadQueryService,
                 eventPublisher
         );
+    }
+
+    @Test
+    @DisplayName("일반 메시지 전송 후 발신자를 제외한 참여자에게 안읽음 상태 업데이트 이벤트를 발행한다")
+    void sendMessage_publishesUnreadStatusUpdateEventForReceivers() {
+        // given
+        Long roomId = 20L;
+        Long senderId = 101L;
+        Long receiverId = 102L;
+        Long anotherReceiverId = 103L;
+        LocalDateTime sentAt = LocalDateTime.of(2026, 5, 21, 13, 15);
+
+        Member sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+        ReflectionTestUtils.setField(sender, "id", senderId);
+
+        Party party = PartyFixture.createParty("배드민턴 모임", senderId, PartyFixture.createPartyAddr("서울", "강남구"));
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+        ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+        List<Long> roomMemberIds = List.of(senderId, receiverId, anotherReceiverId);
+
+        given(chatRoomRepository.findById(roomId)).willReturn(Optional.of(chatRoom));
+        given(memberRepository.findMemberWithProfileById(senderId)).willReturn(Optional.of(sender));
+        given(chatProcessor.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
+            ChatMessage savedMessage = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedMessage, "id", 300L);
+            ReflectionTestUtils.setField(savedMessage, "createdAt", sentAt);
+            return savedMessage;
+        });
+        given(subscriptionService.getActiveSubscribers(roomId)).willReturn(List.of(senderId));
+        given(chatReadService.subscribersToReadStatus(roomId, 300L, List.of(senderId), senderId)).willReturn(2);
+        given(chatRoomMemberRepository.findMemberIdsByChatRoomId(roomId)).willReturn(roomMemberIds);
+        given(messageReadStatusRepository.countUnreadMessagesByMembers(roomId, roomMemberIds))
+                .willReturn(List.of(
+                        new ChatMemberUnreadCountDTO(receiverId, 1L),
+                        new ChatMemberUnreadCountDTO(anotherReceiverId, 1L)
+                ));
+
+        // when
+        chatSendService.sendMessage(roomId, "안녕하세요", List.of(), senderId);
+
+        // then
+        ArgumentCaptor<WebSocketMessageDTO.MessageResponse> messageResponseCaptor =
+                ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);
+        then(subscriptionService).should().broadcastMessage(eq(roomId), messageResponseCaptor.capture(), eq(senderId));
+        assertThat(messageResponseCaptor.getValue().messageId()).isEqualTo(300L);
+        assertThat(messageResponseCaptor.getValue().unreadCount()).isEqualTo(2);
+
+        ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+        then(eventPublisher).should(times(3)).publishEvent(eventCaptor.capture());
+
+        assertThat(eventCaptor.getAllValues())
+                .filteredOn(ChatUnreadStatusUpdateEvent.class::isInstance)
+                .singleElement()
+                .satisfies(event -> {
+                    ChatUnreadStatusUpdateEvent unreadEvent = (ChatUnreadStatusUpdateEvent) event;
+                    assertThat(unreadEvent.targetMemberIds()).containsExactly(receiverId, anotherReceiverId);
+                });
     }
 
     @Test
