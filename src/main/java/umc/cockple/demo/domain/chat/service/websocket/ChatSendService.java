@@ -9,7 +9,6 @@ import umc.cockple.demo.domain.chat.converter.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
@@ -19,6 +18,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
+import umc.cockple.demo.domain.chat.service.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -26,7 +26,6 @@ import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -40,6 +39,7 @@ public class ChatSendService {
     private final ChatRoomReader chatRoomReader;
     private final ChatMemberReader chatMemberReader;
     private final ChatMessageFileAppender chatMessageFileAppender;
+    private final DirectChatRoomActivationService directChatRoomActivationService;
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
@@ -61,7 +61,7 @@ public class ChatSendService {
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
         log.info("메시지 저장 완료 - 메시지 ID: {}", savedMessage.getId());
 
-        checkFirstMessageInDirect(chatRoomId, senderId, chatRoom);
+        directChatRoomActivationService.joinPendingMemberOnFirstMessage(chatRoom, senderId);
         messageReadCreationService.createReadStatusForNewMessage(savedMessage, senderId);
 
         List<Long> activeSubscribers = subscriptionService.getActiveSubscribers(chatRoomId);
@@ -108,29 +108,6 @@ public class ChatSendService {
     }
 
     // ========== 비즈니스 메서드 ==========
-    private void checkFirstMessageInDirect(Long chatRoomId, Long senderId, ChatRoom chatRoom) {
-        if (chatRoom.getType() == ChatRoomType.DIRECT && isFirstMessage(chatRoomId)) {
-            handleFirstDirectMessage(chatRoomId, senderId);
-        }
-    }
-
-    private boolean isFirstMessage(Long chatRoomId) {
-        return chatMessageRepository.countByChatRoomId(chatRoomId) == 1;
-    }
-
-    private void handleFirstDirectMessage(Long chatRoomId, Long senderId) {
-        log.info("첫 번째 개인 메시지 처리 - 채팅방: {}", chatRoomId);
-        Optional<ChatRoomMember> pendingMemberOpt = chatRoomMemberRepository.findPendingMemberInDirect(chatRoomId, senderId);
-
-        if (pendingMemberOpt.isPresent()) {
-            ChatRoomMember pendingMember = pendingMemberOpt.get();
-            pendingMember.joinChatRoom();
-
-            Long targetMemberId = pendingMember.getMember().getId();
-            log.info("PENDING 멤버를 JOINED로 변경 완료 - 멤버 ID: {}", targetMemberId);
-        }
-    }
-
     private List<ChatCommonDTO.FileInfo> createResponseFileInfos(
             List<ChatMessageFile> savedFiles) {
         return savedFiles.stream()
