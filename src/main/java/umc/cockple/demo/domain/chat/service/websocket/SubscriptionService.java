@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
@@ -28,6 +29,7 @@ public class SubscriptionService {
     private final ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     private final ChatListSubscriptionStore chatListSubscriptionStore;
     private final ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
+    private final UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
     private final ChatMessageSender messageSender;
     private final ChatSessionRegistry sessionRegistry;
 
@@ -39,7 +41,8 @@ public class SubscriptionService {
                 subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         if (!updates.isEmpty()) {
-            broadcastUnreadCountUpdates(chatRoomId, updates, memberId);
+            List<Long> subscribers = getActiveSubscribers(chatRoomId);
+            unreadCountUpdateBroadcaster.broadcast(chatRoomId, updates, subscribers, memberId);
             log.info("구독으로 인한 안읽은 수 업데이트 브로드캐스트 완료 - 업데이트된 메시지 수: {}", updates.size());
         }
     }
@@ -71,52 +74,6 @@ public class SubscriptionService {
         Set<Long> redisSubscribers = chatRoomSubscriptionStore.getSubscribers(chatRoomId);
 
         return sessionRegistry.findOpenMemberIds(redisSubscribers);
-    }
-
-    private void broadcastUnreadCountUpdates(
-            Long chatRoomId, List<SubscribeReadStatusService.MessageUnreadUpdate> updates, Long excludedMemberId) {
-        List<Long> subscribers = getActiveSubscribers(chatRoomId);
-        if (subscribers == null || subscribers.isEmpty()) {
-            return;
-        }
-
-        for (SubscribeReadStatusService.MessageUnreadUpdate update : updates) {
-            try {
-                WebSocketMessageDTO.UnreadCountUpdateMessage updateMessage = WebSocketMessageDTO.UnreadCountUpdateMessage.builder()
-                        .type(WebSocketMessageType.UNREAD_COUNT_UPDATE)
-                        .chatRoomId(chatRoomId)
-                        .messageId(update.messageId())
-                        .newUnreadCount(update.newUnreadCount())
-                        .timestamp(LocalDateTime.now())
-                        .build();
-
-                String messageJson = messageSender.serialize(updateMessage).orElse(null);
-                if (messageJson == null) {
-                    log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId());
-                    continue;
-                }
-
-                int successCount = 0;
-                for (Long memberId : subscribers) {
-                    if (memberId.equals(excludedMemberId)) {
-                        continue;
-                    }
-
-                    if (messageSender.sendSerialized(memberId, messageJson)) {
-                        successCount++;
-                    } else {
-                        log.error("안읽은 수 업데이트 브로드캐스트 실패 - 사용자: {}, 메시지: {}",
-                                memberId, update.messageId());
-                    }
-                }
-
-                log.debug("메시지 {} 안읽은 수 업데이트 브로드캐스트 완료 - 성공: {}명, 새 안읽은 수: {}",
-                        update.messageId(), successCount, update.newUnreadCount());
-
-            } catch (Exception e) {
-                log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId(), e);
-            }
-        }
     }
 
     public void broadcastChatRoomListUpdateToMembers(

@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
@@ -32,6 +33,7 @@ class SubscriptionServiceTest {
     @Mock private ChatRoomSubscriptionStore chatRoomSubscriptionStore;
     @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
     @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
+    @Mock private UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
     @Mock private ChatMessageSender messageSender;
     @Mock private ChatSessionRegistry sessionRegistry;
 
@@ -44,6 +46,7 @@ class SubscriptionServiceTest {
                 chatRoomSubscriptionStore,
                 chatListSubscriptionStore,
                 chatRoomMessageBroadcaster,
+                unreadCountUpdateBroadcaster,
                 messageSender,
                 sessionRegistry
         );
@@ -106,6 +109,31 @@ class SubscriptionServiceTest {
         // then
         then(chatRoomMessageBroadcaster).should()
                 .broadcast(chatRoomId, message, activeSubscribers, senderId);
+    }
+
+    @Test
+    @DisplayName("구독 시 읽음 처리 결과가 있으면 안읽은 수 업데이트 broadcaster에 위임한다")
+    void subscribeToChatRoom_delegatesUnreadCountUpdatesToBroadcaster() {
+        // given
+        Long chatRoomId = 1L;
+        Long memberId = 10L;
+        Set<Long> redisSubscribers = Set.of(memberId, 20L);
+        List<Long> activeSubscribers = List.of(memberId, 20L);
+        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+                List.of(new SubscribeReadStatusService.MessageUnreadUpdate(100L, 1));
+
+        given(subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId))
+                .willReturn(updates);
+        given(chatRoomSubscriptionStore.getSubscribers(chatRoomId)).willReturn(redisSubscribers);
+        given(sessionRegistry.findOpenMemberIds(redisSubscribers)).willReturn(activeSubscribers);
+
+        // when
+        subscriptionService.subscribeToChatRoom(chatRoomId, memberId);
+
+        // then
+        then(chatRoomSubscriptionStore).should().addSubscriber(chatRoomId, memberId);
+        then(unreadCountUpdateBroadcaster).should()
+                .broadcast(chatRoomId, updates, activeSubscribers, memberId);
     }
 
     private WebSocketMessageDTO.MessageResponse createMessage(Long chatRoomId, Long senderId) {
