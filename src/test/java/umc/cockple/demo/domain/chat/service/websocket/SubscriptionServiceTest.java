@@ -9,8 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateBroadcaster;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateData;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
@@ -19,6 +20,7 @@ import umc.cockple.demo.domain.chat.service.websocket.subscription.support.Subsc
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,9 +33,9 @@ class SubscriptionServiceTest {
 
     @Mock private SubscribeReadStatusService subscribeReadStatusService;
     @Mock private ChatRoomSubscriptionStore chatRoomSubscriptionStore;
-    @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
     @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     @Mock private UnreadCountUpdateBroadcaster unreadCountUpdateBroadcaster;
+    @Mock private ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
     @Mock private ChatMessageSender messageSender;
     @Mock private ChatSessionRegistry sessionRegistry;
 
@@ -44,9 +46,9 @@ class SubscriptionServiceTest {
         subscriptionService = new SubscriptionService(
                 subscribeReadStatusService,
                 chatRoomSubscriptionStore,
-                chatListSubscriptionStore,
                 chatRoomMessageBroadcaster,
                 unreadCountUpdateBroadcaster,
+                chatRoomListUpdateBroadcaster,
                 messageSender,
                 sessionRegistry
         );
@@ -134,6 +136,30 @@ class SubscriptionServiceTest {
         then(chatRoomSubscriptionStore).should().addSubscriber(chatRoomId, memberId);
         then(unreadCountUpdateBroadcaster).should()
                 .broadcast(chatRoomId, updates, activeSubscribers, memberId);
+    }
+
+    @Test
+    @DisplayName("채팅방 목록 업데이트는 broadcaster에 위임한다")
+    void broadcastChatRoomListUpdateToMembers_delegatesToBroadcaster() {
+        // given
+        Long chatRoomId = 1L;
+        Map<Long, ChatRoomListUpdateData> memberUpdateData = Map.of(
+                10L,
+                ChatRoomListUpdateData.builder()
+                        .lastMessage(WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate.builder()
+                                .content("hello")
+                                .timestamp(LocalDateTime.of(2026, 5, 21, 13, 15))
+                                .messageType("TEXT")
+                                .build())
+                        .unreadCount(1)
+                        .build()
+        );
+
+        // when
+        subscriptionService.broadcastChatRoomListUpdateToMembers(chatRoomId, memberUpdateData);
+
+        // then
+        then(chatRoomListUpdateBroadcaster).should().broadcast(chatRoomId, memberUpdateData);
     }
 
     private WebSocketMessageDTO.MessageResponse createMessage(Long chatRoomId, Long senderId) {

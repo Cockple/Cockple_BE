@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
+import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateData;
 import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
@@ -131,7 +132,7 @@ public class ChatEventListener {
         try {
             chatRoomListCacheService.evictLastMessage(event.chatRoomId());
 
-            Map<Long, SubscriptionService.ChatRoomListUpdateData> memberUpdateData = new HashMap<>();
+            Map<Long, ChatRoomListUpdateData> memberUpdateData = new HashMap<>();
 
             LastMessageUpdate lastMessageUpdate = LastMessageUpdate.builder()
                     .content(event.content())
@@ -143,7 +144,7 @@ public class ChatEventListener {
                 Long memberId = entry.getKey();
                 Integer unreadCount = entry.getValue();
 
-                memberUpdateData.put(memberId, SubscriptionService.ChatRoomListUpdateData.builder()
+                memberUpdateData.put(memberId, ChatRoomListUpdateData.builder()
                         .lastMessage(lastMessageUpdate)
                         .unreadCount(unreadCount)
                         .build());
