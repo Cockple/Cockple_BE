@@ -2,30 +2,23 @@ package umc.cockple.demo.domain.chat.service.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.*;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
-import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
-import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
-import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.support.ChatMessageFileAppender;
+import umc.cockple.demo.domain.chat.service.support.ChatSendEventPublisher;
 import umc.cockple.demo.domain.chat.service.support.DirectChatRoomActivationService;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatMemberReader;
 import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -34,19 +27,17 @@ import java.util.Map;
 public class ChatSendService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     private final ChatRoomReader chatRoomReader;
     private final ChatMemberReader chatMemberReader;
     private final ChatMessageFileAppender chatMessageFileAppender;
     private final DirectChatRoomActivationService directChatRoomActivationService;
+    private final ChatSendEventPublisher chatSendEventPublisher;
     private final SubscriptionService subscriptionService;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatProcessor chatProcessor;
     private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
     private final ChatReadService chatReadService;
-    private final ChatUnreadQueryService chatUnreadQueryService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public void sendMessage(Long chatRoomId, String content, List<WebSocketMessageDTO.Request.FileInfo> files, Long senderId) {
         log.info("메시지 전송 시작 - 채팅방: {}, 발신자: {}", chatRoomId, senderId);
@@ -76,11 +67,9 @@ public class ChatSendService {
         subscriptionService.broadcastMessage(chatRoomId, response, senderId);
         log.info("메시지 브로드캐스트 완료 - 채팅방 ID: {}", chatRoomId);
 
-        // 알림 이벤트 발행
-        publishChatNotificationEvent(chatRoom, savedMessage, sender, activeSubscribers);
-
-        publishChatRoomListUpdateEvent(chatRoom, savedMessage);
-        publishUnreadStatusUpdateEvent(chatRoom, senderId);
+        chatSendEventPublisher.publishChatNotificationEvent(chatRoom, savedMessage, sender, activeSubscribers);
+        chatSendEventPublisher.publishChatRoomListUpdateEvent(chatRoom, savedMessage);
+        chatSendEventPublisher.publishUnreadStatusUpdateEvent(chatRoom, senderId);
     }
 
     public void sendSystemMessage(Long partyId, String content) {
@@ -103,7 +92,7 @@ public class ChatSendService {
                 = chatWebSocketResponseAssembler.toSystemMessageResponse(chatRoom.getId(), content, savedSystemMessage);
 
         subscriptionService.broadcastSystemMessage(chatRoom.getId(), broadcastSystemMessage);
-        publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);
+        chatSendEventPublisher.publishChatRoomListUpdateEvent(chatRoom, savedSystemMessage);
         log.info("시스템 메시지 브로드캐스트 완료 - chatRoomId: {}", chatRoom.getId());
     }
 
@@ -121,69 +110,6 @@ public class ChatSendService {
                         .fileType(file.getFileType())
                         .build())
                 .toList();
-    }
-
-    private void publishChatRoomListUpdateEvent(ChatRoom chatRoom, ChatMessage savedMessage) {
-        try {
-            List<Long> chatRoomMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId());
-
-            Map<Long, Integer> memberUnreadCounts = chatUnreadQueryService.countUnreadMessagesByMembers(
-                    chatRoom.getId(), chatRoomMemberIds);
-
-            ChatRoomListUpdateEvent listUpdateEvent = ChatRoomListUpdateEvent.create(
-                    chatRoom.getId(),
-                    savedMessage.getDisplayContent(),
-                    savedMessage.getCreatedAt(),
-                    savedMessage.getType().name(),
-                    memberUnreadCounts
-            );
-
-            eventPublisher.publishEvent(listUpdateEvent);
-            log.info("채팅방 목록 업데이트 이벤트 발행 - 채팅방: {}", chatRoom.getId());
-
-        } catch (Exception e) {
-            log.error("채팅방 목록 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
-        }
-    }
-
-    private void publishUnreadStatusUpdateEvent(ChatRoom chatRoom, Long senderId) {
-        try {
-            List<Long> targetMemberIds = chatRoomMemberRepository.findMemberIdsByChatRoomId(chatRoom.getId()).stream()
-                    .filter(memberId -> !memberId.equals(senderId))
-                    .distinct()
-                    .toList();
-
-            if (targetMemberIds.isEmpty()) {
-                log.debug("안읽음 상태 업데이트 대상 없음 - 채팅방: {}", chatRoom.getId());
-                return;
-            }
-
-            eventPublisher.publishEvent(ChatUnreadStatusUpdateEvent.of(targetMemberIds));
-            log.info("안읽음 상태 업데이트 이벤트 발행 - 채팅방: {}, 대상자: {}명",
-                    chatRoom.getId(), targetMemberIds.size());
-        } catch (Exception e) {
-            log.error("안읽음 상태 업데이트 이벤트 발행 실패 - 채팅방: {}", chatRoom.getId(), e);
-        }
-    }
-
-    // 채팅 알림 이벤트 발행
-    private void publishChatNotificationEvent(ChatRoom chatRoom, ChatMessage savedMessage,
-                                              Member sender, List<Long> activeSubscribers) {
-        String notificationTitle = chatRoom.getType() == ChatRoomType.PARTY
-                ? chatRoom.getParty().getPartyName()
-                : sender.getNickname();
-        String notificationContent = chatRoom.getType() == ChatRoomType.PARTY
-                ? sender.getNickname() + ": " + savedMessage.getDisplayContent()
-                : savedMessage.getDisplayContent();
-
-        eventPublisher.publishEvent(ChatNotificationEvent.create(
-                chatRoom.getId(),
-                chatRoom.getType(),
-                notificationTitle,
-                notificationContent,
-                sender.getId(),
-                activeSubscribers
-        ));
     }
 
 }
