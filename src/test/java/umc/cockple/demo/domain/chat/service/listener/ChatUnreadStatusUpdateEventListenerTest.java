@@ -11,13 +11,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
-import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomListUpdateBroadcaster;
-import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.subscription.ChatRoomSubscriptionService;
-import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 
 import java.util.List;
 
@@ -27,20 +21,14 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatEventListener")
-class ChatEventListenerTest {
+@DisplayName("ChatUnreadStatusUpdateEventListener")
+class ChatUnreadStatusUpdateEventListenerTest {
 
-    @Mock private ChatSendService chatSendService;
-    @Mock private ChatRoomSubscriptionService chatRoomSubscriptionService;
-    @Mock private ChatRoomListCacheService chatRoomListCacheService;
-    @Mock private ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
-    @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
     @Mock private ChatMessageSender chatMessageSender;
-    @Mock private ChatPushNotificationService chatPushNotificationService;
     @Mock private ChatUnreadQueryService chatUnreadQueryService;
 
     @InjectMocks
-    private ChatEventListener chatEventListener;
+    private ChatUnreadStatusUpdateEventListener listener;
 
     @Test
     @DisplayName("안읽음 상태 업데이트 이벤트는 REST 조회와 같은 기준으로 멤버별 payload를 전송한다")
@@ -58,7 +46,7 @@ class ChatEventListenerTest {
                 ChatUnreadStatusUpdateEvent.of(List.of(partyUnreadMemberId, directUnreadMemberId));
 
         // when
-        chatEventListener.handleChatUnreadStatusUpdate(event);
+        listener.handleChatUnreadStatusUpdate(event);
 
         // then
         ArgumentCaptor<Long> memberIdCaptor = ArgumentCaptor.forClass(Long.class);
