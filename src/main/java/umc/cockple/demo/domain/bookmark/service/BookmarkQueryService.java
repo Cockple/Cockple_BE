@@ -30,9 +30,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,8 +67,8 @@ public class BookmarkQueryService {
         List<Long> partyIds = bookmarks.stream().map(b -> b.getExercise().getParty().getId()).toList();
         List<Long> exerciseIds = bookmarks.stream().map(b -> b.getExercise().getId()).toList();
 
-        List<Long> myParties = memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds);
-        List<Long> myExercises = memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
+        Set<Long> myParties = new HashSet<>(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds));
+        Set<Long> myExercises = new HashSet<>(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds));
 
         // 현재 인원수 count 쿼리로 집계 (N+1 제거)
         Map<Long, Integer> nowCntByExerciseId = countNowMembers(exerciseIds);
