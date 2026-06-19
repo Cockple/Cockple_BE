@@ -50,8 +50,8 @@ class WebSocketSessionRegistryTest {
     }
 
     @Test
-    @DisplayName("세션을 제거하면 조회되지 않는다")
-    void remove_deletesRegisteredSession() {
+    @DisplayName("등록된 세션과 같은 세션을 제거하면 조회되지 않는다")
+    void remove_deletesRegisteredSessionWhenSameSession() {
         // given
         Long memberId = 10L;
         WebSocketSession session = mock(WebSocketSession.class);
@@ -59,7 +59,42 @@ class WebSocketSessionRegistryTest {
         sessionRegistry.register(memberId, session);
 
         // when
-        sessionRegistry.remove(memberId);
+        sessionRegistry.remove(memberId, session);
+
+        // then
+        assertThat(sessionRegistry.findOpenSession(memberId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("오래된 세션 제거 요청은 최신 세션을 제거하지 않는다")
+    void remove_doesNotDeleteNewSessionWhenOldSessionCloses() {
+        // given
+        Long memberId = 10L;
+        WebSocketSession oldSession = mock(WebSocketSession.class);
+        WebSocketSession newSession = mock(WebSocketSession.class);
+        given(newSession.isOpen()).willReturn(true);
+
+        sessionRegistry.register(memberId, oldSession);
+        sessionRegistry.register(memberId, newSession);
+
+        // when
+        sessionRegistry.remove(memberId, oldSession);
+
+        // then
+        assertThat(sessionRegistry.findOpenSession(memberId)).contains(newSession);
+    }
+
+    @Test
+    @DisplayName("닫힌 세션 조회 시 같은 세션일 때만 저장소에서 정리한다")
+    void findOpenSession_removesClosedSessionOnlyWhenStillRegistered() {
+        // given
+        Long memberId = 10L;
+        WebSocketSession closedSession = mock(WebSocketSession.class);
+        given(closedSession.isOpen()).willReturn(false);
+        sessionRegistry.register(memberId, closedSession);
+
+        // when
+        assertThat(sessionRegistry.findOpenSession(memberId)).isEmpty();
 
         // then
         assertThat(sessionRegistry.findOpenSession(memberId)).isEmpty();

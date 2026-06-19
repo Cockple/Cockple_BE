@@ -65,8 +65,8 @@ class WebSocketMessageSenderTest {
     }
 
     @Test
-    @DisplayName("대상 세션이 없으면 세션 저장소에서 제거하고 실패를 반환한다")
-    void sendSerialized_removesMemberWhenSessionDoesNotExist() {
+    @DisplayName("대상 세션이 없으면 실패만 반환한다")
+    void sendSerialized_returnsFalseWhenSessionDoesNotExist() {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.empty());
@@ -76,7 +76,8 @@ class WebSocketMessageSenderTest {
 
         // then
         assertThat(sent).isFalse();
-        then(sessionRegistry).should().remove(memberId);
+        then(sessionRegistry).should().findOpenSession(memberId);
+        then(sessionRegistry).shouldHaveNoMoreInteractions();
     }
 
     @Test
@@ -94,6 +95,6 @@ class WebSocketMessageSenderTest {
 
         // then
         assertThat(sent).isFalse();
-        then(sessionRegistry).should().remove(memberId);
+        then(sessionRegistry).should().remove(memberId, session);
     }
 }

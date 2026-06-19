@@ -60,7 +60,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
 
         if (memberId != null) {
-            sessionRegistry.remove(memberId);
+            sessionRegistry.remove(memberId, session);
             log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
         }
     }

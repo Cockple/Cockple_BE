@@ -19,13 +19,17 @@ public class WebSocketSessionRegistry implements ChatSessionRegistry {
         memberSessions.put(memberId, session);
     }
 
-    public void remove(Long memberId) {
-        memberSessions.remove(memberId);
+    public void remove(Long memberId, WebSocketSession session) {
+        memberSessions.remove(memberId, session);
     }
 
     public Optional<WebSocketSession> findOpenSession(Long memberId) {
         WebSocketSession session = memberSessions.get(memberId);
-        if (session == null || !session.isOpen()) {
+        if (session == null) {
+            return Optional.empty();
+        }
+        if (!session.isOpen()) {
+            memberSessions.remove(memberId, session);
             return Optional.empty();
         }
 

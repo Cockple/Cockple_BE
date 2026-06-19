@@ -40,7 +40,6 @@ public class WebSocketMessageSender implements ChatMessageSender {
         WebSocketSession session = sessionRegistry.findOpenSession(memberId).orElse(null);
         if (session == null) {
             log.debug("WebSocket 전송 대상 세션 없음 - 멤버: {}", memberId);
-            sessionRegistry.remove(memberId);
             return false;
         }
 
@@ -51,7 +50,7 @@ public class WebSocketMessageSender implements ChatMessageSender {
             return true;
         } catch (Exception e) {
             log.error("WebSocket 메시지 전송 실패 - 멤버: {}", memberId, e);
-            sessionRegistry.remove(memberId);
+            sessionRegistry.remove(memberId, session);
             return false;
         }
     }
