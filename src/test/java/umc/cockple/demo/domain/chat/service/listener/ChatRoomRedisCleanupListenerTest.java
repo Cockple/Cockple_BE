@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.events;
+package umc.cockple.demo.domain.chat.service.listener;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
 import umc.cockple.demo.domain.chat.service.websocket.ChatListSubscriptionService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.websocket.RedisSubscriptionService;

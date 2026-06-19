@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.events;
+package umc.cockple.demo.domain.chat.service.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

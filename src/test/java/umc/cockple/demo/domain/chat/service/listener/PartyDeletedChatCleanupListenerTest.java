@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.events;
+package umc.cockple.demo.domain.chat.service.listener;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
