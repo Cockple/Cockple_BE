@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.bookmark.enums.BookmarkedExerciseOrderType;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.repository.GuestRepository;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +65,7 @@ class BookmarkQueryServiceTest {
     @Mock private PartyBookmarkRepository partyBookmarkRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
-    @Mock private GuestRepository guestRepository;
+    @Mock private ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     @Mock private MemberRepository memberRepository;
     @Mock private BookmarkConverter bookmarkConverter;
 
@@ -146,6 +147,8 @@ class BookmarkQueryServiceTest {
                         .willReturn(List.of(party.getId()));
                 given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
                         .willReturn(List.of(oldExercise.getId(), newExercise.getId()));
+                given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
+                        .willReturn(Map.of(newExercise.getId(), 2, oldExercise.getId(), 1));
                 given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmarkNew), any(Boolean.class), any(Boolean.class), anyInt()))
                         .willReturn(dtoNew);
                 given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmarkOld), any(Boolean.class), any(Boolean.class), anyInt()))
@@ -187,6 +190,8 @@ class BookmarkQueryServiceTest {
                         .willReturn(List.of(party.getId()));
                 given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
                         .willReturn(List.of(oldExercise.getId(), newExercise.getId()));
+                given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
+                        .willReturn(Map.of(oldExercise.getId(), 1, newExercise.getId(), 2));
                 given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmarkOld), any(Boolean.class), any(Boolean.class), anyInt()))
                         .willReturn(dtoOld);
                 given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmarkNew), any(Boolean.class), any(Boolean.class), anyInt()))
@@ -222,7 +227,9 @@ class BookmarkQueryServiceTest {
                         .willReturn(List.of(party.getId())); // 모임 멤버
                 given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(eq(member.getId()), anyList()))
                         .willReturn(new ArrayList<>()); // 운동 미참여
-                given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmark), eq(true), eq(false), anyInt())).willReturn(dto);
+                given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
+                        .willReturn(Map.of(exercise.getId(), 3));
+                given(bookmarkConverter.exerciseBookmarkToDTO(eq(bookmark), eq(true), eq(false), eq(3))).willReturn(dto);
 
                 // when
                 List<GetAllExerciseBookmarksResponseDTO> result =
