@@ -58,7 +58,7 @@ class SubscribeReadStatusServiceTest {
                 .willReturn(List.of(firstMessageId, secondMessageId));
         given(readStatusUpdater.markMessagesAsReadForMember(
                 chatRoomId, memberId, List.of(firstMessageId, secondMessageId))).willReturn(2);
-        given(readStatusReader.countUnreadByMessageIds(List.of(firstMessageId, secondMessageId)))
+        given(readStatusReader.countUnreadByMessageIdsAsSparseMap(List.of(firstMessageId, secondMessageId)))
                 .willReturn(Map.of(firstMessageId, 2, secondMessageId, 1));
         given(chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, secondMessageId))
                 .willReturn(1);
@@ -77,7 +77,7 @@ class SubscribeReadStatusServiceTest {
         then(readStatusUpdater).should()
                 .markMessagesAsReadForMember(chatRoomId, memberId, List.of(firstMessageId, secondMessageId));
         then(readStatusReader).should()
-                .countUnreadByMessageIds(List.of(firstMessageId, secondMessageId));
+                .countUnreadByMessageIdsAsSparseMap(List.of(firstMessageId, secondMessageId));
         then(chatMemberReadStateUpdater).should()
                 .advanceLastReadMessageId(chatRoomId, memberId, secondMessageId);
 
@@ -104,7 +104,7 @@ class SubscribeReadStatusServiceTest {
         assertThat(updates).isEmpty();
         then(readStatusUpdater).should(never())
                 .markMessagesAsReadForMember(anyLong(), anyLong(), anyList());
-        then(readStatusReader).should(never()).countUnreadByMessageIds(anyList());
+        then(readStatusReader).should(never()).countUnreadByMessageIdsAsSparseMap(anyList());
         then(chatMemberReadStateUpdater).should(never()).advanceLastReadMessageId(anyLong(), anyLong(), anyLong());
         then(eventPublisher).shouldHaveNoInteractions();
     }
@@ -122,7 +122,7 @@ class SubscribeReadStatusServiceTest {
                 .willReturn(List.of(firstMessageId, secondMessageId));
         given(readStatusUpdater.markMessagesAsReadForMember(
                 chatRoomId, memberId, List.of(firstMessageId, secondMessageId))).willReturn(2);
-        given(readStatusReader.countUnreadByMessageIds(List.of(firstMessageId, secondMessageId)))
+        given(readStatusReader.countUnreadByMessageIdsAsSparseMap(List.of(firstMessageId, secondMessageId)))
                 .willReturn(Map.of(firstMessageId, 2));
         given(chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, secondMessageId))
                 .willReturn(1);
@@ -138,5 +138,32 @@ class SubscribeReadStatusServiceTest {
         assertThat(updates)
                 .extracting(UnreadCountUpdate::newUnreadCount)
                 .containsExactly(2, 0);
+    }
+
+    @Test
+    @DisplayName("구독 시 unread 메시지 ID 목록이 정렬되지 않아도 가장 큰 메시지 ID로 lastReadMessageId를 갱신한다")
+    void markUnreadMessagesAsReadOnSubscribe_advancesLastReadToMaxMessageId() {
+        // given
+        Long chatRoomId = 10L;
+        Long memberId = 101L;
+        Long latestMessageId = 202L;
+        Long olderMessageId = 201L;
+        List<Long> unorderedMessageIds = List.of(latestMessageId, olderMessageId);
+
+        given(readStatusReader.findUnreadMessageIds(chatRoomId, memberId))
+                .willReturn(unorderedMessageIds);
+        given(readStatusUpdater.markMessagesAsReadForMember(chatRoomId, memberId, unorderedMessageIds))
+                .willReturn(2);
+        given(readStatusReader.countUnreadByMessageIdsAsSparseMap(unorderedMessageIds))
+                .willReturn(Map.of(latestMessageId, 1, olderMessageId, 1));
+        given(chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, latestMessageId))
+                .willReturn(1);
+
+        // when
+        subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
+
+        // then
+        then(chatMemberReadStateUpdater).should()
+                .advanceLastReadMessageId(chatRoomId, memberId, latestMessageId);
     }
 }

@@ -41,7 +41,7 @@ public class SubscribeReadStatusService {
     }
 
     private List<UnreadCountUpdate> createUnreadUpdates(List<Long> unreadMessageIds) {
-        Map<Long, Integer> unreadCounts = readStatusReader.countUnreadByMessageIds(unreadMessageIds);
+        Map<Long, Integer> unreadCounts = readStatusReader.countUnreadByMessageIdsAsSparseMap(unreadMessageIds);
 
         return unreadMessageIds.stream()
                 .map(messageId -> new UnreadCountUpdate(messageId, unreadCounts.getOrDefault(messageId, 0)))
@@ -49,7 +49,9 @@ public class SubscribeReadStatusService {
     }
 
     private Long latestMessageId(List<Long> messageIds) {
-        return messageIds.get(messageIds.size() - 1);
+        return messageIds.stream()
+                .max(Long::compareTo)
+                .orElseThrow();
     }
 
     private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
