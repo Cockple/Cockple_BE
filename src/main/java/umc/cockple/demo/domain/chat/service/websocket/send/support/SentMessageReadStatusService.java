@@ -20,7 +20,6 @@ public class SentMessageReadStatusService {
     private final MessageReadStatusRepository messageReadStatusRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-    @Transactional
     public int markActiveSubscribersAsRead(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
         log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
                 messageId, activeSubscribers.size(), senderId);
