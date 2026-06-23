@@ -8,21 +8,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.domain.ChatRoom;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.global.enums.Gender;
-import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.support.fixture.ChatFixture;
-import umc.cockple.demo.support.fixture.MemberFixture;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -59,12 +50,6 @@ class SubscribeReadStatusServiceTest {
         Long firstMessageId = 201L;
         Long secondMessageId = 202L;
 
-        ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
-        ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
-        Member member = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
-        ReflectionTestUtils.setField(member, "id", memberId);
-        ChatRoomMember chatRoomMember = ChatFixture.createJoinedMemberWithLastRead(chatRoom, member, firstMessageId - 1);
-
         given(messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId))
                 .willReturn(List.of(firstMessageId, secondMessageId));
         given(messageReadStatusRepository.markMessagesAsReadForMember(
@@ -74,8 +59,8 @@ class SubscribeReadStatusServiceTest {
                         new ChatMessageUnreadCountDTO(firstMessageId, 2L),
                         new ChatMessageUnreadCountDTO(secondMessageId, 1L)
                 ));
-        given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
-                .willReturn(Optional.of(chatRoomMember));
+        given(chatRoomMemberRepository.advanceLastReadMessageId(chatRoomId, memberId, secondMessageId))
+                .willReturn(1);
 
         // when
         List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
@@ -88,11 +73,12 @@ class SubscribeReadStatusServiceTest {
         assertThat(updates)
                 .extracting(SubscribeReadStatusService.MessageUnreadUpdate::newUnreadCount)
                 .containsExactly(2, 1);
-        assertThat(chatRoomMember.getLastReadMessageId()).isEqualTo(secondMessageId);
         then(messageReadStatusRepository).should()
                 .markMessagesAsReadForMember(chatRoomId, memberId, List.of(firstMessageId, secondMessageId));
         then(messageReadStatusRepository).should()
                 .countUnreadByMessageIds(List.of(firstMessageId, secondMessageId));
+        then(chatRoomMemberRepository).should()
+                .advanceLastReadMessageId(chatRoomId, memberId, secondMessageId);
 
         ArgumentCaptor<ChatUnreadStatusUpdateEvent> eventCaptor =
                 ArgumentCaptor.forClass(ChatUnreadStatusUpdateEvent.class);
@@ -118,6 +104,7 @@ class SubscribeReadStatusServiceTest {
         then(messageReadStatusRepository).should(never())
                 .markMessagesAsReadForMember(anyLong(), anyLong(), anyList());
         then(messageReadStatusRepository).should(never()).countUnreadByMessageIds(anyList());
+        then(chatRoomMemberRepository).should(never()).advanceLastReadMessageId(anyLong(), anyLong(), anyLong());
         then(eventPublisher).shouldHaveNoInteractions();
     }
 
@@ -130,20 +117,14 @@ class SubscribeReadStatusServiceTest {
         Long firstMessageId = 201L;
         Long secondMessageId = 202L;
 
-        ChatRoom chatRoom = ChatFixture.createDirectChatRoom();
-        ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
-        Member member = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
-        ReflectionTestUtils.setField(member, "id", memberId);
-        ChatRoomMember chatRoomMember = ChatFixture.createJoinedMemberWithLastRead(chatRoom, member, firstMessageId - 1);
-
         given(messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId))
                 .willReturn(List.of(firstMessageId, secondMessageId));
         given(messageReadStatusRepository.markMessagesAsReadForMember(
                 chatRoomId, memberId, List.of(firstMessageId, secondMessageId))).willReturn(2);
         given(messageReadStatusRepository.countUnreadByMessageIds(List.of(firstMessageId, secondMessageId)))
                 .willReturn(List.of(new ChatMessageUnreadCountDTO(firstMessageId, 2L)));
-        given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
-                .willReturn(Optional.of(chatRoomMember));
+        given(chatRoomMemberRepository.advanceLastReadMessageId(chatRoomId, memberId, secondMessageId))
+                .willReturn(1);
 
         // when
         List<SubscribeReadStatusService.MessageUnreadUpdate> updates =

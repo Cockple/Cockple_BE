@@ -45,6 +45,19 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             @Param("chatRoomIds") List<Long> chatRoomIds,
             @Param("displayName") String displayName);
 
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ChatRoomMember crm
+            SET crm.lastReadMessageId = :messageId
+            WHERE crm.chatRoom.id = :chatRoomId
+            AND crm.member.id = :memberId
+            AND (crm.lastReadMessageId IS NULL OR crm.lastReadMessageId < :messageId)
+            """)
+    int advanceLastReadMessageId(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberId") Long memberId,
+            @Param("messageId") Long messageId);
+
     // 채팅방 내 참여자 수
     @Query("SELECT COUNT(c) FROM ChatRoomMember c WHERE c.chatRoom.id = :chatRoomId")
     int countByChatRoomId(@Param("chatRoomId") Long chatRoomId);

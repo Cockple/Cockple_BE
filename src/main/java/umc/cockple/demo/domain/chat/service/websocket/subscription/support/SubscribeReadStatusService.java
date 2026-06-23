@@ -5,14 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,24 +66,9 @@ public class SubscribeReadStatusService {
 
     private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
         try {
-            Optional<ChatRoomMember> chatRoomMemberOpt =
-                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-
-            if (chatRoomMemberOpt.isPresent()) {
-                ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
-
-                if (chatRoomMember.getLastReadMessageId() == null ||
-                        messageId > chatRoomMember.getLastReadMessageId()) {
-
-                    Long previousLastRead = chatRoomMember.getLastReadMessageId();
-                    chatRoomMember.updateLastReadMessageId(messageId);
-
-                    log.debug("구독 시 lastReadMessageId 업데이트 - 멤버: {}, 이전: {}, 새로운: {}",
-                            memberId, previousLastRead, messageId);
-                }
-            } else {
-                log.warn("ChatRoomMember를 찾을 수 없음 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
-            }
+            int updatedCount = chatRoomMemberRepository.advanceLastReadMessageId(chatRoomId, memberId, messageId);
+            log.debug("구독 시 lastReadMessageId 배치 업데이트 - 채팅방: {}, 멤버: {}, 메시지: {}, 처리 수: {}",
+                    chatRoomId, memberId, messageId, updatedCount);
         } catch (Exception e) {
             log.error("구독 시 lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
         }
