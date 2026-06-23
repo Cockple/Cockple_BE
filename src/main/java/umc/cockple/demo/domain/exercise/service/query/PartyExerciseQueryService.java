@@ -9,7 +9,8 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
+import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -32,7 +33,8 @@ public class PartyExerciseQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
-    private final ExerciseBookmarkReader exerciseBookmarkReader;
+    private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
+    private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
     private final ExerciseConverter exerciseConverter;
@@ -60,11 +62,11 @@ public class PartyExerciseQueryService {
                     dateRange.start(), dateRange.end(), isMember, party);
         }
 
-        Map<Long, Integer> participantCounts = exerciseParticipantReader.getParticipantCountsMap(
+        Map<Long, Integer> participantCounts = exerciseParticipantCountLookupService.getParticipantCountsByPartyIdAndDateRange(
                 partyId, dateRange.start(), dateRange.end());
 
         List<Long> exerciseIds = getExerciseIds(exercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
         Map<Long, Boolean> participatingStatus = exerciseParticipantReader.getParticipatingStatus(memberId, exerciseIds);
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());

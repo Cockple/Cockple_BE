@@ -41,9 +41,9 @@ class BookmarkQueryCountTest extends IntegrationTestBase {
     /**
      * 찜한 운동 목록 조회의 기대 쿼리 수
      * 1) 회원 조회  2) 찜+운동+party+exerciseAddr+partyImg+chatRoom+levels fetch join
-     * 3) 가입 모임 IN  4) 참여 운동 IN  5) 참여자 수 count  6) 게스트 수 count
+     * 3) 가입 모임 IN  4) 참여 운동 IN  5) 참여 인원 수 공통 count
      */
-    private static final int EXERCISE_BOOKMARK_QUERY_COUNT = 6;
+    private static final int EXERCISE_BOOKMARK_QUERY_COUNT = 5;
 
     /**
      * 찜한 모임 목록 조회의 기대 쿼리 수

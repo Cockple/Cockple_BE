@@ -19,7 +19,8 @@ import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseBookmarkReader;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
+import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 
@@ -36,7 +37,8 @@ public class ExerciseMyQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
-    private final ExerciseBookmarkReader exerciseBookmarkReader;
+    private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
+    private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final ExerciseConverter exerciseConverter;
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
@@ -104,9 +106,10 @@ public class ExerciseMyQueryService {
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
 
-        Map<Long, Integer> participantCounts = exerciseParticipantReader.getParticipantCountsMap(exerciseIds, dateRange.start(), dateRange.end());
+        Map<Long, Integer> participantCounts = exerciseParticipantCountLookupService.getParticipantCountsByExerciseIdsAndDateRange(
+                exerciseIds, dateRange.start(), dateRange.end());
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
@@ -133,8 +136,8 @@ public class ExerciseMyQueryService {
         List<Exercise> exercises = exerciseSlice.getContent();
         List<Long> exerciseIds = exercises.stream().map(Exercise::getId).toList();
 
-        Map<Long, Integer> participantCountMap = exerciseParticipantReader.getParticipantCountsMap(exerciseIds);
-        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkReader.getBookmarkStatus(memberId, exerciseIds);
+        Map<Long, Integer> participantCountMap = exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(exerciseIds);
+        Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
         Map<Long, Boolean> isCompletedMap = getExerciseCompletionStatus(exercises);
 
         log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());

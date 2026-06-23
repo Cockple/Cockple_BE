@@ -62,13 +62,4 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
             @Param("memberIds") List<Long> memberIds,
             @Param("partyId") Long partyId);
 
-
-    @Query("""
-            SELECT me.exercise.id, COUNT(me)
-            FROM MemberExercise me
-            WHERE me.exercise.id IN :exerciseIds
-            GROUP BY me.exercise.id
-            """)
-    List<Object[]> countByExerciseIds(@Param("exerciseIds") List<Long> exerciseIds);
-
 }

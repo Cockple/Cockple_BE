@@ -24,13 +24,4 @@ public interface GuestRepository extends JpaRepository<Guest, Long> {
             """)
     List<Guest> findByExerciseIdAndInviterId(@Param("exerciseId") Long exerciseId,
                                              @Param("inviterId") Long inviterId);
-
-
-    @Query("""
-            SELECT g.exercise.id, COUNT(g)
-            FROM Guest g
-            WHERE g.exercise.id IN :exerciseIds
-            GROUP BY g.exercise.id
-            """)
-    List<Object[]> countByExerciseIds(@Param("exerciseIds") List<Long> exerciseIds);
 }

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.support.reader;
+package umc.cockple.demo.domain.bookmark.service.query.lookup;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class ExerciseBookmarkReader {
+public class ExerciseBookmarkLookupService {
 
     private final ExerciseBookmarkRepository exerciseBookmarkRepository;
 
