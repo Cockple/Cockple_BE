@@ -49,8 +49,8 @@ class ReadStatusReaderTest {
     }
 
     @Test
-    @DisplayName("메시지별 unread 수를 Map으로 변환한다")
-    void countUnreadByMessageIds_returnsCountMap() {
+    @DisplayName("메시지별 unread 수를 sparse Map으로 변환한다")
+    void countUnreadByMessageIdsAsSparseMap_returnsSparseCountMap() {
         // given
         Long firstMessageId = 201L;
         Long secondMessageId = 202L;
@@ -62,7 +62,7 @@ class ReadStatusReaderTest {
                 ));
 
         // when
-        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIds(messageIds);
+        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIdsAsSparseMap(messageIds);
 
         // then
         assertThat(result).containsEntry(firstMessageId, 2)
@@ -70,8 +70,26 @@ class ReadStatusReaderTest {
     }
 
     @Test
+    @DisplayName("메시지별 unread 수 sparse Map은 repository 결과에 없는 메시지를 0으로 채우지 않는다")
+    void countUnreadByMessageIdsAsSparseMap_doesNotFillMissingMessageCount() {
+        // given
+        Long unreadMessageId = 201L;
+        Long fullyReadMessageId = 202L;
+        List<Long> messageIds = List.of(unreadMessageId, fullyReadMessageId);
+        given(messageReadStatusRepository.countUnreadByMessageIds(messageIds))
+                .willReturn(List.of(new ChatMessageUnreadCountDTO(unreadMessageId, 1L)));
+
+        // when
+        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIdsAsSparseMap(messageIds);
+
+        // then
+        assertThat(result).containsEntry(unreadMessageId, 1);
+        assertThat(result).doesNotContainKey(fullyReadMessageId);
+    }
+
+    @Test
     @DisplayName("메시지별 unread 수 조회는 큰 메시지 ID 목록을 chunk로 나눠 조회한다")
-    void countUnreadByMessageIds_chunksLargeMessageIds() {
+    void countUnreadByMessageIdsAsSparseMap_chunksLargeMessageIds() {
         // given
         List<Long> messageIds = LongStream.rangeClosed(1, ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE + 1L)
                 .boxed()
@@ -85,7 +103,7 @@ class ReadStatusReaderTest {
                 .willReturn(List.of(new ChatMessageUnreadCountDTO((long) messageIds.size(), 1L)));
 
         // when
-        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIds(messageIds);
+        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIdsAsSparseMap(messageIds);
 
         // then
         assertThat(result).containsEntry(1L, 2)
@@ -96,9 +114,9 @@ class ReadStatusReaderTest {
 
     @Test
     @DisplayName("메시지 ID 목록이 비어 있으면 unread 수를 조회하지 않는다")
-    void countUnreadByMessageIds_skipsRepositoryWhenMessageIdsEmpty() {
+    void countUnreadByMessageIdsAsSparseMap_skipsRepositoryWhenMessageIdsEmpty() {
         // when
-        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIds(List.of());
+        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIdsAsSparseMap(List.of());
 
         // then
         assertThat(result).isEmpty();

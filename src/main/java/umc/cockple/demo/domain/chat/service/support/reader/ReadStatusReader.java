@@ -21,7 +21,7 @@ public class ReadStatusReader {
         return messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId);
     }
 
-    public Map<Long, Integer> countUnreadByMessageIds(List<Long> messageIds) {
+    public Map<Long, Integer> countUnreadByMessageIdsAsSparseMap(List<Long> messageIds) {
         if (messageIds.isEmpty()) {
             return Map.of();
         }
