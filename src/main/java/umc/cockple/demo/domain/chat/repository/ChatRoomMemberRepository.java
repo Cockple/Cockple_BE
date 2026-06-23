@@ -45,6 +45,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             @Param("chatRoomIds") List<Long> chatRoomIds,
             @Param("displayName") String displayName);
 
+    /*
+     * lastReadMessageId는 고빈도 읽음 커서라 bulk JPQL로 갱신한다.
+     * 이 경로는 JPA auditing(updatedAt)을 갱신하지 않는 것을 의도한다.
+     */
     @Modifying(flushAutomatically = true)
     @Query("""
             UPDATE ChatRoomMember crm
