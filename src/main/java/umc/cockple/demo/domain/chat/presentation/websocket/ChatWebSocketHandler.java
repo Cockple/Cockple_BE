@@ -8,7 +8,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
-import umc.cockple.demo.domain.chat.service.websocket.SubscriptionService;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionRegistry;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 
 @Component
@@ -16,10 +16,10 @@ import umc.cockple.demo.domain.member.service.MemberQueryService;
 @RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final SubscriptionService subscriptionService;
     private final MemberQueryService memberQueryService;
     private final WebSocketResponseSender webSocketResponseSender;
     private final ChatWebSocketRequestDispatcher requestDispatcher;
+    private final WebSocketSessionRegistry sessionRegistry;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -33,7 +33,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 MemberConnectionInfo memberInfo = memberQueryService.getMemberConnectionInfo(memberId);
                 session.getAttributes().put("memberName", memberInfo.memberName());
 
-                subscriptionService.addSession(memberId, session);
+                sessionRegistry.register(memberId, session);
                 log.info("사용자 연결 완료 - memberId: {}, 세션 ID: {}", memberId, session.getId());
 
                 webSocketResponseSender.sendConnectionSuccessMessage(session, memberInfo);
@@ -60,7 +60,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
 
         if (memberId != null) {
-            subscriptionService.removeSession(memberId);
+            sessionRegistry.remove(memberId, session);
             log.info("사용자 세션 정리 완료 - memberId: {}", memberId);
         }
     }

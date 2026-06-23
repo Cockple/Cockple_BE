@@ -5,9 +5,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +50,49 @@ public class ChatUnreadQueryService {
         return messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId);
     }
 
+    public Map<Long, UnreadStatus> findUnreadStatusesByMembers(List<Long> memberIds) {
+        Map<Long, UnreadStatus> unreadStatuses = initializeUnreadStatusMap(memberIds);
+        if (unreadStatuses.isEmpty()) {
+            return unreadStatuses;
+        }
+
+        List<Long> distinctMemberIds = List.copyOf(unreadStatuses.keySet());
+        Set<Long> partyUnreadMemberIds = new HashSet<>(
+                messageReadStatusRepository.findMemberIdsWithPartyUnreadMessages(distinctMemberIds));
+        Set<Long> directUnreadMemberIds = new HashSet<>(
+                messageReadStatusRepository.findMemberIdsWithDirectUnreadMessages(distinctMemberIds));
+
+        unreadStatuses.replaceAll((memberId, ignored) -> new UnreadStatus(
+                partyUnreadMemberIds.contains(memberId),
+                directUnreadMemberIds.contains(memberId)
+        ));
+
+        return unreadStatuses;
+    }
+
     private Map<Long, Integer> initializeZeroCountMap(List<Long> ids) {
         Map<Long, Integer> unreadCounts = new LinkedHashMap<>();
         ids.forEach(id -> unreadCounts.put(id, 0));
         return unreadCounts;
+    }
+
+    private Map<Long, UnreadStatus> initializeUnreadStatusMap(List<Long> memberIds) {
+        Map<Long, UnreadStatus> unreadStatuses = new LinkedHashMap<>();
+        memberIds.forEach(memberId -> unreadStatuses.put(memberId, UnreadStatus.none()));
+        return unreadStatuses;
+    }
+
+    public record UnreadStatus(
+            boolean hasPartyUnread,
+            boolean hasDirectUnread
+    ) {
+
+        public static UnreadStatus none() {
+            return new UnreadStatus(false, false);
+        }
+
+        public boolean hasUnread() {
+            return hasPartyUnread || hasDirectUnread;
+        }
     }
 }

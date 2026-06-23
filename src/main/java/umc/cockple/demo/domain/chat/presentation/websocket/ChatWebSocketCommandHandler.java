@@ -70,6 +70,8 @@ public class ChatWebSocketCommandHandler {
                     ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
             eventPublisher.publishEvent(subscribeEvent);
 
+            // ACK는 요청 검증과 구독 이벤트 접수 성공을 의미한다.
+            // Redis 구독 저장, 읽음 처리, unread-count 브로드캐스트는 listener가 best-effort로 후속 처리한다.
             webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
 
         } catch (ChatException e) {
@@ -89,6 +91,8 @@ public class ChatWebSocketCommandHandler {
                     ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
             eventPublisher.publishEvent(unsubscribeEvent);
 
+            // ACK는 요청 검증과 구독 해제 이벤트 접수 성공을 의미한다.
+            // Redis 구독 해제는 listener가 best-effort로 후속 처리하고 실패 시 error log만 남긴다.
             webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
 
         } catch (ChatException e) {
@@ -108,6 +112,8 @@ public class ChatWebSocketCommandHandler {
                     ChatListSubscriptionEvent.subscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(subscribeEvent);
 
+            // ACK는 요청 검증과 채팅방 목록 구독 이벤트 접수 성공을 의미한다.
+            // Redis 목록 구독 반영은 비동기 listener가 best-effort로 후속 처리한다.
             webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
@@ -127,6 +133,8 @@ public class ChatWebSocketCommandHandler {
                     ChatListSubscriptionEvent.unsubscribe(memberId, request.memberRooms());
             eventPublisher.publishEvent(unsubscribeEvent);
 
+            // ACK는 요청 검증과 채팅방 목록 구독 해제 이벤트 접수 성공을 의미한다.
+            // Redis 목록 구독 해제 반영은 비동기 listener가 best-effort로 후속 처리한다.
             webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {

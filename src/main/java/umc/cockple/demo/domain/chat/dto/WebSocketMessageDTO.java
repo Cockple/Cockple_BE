@@ -82,6 +82,16 @@ public class WebSocketMessageDTO {
     }
 
     @Builder
+    public record UnreadStatusUpdateMessage(
+            WebSocketMessageType type,
+            boolean hasUnread,
+            boolean hasPartyUnread,
+            boolean hasDirectUnread,
+            LocalDateTime timestamp
+    ) {
+    }
+
+    @Builder
     public record ChatRoomListUpdate(
             WebSocketMessageType type,
             Long chatRoomId,
