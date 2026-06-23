@@ -16,6 +16,8 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("ChatRoomMemberRepository")
@@ -64,5 +66,37 @@ class ChatRoomMemberRepositoryTest {
         entityManager.clear();
         ChatRoomMember updatedMembership = chatRoomMemberRepository.findById(membership.getId()).orElseThrow();
         assertThat(updatedMembership.getLastReadMessageId()).isEqualTo(200L);
+    }
+
+    @Test
+    @DisplayName("advanceLastReadMessageIdForMembers는 여러 멤버의 lastReadMessageId를 전진시킨다")
+    void advanceLastReadMessageIdForMembers_updatesMultipleMembers() {
+        // given
+        Member firstMember = memberRepository.save(MemberFixture.createMember("첫번째", Gender.MALE, Level.A, 1001L));
+        Member secondMember = memberRepository.save(MemberFixture.createMember("두번째", Gender.FEMALE, Level.B, 2002L));
+        Member skippedMember = memberRepository.save(MemberFixture.createMember("스킵", Gender.MALE, Level.C, 3003L));
+        ChatRoom chatRoom = chatRoomRepository.save(ChatFixture.createDirectChatRoom());
+        ChatRoomMember firstMembership =
+                chatRoomMemberRepository.save(ChatRoomMember.createJoined(chatRoom, firstMember, "첫번째"));
+        ChatRoomMember secondMembership = chatRoomMemberRepository.save(
+                ChatFixture.createJoinedMemberWithLastRead(chatRoom, secondMember, 50L));
+        ChatRoomMember skippedMembership = chatRoomMemberRepository.save(
+                ChatFixture.createJoinedMemberWithLastRead(chatRoom, skippedMember, 300L));
+
+        // when
+        int updatedCount = chatRoomMemberRepository.advanceLastReadMessageIdForMembers(
+                chatRoom.getId(),
+                List.of(firstMember.getId(), secondMember.getId(), skippedMember.getId()),
+                200L);
+
+        // then
+        assertThat(updatedCount).isEqualTo(2);
+        entityManager.clear();
+        assertThat(chatRoomMemberRepository.findById(firstMembership.getId()).orElseThrow().getLastReadMessageId())
+                .isEqualTo(200L);
+        assertThat(chatRoomMemberRepository.findById(secondMembership.getId()).orElseThrow().getLastReadMessageId())
+                .isEqualTo(200L);
+        assertThat(chatRoomMemberRepository.findById(skippedMembership.getId()).orElseThrow().getLastReadMessageId())
+                .isEqualTo(300L);
     }
 }
