@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ReadStatusReader;
+import umc.cockple.demo.domain.chat.service.support.updater.ChatMemberReadStateUpdater;
+import umc.cockple.demo.domain.chat.service.support.updater.ReadStatusUpdater;
 
 import java.util.List;
 
@@ -22,15 +23,16 @@ import static org.mockito.Mockito.never;
 @DisplayName("SentMessageReadStatusService")
 class SentMessageReadStatusServiceTest {
 
-    @Mock private MessageReadStatusRepository messageReadStatusRepository;
-    @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
+    @Mock private ReadStatusReader readStatusReader;
+    @Mock private ReadStatusUpdater readStatusUpdater;
+    @Mock private ChatMemberReadStateUpdater chatMemberReadStateUpdater;
 
     private SentMessageReadStatusService sentMessageReadStatusService;
 
     @BeforeEach
     void setUp() {
         sentMessageReadStatusService =
-                new SentMessageReadStatusService(messageReadStatusRepository, chatRoomMemberRepository);
+                new SentMessageReadStatusService(readStatusReader, readStatusUpdater, chatMemberReadStateUpdater);
     }
 
     @Test
@@ -43,10 +45,10 @@ class SentMessageReadStatusServiceTest {
         List<Long> activeSubscribers = List.of(senderId, 2L, 3L);
         List<Long> readers = List.of(2L, 3L);
 
-        given(messageReadStatusRepository.markAsReadInMembers(messageId, readers)).willReturn(2);
-        given(chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, readers, messageId))
+        given(readStatusUpdater.markMessageAsReadForMembers(messageId, readers)).willReturn(2);
+        given(chatMemberReadStateUpdater.advanceLastReadMessageIdForMembers(chatRoomId, readers, messageId))
                 .willReturn(2);
-        given(messageReadStatusRepository.countUnreadByMessageId(messageId)).willReturn(1);
+        given(readStatusReader.countUnreadByMessageId(messageId)).willReturn(1);
 
         // when
         int unreadCount = sentMessageReadStatusService.markActiveSubscribersAsRead(
@@ -54,8 +56,8 @@ class SentMessageReadStatusServiceTest {
 
         // then
         assertThat(unreadCount).isEqualTo(1);
-        then(messageReadStatusRepository).should().markAsReadInMembers(messageId, readers);
-        then(chatRoomMemberRepository).should().advanceLastReadMessageIdForMembers(chatRoomId, readers, messageId);
+        then(readStatusUpdater).should().markMessageAsReadForMembers(messageId, readers);
+        then(chatMemberReadStateUpdater).should().advanceLastReadMessageIdForMembers(chatRoomId, readers, messageId);
     }
 
     @Test
@@ -66,10 +68,10 @@ class SentMessageReadStatusServiceTest {
         Long messageId = 100L;
         List<Long> activeSubscribers = List.of(1L, 2L);
 
-        given(messageReadStatusRepository.markAsReadInMembers(messageId, activeSubscribers)).willReturn(2);
-        given(chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, activeSubscribers, messageId))
+        given(readStatusUpdater.markMessageAsReadForMembers(messageId, activeSubscribers)).willReturn(2);
+        given(chatMemberReadStateUpdater.advanceLastReadMessageIdForMembers(chatRoomId, activeSubscribers, messageId))
                 .willReturn(2);
-        given(messageReadStatusRepository.countUnreadByMessageId(messageId)).willReturn(0);
+        given(readStatusReader.countUnreadByMessageId(messageId)).willReturn(0);
 
         // when
         int unreadCount = sentMessageReadStatusService.markActiveSubscribersAsRead(
@@ -77,8 +79,8 @@ class SentMessageReadStatusServiceTest {
 
         // then
         assertThat(unreadCount).isZero();
-        then(messageReadStatusRepository).should().markAsReadInMembers(messageId, activeSubscribers);
-        then(chatRoomMemberRepository).should()
+        then(readStatusUpdater).should().markMessageAsReadForMembers(messageId, activeSubscribers);
+        then(chatMemberReadStateUpdater).should()
                 .advanceLastReadMessageIdForMembers(chatRoomId, activeSubscribers, messageId);
     }
 
@@ -89,7 +91,7 @@ class SentMessageReadStatusServiceTest {
         Long chatRoomId = 10L;
         Long messageId = 100L;
         Long senderId = 1L;
-        given(messageReadStatusRepository.countUnreadByMessageId(messageId)).willReturn(2);
+        given(readStatusReader.countUnreadByMessageId(messageId)).willReturn(2);
 
         // when
         int unreadCount = sentMessageReadStatusService.markActiveSubscribersAsRead(
@@ -97,8 +99,8 @@ class SentMessageReadStatusServiceTest {
 
         // then
         assertThat(unreadCount).isEqualTo(2);
-        then(messageReadStatusRepository).should(never()).markAsReadInMembers(anyLong(), anyList());
-        then(chatRoomMemberRepository).should(never())
+        then(readStatusUpdater).should(never()).markMessageAsReadForMembers(anyLong(), anyList());
+        then(chatMemberReadStateUpdater).should(never())
                 .advanceLastReadMessageIdForMembers(anyLong(), anyList(), anyLong());
     }
 }

@@ -6,14 +6,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
-import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
+import umc.cockple.demo.domain.chat.service.support.reader.ReadStatusReader;
+import umc.cockple.demo.domain.chat.service.support.updater.ChatMemberReadStateUpdater;
+import umc.cockple.demo.domain.chat.service.support.updater.ReadStatusUpdater;
 import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,17 +20,18 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SubscribeReadStatusService {
 
-    private final MessageReadStatusRepository messageReadStatusRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ReadStatusReader readStatusReader;
+    private final ReadStatusUpdater readStatusUpdater;
+    private final ChatMemberReadStateUpdater chatMemberReadStateUpdater;
     private final ApplicationEventPublisher eventPublisher;
 
     public List<UnreadCountUpdate> markUnreadMessagesAsReadOnSubscribe(Long chatRoomId, Long memberId) {
-        List<Long> unreadMessageIds = messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId);
+        List<Long> unreadMessageIds = readStatusReader.findUnreadMessageIds(chatRoomId, memberId);
         if (unreadMessageIds.isEmpty()) {
             return List.of();
         }
 
-        messageReadStatusRepository.markMessagesAsReadForMember(chatRoomId, memberId, unreadMessageIds);
+        readStatusUpdater.markMessagesAsReadForMember(chatRoomId, memberId, unreadMessageIds);
 
         List<UnreadCountUpdate> updates = createUnreadUpdates(unreadMessageIds);
         updateLastReadMessageId(chatRoomId, memberId, latestMessageId(unreadMessageIds));
@@ -41,20 +41,11 @@ public class SubscribeReadStatusService {
     }
 
     private List<UnreadCountUpdate> createUnreadUpdates(List<Long> unreadMessageIds) {
-        Map<Long, Integer> unreadCounts = countUnreadMessages(unreadMessageIds);
+        Map<Long, Integer> unreadCounts = readStatusReader.countUnreadByMessageIds(unreadMessageIds);
 
         return unreadMessageIds.stream()
                 .map(messageId -> new UnreadCountUpdate(messageId, unreadCounts.getOrDefault(messageId, 0)))
                 .toList();
-    }
-
-    private Map<Long, Integer> countUnreadMessages(List<Long> messageIds) {
-        return messageReadStatusRepository.countUnreadByMessageIds(messageIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        ChatMessageUnreadCountDTO::chatMessageId,
-                        count -> count.unreadCount().intValue()
-                ));
     }
 
     private Long latestMessageId(List<Long> messageIds) {
@@ -63,7 +54,7 @@ public class SubscribeReadStatusService {
 
     private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
         try {
-            chatRoomMemberRepository.advanceLastReadMessageId(chatRoomId, memberId, messageId);
+            chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, messageId);
         } catch (Exception e) {
             log.error("구독 시 lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
         }
