@@ -45,6 +45,23 @@ class ChatMemberReadStateUpdaterTest {
     }
 
     @Test
+    @DisplayName("멤버의 마지막 읽은 메시지 ID가 갱신되지 않으면 0을 반환한다")
+    void advanceLastReadMessageId_returnsZeroWhenNotUpdated() {
+        // given
+        Long chatRoomId = 10L;
+        Long memberId = 101L;
+        Long messageId = 201L;
+        given(chatRoomMemberRepository.advanceLastReadMessageId(chatRoomId, memberId, messageId))
+                .willReturn(0);
+
+        // when
+        int result = chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, messageId);
+
+        // then
+        assertThat(result).isZero();
+    }
+
+    @Test
     @DisplayName("여러 멤버의 마지막 읽은 메시지 ID를 전진시킨다")
     void advanceLastReadMessageIdForMembers_delegatesToRepository() {
         // given
@@ -59,6 +76,23 @@ class ChatMemberReadStateUpdaterTest {
 
         // then
         assertThat(result).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("여러 멤버의 마지막 읽은 메시지 ID가 일부만 갱신되면 갱신 수를 반환한다")
+    void advanceLastReadMessageIdForMembers_returnsPartialUpdatedCount() {
+        // given
+        Long chatRoomId = 10L;
+        Long messageId = 201L;
+        List<Long> memberIds = List.of(101L, 102L);
+        given(chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, memberIds, messageId))
+                .willReturn(1);
+
+        // when
+        int result = chatMemberReadStateUpdater.advanceLastReadMessageIdForMembers(chatRoomId, memberIds, messageId);
+
+        // then
+        assertThat(result).isEqualTo(1);
     }
 
     @Test
