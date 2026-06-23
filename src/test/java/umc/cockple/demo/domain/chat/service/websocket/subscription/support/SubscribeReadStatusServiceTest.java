@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 
 import java.util.List;
 
@@ -63,15 +64,15 @@ class SubscribeReadStatusServiceTest {
                 .willReturn(1);
 
         // when
-        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+        List<UnreadCountUpdate> updates =
                 subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         // then
         assertThat(updates)
-                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::messageId)
+                .extracting(UnreadCountUpdate::messageId)
                 .containsExactly(firstMessageId, secondMessageId);
         assertThat(updates)
-                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::newUnreadCount)
+                .extracting(UnreadCountUpdate::newUnreadCount)
                 .containsExactly(2, 1);
         then(messageReadStatusRepository).should()
                 .markMessagesAsReadForMember(chatRoomId, memberId, List.of(firstMessageId, secondMessageId));
@@ -96,7 +97,7 @@ class SubscribeReadStatusServiceTest {
                 .willReturn(List.of());
 
         // when
-        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+        List<UnreadCountUpdate> updates =
                 subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         // then
@@ -127,15 +128,15 @@ class SubscribeReadStatusServiceTest {
                 .willReturn(1);
 
         // when
-        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+        List<UnreadCountUpdate> updates =
                 subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         // then
         assertThat(updates)
-                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::messageId)
+                .extracting(UnreadCountUpdate::messageId)
                 .containsExactly(firstMessageId, secondMessageId);
         assertThat(updates)
-                .extracting(SubscribeReadStatusService.MessageUnreadUpdate::newUnreadCount)
+                .extracting(UnreadCountUpdate::newUnreadCount)
                 .containsExactly(2, 0);
     }
 }

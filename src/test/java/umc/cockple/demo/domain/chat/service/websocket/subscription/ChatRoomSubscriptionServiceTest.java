@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
@@ -44,8 +45,8 @@ class ChatRoomSubscriptionServiceTest {
         Long chatRoomId = 1L;
         Long memberId = 10L;
         List<Long> activeSubscribers = List.of(memberId, 20L);
-        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
-                List.of(new SubscribeReadStatusService.MessageUnreadUpdate(100L, 1));
+        List<UnreadCountUpdate> updates =
+                List.of(new UnreadCountUpdate(100L, 1));
 
         given(subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId))
                 .willReturn(updates);
