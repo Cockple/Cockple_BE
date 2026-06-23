@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
-import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
+import umc.cockple.demo.domain.chat.service.support.ReadStatusBatchSupport;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -26,12 +26,16 @@ public class ReadStatusReader {
             return Map.of();
         }
 
-        return messageReadStatusRepository.countUnreadByMessageIds(messageIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        ChatMessageUnreadCountDTO::chatMessageId,
-                        count -> count.unreadCount().intValue()
-                ));
+        Map<Long, Integer> unreadCounts = new HashMap<>();
+        for (List<Long> chunk : ReadStatusBatchSupport.chunk(messageIds)) {
+            messageReadStatusRepository.countUnreadByMessageIds(chunk)
+                    .forEach(count -> unreadCounts.put(
+                            count.chatMessageId(),
+                            count.unreadCount().intValue()
+                    ));
+        }
+
+        return unreadCounts;
     }
 
     public int countUnreadByMessageId(Long messageId) {

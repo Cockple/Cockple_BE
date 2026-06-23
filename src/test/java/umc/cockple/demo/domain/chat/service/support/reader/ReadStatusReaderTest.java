@@ -8,9 +8,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
+import umc.cockple.demo.domain.chat.service.support.ReadStatusBatchSupport;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -65,6 +67,31 @@ class ReadStatusReaderTest {
         // then
         assertThat(result).containsEntry(firstMessageId, 2)
                 .containsEntry(secondMessageId, 1);
+    }
+
+    @Test
+    @DisplayName("메시지별 unread 수 조회는 큰 메시지 ID 목록을 chunk로 나눠 조회한다")
+    void countUnreadByMessageIds_chunksLargeMessageIds() {
+        // given
+        List<Long> messageIds = LongStream.rangeClosed(1, ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE + 1L)
+                .boxed()
+                .toList();
+        List<Long> firstChunk = messageIds.subList(0, ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE);
+        List<Long> secondChunk = messageIds.subList(ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE, messageIds.size());
+
+        given(messageReadStatusRepository.countUnreadByMessageIds(firstChunk))
+                .willReturn(List.of(new ChatMessageUnreadCountDTO(1L, 2L)));
+        given(messageReadStatusRepository.countUnreadByMessageIds(secondChunk))
+                .willReturn(List.of(new ChatMessageUnreadCountDTO((long) messageIds.size(), 1L)));
+
+        // when
+        Map<Long, Integer> result = readStatusReader.countUnreadByMessageIds(messageIds);
+
+        // then
+        assertThat(result).containsEntry(1L, 2)
+                .containsEntry((long) messageIds.size(), 1);
+        then(messageReadStatusRepository).should().countUnreadByMessageIds(firstChunk);
+        then(messageReadStatusRepository).should().countUnreadByMessageIds(secondChunk);
     }
 
     @Test

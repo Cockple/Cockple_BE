@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.support.ReadStatusBatchSupport;
 
 import java.util.List;
 
@@ -19,7 +20,12 @@ public class ReadStatusUpdater {
             return 0;
         }
 
-        return messageReadStatusRepository.markMessagesAsReadForMember(chatRoomId, memberId, messageIds);
+        int updatedCount = 0;
+        for (List<Long> chunk : ReadStatusBatchSupport.chunk(messageIds)) {
+            updatedCount += messageReadStatusRepository.markMessagesAsReadForMember(chatRoomId, memberId, chunk);
+        }
+
+        return updatedCount;
     }
 
     public int markMessageAsReadForMembers(Long messageId, List<Long> memberIds) {
@@ -27,6 +33,11 @@ public class ReadStatusUpdater {
             return 0;
         }
 
-        return messageReadStatusRepository.markAsReadInMembers(messageId, memberIds);
+        int updatedCount = 0;
+        for (List<Long> chunk : ReadStatusBatchSupport.chunk(memberIds)) {
+            updatedCount += messageReadStatusRepository.markAsReadInMembers(messageId, chunk);
+        }
+
+        return updatedCount;
     }
 }
