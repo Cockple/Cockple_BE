@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
+import umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
 import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 
@@ -37,6 +38,20 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
     int markAsReadInMembers(
             @Param("messageId") Long messageId,
             @Param("memberIds") List<Long> memberIds);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE MessageReadStatus mrs
+            SET mrs.isRead = true
+            WHERE mrs.chatRoomId = :chatRoomId
+            AND mrs.memberId = :memberId
+            AND mrs.chatMessageId IN :messageIds
+            AND mrs.isRead = false
+            """)
+    int markMessagesAsReadForMember(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberId") Long memberId,
+            @Param("messageIds") List<Long> messageIds);
 
     @Query("""
             SELECT new umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO(mrs.chatRoomId, COUNT(mrs))
@@ -135,6 +150,16 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
             """)
     int countUnreadByMessageId(
             @Param("messageId") Long messageId);
+
+    @Query("""
+            SELECT new umc.cockple.demo.domain.chat.repository.projection.ChatMessageUnreadCountDTO(mrs.chatMessageId, COUNT(mrs))
+            FROM MessageReadStatus mrs
+            WHERE mrs.chatMessageId IN :messageIds
+            AND mrs.isRead = false
+            GROUP BY mrs.chatMessageId
+            """)
+    List<ChatMessageUnreadCountDTO> countUnreadByMessageIds(
+            @Param("messageIds") List<Long> messageIds);
 
     @Query("""
             SELECT mrs.chatMessageId FROM MessageReadStatus mrs

@@ -11,7 +11,9 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -34,16 +36,18 @@ public class SubscribeReadStatusService {
         }
         log.debug("처리할 안읽은 메시지 수: {} - 채팅방: {}, 멤버: {}", unreadMessageIds.size(), chatRoomId, memberId);
 
-        List<MessageUnreadUpdate> updates = unreadMessageIds.stream()
-                .map(messageId -> {
-                    log.debug("메시지 읽음 처리 중 - 메시지: {}, 멤버: {}", messageId, memberId);
-                    int processedCount = messageReadStatusRepository.markAsReadInMembers(messageId, List.of(memberId));
-                    int newUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
-                    log.debug("메시지 읽음 처리 완료 - 메시지: {}, 처리 결과: {}, 새 안읽은 수: {}",
-                            messageId, processedCount > 0 ? "성공" : "이미 읽음", newUnreadCount);
+        int processedCount = messageReadStatusRepository.markMessagesAsReadForMember(chatRoomId, memberId, unreadMessageIds);
+        log.debug("구독 시 메시지 읽음 배치 처리 완료 - 처리된 메시지 수: {}", processedCount);
 
-                    return new MessageUnreadUpdate(messageId, newUnreadCount);
-                })
+        Map<Long, Integer> unreadCounts = messageReadStatusRepository.countUnreadByMessageIds(unreadMessageIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        count -> count.chatMessageId(),
+                        count -> count.unreadCount().intValue()
+                ));
+
+        List<MessageUnreadUpdate> updates = unreadMessageIds.stream()
+                .map(messageId -> new MessageUnreadUpdate(messageId, unreadCounts.getOrDefault(messageId, 0)))
                 .toList();
 
         if (!unreadMessageIds.isEmpty()) {
