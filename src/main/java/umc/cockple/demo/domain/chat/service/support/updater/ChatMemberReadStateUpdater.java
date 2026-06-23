@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.service.support.ReadStatusBatchSupport;
 
 import java.util.List;
 
@@ -35,7 +36,15 @@ public class ChatMemberReadStateUpdater {
             return 0;
         }
 
-        int updatedCount = chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, memberIds, messageId);
+        int updatedCount = 0;
+        for (List<Long> chunk : ReadStatusBatchSupport.chunk(memberIds)) {
+            updatedCount += chatRoomMemberRepository.advanceLastReadMessageIdForMembers(
+                    chatRoomId,
+                    chunk,
+                    messageId
+            );
+        }
+
         if (updatedCount < memberIds.size()) {
             log.warn(
                     "lastReadMessageId 일부 미갱신 - 채팅방: {}, 요청 멤버 수: {}, 갱신 수: {}, 메시지: {} "

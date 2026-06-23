@@ -7,8 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.chat.service.support.ReadStatusBatchSupport;
 
 import java.util.List;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -93,6 +95,34 @@ class ChatMemberReadStateUpdaterTest {
 
         // then
         assertThat(result).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("여러 멤버의 마지막 읽은 메시지 ID 갱신은 큰 멤버 ID 목록을 chunk로 나눠 처리한다")
+    void advanceLastReadMessageIdForMembers_chunksLargeMemberIds() {
+        // given
+        Long chatRoomId = 10L;
+        Long messageId = 201L;
+        List<Long> memberIds = LongStream.rangeClosed(1, ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE + 1L)
+                .boxed()
+                .toList();
+        List<Long> firstChunk = memberIds.subList(0, ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE);
+        List<Long> secondChunk = memberIds.subList(ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE, memberIds.size());
+
+        given(chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, firstChunk, messageId))
+                .willReturn(ReadStatusBatchSupport.IN_CLAUSE_CHUNK_SIZE);
+        given(chatRoomMemberRepository.advanceLastReadMessageIdForMembers(chatRoomId, secondChunk, messageId))
+                .willReturn(1);
+
+        // when
+        int result = chatMemberReadStateUpdater.advanceLastReadMessageIdForMembers(chatRoomId, memberIds, messageId);
+
+        // then
+        assertThat(result).isEqualTo(memberIds.size());
+        then(chatRoomMemberRepository).should()
+                .advanceLastReadMessageIdForMembers(chatRoomId, firstChunk, messageId);
+        then(chatRoomMemberRepository).should()
+                .advanceLastReadMessageIdForMembers(chatRoomId, secondChunk, messageId);
     }
 
     @Test
