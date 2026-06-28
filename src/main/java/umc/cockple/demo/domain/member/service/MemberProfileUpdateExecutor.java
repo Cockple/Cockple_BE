@@ -10,12 +10,10 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 
 /**
- * 프로필 수정의 동시성 충돌을 트랜잭션 "밖에서" 재시도해 멱등하게 만든다.
+ * 프로필 수정의 동시성 충돌을 트랜잭션 밖에서 재시도해 멱등하게 만든다.
  *
- * <ul>
- *     <li>신규 등록 동시 진입 -> 패배 트랜잭션이 unique 제약 위반({@link DataIntegrityViolationException})</li>
- *     <li>기존 사진 교체 동시 진입 -> 패배 트랜잭션이 낙관적 락 실패({@link ObjectOptimisticLockingFailureException})</li>
- * </ul>
+ * 신규 등록 동시 진입 -> 패배 트랜잭션이 unique 제약 위반
+ * 기존 사진 교체 동시 진입 -> 패배 트랜잭션이 낙관적 락 실패
  *
  * 두 경우 모두 재시도하면 프로필이 이미 존재/최신 버전이므로 UPDATE 경로로 수렴해 성공한다.
  * (재시도가 트랜잭션 경계 밖에서 일어나야 매번 새 트랜잭션/영속성 컨텍스트가 열린다.)
