@@ -21,6 +21,11 @@ public class ProfileImg {
     @Column(nullable = false)
     private String imgKey;
 
+    // 동시 수정 시 lost update 방지를 위한 낙관적 락 버전
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
 
     public void setMember(Member member) {
         this.member = member;

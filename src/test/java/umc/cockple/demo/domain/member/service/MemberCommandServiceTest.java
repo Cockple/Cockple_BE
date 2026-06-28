@@ -14,7 +14,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.support.fixture.ChatFixture;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -64,7 +64,7 @@ class MemberCommandServiceTest {
     @Mock private MemberAddrRepository memberAddrRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private ApplicationEventPublisher applicationEventPublisher;
-    @Mock private FileService fileService;
+    @Mock private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock private KakaoOauthService kakaoOauthService;
 
     private Member normalMember;
@@ -253,7 +253,8 @@ class MemberCommandServiceTest {
                 memberCommandService.updateProfile(requestWithImg, normalMember.getId());
 
                 // then
-                then(fileService).should().delete("profile/old-key.jpg");
+                then(objectStorageDeleteOutboxService).should()
+                        .enqueueProfileImage(normalMember.getId(), "profile/old-key.jpg");
             }
 
             @Test
@@ -277,7 +278,7 @@ class MemberCommandServiceTest {
                 memberCommandService.updateProfile(sameImgRequest, normalMember.getId());
 
                 // then
-                then(fileService).should(never()).delete(any());
+                then(objectStorageDeleteOutboxService).should(never()).enqueueProfileImage(any(), any());
             }
 
             @Test

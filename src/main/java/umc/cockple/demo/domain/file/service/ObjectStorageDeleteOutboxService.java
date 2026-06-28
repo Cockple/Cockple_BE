@@ -42,4 +42,20 @@ public class ObjectStorageDeleteOutboxService {
         objectStorageDeleteOutboxRepository.saveAll(outboxes);
         log.info("Object storage 삭제 outbox 등록 - chatRoomId: {}, 파일 수: {}", chatRoomId, outboxes.size());
     }
+
+    @Transactional
+    public void enqueueProfileImage(Long memberId, String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return;
+        }
+
+        objectStorageDeleteOutboxRepository.save(
+                ObjectStorageDeleteOutbox.pending(
+                        objectKey,
+                        ObjectStorageDeleteSourceType.MEMBER_PROFILE_IMG,
+                        memberId
+                )
+        );
+        log.info("Object storage 삭제 outbox 등록 - memberId: {}, objectKey: {}", memberId, objectKey);
+    }
 }

@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,7 +40,7 @@ public class MemberCommandService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private final KakaoOauthService kakaoOauthService;
-    private final FileService fileService;
+    private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
 
 
     // ==================== 회원 관련 ===================
@@ -139,9 +139,10 @@ public class MemberCommandService {
             // 기존 이미지 존재시 이미지 새로 업로드
             if (profile != null) {
 
-                // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
+                // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 기존 이미지 삭제 예약
                 if (!profile.getImgKey().equals(imgKey)) {
-                    fileService.delete(profile.getImgKey());
+                    // 즉시 삭제하지 않고 outbox 에 등록 -> 트랜잭션이 롤백되면 삭제도 함께 취소된다
+                    objectStorageDeleteOutboxService.enqueueProfileImage(memberId, profile.getImgKey());
                     profile.updateProfile(imgKey);
                 }
 
