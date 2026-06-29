@@ -65,18 +65,14 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
+        // 회원 정보 수정 (프로필 사진 제외)
+        member.updateMemberFirst(requestDTO, keywords);
+
+        // 프로필 사진은 updateProfile 과 동일한 도메인 메서드로 처리
         if (StringUtils.hasText(requestDTO.imgKey())) {
-            ProfileImg profile = ProfileImg.builder()
-                    .member(member)
-                    .imgKey(requestDTO.imgKey())
-                    .build();
-
-            member.updateMemberFirst(requestDTO, keywords, profile);
-
-        } else {
-            member.updateMemberFirst(requestDTO, keywords);
+            member.changeProfileImage(requestDTO.imgKey())
+                    .ifPresent(oldKey -> objectStorageDeleteOutboxService.enqueueProfileImage(member.getId(), oldKey));
         }
-
     }
 
     public void withdrawMember(Long memberId) {
@@ -125,41 +121,13 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
-        log.info("===== 프로필 이미지 key값 확인 : " + requestDto.imgKey());
+        // 회원 정보 수정 (프로필 사진 제외)
+        member.updateMember(requestDto, keywords);
 
-        // 이미지 -> 저장 후 url 받아오기
-        String imgKey = requestDto.imgKey();
-
-        // 받은 key가 null인지 확인
-        if (!StringUtils.hasText(imgKey)) {
-            member.updateMember(requestDto, keywords);
-        } else {
-
-            ProfileImg profile = member.getProfileImg();
-            // 기존 이미지 존재시 이미지 새로 업로드
-            if (profile != null) {
-
-                // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 기존 이미지 삭제 예약
-                if (!profile.getImgKey().equals(imgKey)) {
-                    // 즉시 삭제하지 않고 outbox 에 등록 -> 트랜잭션이 롤백되면 삭제도 함께 취소된다
-                    objectStorageDeleteOutboxService.enqueueProfileImage(memberId, profile.getImgKey());
-                    profile.updateProfile(imgKey);
-                }
-
-                // 회원 정보 수정하기 (프로필 사진 제외)
-                member.updateMember(requestDto, keywords);
-
-            } else {
-                // 받아온 이미지로 profile객체 생성
-                ProfileImg img = ProfileImg.builder()
-                        .member(member)
-                        .imgKey(imgKey)
-                        .build();
-
-                // 회원 정보 수정하기 (프로필 사진까지)
-                member.updateMember(requestDto, keywords, img);
-
-            }
+        // 프로필 사진 신규 등록/교체는 도메인 메서드로 위임. 교체 시 정리 대상 key를 받아 outbox 에 등록
+        if (StringUtils.hasText(requestDto.imgKey())) {
+            member.changeProfileImage(requestDto.imgKey())
+                    .ifPresent(oldKey -> objectStorageDeleteOutboxService.enqueueProfileImage(memberId, oldKey));
         }
 
         chatRoomMemberRepository.findDirectChatCounterParts(member.getId())
