@@ -5,10 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
-import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,14 +23,14 @@ public class UnreadCountUpdateBroadcaster {
 
     public void broadcast(
             Long chatRoomId,
-            List<SubscribeReadStatusService.MessageUnreadUpdate> updates,
+            List<UnreadCountUpdate> updates,
             List<Long> subscribers,
             Long excludedMemberId) {
         if (subscribers == null || subscribers.isEmpty()) {
             return;
         }
 
-        for (SubscribeReadStatusService.MessageUnreadUpdate update : updates) {
+        for (UnreadCountUpdate update : updates) {
             WebSocketMessageDTO.UnreadCountUpdateMessage updateMessage = WebSocketMessageDTO.UnreadCountUpdateMessage.builder()
                     .type(WebSocketMessageType.UNREAD_COUNT_UPDATE)
                     .chatRoomId(chatRoomId)

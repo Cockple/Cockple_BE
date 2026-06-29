@@ -5,13 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ReadStatusReader;
+import umc.cockple.demo.domain.chat.service.support.updater.ChatMemberReadStateUpdater;
+import umc.cockple.demo.domain.chat.service.support.updater.ReadStatusUpdater;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -19,77 +20,45 @@ import java.util.Optional;
 @Slf4j
 public class SubscribeReadStatusService {
 
-    private final MessageReadStatusRepository messageReadStatusRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ReadStatusReader readStatusReader;
+    private final ReadStatusUpdater readStatusUpdater;
+    private final ChatMemberReadStateUpdater chatMemberReadStateUpdater;
     private final ApplicationEventPublisher eventPublisher;
 
-    public List<MessageUnreadUpdate> markUnreadMessagesAsReadOnSubscribe(Long chatRoomId, Long memberId) {
-        log.info("구독 시 안읽은 메시지 처리 시작 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
-
-        List<Long> unreadMessageIds = messageReadStatusRepository.findUnreadMessageIdsByMember(chatRoomId, memberId);
-
+    public List<UnreadCountUpdate> markUnreadMessagesAsReadOnSubscribe(Long chatRoomId, Long memberId) {
+        List<Long> unreadMessageIds = readStatusReader.findUnreadMessageIds(chatRoomId, memberId);
         if (unreadMessageIds.isEmpty()) {
-            log.debug("처리할 안읽은 메시지가 없음 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
             return List.of();
         }
-        log.debug("처리할 안읽은 메시지 수: {} - 채팅방: {}, 멤버: {}", unreadMessageIds.size(), chatRoomId, memberId);
 
-        List<MessageUnreadUpdate> updates = unreadMessageIds.stream()
-                .map(messageId -> {
-                    log.debug("메시지 읽음 처리 중 - 메시지: {}, 멤버: {}", messageId, memberId);
-                    int processedCount = messageReadStatusRepository.markAsReadInMembers(messageId, List.of(memberId));
-                    int newUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
-                    log.debug("메시지 읽음 처리 완료 - 메시지: {}, 처리 결과: {}, 새 안읽은 수: {}",
-                            messageId, processedCount > 0 ? "성공" : "이미 읽음", newUnreadCount);
+        readStatusUpdater.markMessagesAsReadForMember(chatRoomId, memberId, unreadMessageIds);
 
-                    return new MessageUnreadUpdate(messageId, newUnreadCount);
-                })
-                .toList();
-
-        if (!unreadMessageIds.isEmpty()) {
-            Long latestMessageId = unreadMessageIds.get(unreadMessageIds.size() - 1);
-            updateLastReadMessageId(chatRoomId, memberId, latestMessageId);
-            log.debug("lastReadMessageId 업데이트 완료 - 채팅방: {}, 멤버: {}, 최신 메시지: {}",
-                    chatRoomId, memberId, latestMessageId);
-        }
-
-        log.info("구독 시 안읽은 메시지 처리 완료 - 채팅방: {}, 멤버: {}, 처리된 메시지 수: {}",
-                chatRoomId, memberId, updates.size());
-
+        List<UnreadCountUpdate> updates = createUnreadUpdates(unreadMessageIds);
+        updateLastReadMessageId(chatRoomId, memberId, latestMessageId(unreadMessageIds));
         eventPublisher.publishEvent(ChatUnreadStatusUpdateEvent.of(List.of(memberId)));
-        log.info("구독 읽음 처리 후 안읽음 상태 업데이트 이벤트 발행 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
 
         return updates;
     }
 
+    private List<UnreadCountUpdate> createUnreadUpdates(List<Long> unreadMessageIds) {
+        Map<Long, Integer> unreadCounts = readStatusReader.countUnreadByMessageIdsAsSparseMap(unreadMessageIds);
+
+        return unreadMessageIds.stream()
+                .map(messageId -> new UnreadCountUpdate(messageId, unreadCounts.getOrDefault(messageId, 0)))
+                .toList();
+    }
+
+    private Long latestMessageId(List<Long> messageIds) {
+        return messageIds.stream()
+                .max(Long::compareTo)
+                .orElseThrow();
+    }
+
     private void updateLastReadMessageId(Long chatRoomId, Long memberId, Long messageId) {
         try {
-            Optional<ChatRoomMember> chatRoomMemberOpt =
-                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-
-            if (chatRoomMemberOpt.isPresent()) {
-                ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
-
-                if (chatRoomMember.getLastReadMessageId() == null ||
-                        messageId > chatRoomMember.getLastReadMessageId()) {
-
-                    Long previousLastRead = chatRoomMember.getLastReadMessageId();
-                    chatRoomMember.updateLastReadMessageId(messageId);
-
-                    log.debug("구독 시 lastReadMessageId 업데이트 - 멤버: {}, 이전: {}, 새로운: {}",
-                            memberId, previousLastRead, messageId);
-                }
-            } else {
-                log.warn("ChatRoomMember를 찾을 수 없음 - 채팅방: {}, 멤버: {}", chatRoomId, memberId);
-            }
+            chatMemberReadStateUpdater.advanceLastReadMessageId(chatRoomId, memberId, messageId);
         } catch (Exception e) {
             log.error("구독 시 lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
         }
-    }
-
-    public record MessageUnreadUpdate(
-            Long messageId,
-            int newUnreadCount
-    ) {
     }
 }

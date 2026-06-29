@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ReadStatusReader;
+import umc.cockple.demo.domain.chat.service.support.updater.ChatMemberReadStateUpdater;
+import umc.cockple.demo.domain.chat.service.support.updater.ReadStatusUpdater;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -17,8 +16,9 @@ import java.util.Optional;
 @Slf4j
 public class SentMessageReadStatusService {
 
-    private final MessageReadStatusRepository messageReadStatusRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ReadStatusReader readStatusReader;
+    private final ReadStatusUpdater readStatusUpdater;
+    private final ChatMemberReadStateUpdater chatMemberReadStateUpdater;
 
     public int markActiveSubscribersAsRead(Long chatRoomId, Long messageId, List<Long> activeSubscribers, Long senderId) {
         log.info("초기 읽음 처리 - 메시지: {}, 활성 구독자 수: {}, 발신자: {}",
@@ -29,35 +29,17 @@ public class SentMessageReadStatusService {
                 .toList();
 
         if (!readers.isEmpty()) {
-            int updatedCount = messageReadStatusRepository.markAsReadInMembers(messageId, readers);
+            int updatedCount = readStatusUpdater.markMessageAsReadForMembers(messageId, readers);
             log.info("초기 읽음 처리 완료 - 처리된 구독자: {}명", updatedCount);
 
-            updateLastReadMessageIds(chatRoomId, messageId, readers);
+            int lastReadUpdatedCount = chatMemberReadStateUpdater.advanceLastReadMessageIdForMembers(
+                    chatRoomId, readers, messageId);
+            log.debug("활성 구독자 lastReadMessageId 배치 업데이트 완료 - 처리된 멤버: {}명", lastReadUpdatedCount);
         }
 
-        int finalUnreadCount = messageReadStatusRepository.countUnreadByMessageId(messageId);
+        int finalUnreadCount = readStatusReader.countUnreadByMessageId(messageId);
         log.info("초기 처리 후 최종 안읽은 수: {}", finalUnreadCount);
 
         return finalUnreadCount;
-    }
-
-    private void updateLastReadMessageIds(Long chatRoomId, Long messageId, List<Long> memberIds) {
-        for (Long memberId : memberIds) {
-            try {
-                Optional<ChatRoomMember> chatRoomMemberOpt =
-                        chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId);
-
-                if (chatRoomMemberOpt.isPresent()) {
-                    ChatRoomMember chatRoomMember = chatRoomMemberOpt.get();
-
-                    if (chatRoomMember.getLastReadMessageId() == null ||
-                            messageId > chatRoomMember.getLastReadMessageId()) {
-                        chatRoomMember.updateLastReadMessageId(messageId);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("lastReadMessageId 업데이트 실패 - 멤버: {}, 메시지: {}", memberId, messageId, e);
-            }
-        }
     }
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.repository.redis.ChatRoomSubscriptionStore;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.UnreadCountUpdateBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
@@ -31,7 +32,7 @@ public class ChatRoomSubscriptionService {
         chatRoomSubscriptionStore.addSubscriber(chatRoomId, memberId);
         log.info("채팅방 구독 - 채팅방: {}, 사용자: {}", chatRoomId, memberId);
 
-        List<SubscribeReadStatusService.MessageUnreadUpdate> updates =
+        List<UnreadCountUpdate> updates =
                 subscribeReadStatusService.markUnreadMessagesAsReadOnSubscribe(chatRoomId, memberId);
 
         if (!updates.isEmpty()) {

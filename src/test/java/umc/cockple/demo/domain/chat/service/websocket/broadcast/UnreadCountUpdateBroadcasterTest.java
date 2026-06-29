@@ -9,10 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
-import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,8 +42,8 @@ class UnreadCountUpdateBroadcasterTest {
         // given
         Long chatRoomId = 1L;
         Long excludedMemberId = 10L;
-        SubscribeReadStatusService.MessageUnreadUpdate update =
-                new SubscribeReadStatusService.MessageUnreadUpdate(100L, 2);
+        UnreadCountUpdate update =
+                new UnreadCountUpdate(100L, 2);
         EncodedChatMessage encodedMessage = new EncodedChatMessage("unread-count-json");
 
         given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
@@ -71,8 +71,8 @@ class UnreadCountUpdateBroadcasterTest {
     @DisplayName("구독자가 없으면 메시지를 직렬화하지 않는다")
     void broadcast_doesNotSerializeWhenSubscribersEmpty() {
         // given
-        SubscribeReadStatusService.MessageUnreadUpdate update =
-                new SubscribeReadStatusService.MessageUnreadUpdate(100L, 2);
+        UnreadCountUpdate update =
+                new UnreadCountUpdate(100L, 2);
 
         // when
         broadcaster.broadcast(1L, List.of(update), List.of(), 10L);
@@ -86,8 +86,8 @@ class UnreadCountUpdateBroadcasterTest {
     @DisplayName("직렬화 실패 시 전송하지 않고 다음 업데이트로 넘어간다")
     void broadcast_doesNotSendWhenSerializationFails() {
         // given
-        SubscribeReadStatusService.MessageUnreadUpdate update =
-                new SubscribeReadStatusService.MessageUnreadUpdate(100L, 2);
+        UnreadCountUpdate update =
+                new UnreadCountUpdate(100L, 2);
         given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
                 .willReturn(Optional.empty());
 
