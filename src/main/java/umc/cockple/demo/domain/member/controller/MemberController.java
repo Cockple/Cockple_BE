@@ -98,7 +98,7 @@ public class MemberController {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        memberCommandService.memberDetailInfo(memberId, requestDTO);
+        memberProfileUpdateExecutor.registerMemberDetailInfo(memberId, requestDTO);
 
         return BaseResponse.success(CommonSuccessCode.OK);
     }

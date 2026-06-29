@@ -49,6 +49,9 @@ public class MemberCommandService {
         // 회원 찾기
         Member member = findByMemberId(memberId);
 
+        // 기존 키워드 삭제
+        memberKeywordRepository.deleteAllByMember(member);
+
         // 키워드 저장
         List<MemberKeyword> keywords = requestDTO.keywords().stream()
                 .map(keyword -> {
