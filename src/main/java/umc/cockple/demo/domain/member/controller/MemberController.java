@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.member.dto.*;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
+import umc.cockple.demo.domain.member.service.MemberProfileUpdateExecutor;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
@@ -37,6 +38,7 @@ import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
 public class MemberController {
 
     private final MemberCommandService memberCommandService;
+    private final MemberProfileUpdateExecutor memberProfileUpdateExecutor;
     private final MemberQueryService memberQueryService;
     private final KakaoOauthService kakaoOauthService;
 
@@ -96,7 +98,7 @@ public class MemberController {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        memberCommandService.memberDetailInfo(memberId, requestDTO);
+        memberProfileUpdateExecutor.registerMemberDetailInfo(memberId, requestDTO);
 
         return BaseResponse.success(CommonSuccessCode.OK);
     }
@@ -181,7 +183,7 @@ public class MemberController {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        memberCommandService.updateProfile(requestDTO, memberId);
+        memberProfileUpdateExecutor.updateProfile(requestDTO, memberId);
         return BaseResponse.success(CommonSuccessCode.OK);
     }
 

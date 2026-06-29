@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,7 +40,7 @@ public class MemberCommandService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private final KakaoOauthService kakaoOauthService;
-    private final FileService fileService;
+    private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
 
 
     // ==================== 회원 관련 ===================
@@ -48,6 +48,9 @@ public class MemberCommandService {
     public void memberDetailInfo(Long memberId, MemberDetailInfoRequestDTO requestDTO) {
         // 회원 찾기
         Member member = findByMemberId(memberId);
+
+        // 기존 키워드 삭제
+        memberKeywordRepository.deleteAllByMember(member);
 
         // 키워드 저장
         List<MemberKeyword> keywords = requestDTO.keywords().stream()
@@ -65,18 +68,14 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
+        // 회원 정보 수정 (프로필 사진 제외)
+        member.updateMemberFirst(requestDTO, keywords);
+
+        // 프로필 사진은 updateProfile 과 동일한 도메인 메서드로 처리
         if (StringUtils.hasText(requestDTO.imgKey())) {
-            ProfileImg profile = ProfileImg.builder()
-                    .member(member)
-                    .imgKey(requestDTO.imgKey())
-                    .build();
-
-            member.updateMemberFirst(requestDTO, keywords, profile);
-
-        } else {
-            member.updateMemberFirst(requestDTO, keywords);
+            member.changeProfileImage(requestDTO.imgKey())
+                    .ifPresent(oldKey -> objectStorageDeleteOutboxService.enqueueProfileImage(member.getId(), oldKey));
         }
-
     }
 
     public void withdrawMember(Long memberId) {
@@ -125,40 +124,13 @@ public class MemberCommandService {
 
         memberKeywordRepository.saveAll(keywords);
 
-        log.info("===== 프로필 이미지 key값 확인 : " + requestDto.imgKey());
+        // 회원 정보 수정 (프로필 사진 제외)
+        member.updateMember(requestDto, keywords);
 
-        // 이미지 -> 저장 후 url 받아오기
-        String imgKey = requestDto.imgKey();
-
-        // 받은 key가 null인지 확인
-        if (!StringUtils.hasText(imgKey)) {
-            member.updateMember(requestDto, keywords);
-        } else {
-
-            ProfileImg profile = member.getProfileImg();
-            // 기존 이미지 존재시 이미지 새로 업로드
-            if (profile != null) {
-
-                // 프로필 사진이 변경되었을 경우에만 이미지 url 변경 및 S3 사진 변경
-                if (!profile.getImgKey().equals(imgKey)) {
-                    fileService.delete(profile.getImgKey());
-                    profile.updateProfile(imgKey);
-                }
-
-                // 회원 정보 수정하기 (프로필 사진 제외)
-                member.updateMember(requestDto, keywords);
-
-            } else {
-                // 받아온 이미지로 profile객체 생성
-                ProfileImg img = ProfileImg.builder()
-                        .member(member)
-                        .imgKey(imgKey)
-                        .build();
-
-                // 회원 정보 수정하기 (프로필 사진까지)
-                member.updateMember(requestDto, keywords, img);
-
-            }
+        // 프로필 사진 신규 등록/교체는 도메인 메서드로 위임. 교체 시 정리 대상 key를 받아 outbox 에 등록
+        if (StringUtils.hasText(requestDto.imgKey())) {
+            member.changeProfileImage(requestDto.imgKey())
+                    .ifPresent(oldKey -> objectStorageDeleteOutboxService.enqueueProfileImage(memberId, oldKey));
         }
 
         chatRoomMemberRepository.findDirectChatCounterParts(member.getId())

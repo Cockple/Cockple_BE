@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.file.repository.ObjectStorageDeleteOutboxRepository;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO;
@@ -66,6 +67,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
     @Autowired MemberKeywordRepository memberKeywordRepository;
     @Autowired ChatRoomRepository chatRoomRepository;
     @Autowired ChatRoomMemberRepository chatRoomMemberRepository;
+    @Autowired ObjectStorageDeleteOutboxRepository objectStorageDeleteOutboxRepository;
 
     private Member member;
 
@@ -76,6 +78,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        objectStorageDeleteOutboxRepository.deleteAll(); // 프로필 이미지 교체 시 적재된 삭제 outbox 정리
         chatRoomRepository.deleteAll(); // cascade: ChatRoomMember 함께 삭제
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
