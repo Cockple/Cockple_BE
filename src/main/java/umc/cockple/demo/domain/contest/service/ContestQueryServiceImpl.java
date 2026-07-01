@@ -87,10 +87,13 @@ public class ContestQueryServiceImpl implements ContestQueryService {
         log.info("[메달 개수 조회 시작] - memberId: {}", memberId);
 
         MedalCountProjection counts = contestRepository.countMedalsByMemberId(memberId);
+        int gold = (int) counts.getGold();
+        int silver = (int) counts.getSilver();
+        int bronze = (int) counts.getBronze();
 
         log.info("[메달 조회 완료] - memberId: {}", memberId);
 
-        return contestConverter.toMedalSummaryResponseDTO(counts);
+        return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
     }
 
     // 이미지 ID 리스트 반환

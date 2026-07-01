@@ -6,7 +6,6 @@ import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.domain.ContestImg;
 import umc.cockple.demo.domain.contest.domain.ContestVideo;
 import umc.cockple.demo.domain.contest.dto.*;
-import umc.cockple.demo.domain.contest.repository.MedalCountProjection;
 
 import java.util.Comparator;
 import java.util.List;
@@ -109,10 +108,7 @@ public class ContestConverter {
     }
 
     // 대회 메달 개수 조회
-    public ContestMedalSummaryDTO.Response toMedalSummaryResponseDTO(MedalCountProjection counts) {
-        int gold = (int) counts.getGold();
-        int silver = (int) counts.getSilver();
-        int bronze = (int) counts.getBronze();
+    public ContestMedalSummaryDTO.Response toMedalSummaryResponseDTO(int gold, int silver, int bronze) {
         return ContestMedalSummaryDTO.Response.builder()
                 .myMedalTotal(gold + silver + bronze)
                 .goldCount(gold)

@@ -391,8 +391,11 @@ class ContestQueryServiceTest {
                         .build();
 
                 MedalCountProjection counts = mock(MedalCountProjection.class);
+                given(counts.getGold()).willReturn(2L);
+                given(counts.getSilver()).willReturn(1L);
+                given(counts.getBronze()).willReturn(1L);
                 given(contestRepository.countMedalsByMemberId(member.getId())).willReturn(counts);
-                given(contestConverter.toMedalSummaryResponseDTO(counts)).willReturn(expectedResponse);
+                given(contestConverter.toMedalSummaryResponseDTO(2, 1, 1)).willReturn(expectedResponse);
 
                 // when
                 ContestMedalSummaryDTO.Response response =
@@ -417,8 +420,11 @@ class ContestQueryServiceTest {
                         .build();
 
                 MedalCountProjection counts = mock(MedalCountProjection.class);
+                given(counts.getGold()).willReturn(0L);
+                given(counts.getSilver()).willReturn(0L);
+                given(counts.getBronze()).willReturn(0L);
                 given(contestRepository.countMedalsByMemberId(member.getId())).willReturn(counts);
-                given(contestConverter.toMedalSummaryResponseDTO(counts)).willReturn(expectedResponse);
+                given(contestConverter.toMedalSummaryResponseDTO(0, 0, 0)).willReturn(expectedResponse);
 
                 // when
                 ContestMedalSummaryDTO.Response response =
