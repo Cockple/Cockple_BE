@@ -13,9 +13,7 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     List<Contest> findAllByMember_Id(Long memberId);
 
     /**
-     * 회원의 메달을 종류별로 한 번의 조건부 집계 쿼리로 센다. (기존 GOLD/SILVER/BRONZE 3회 조회 → 1회)
-     * CASE에 ELSE가 없어 미매칭 행은 null이 되고 COUNT가 이를 무시하므로 종류별 개수만 집계된다.
-     * medal_type은 EnumType.STRING으로 저장되어 문자열 비교한다.
+     * 회원의 메달을 종류별로 한 번의 조건부 집계 쿼리 카운트
      */
     @Query(value = """
             SELECT
