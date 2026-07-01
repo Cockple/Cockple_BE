@@ -49,23 +49,10 @@ public class NotificationQueryService {
 
 
     public ExistNewNotificationResponseDTO checkUnreadNotification(Long memberId) {
-        Member member = findByMemberId(memberId);
-
-        List<Notification> notifications = member.getNotifications();
-
-        long count = notifications.stream()
-                .filter(notification -> notification.getIsRead().equals(false))
-                .count();
-
-        if (count > 0) {
-            return ExistNewNotificationResponseDTO.builder()
-                    .existNewNotification(true)
-                    .build();
-        } else {
-            return ExistNewNotificationResponseDTO.builder()
-                    .existNewNotification(false)
-                    .build();
-        }
+        boolean existNewNotification = notificationRepository.existsByMember_IdAndIsReadFalse(memberId);
+        return ExistNewNotificationResponseDTO.builder()
+                .existNewNotification(existNewNotification)
+                .build();
     }
 
 

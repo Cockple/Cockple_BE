@@ -212,8 +212,7 @@ class NotificationQueryServiceTest {
             @DisplayName("읽지 않은 알림이 있으면 existNewNotification이 true이다")
             void hasUnreadNotification_returnsTrue() {
                 // given
-                ReflectionTestUtils.setField(member, "notifications", List.of(notification));
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(notificationRepository.existsByMember_IdAndIsReadFalse(member.getId())).willReturn(true);
 
                 // when
                 ExistNewNotificationResponseDTO result = notificationQueryService.checkUnreadNotification(member.getId());
@@ -223,50 +222,16 @@ class NotificationQueryServiceTest {
             }
 
             @Test
-            @DisplayName("모든 알림이 읽힌 상태이면 existNewNotification이 false이다")
-            void allNotificationsRead_returnsFalse() {
+            @DisplayName("읽지 않은 알림이 없으면 existNewNotification이 false이다")
+            void noUnreadNotification_returnsFalse() {
                 // given
-                notification.read();
-                ReflectionTestUtils.setField(member, "notifications", List.of(notification));
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(notificationRepository.existsByMember_IdAndIsReadFalse(member.getId())).willReturn(false);
 
                 // when
                 ExistNewNotificationResponseDTO result = notificationQueryService.checkUnreadNotification(member.getId());
 
                 // then
                 assertThat(result.existNewNotification()).isFalse();
-            }
-
-            @Test
-            @DisplayName("알림이 없으면 existNewNotification이 false이다")
-            void noNotifications_returnsFalse() {
-                // given
-                ReflectionTestUtils.setField(member, "notifications", List.of());
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-
-                // when
-                ExistNewNotificationResponseDTO result = notificationQueryService.checkUnreadNotification(member.getId());
-
-                // then
-                assertThat(result.existNewNotification()).isFalse();
-            }
-        }
-
-        @Nested
-        @DisplayName("실패 케이스")
-        class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 회원이면 MemberException(MEMBER_NOT_FOUND)을 던진다")
-            void memberNotFound_throwsMemberException() {
-                // given
-                given(memberRepository.findById(999L)).willReturn(Optional.empty());
-
-                // when & then
-                assertThatThrownBy(() -> notificationQueryService.checkUnreadNotification(999L))
-                        .isInstanceOf(MemberException.class)
-                        .satisfies(e -> assertThat(((MemberException) e).getCode())
-                                .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
             }
         }
     }
