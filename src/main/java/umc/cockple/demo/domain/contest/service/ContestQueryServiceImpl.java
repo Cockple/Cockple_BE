@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.contest.dto.*;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
+import umc.cockple.demo.domain.contest.repository.MedalCountProjection;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.file.service.FileService;
 
@@ -85,13 +86,11 @@ public class ContestQueryServiceImpl implements ContestQueryService {
 
         log.info("[메달 개수 조회 시작] - memberId: {}", memberId);
 
-        int gold = contestRepository.countGoldMedalsByMemberId(memberId);
-        int silver = contestRepository.countSilverMedalsByMemberId(memberId);
-        int bronze = contestRepository.countBronzeMedalsByMemberId(memberId);
+        MedalCountProjection counts = contestRepository.countMedalsByMemberId(memberId);
 
         log.info("[메달 조회 완료] - memberId: {}", memberId);
 
-        return contestConverter.toMedalSummaryResponseDTO(gold, silver, bronze);
+        return contestConverter.toMedalSummaryResponseDTO(counts);
     }
 
     // 이미지 ID 리스트 반환
