@@ -2,6 +2,7 @@ package umc.cockple.demo.global.logging;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.Appender;
@@ -38,15 +39,17 @@ class LogbackSpringConfigurationTest {
         LoggerContext context = configure("prod");
 
         try {
-            assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER))).containsExactly("WEBSOCKET_FILE");
+            assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
-            assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER))).containsExactly("WEBSOCKET_FILE");
-            assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER))).containsExactly("WEBSOCKET_FILE");
+            assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
+            assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
-                    .containsExactlyInAnyOrder("CONSOLE", "APPLICATION_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE");
             assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
+            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
+            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
         } finally {
             context.stop();
         }
@@ -59,15 +62,17 @@ class LogbackSpringConfigurationTest {
 
         try {
             assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER)))
-                    .containsExactlyInAnyOrder("CONSOLE", "WEBSOCKET_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
             assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER)))
-                    .containsExactlyInAnyOrder("CONSOLE", "WEBSOCKET_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
-                    .containsExactlyInAnyOrder("CONSOLE", "APPLICATION_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE");
             assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
+            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
+            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
         } finally {
             context.stop();
         }
@@ -104,14 +109,57 @@ class LogbackSpringConfigurationTest {
     }
 
     private String appenderPattern(LoggerContext context, String appenderName) {
-        Appender<?> appender = context.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
-        if (appender == null) {
-            appender = context.getLogger(WEBSOCKET_LOGGER).getAppender(appenderName);
-        }
+        Appender<?> appender = findAppender(context, appenderName);
         assertThat(appender).isInstanceOf(OutputStreamAppender.class);
         OutputStreamAppender<?> outputStreamAppender = (OutputStreamAppender<?>) appender;
         assertThat(outputStreamAppender.getEncoder()).isInstanceOf(PatternLayoutEncoder.class);
         PatternLayoutEncoder encoder = (PatternLayoutEncoder) outputStreamAppender.getEncoder();
         return encoder.getPattern();
+    }
+
+    private void assertAsyncAppender(
+            LoggerContext context,
+            String asyncAppenderName,
+            String nestedAppenderName,
+            int queueSize
+    ) {
+        Appender<?> appender = findAppender(context, asyncAppenderName);
+        assertThat(appender).isInstanceOf(AsyncAppender.class);
+        AsyncAppender asyncAppender = (AsyncAppender) appender;
+        assertThat(asyncAppender.getQueueSize()).isEqualTo(queueSize);
+        assertThat(asyncAppender.getDiscardingThreshold()).isZero();
+        assertThat(asyncAppender.isIncludeCallerData()).isFalse();
+        assertThat(asyncAppender.getAppender(nestedAppenderName)).isNotNull();
+    }
+
+    private Appender<?> findAppender(LoggerContext context, String appenderName) {
+        List<Logger> loggers = List.of(
+                context.getLogger(Logger.ROOT_LOGGER_NAME),
+                context.getLogger(WEBSOCKET_LOGGER),
+                context.getLogger(WEBSOCKET_SERVICE_LOGGER),
+                context.getLogger(SPRING_WEBSOCKET_LOGGER)
+        );
+
+        for (Logger logger : loggers) {
+            Appender<?> directAppender = logger.getAppender(appenderName);
+            if (directAppender != null) {
+                return directAppender;
+            }
+        }
+
+        for (Logger logger : loggers) {
+            Iterator<Appender<ch.qos.logback.classic.spi.ILoggingEvent>> iterator = logger.iteratorForAppenders();
+            while (iterator.hasNext()) {
+                Appender<?> appender = iterator.next();
+                if (appender instanceof AsyncAppender asyncAppender) {
+                    Appender<?> nestedAppender = asyncAppender.getAppender(appenderName);
+                    if (nestedAppender != null) {
+                        return nestedAppender;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }

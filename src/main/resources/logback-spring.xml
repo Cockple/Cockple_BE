@@ -43,35 +43,49 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="ASYNC_APPLICATION_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="APPLICATION_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_WEBSOCKET_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="WEBSOCKET_FILE"/>
+    </appender>
+
     <springProfile name="local">
         <logger name="umc.cockple.demo.domain.chat.presentation.websocket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
         <logger name="umc.cockple.demo.domain.chat.service.websocket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
         <logger name="org.springframework.web.socket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
     </springProfile>
 
     <springProfile name="prod | staging">
         <logger name="umc.cockple.demo.domain.chat.presentation.websocket" level="INFO" additivity="false">
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
         <logger name="umc.cockple.demo.domain.chat.service.websocket" level="INFO" additivity="false">
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
         <logger name="org.springframework.web.socket" level="INFO" additivity="false">
-            <appender-ref ref="WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
         </logger>
     </springProfile>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_APPLICATION_FILE"/>
     </root>
 </configuration>
