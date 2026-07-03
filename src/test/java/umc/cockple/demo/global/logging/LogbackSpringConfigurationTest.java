@@ -89,6 +89,46 @@ class LogbackSpringConfigurationTest {
         }
     }
 
+    @Test
+    @DisplayName("test 프로필에서는 XML 테스트 리포트 보호를 위해 콘솔 색상을 사용하지 않는다")
+    void testProfileUsesPlainConsolePattern() throws Exception {
+        LoggerContext context = configure("test");
+
+        try {
+            assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
+            assertThat(appenderPattern(context, "CONSOLE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
+        } finally {
+            context.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("명시 런타임 프로필이 아니면 기본 콘솔 패턴은 색상을 사용하지 않는다")
+    void defaultProfileUsesPlainConsolePattern() throws Exception {
+        LoggerContext context = configure();
+
+        try {
+            assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
+            assertThat(appenderPattern(context, "CONSOLE")).doesNotContain("%clr", "%highlight");
+        } finally {
+            context.stop();
+        }
+    }
+
+    private LoggerContext configure() throws Exception {
+        LoggerContext context = new LoggerContext();
+        context.putProperty("LOG_PATH", logPath.toString());
+
+        MockEnvironment environment = new MockEnvironment();
+        LoggingInitializationContext initializationContext = new LoggingInitializationContext(environment);
+        configureContext(context, initializationContext);
+        return context;
+    }
+
     private LoggerContext configure(String profile) throws Exception {
         LoggerContext context = new LoggerContext();
         context.putProperty("LOG_PATH", logPath.toString());
@@ -96,7 +136,14 @@ class LogbackSpringConfigurationTest {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles(profile);
         LoggingInitializationContext initializationContext = new LoggingInitializationContext(environment);
+        configureContext(context, initializationContext);
+        return context;
+    }
 
+    private void configureContext(
+            LoggerContext context,
+            LoggingInitializationContext initializationContext
+    ) throws Exception {
         Constructor<?> constructor = Class.forName("org.springframework.boot.logging.logback.SpringBootJoranConfigurator")
                 .getDeclaredConstructor(LoggingInitializationContext.class);
         constructor.setAccessible(true);
@@ -106,7 +153,6 @@ class LogbackSpringConfigurationTest {
 
         StatusUtil statusUtil = new StatusUtil(context);
         assertThat(statusUtil.getHighestLevel(0)).isLessThan(Status.ERROR);
-        return context;
     }
 
     private List<String> appenderNames(Logger logger) {
