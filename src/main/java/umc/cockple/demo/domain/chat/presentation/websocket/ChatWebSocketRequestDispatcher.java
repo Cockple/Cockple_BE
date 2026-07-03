@@ -18,7 +18,7 @@ public class ChatWebSocketRequestDispatcher {
 
     public void dispatch(WebSocketSession session, String payload) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
-            log.info("메시지 수신 - 세션 ID: {}, payloadSize: {}", session.getId(), payload == null ? 0 : payload.length());
+            log.debug("메시지 수신 - 세션 ID: {}, payloadSize: {}", session.getId(), payload == null ? 0 : payload.length());
 
             try {
                 WebSocketMessageDTO.Request request = objectMapper.readValue(
@@ -31,7 +31,7 @@ public class ChatWebSocketRequestDispatcher {
                     return;
                 }
 
-                log.info("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", request.type(), session.getId(), memberId);
+                log.debug("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", request.type(), session.getId(), memberId);
                 commandHandler.handle(session, request, memberId);
 
             } catch (Exception e) {

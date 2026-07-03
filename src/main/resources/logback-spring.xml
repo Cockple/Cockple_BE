@@ -75,6 +75,7 @@
     <appender name="ASYNC_APPLICATION_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <discardingThreshold>0</discardingThreshold>
         <queueSize>1024</queueSize>
+        <neverBlock>true</neverBlock>
         <includeCallerData>false</includeCallerData>
         <appender-ref ref="APPLICATION_FILE"/>
     </appender>
@@ -82,6 +83,7 @@
     <appender name="ASYNC_WEBSOCKET_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <discardingThreshold>0</discardingThreshold>
         <queueSize>2048</queueSize>
+        <neverBlock>true</neverBlock>
         <includeCallerData>false</includeCallerData>
         <appender-ref ref="WEBSOCKET_FILE"/>
     </appender>

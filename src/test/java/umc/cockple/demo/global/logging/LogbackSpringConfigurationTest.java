@@ -54,9 +54,9 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
-            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
-            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
-            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
+            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024, true);
+            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048, true);
+            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512, false);
             assertThresholdFilter(context, "ASYNC_ERROR_FILE");
             assertThresholdFilter(context, "ERROR_FILE");
         } finally {
@@ -81,9 +81,9 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
-            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
-            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
-            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
+            assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024, true);
+            assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048, true);
+            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512, false);
             assertThresholdFilter(context, "ASYNC_ERROR_FILE");
             assertThresholdFilter(context, "ERROR_FILE");
         } finally {
@@ -180,13 +180,15 @@ class LogbackSpringConfigurationTest {
             LoggerContext context,
             String asyncAppenderName,
             String nestedAppenderName,
-            int queueSize
+            int queueSize,
+            boolean neverBlock
     ) {
         Appender<?> appender = findAppender(context, asyncAppenderName);
         assertThat(appender).isInstanceOf(AsyncAppender.class);
         AsyncAppender asyncAppender = (AsyncAppender) appender;
         assertThat(asyncAppender.getQueueSize()).isEqualTo(queueSize);
         assertThat(asyncAppender.getDiscardingThreshold()).isZero();
+        assertThat(asyncAppender.isNeverBlock()).isEqualTo(neverBlock);
         assertThat(asyncAppender.isIncludeCallerData()).isFalse();
         assertThat(asyncAppender.getAppender(nestedAppenderName)).isNotNull();
     }
