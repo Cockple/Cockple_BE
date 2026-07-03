@@ -54,6 +54,10 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
+            assertHttpMdcPattern(appenderPattern(context, "CONSOLE"));
+            assertHttpMdcPattern(appenderPattern(context, "APPLICATION_FILE"));
+            assertHttpMdcPattern(appenderPattern(context, "WEBSOCKET_FILE"));
+            assertHttpMdcPattern(appenderPattern(context, "ERROR_FILE"));
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024, true);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048, true);
             assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512, false);
@@ -81,6 +85,10 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
+            assertHttpMdcPattern(appenderPattern(context, "CONSOLE"));
+            assertHttpMdcPattern(appenderPattern(context, "APPLICATION_FILE"));
+            assertHttpMdcPattern(appenderPattern(context, "WEBSOCKET_FILE"));
+            assertHttpMdcPattern(appenderPattern(context, "ERROR_FILE"));
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024, true);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048, true);
             assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512, false);
@@ -102,6 +110,9 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderPattern(context, "CONSOLE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
+            assertHttpMdcPattern(appenderPattern(context, "CONSOLE"));
+            assertHttpMdcPattern(appenderPattern(context, "APPLICATION_FILE"));
+            assertHttpMdcPattern(appenderPattern(context, "ERROR_FILE"));
         } finally {
             context.stop();
         }
@@ -116,6 +127,7 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
                     .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderPattern(context, "CONSOLE")).doesNotContain("%clr", "%highlight");
+            assertHttpMdcPattern(appenderPattern(context, "CONSOLE"));
         } finally {
             context.stop();
         }
@@ -174,6 +186,10 @@ class LogbackSpringConfigurationTest {
         assertThat(outputStreamAppender.getEncoder()).isInstanceOf(PatternLayoutEncoder.class);
         PatternLayoutEncoder encoder = (PatternLayoutEncoder) outputStreamAppender.getEncoder();
         return encoder.getPattern();
+    }
+
+    private void assertHttpMdcPattern(String pattern) {
+        assertThat(pattern).contains("%X{method:-}", "%X{uri:-}", "%X{clientIp:-}");
     }
 
     private void assertAsyncAppender(

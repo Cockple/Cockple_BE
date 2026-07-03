@@ -6,8 +6,8 @@
     <property name="APP_LOG_FILE" value="${LOG_PATH}/application.log"/>
     <property name="WEBSOCKET_LOG_FILE" value="${LOG_PATH}/websocket.log"/>
     <property name="ERROR_LOG_FILE" value="${LOG_PATH}/error.log"/>
-    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}] %logger{36} - %msg%n"/>
-    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %highlight(%-5level) %clr([requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}]){cyan} %clr(%logger{36}){blue} %clr(-){faint} %msg%n"/>
+    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [requestId=%X{requestId:-} memberId=%X{memberId:-} method=%X{method:-} uri=%X{uri:-} clientIp=%X{clientIp:-} wsSessionId=%X{wsSessionId:-}] %logger{36} - %msg%n"/>
+    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %highlight(%-5level) %clr([requestId=%X{requestId:-} memberId=%X{memberId:-} method=%X{method:-} uri=%X{uri:-} clientIp=%X{clientIp:-} wsSessionId=%X{wsSessionId:-}]){cyan} %clr(%logger{36}){blue} %clr(-){faint} %msg%n"/>
 
     <springProfile name="local | prod | staging">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
