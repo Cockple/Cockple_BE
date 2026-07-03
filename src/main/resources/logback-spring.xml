@@ -5,11 +5,12 @@
     <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
     <property name="APP_LOG_FILE" value="${LOG_PATH}/application.log"/>
     <property name="WEBSOCKET_LOG_FILE" value="${LOG_PATH}/websocket.log"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}] %logger{36} - %msg%n"/>
+    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}] %logger{36} - %msg%n"/>
+    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %highlight(%-5level) %clr([requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}]){cyan} %clr(%logger{36}){blue} %clr(-){faint} %msg%n"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
@@ -17,7 +18,7 @@
     <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${APP_LOG_FILE}</file>
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -31,7 +32,7 @@
     <appender name="WEBSOCKET_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${WEBSOCKET_LOG_FILE}</file>
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">

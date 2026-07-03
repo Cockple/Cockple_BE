@@ -2,8 +2,10 @@ package umc.cockple.demo.global.logging;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.OutputStreamAppender;
 import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusUtil;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +44,9 @@ class LogbackSpringConfigurationTest {
             assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER))).containsExactly("WEBSOCKET_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
                     .containsExactlyInAnyOrder("CONSOLE", "APPLICATION_FILE");
+            assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
+            assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
         } finally {
             context.stop();
         }
@@ -60,6 +65,9 @@ class LogbackSpringConfigurationTest {
                     .containsExactlyInAnyOrder("CONSOLE", "WEBSOCKET_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
                     .containsExactlyInAnyOrder("CONSOLE", "APPLICATION_FILE");
+            assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
+            assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
         } finally {
             context.stop();
         }
@@ -93,5 +101,17 @@ class LogbackSpringConfigurationTest {
             names.add(appender.getName());
         }
         return names;
+    }
+
+    private String appenderPattern(LoggerContext context, String appenderName) {
+        Appender<?> appender = context.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
+        if (appender == null) {
+            appender = context.getLogger(WEBSOCKET_LOGGER).getAppender(appenderName);
+        }
+        assertThat(appender).isInstanceOf(OutputStreamAppender.class);
+        OutputStreamAppender<?> outputStreamAppender = (OutputStreamAppender<?>) appender;
+        assertThat(outputStreamAppender.getEncoder()).isInstanceOf(PatternLayoutEncoder.class);
+        PatternLayoutEncoder encoder = (PatternLayoutEncoder) outputStreamAppender.getEncoder();
+        return encoder.getPattern();
     }
 }
