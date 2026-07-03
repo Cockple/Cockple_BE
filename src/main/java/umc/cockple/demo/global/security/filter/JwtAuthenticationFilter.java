@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +27,8 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    public static final String MEMBER_ID = "memberId";
+
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
     private final RestAuthenticationEntryPoint restEntryPoint;
@@ -33,16 +36,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        String token = resolveToken(request);
-
-        // token이 null -> 로그 찍고 그대로 진행
-        if (token == null) {
-            log.trace("Authorization 헤더에 토큰 없음");
-            filterChain.doFilter(request, response);
-            return;
-        }
+        MDC.remove(MEMBER_ID);
 
         try {
+            String token = resolveToken(request);
+
+            // token이 null -> 로그 찍고 그대로 진행
+            if (token == null) {
+                log.trace("Authorization 헤더에 토큰 없음");
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (!jwtTokenProvider.validateToken(token)) {
                 throw new MemberException(MemberErrorCode.INVALID_TOKEN);
@@ -50,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
             Long memberId = jwtTokenProvider.getUserId(token);
+            MDC.put(MEMBER_ID, String.valueOf(memberId));
             Member member = memberRepository.findById(memberId)
                     .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
@@ -71,6 +76,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (RuntimeException e) { // 혹시 남아있는 경우에도 401로 변환
             SecurityContextHolder.clearContext();
             restEntryPoint.commence(request, response, new BadCredentialsException(e.getMessage() == null ? "UNAUTHORIZED" : e.getMessage()));
+        } finally {
+            MDC.remove(MEMBER_ID);
         }
 
     }
