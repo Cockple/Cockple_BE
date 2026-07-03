@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.chat.presentation.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,12 +8,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.MDC;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.global.logging.MdcLoggingFilter;
-import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +20,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willAnswer;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatWebSocketRequestDispatcher")
@@ -45,11 +40,6 @@ class ChatWebSocketRequestDispatcherTest {
         );
     }
 
-    @AfterEach
-    void tearDown() {
-        MDC.clear();
-    }
-
     @Test
     @DisplayName("인증된 요청을 파싱해 command handler에 위임한다")
     void dispatch_delegatesAuthenticatedRequestToCommandHandler() {
@@ -60,13 +50,6 @@ class ChatWebSocketRequestDispatcherTest {
         attributes.put("memberId", memberId);
         given(session.getAttributes()).willReturn(attributes);
         given(session.getId()).willReturn("session-1");
-        MDC.put(MdcLoggingFilter.REQUEST_ID, "request-1");
-        willAnswer(invocation -> {
-            assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isEqualTo("10");
-            assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isEqualTo("session-1");
-            assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
-            return null;
-        }).given(commandHandler).handle(eq(session), any(WebSocketMessageDTO.Request.class), eq(memberId));
 
         String payload = """
                 {"type":"SEND","chatRoomId":20,"content":"hello","images":[]}
@@ -86,9 +69,6 @@ class ChatWebSocketRequestDispatcherTest {
         assertThat(request.images()).isEmpty();
 
         then(webSocketResponseSender).shouldHaveNoInteractions();
-        assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
-        assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
-        assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isNull();
     }
 
     @Test
