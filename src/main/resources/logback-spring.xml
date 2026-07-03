@@ -5,6 +5,7 @@
     <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
     <property name="APP_LOG_FILE" value="${LOG_PATH}/application.log"/>
     <property name="WEBSOCKET_LOG_FILE" value="${LOG_PATH}/websocket.log"/>
+    <property name="ERROR_LOG_FILE" value="${LOG_PATH}/error.log"/>
     <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}] %logger{36} - %msg%n"/>
     <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %highlight(%-5level) %clr([requestId=%X{requestId:-} memberId=%X{memberId:-} wsSessionId=%X{wsSessionId:-}]){cyan} %clr(%logger{36}){blue} %clr(-){faint} %msg%n"/>
 
@@ -43,6 +44,23 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${ERROR_LOG_FILE}</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
     <appender name="ASYNC_APPLICATION_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <discardingThreshold>0</discardingThreshold>
         <queueSize>1024</queueSize>
@@ -57,35 +75,49 @@
         <appender-ref ref="WEBSOCKET_FILE"/>
     </appender>
 
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
     <springProfile name="local">
         <logger name="umc.cockple.demo.domain.chat.presentation.websocket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
         <logger name="umc.cockple.demo.domain.chat.service.websocket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
         <logger name="org.springframework.web.socket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
     </springProfile>
 
     <springProfile name="prod | staging">
         <logger name="umc.cockple.demo.domain.chat.presentation.websocket" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
         <logger name="umc.cockple.demo.domain.chat.service.websocket" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
         <logger name="org.springframework.web.socket" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
     </springProfile>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC_APPLICATION_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
     </root>
 </configuration>

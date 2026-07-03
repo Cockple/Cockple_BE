@@ -4,9 +4,11 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.filter.ThresholdFilter;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.OutputStreamAppender;
+import ch.qos.logback.core.spi.FilterAttachable;
 import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusUtil;
 import org.junit.jupiter.api.DisplayName;
@@ -39,17 +41,23 @@ class LogbackSpringConfigurationTest {
         LoggerContext context = configure("prod");
 
         try {
-            assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
+            assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER)))
+                    .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
-            assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
-            assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER))).containsExactly("ASYNC_WEBSOCKET_FILE");
+            assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER)))
+                    .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
+            assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER)))
+                    .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
-                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
+            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
+            assertErrorThresholdFilter(context);
         } finally {
             context.stop();
         }
@@ -62,17 +70,20 @@ class LogbackSpringConfigurationTest {
 
         try {
             assertThat(appenderNames(context.getLogger(WEBSOCKET_LOGGER)))
-                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
             assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER)))
-                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
-                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE");
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderPattern(context, "CONSOLE")).contains("%clr", "%highlight");
             assertThat(appenderPattern(context, "APPLICATION_FILE")).doesNotContain("%clr", "%highlight");
             assertThat(appenderPattern(context, "WEBSOCKET_FILE")).doesNotContain("%clr", "%highlight");
+            assertThat(appenderPattern(context, "ERROR_FILE")).doesNotContain("%clr", "%highlight");
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
+            assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
+            assertErrorThresholdFilter(context);
         } finally {
             context.stop();
         }
@@ -130,6 +141,17 @@ class LogbackSpringConfigurationTest {
         assertThat(asyncAppender.getDiscardingThreshold()).isZero();
         assertThat(asyncAppender.isIncludeCallerData()).isFalse();
         assertThat(asyncAppender.getAppender(nestedAppenderName)).isNotNull();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertErrorThresholdFilter(LoggerContext context) {
+        Appender<?> errorAppender = findAppender(context, "ERROR_FILE");
+        assertThat(errorAppender).isInstanceOf(FilterAttachable.class);
+        FilterAttachable<ch.qos.logback.classic.spi.ILoggingEvent> filterAttachable =
+                (FilterAttachable<ch.qos.logback.classic.spi.ILoggingEvent>) errorAppender;
+        assertThat(filterAttachable.getCopyOfAttachedFiltersList())
+                .hasSize(1)
+                .allMatch(ThresholdFilter.class::isInstance);
     }
 
     private Appender<?> findAppender(LoggerContext context, String appenderName) {
