@@ -37,10 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         MDC.remove(MEMBER_ID);
-
         try {
             String token = resolveToken(request);
-
             // token이 null -> 로그 찍고 그대로 진행
             if (token == null) {
                 log.trace("Authorization 헤더에 토큰 없음");
@@ -48,33 +46,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            if (!jwtTokenProvider.validateToken(token)) {
-                throw new MemberException(MemberErrorCode.INVALID_TOKEN);
+            try {
+                if (!jwtTokenProvider.validateToken(token)) {
+                    throw new MemberException(MemberErrorCode.INVALID_TOKEN);
+                }
+
+                Long memberId = jwtTokenProvider.getUserId(token);
+                MDC.put(MEMBER_ID, String.valueOf(memberId));
+                Member member = memberRepository.findById(memberId)
+                        .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+                // 탈퇴 회원 검증
+                if (member.getIsActive() == MemberStatus.INACTIVE) {
+                    throw new MemberException(MemberErrorCode.ALREADY_WITHDRAW);
+                }
+
+                Authentication auth = jwtTokenProvider.getAuthentication(token);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+                log.debug("인증 정보 SecurityContext에 저장 완료: {}", auth.getName());
+
+                filterChain.doFilter(request, response);
+
+            } catch (MemberException e) {
+                SecurityContextHolder.clearContext();
+                restEntryPoint.commence(request, response, new BadCredentialsException(e.getMessage() == null ? "UNAUTHORIZED" : e.getMessage()));
+
+            } catch (RuntimeException e) { // 혹시 남아있는 경우에도 401로 변환
+                SecurityContextHolder.clearContext();
+                restEntryPoint.commence(request, response, new BadCredentialsException(e.getMessage() == null ? "UNAUTHORIZED" : e.getMessage()));
             }
-
-            Long memberId = jwtTokenProvider.getUserId(token);
-            MDC.put(MEMBER_ID, String.valueOf(memberId));
-            Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-            // 탈퇴 회원 검증
-            if (member.getIsActive() == MemberStatus.INACTIVE) {
-                throw new MemberException(MemberErrorCode.ALREADY_WITHDRAW);
-            }
-
-            Authentication auth = jwtTokenProvider.getAuthentication(token);
-            SecurityContextHolder.getContext().setAuthentication(auth);
-            log.debug("인증 정보 SecurityContext에 저장 완료: {}", auth.getName());
-
-            filterChain.doFilter(request, response);
-
-        } catch (MemberException e) {
-            SecurityContextHolder.clearContext();
-            restEntryPoint.commence(request, response, new BadCredentialsException(e.getMessage() == null ? "UNAUTHORIZED" : e.getMessage()));
-
-        } catch (RuntimeException e) { // 혹시 남아있는 경우에도 401로 변환
-            SecurityContextHolder.clearContext();
-            restEntryPoint.commence(request, response, new BadCredentialsException(e.getMessage() == null ? "UNAUTHORIZED" : e.getMessage()));
         } finally {
             MDC.remove(MEMBER_ID);
         }
