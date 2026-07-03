@@ -52,7 +52,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new MemberException(MemberErrorCode.INVALID_TOKEN);
             }
 
-
             Long memberId = jwtTokenProvider.getUserId(token);
             MDC.put(MEMBER_ID, String.valueOf(memberId));
             Member member = memberRepository.findById(memberId)
@@ -82,8 +81,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     }
 
-
-
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
@@ -92,5 +89,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return null;
     }
-
 }
