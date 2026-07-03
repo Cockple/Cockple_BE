@@ -12,7 +12,7 @@ import java.util.List;
 
 public class MemberConverter {
 
-    public static GetProfileResponseDTO memberToGetProfileResponseDTO(Member member, int goldMedalCnt,
+    public static GetProfileResponseDTO memberToGetProfileResponseDTO(Member member, int partyCnt, int goldMedalCnt,
                                                                       int silverMedalCnt, int bronzeMedalCnt, String imgUrl) {
         return GetProfileResponseDTO.builder()
                 .memberName(member.getMemberName())
@@ -20,7 +20,7 @@ public class MemberConverter {
                 .gender(member.getGender())
                 .level(member.getLevel())
                 .profileImgUrl(imgUrl)
-                .myPartyCnt(member.getMemberParties().size())
+                .myPartyCnt(partyCnt)
                 .myGoldMedalCnt(goldMedalCnt)
                 .mySilverMedalCnt(silverMedalCnt)
                 .myBronzeMedalCnt(bronzeMedalCnt)
