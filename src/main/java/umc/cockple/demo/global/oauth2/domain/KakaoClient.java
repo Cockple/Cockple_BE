@@ -52,8 +52,7 @@ public class KakaoClient {
             formData.with("client_secret", clientSecret);
         }
 
-        log.info("Redirect URI used: {}", redirectUri);
-        log.info("Auth Code: {}", code);
+        log.debug("Redirect URI used for Kakao OAuth token request: {}", redirectUri);
         JsonNode response = webClient.post()
                 .uri(tokenUri)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
