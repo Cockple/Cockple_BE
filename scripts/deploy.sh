@@ -30,6 +30,8 @@ EOF
 
 echo "${FIREBASE_SERVICE_ACCOUNT_KEY}" > /home/ubuntu/cockple/firebase-service-account.json
 
+mkdir -p /home/ubuntu/cockple/logs/prod /home/ubuntu/cockple/logs/staging
+
 echo "=== 배포 전 상태 ==="
 sudo docker ps
 
