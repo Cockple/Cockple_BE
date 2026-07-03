@@ -57,7 +57,8 @@ class LogbackSpringConfigurationTest {
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
             assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
-            assertErrorThresholdFilter(context);
+            assertThresholdFilter(context, "ASYNC_ERROR_FILE");
+            assertThresholdFilter(context, "ERROR_FILE");
         } finally {
             context.stop();
         }
@@ -83,7 +84,8 @@ class LogbackSpringConfigurationTest {
             assertAsyncAppender(context, "ASYNC_APPLICATION_FILE", "APPLICATION_FILE", 1024);
             assertAsyncAppender(context, "ASYNC_WEBSOCKET_FILE", "WEBSOCKET_FILE", 2048);
             assertAsyncAppender(context, "ASYNC_ERROR_FILE", "ERROR_FILE", 512);
-            assertErrorThresholdFilter(context);
+            assertThresholdFilter(context, "ASYNC_ERROR_FILE");
+            assertThresholdFilter(context, "ERROR_FILE");
         } finally {
             context.stop();
         }
@@ -190,11 +192,11 @@ class LogbackSpringConfigurationTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void assertErrorThresholdFilter(LoggerContext context) {
-        Appender<?> errorAppender = findAppender(context, "ERROR_FILE");
-        assertThat(errorAppender).isInstanceOf(FilterAttachable.class);
+    private void assertThresholdFilter(LoggerContext context, String appenderName) {
+        Appender<?> appender = findAppender(context, appenderName);
+        assertThat(appender).isInstanceOf(FilterAttachable.class);
         FilterAttachable<ch.qos.logback.classic.spi.ILoggingEvent> filterAttachable =
-                (FilterAttachable<ch.qos.logback.classic.spi.ILoggingEvent>) errorAppender;
+                (FilterAttachable<ch.qos.logback.classic.spi.ILoggingEvent>) appender;
         assertThat(filterAttachable.getCopyOfAttachedFiltersList())
                 .hasSize(1)
                 .allMatch(ThresholdFilter.class::isInstance);
