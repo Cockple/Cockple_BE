@@ -146,8 +146,13 @@ public class KakaoOauthService {
             throw new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        // 액세스 토큰 재발급 (현재 tokenVersion 주입)
+        // 토큰 버전 검증 - 강제 무효화(탈퇴/탈취 대응 등)된 리프레시 토큰 차단
         long tokenVersion = tokenVersionRepository.getVersion(member.getId());
+        if (jwtTokenProvider.getTokenVersion(refreshToken) != tokenVersion) {
+            throw new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // 액세스 토큰 재발급 (현재 tokenVersion 주입)
         String newAccessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getNickname(), tokenVersion);
 
         // 새 리프레시 토큰 발급 및 Redis 저장

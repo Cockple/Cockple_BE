@@ -10,10 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.jwt.properties.JwtProperties;
 import umc.cockple.demo.global.security.domain.CustomUserDetails;
 
@@ -27,7 +25,6 @@ public class JwtTokenProvider {
 
     private Key key;
     private final JwtProperties jwtProperties;
-    private final MemberRepository memberRepository;
 
     @PostConstruct
     public void init() {
@@ -130,11 +127,11 @@ public class JwtTokenProvider {
     }
 
     public Authentication getAuthentication(String token) {
-        Long memberId = getUserId(token);
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Claims claims = parseClaims(token);
+        Long memberId = Long.valueOf(claims.getSubject());
+        String nickname = claims.get("nickname", String.class);
 
-        UserDetails userDetails = new CustomUserDetails(member.getId(), member.getNickname());
+        UserDetails userDetails = new CustomUserDetails(memberId, nickname);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 }

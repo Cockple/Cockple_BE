@@ -11,11 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.global.auth.TokenVersionRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 
@@ -27,7 +25,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final MemberRepository memberRepository;
+    private final TokenVersionRepository tokenVersionRepository;
     private final RestAuthenticationEntryPoint restEntryPoint;
 
     @Override
@@ -48,14 +46,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new MemberException(MemberErrorCode.INVALID_TOKEN);
             }
 
-
             Long memberId = jwtTokenProvider.getUserId(token);
-            Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-            // 탈퇴 회원 검증
-            if (member.getIsActive() == MemberStatus.INACTIVE) {
-                throw new MemberException(MemberErrorCode.ALREADY_WITHDRAW);
+            long currentVersion = tokenVersionRepository.getVersion(memberId);
+            if (jwtTokenProvider.getTokenVersion(token) != currentVersion) {
+                throw new MemberException(MemberErrorCode.INVALID_TOKEN);
             }
 
             Authentication auth = jwtTokenProvider.getAuthentication(token);
