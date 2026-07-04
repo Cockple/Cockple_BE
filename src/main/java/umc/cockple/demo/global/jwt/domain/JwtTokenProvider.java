@@ -35,19 +35,19 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, jwtProperties.getAccessTokenValidity());
+    public String createAccessToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, jwtProperties.getAccessTokenValidity());
     }
 
-    public String createRefreshToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, jwtProperties.getRefreshTokenValidity());
+    public String createRefreshToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, jwtProperties.getRefreshTokenValidity());
     }
 
-    public String createDevToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, 1209600000L * 2);
+    public String createDevToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, 1209600000L * 2);
     }
 
-    private String createToken(Long memberId, String nickname, long validity) {
+    private String createToken(Long memberId, String nickname, long tokenVersion, long validity) {
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberId));
 
         if (nickname == null) {
@@ -55,6 +55,7 @@ public class JwtTokenProvider {
         }
 
         claims.put("nickname", nickname);
+        claims.put("ver", tokenVersion);
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + validity);
@@ -108,13 +109,24 @@ public class JwtTokenProvider {
 
 
     public Long getUserId(String token) {
-        Claims claims = Jwts.parserBuilder()
+        return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public String getNickname(String token) {
+        return parseClaims(token).get("nickname", String.class);
+    }
+
+    public long getTokenVersion(String token) {
+        Object ver = parseClaims(token).get("ver");
+        return ver == null ? 0L : ((Number) ver).longValue();
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return Long.valueOf(claims.getSubject());
     }
 
     public Authentication getAuthentication(String token) {
