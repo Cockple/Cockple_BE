@@ -1,6 +1,7 @@
 package umc.cockple.demo.global.oauth2.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -22,6 +23,7 @@ import static umc.cockple.demo.domain.member.dto.kakao.KakaoLoginDTO.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class KakaoOauthService {
 
     private final KakaoClient kakaoClient;
@@ -134,9 +136,18 @@ public class KakaoOauthService {
     }
 
     public TokenRefreshResponse validateMember(String refreshToken) {
-        // Redis에서 memberId 조회 및 삭제 (GETDEL - 원자적 처리로 동시 요청 시 중복 발급 방지)
-        Long memberId = refreshTokenRepository.findAndDeleteByToken(refreshToken)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN));
+        Optional<Long> memberIdOpt = refreshTokenRepository.findAndDeleteByToken(refreshToken);
+
+        // 활성 저장소에 없는 경우 - 재사용(탈취) 여부를 판별해 대응한 뒤 거부
+        if (memberIdOpt.isEmpty()) {
+            detectAndHandleReuse(refreshToken);
+            throw new MemberException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Long memberId = memberIdOpt.get();
+
+        // 정상 회전 - grace window 동안 소비 이력 기록 (동시 재발급 경쟁/재시도 오탐 방지)
+        refreshTokenRepository.markConsumed(refreshToken, memberId);
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
@@ -160,5 +171,23 @@ public class KakaoOauthService {
         refreshTokenRepository.save(newRefreshToken, member.getId());
 
         return new TokenRefreshResponse(newAccessToken, newRefreshToken);
+    }
+
+    /**
+     * 활성 저장소에 없는 리프레시 토큰이 "재사용(탈취)"인지 판별하고, 맞다면 해당 회원의 모든 토큰을 무효화
+     * 재사용 여부를 공격자에게 노출하지 않기 위해 호출부에서는 동일한 예외로 응답
+     */
+    private void detectAndHandleReuse(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            return;
+        }
+        // grace window 이내 정상 소비 이력 존재 → 동시 재발급 경쟁/재시도로 판단, 무효화 x
+        if (refreshTokenRepository.isRecentlyConsumed(refreshToken)) {
+            return;
+        }
+        // 재사용(탈취) 확정
+        Long memberId = jwtTokenProvider.getUserId(refreshToken);
+        long newVersion = tokenVersionRepository.increment(memberId);
+        log.warn("리프레시 토큰 재사용 감지 - 회원 {} 의 모든 토큰을 무효화합니다. (tokenVersion={})", memberId, newVersion);
     }
 }
