@@ -85,6 +85,9 @@ jwt:
   access-token-validity: 900000
   refresh-token-validity: 1209600000
 
+fcm:
+  fake-latency-ms: 0
+
 logging:
   level:
     org.hibernate.SQL: WARN
