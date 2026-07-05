@@ -8,6 +8,7 @@ import com.google.firebase.messaging.WebpushConfig;
 import com.google.firebase.messaging.WebpushFcmOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -24,6 +25,13 @@ public class FcmService {
     private final MemberRepository memberRepository;
     private final FirebaseMessaging firebaseMessaging;
 
+    /**
+     * 부하테스트용 FCM 인위적 지연(ms). 스레드풀 벌크헤드 효과 측정 전용.
+     * 기본 0 → 평상시/운영에서는 완전히 비활성(동작 변화 없음). staging에서 env(FCM_FAKE_LATENCY_MS)로만 켠다.
+     */
+    @Value("${fcm.fake-latency-ms:0}")
+    private long fakeLatencyMs;
+
     @Transactional
     public void registerFcmToken(Long memberId, String fcmToken) {
         Member member = memberRepository.findById(memberId)
@@ -33,6 +41,10 @@ public class FcmService {
     }
 
     public void sendNotification(Member member, String title, String content) {
+        if (applyFakeLatencyAndSkip(member.getId())) {
+            return;
+        }
+
         String fcmToken = member.getFcmToken();
         if (fcmToken == null || fcmToken.isBlank()) {
             log.info("FCM 토큰 없음 - memberId: {}, 알림 전송 생략", member.getId());
@@ -58,6 +70,10 @@ public class FcmService {
 
     public void sendChatNotification(Member member, String title, String content,
                                      Long chatRoomId, ChatRoomType chatRoomType) {
+        if (applyFakeLatencyAndSkip(member.getId())) {
+            return;
+        }
+
         String fcmToken = member.getFcmToken();
         if (fcmToken == null || fcmToken.isBlank()) {
             log.info("FCM 토큰 없음 - memberId: {}, 채팅 알림 전송 생략", member.getId());
@@ -84,6 +100,25 @@ public class FcmService {
         } catch (FirebaseMessagingException e) {
             log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * 부하테스트용 FCM 지연 주입.
+     * {@code fcm.fake-latency-ms > 0} 이면 해당 시간만큼 스레드를 점유한 뒤 실제 Firebase 전송을 스킵하고 true를 반환한다.
+     * 토큰 유무와 무관하게 스레드를 점유해야 벌크헤드 효과가 측정되므로 <b>토큰 가드보다 먼저</b> 호출한다.
+     * 기본값 0 → 운영에서는 항상 false(동작 변화 없음).
+     */
+    private boolean applyFakeLatencyAndSkip(Long memberId) {
+        if (fakeLatencyMs <= 0) {
+            return false;
+        }
+        try {
+            Thread.sleep(fakeLatencyMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        log.info("[FCM][FAKE] 지연주입 {}ms 후 실전송 스킵 - memberId: {}", fakeLatencyMs, memberId);
+        return true;
     }
 
     /**
