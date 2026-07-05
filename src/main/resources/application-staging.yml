@@ -13,7 +13,3 @@ spring:
 
 firebase:
   service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY}
-
-# [부하테스트용] FCM 인위적 지연 주입
-fcm:
-  fake-latency-ms: 1000
