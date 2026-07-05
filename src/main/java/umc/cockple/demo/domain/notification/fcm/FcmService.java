@@ -8,6 +8,7 @@ import com.google.firebase.messaging.WebpushConfig;
 import com.google.firebase.messaging.WebpushFcmOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -24,6 +25,9 @@ public class FcmService {
     private final MemberRepository memberRepository;
     private final FirebaseMessaging firebaseMessaging;
 
+    @Value("${fcm.fake-latency-ms:0}")
+    private long fakeLatencyMs;
+
     @Transactional
     public void registerFcmToken(Long memberId, String fcmToken) {
         Member member = memberRepository.findById(memberId)
@@ -33,6 +37,10 @@ public class FcmService {
     }
 
     public void sendNotification(Member member, String title, String content) {
+        if (applyFakeLatencyAndSkip(member.getId())) {
+            return;
+        }
+
         String fcmToken = member.getFcmToken();
         if (fcmToken == null || fcmToken.isBlank()) {
             log.info("FCM 토큰 없음 - memberId: {}, 알림 전송 생략", member.getId());
@@ -58,6 +66,10 @@ public class FcmService {
 
     public void sendChatNotification(Member member, String title, String content,
                                      Long chatRoomId, ChatRoomType chatRoomType) {
+        if (applyFakeLatencyAndSkip(member.getId())) {
+            return;
+        }
+
         String fcmToken = member.getFcmToken();
         if (fcmToken == null || fcmToken.isBlank()) {
             log.info("FCM 토큰 없음 - memberId: {}, 채팅 알림 전송 생략", member.getId());
@@ -84,6 +96,22 @@ public class FcmService {
         } catch (FirebaseMessagingException e) {
             log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * 부하테스트용 FCM 지연 주입.
+     */
+    private boolean applyFakeLatencyAndSkip(Long memberId) {
+        if (fakeLatencyMs <= 0) {
+            return false;
+        }
+        try {
+            Thread.sleep(fakeLatencyMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        log.info("[FCM][FAKE] 지연주입 {}ms 후 실전송 스킵 - memberId: {}", fakeLatencyMs, memberId);
+        return true;
     }
 
     /**
