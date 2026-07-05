@@ -98,6 +98,9 @@ async:
     max-size: 12
     queue-capacity: 1000
     await-termination-seconds: 30
+    
+fcm:
+  fake-latency-ms: 0
 
 logging:
   level:

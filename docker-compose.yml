@@ -79,6 +79,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
+      # [부하테스트용] FCM 인위적 지연(ms). 미설정 시 0=비활성. staging 전용.
+      FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
