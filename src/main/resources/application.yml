@@ -86,7 +86,6 @@ jwt:
   refresh-token-validity: 1209600000
 
 fcm:
-  # 부하테스트용 FCM 인위적 지연(ms). 0=비활성(운영 기본). staging에서 env FCM_FAKE_LATENCY_MS 로만 켠다.
   fake-latency-ms: 0
 
 logging:

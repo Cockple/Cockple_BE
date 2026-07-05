@@ -25,10 +25,6 @@ public class FcmService {
     private final MemberRepository memberRepository;
     private final FirebaseMessaging firebaseMessaging;
 
-    /**
-     * 부하테스트용 FCM 인위적 지연(ms). 스레드풀 벌크헤드 효과 측정 전용.
-     * 기본 0 → 평상시/운영에서는 완전히 비활성(동작 변화 없음). staging에서 env(FCM_FAKE_LATENCY_MS)로만 켠다.
-     */
     @Value("${fcm.fake-latency-ms:0}")
     private long fakeLatencyMs;
 
@@ -104,9 +100,6 @@ public class FcmService {
 
     /**
      * 부하테스트용 FCM 지연 주입.
-     * {@code fcm.fake-latency-ms > 0} 이면 해당 시간만큼 스레드를 점유한 뒤 실제 Firebase 전송을 스킵하고 true를 반환한다.
-     * 토큰 유무와 무관하게 스레드를 점유해야 벌크헤드 효과가 측정되므로 <b>토큰 가드보다 먼저</b> 호출한다.
-     * 기본값 0 → 운영에서는 항상 false(동작 변화 없음).
      */
     private boolean applyFakeLatencyAndSkip(Long memberId) {
         if (fakeLatencyMs <= 0) {
