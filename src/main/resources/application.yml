@@ -85,6 +85,20 @@ jwt:
   access-token-validity: 900000
   refresh-token-validity: 1209600000
 
+async:
+  # 실시간 채팅 풀 (저지연 내부 I/O)
+  chat:
+    core-size: 8
+    max-size: 16
+    queue-capacity: 500
+    await-termination-seconds: 30
+  # FCM 알림 풀
+  notification:
+    core-size: 4
+    max-size: 12
+    queue-capacity: 1000
+    await-termination-seconds: 30
+
 logging:
   level:
     org.hibernate.SQL: WARN

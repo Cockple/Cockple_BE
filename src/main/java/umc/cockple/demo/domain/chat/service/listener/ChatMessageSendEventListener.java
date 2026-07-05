@@ -16,7 +16,7 @@ public class ChatMessageSendEventListener {
     private final ChatSendService chatSendService;
 
     @EventListener
-    @Async
+    @Async("chatExecutor")
     public void handleChatMessageSend(ChatMessageSendEvent event) {
         log.info("메시지 전송 이벤트 처리 - 채팅방: {}, 발신자: {}",
                 event.chatRoomId(), event.senderId());

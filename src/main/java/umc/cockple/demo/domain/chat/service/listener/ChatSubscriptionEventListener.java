@@ -49,7 +49,7 @@ public class ChatSubscriptionEventListener {
     }
 
     @EventListener
-    @Async
+    @Async("chatExecutor")
     public void handleChatListSubscription(ChatListSubscriptionEvent event) {
         log.info("채팅방 목록 구독 이벤트 처리 시작 - 멤버: {}, 액션: {}, 채팅방 수: {}",
                 event.memberId(), event.action(), event.chatRoomIds().size());
