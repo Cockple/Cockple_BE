@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.global.auth.TokenVersionRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 
@@ -28,7 +27,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String MEMBER_ID = "memberId";
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final TokenVersionRepository tokenVersionRepository;
     private final RestAuthenticationEntryPoint restEntryPoint;
 
     @Override
@@ -56,12 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 Long memberId = jwtTokenProvider.getUserId(token);
                 MDC.put(MEMBER_ID, String.valueOf(memberId));
-
-                // 토큰 버전 검증 - 강제 무효화(탈퇴/탈취 대응 등)된 토큰 차단 (DB 조회 없이 Redis version만 확인)
-                long currentVersion = tokenVersionRepository.getVersion(memberId);
-                if (jwtTokenProvider.getTokenVersion(token) != currentVersion) {
-                    throw new MemberException(MemberErrorCode.INVALID_TOKEN);
-                }
 
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);

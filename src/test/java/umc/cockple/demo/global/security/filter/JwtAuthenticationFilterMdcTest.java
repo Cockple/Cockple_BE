@@ -10,7 +10,6 @@ import org.slf4j.MDC;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import umc.cockple.demo.global.auth.TokenVersionRepository;
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 
@@ -28,9 +27,6 @@ class JwtAuthenticationFilterMdcTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @Mock
-    private TokenVersionRepository tokenVersionRepository;
-
-    @Mock
     private RestAuthenticationEntryPoint restEntryPoint;
 
     @AfterEach
@@ -41,7 +37,7 @@ class JwtAuthenticationFilterMdcTest {
     @Test
     @DisplayName("인증 성공 시 요청 처리 동안 memberId를 MDC에 넣고 종료 후 정리한다")
     void putMemberIdDuringAuthenticatedRequestAndClearAfterwards() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, tokenVersionRepository, restEntryPoint);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, restEntryPoint);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/members/me");
         request.addHeader("Authorization", "Bearer token");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -50,8 +46,6 @@ class JwtAuthenticationFilterMdcTest {
         given(jwtTokenProvider.validateToken("token")).willReturn(true);
         given(jwtTokenProvider.isAccessToken("token")).willReturn(true);
         given(jwtTokenProvider.getUserId("token")).willReturn(7L);
-        given(tokenVersionRepository.getVersion(7L)).willReturn(0L);
-        given(jwtTokenProvider.getTokenVersion("token")).willReturn(0L);
         given(jwtTokenProvider.getAuthentication("token"))
                 .willReturn(new UsernamePasswordAuthenticationToken("member7", ""));
 
@@ -66,7 +60,7 @@ class JwtAuthenticationFilterMdcTest {
     @Test
     @DisplayName("토큰이 없는 요청은 이전 memberId MDC를 제거한 상태로 통과시키고 종료 후에도 정리한다")
     void clearStaleMemberIdWhenRequestHasNoToken() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, tokenVersionRepository, restEntryPoint);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, restEntryPoint);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/public");
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<String> memberIdInChain = new AtomicReference<>();
@@ -78,13 +72,13 @@ class JwtAuthenticationFilterMdcTest {
 
         assertThat(memberIdInChain.get()).isNull();
         assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
-        verifyNoInteractions(jwtTokenProvider, tokenVersionRepository, restEntryPoint);
+        verifyNoInteractions(jwtTokenProvider, restEntryPoint);
     }
 
     @Test
     @DisplayName("토큰이 없는 요청의 downstream 예외는 인증 실패로 변환하지 않고 전파한다")
     void propagateDownstreamExceptionWhenRequestHasNoToken() {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, tokenVersionRepository, restEntryPoint);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, restEntryPoint);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/public");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MDC.put(JwtAuthenticationFilter.MEMBER_ID, "stale-member");
@@ -96,6 +90,6 @@ class JwtAuthenticationFilterMdcTest {
                 .hasMessage("downstream failure");
 
         assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
-        verifyNoInteractions(jwtTokenProvider, tokenVersionRepository, restEntryPoint);
+        verifyNoInteractions(jwtTokenProvider, restEntryPoint);
     }
 }
