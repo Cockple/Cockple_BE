@@ -136,7 +136,7 @@ public class KakaoOauthService {
     }
 
     public TokenRefreshResponse validateMember(String refreshToken) {
-        Optional<Long> memberIdOpt = refreshTokenRepository.findAndDeleteByToken(refreshToken);
+        Optional<Long> memberIdOpt = refreshTokenRepository.consumeAndMark(refreshToken);
 
         // 활성 저장소에 없는 경우 - 재사용(탈취) 여부를 판별해 대응한 뒤 거부
         if (memberIdOpt.isEmpty()) {
@@ -145,9 +145,6 @@ public class KakaoOauthService {
         }
 
         Long memberId = memberIdOpt.get();
-
-        // 정상 회전 - grace window 동안 소비 이력 기록 (동시 재발급 경쟁/재시도 오탐 방지)
-        refreshTokenRepository.markConsumed(refreshToken, memberId);
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
