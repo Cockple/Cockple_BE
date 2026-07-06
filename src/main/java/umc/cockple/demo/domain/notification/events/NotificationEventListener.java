@@ -21,7 +21,7 @@ public class NotificationEventListener {
     private final MemberRepository memberRepository;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("notificationExecutor")
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public void handleNotification(NotificationEvent event) {
         log.info("[NOTIFICATION] FCM 전송 이벤트 처리 - memberId: {}", event.memberId());

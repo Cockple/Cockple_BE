@@ -21,7 +21,7 @@ public class ChatRoomRedisCleanupListener {
     private final ChatListSubscriptionStore chatListSubscriptionStore;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("chatExecutor")
     public void handleChatRoomRedisCleanup(ChatRoomRedisCleanupEvent event) {
         Long chatRoomId = event.chatRoomId();
         log.info("[채팅방 Redis 정리 시작] - chatRoomId: {}", chatRoomId);

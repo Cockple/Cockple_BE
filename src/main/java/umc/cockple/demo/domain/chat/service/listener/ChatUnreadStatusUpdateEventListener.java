@@ -30,7 +30,7 @@ public class ChatUnreadStatusUpdateEventListener {
     private final ChatSessionRegistry chatSessionRegistry;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("chatExecutor")
     public void handleChatUnreadStatusUpdate(ChatUnreadStatusUpdateEvent event) {
         log.info("채팅 안읽음 상태 업데이트 이벤트 처리 시작 - 대상자: {}명", event.targetMemberIds().size());
 

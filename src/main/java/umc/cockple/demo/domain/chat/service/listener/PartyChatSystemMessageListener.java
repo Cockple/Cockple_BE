@@ -15,7 +15,7 @@ public class PartyChatSystemMessageListener {
     private final ChatSendService chatSendService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("chatExecutor")
     public void handlePartyMemberChanged(PartyMemberJoinedEvent event) {
         switch (event.action()) {
             case JOINED -> chatSendService.sendSystemMessage(event.partyId(),
