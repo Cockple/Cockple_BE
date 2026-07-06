@@ -3,11 +3,9 @@ package umc.cockple.demo.global.auth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
 
-/**
- * 회원별 토큰 버전(tokenVersion)을 관리하는 저장소
- * 키가 존재하지 않으면 버전은 0으로 간주 (신규 회원은 별도 초기화 없이 0에서 시작)
- */
 @Repository
 @RequiredArgsConstructor
 public class TokenVersionRepository {
@@ -15,14 +13,34 @@ public class TokenVersionRepository {
     private static final String KEY_PREFIX = "member:tokenVersion:";
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final MemberRepository memberRepository;
 
+    /**
+     * 현재 토큰 버전을 반환한다.
+     * 캐시 hit 시 Redis, miss 시 DB에서 읽어 재적재
+     */
     public long getVersion(Long memberId) {
-        String value = stringRedisTemplate.opsForValue().get(KEY_PREFIX + memberId);
-        return value == null ? 0L : Long.parseLong(value);
+        String cached = stringRedisTemplate.opsForValue().get(KEY_PREFIX + memberId);
+        if (cached != null) {
+            return Long.parseLong(cached);
+        }
+        long version = memberRepository.findTokenVersionById(memberId).orElse(0L);
+        cache(memberId, version);
+        return version;
     }
 
+    /**
+     * 토큰 버전을 1 증가시키고 새 값을 반환
+     */
+    @Transactional
     public long increment(Long memberId) {
-        Long newVersion = stringRedisTemplate.opsForValue().increment(KEY_PREFIX + memberId);
-        return newVersion == null ? 0L : newVersion;
+        memberRepository.incrementTokenVersion(memberId);
+        long newVersion = memberRepository.findTokenVersionById(memberId).orElse(0L);
+        cache(memberId, newVersion);
+        return newVersion;
+    }
+
+    private void cache(Long memberId, long version) {
+        stringRedisTemplate.opsForValue().set(KEY_PREFIX + memberId, String.valueOf(version));
     }
 }

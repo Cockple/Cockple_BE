@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.member.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -49,5 +50,14 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
             AND m.isActive = 'ACTIVE'
             """)
     Optional<Member> findMemberWithProfileById(@Param("memberId") Long memberId);
+
+    /** 토큰 버전 원자적 증가 (탈퇴/재사용 탐지 시 발급된 모든 토큰 무효화) */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Member m SET m.tokenVersion = m.tokenVersion + 1 WHERE m.id = :memberId")
+    void incrementTokenVersion(@Param("memberId") Long memberId);
+
+    /** 토큰 버전만 조회 (Redis 캐시 miss 시 SoT fallback) */
+    @Query("SELECT m.tokenVersion FROM Member m WHERE m.id = :memberId")
+    Optional<Long> findTokenVersionById(@Param("memberId") Long memberId);
 
 }
