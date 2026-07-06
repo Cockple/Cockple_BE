@@ -131,5 +131,49 @@ class KakaoOauthServiceTest {
 
             verify(tokenVersionRepository, never()).increment(anyLong());
         }
+
+        @Test
+        @DisplayName("access 토큰을 재발급에 오용하면(refresh 타입 아님) 무효화 없이 거부한다")
+        void access_토큰을_refresh로_오용() {
+            // given - 활성 저장소에 없음(access는 refresh 저장소에 저장된 적 없음)
+            given(refreshTokenRepository.consumeAndMark(RT)).willReturn(Optional.empty());
+            given(jwtTokenProvider.validateToken(RT)).willReturn(true);
+            given(jwtTokenProvider.isRefreshToken(RT)).willReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> kakaoOauthService.validateMember(RT))
+                    .isInstanceOf(MemberException.class)
+                    .hasFieldOrPropertyWithValue("code", MemberErrorCode.INVALID_REFRESH_TOKEN);
+
+            // 탈취가 아니므로 전체 무효화하지 않는다
+            verify(tokenVersionRepository, never()).increment(anyLong());
+        }
+    }
+
+    @Nested
+    @DisplayName("토큰 버전 검증")
+    class TokenVersionCheck {
+
+        @Test
+        @DisplayName("활성 토큰이어도 tokenVersion이 올라가 있으면(탈퇴/무효화된 예전 RT) 재발급을 거부한다")
+        void 버전_불일치_거부() {
+            // given
+            Member member = mock(Member.class);
+            given(member.getId()).willReturn(MEMBER_ID);
+            given(member.getIsActive()).willReturn(MemberStatus.ACTIVE);
+
+            given(refreshTokenRepository.consumeAndMark(RT)).willReturn(Optional.of(MEMBER_ID));
+            given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
+            given(tokenVersionRepository.getVersion(MEMBER_ID)).willReturn(1L); // 현재 버전(무효화 후)
+            given(jwtTokenProvider.getTokenVersion(RT)).willReturn(0L);         // 예전에 발급된 토큰
+
+            // when & then
+            assertThatThrownBy(() -> kakaoOauthService.validateMember(RT))
+                    .isInstanceOf(MemberException.class)
+                    .hasFieldOrPropertyWithValue("code", MemberErrorCode.INVALID_REFRESH_TOKEN);
+
+            // 새 토큰을 발급/저장하지 않는다
+            verify(refreshTokenRepository, never()).save(any(), anyLong());
+        }
     }
 }

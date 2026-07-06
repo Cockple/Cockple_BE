@@ -13,11 +13,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import umc.cockple.demo.global.exception.RestAuthenticationEntryPoint;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,5 +94,24 @@ class JwtAuthenticationFilterMdcTest {
 
         assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
         verifyNoInteractions(jwtTokenProvider, restEntryPoint);
+    }
+
+    @Test
+    @DisplayName("refresh 토큰으로 일반 API에 접근하면 401로 거부하고 체인을 진행하지 않는다")
+    void rejectRefreshTokenOnApiRequest() throws Exception {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, restEntryPoint);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/members/me");
+        request.addHeader("Authorization", "Bearer refresh");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+
+        given(jwtTokenProvider.validateToken("refresh")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("refresh")).willReturn(false); // refresh 타입
+
+        filter.doFilter(request, response, (req, res) -> chainCalled.set(true));
+
+        assertThat(chainCalled).isFalse();
+        assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
+        verify(restEntryPoint).commence(any(), any(), any());
     }
 }
