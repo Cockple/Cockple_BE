@@ -173,12 +173,12 @@ public class KakaoOauthService {
         return new TokenRefreshResponse(newAccessToken, newRefreshToken);
     }
 
-    /**
-     * 활성 저장소에 없는 리프레시 토큰이 "재사용(탈취)"인지 판별하고, 맞다면 해당 회원의 모든 토큰을 무효화
-     * 재사용 여부를 공격자에게 노출하지 않기 위해 호출부에서는 동일한 예외로 응답
-     */
     private void detectAndHandleReuse(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
+            return;
+        }
+        // refresh 용도가 아닌 토큰(access를 재발급에 오용)은 탈취가 아니므로 무효화하지 않고 단순 거부
+        if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
             return;
         }
         // grace window 이내 정상 소비 이력 존재 → 동시 재발급 경쟁/재시도로 판단, 무효화 x

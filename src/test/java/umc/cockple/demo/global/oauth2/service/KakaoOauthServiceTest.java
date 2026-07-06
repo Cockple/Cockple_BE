@@ -88,6 +88,7 @@ class KakaoOauthServiceTest {
             // given
             given(refreshTokenRepository.findAndDeleteByToken(RT)).willReturn(Optional.empty());
             given(jwtTokenProvider.validateToken(RT)).willReturn(true);
+            given(jwtTokenProvider.isRefreshToken(RT)).willReturn(true);
             given(refreshTokenRepository.isRecentlyConsumed(RT)).willReturn(false);
             given(jwtTokenProvider.getUserId(RT)).willReturn(MEMBER_ID);
 
@@ -105,6 +106,7 @@ class KakaoOauthServiceTest {
             // given
             given(refreshTokenRepository.findAndDeleteByToken(RT)).willReturn(Optional.empty());
             given(jwtTokenProvider.validateToken(RT)).willReturn(true);
+            given(jwtTokenProvider.isRefreshToken(RT)).willReturn(true);
             given(refreshTokenRepository.isRecentlyConsumed(RT)).willReturn(true);
 
             // when & then

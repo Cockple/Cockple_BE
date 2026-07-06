@@ -48,6 +48,7 @@ class JwtAuthenticationFilterMdcTest {
         AtomicReference<String> memberIdInChain = new AtomicReference<>();
 
         given(jwtTokenProvider.validateToken("token")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("token")).willReturn(true);
         given(jwtTokenProvider.getUserId("token")).willReturn(7L);
         given(tokenVersionRepository.getVersion(7L)).willReturn(0L);
         given(jwtTokenProvider.getTokenVersion("token")).willReturn(0L);

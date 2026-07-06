@@ -49,6 +49,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     throw new MemberException(MemberErrorCode.INVALID_TOKEN);
                 }
 
+                // refresh 토큰을 일반 API 인증에 사용하는 것을 차단
+                if (!jwtTokenProvider.isAccessToken(token)) {
+                    throw new MemberException(MemberErrorCode.INVALID_TOKEN);
+                }
+
                 Long memberId = jwtTokenProvider.getUserId(token);
                 MDC.put(MEMBER_ID, String.valueOf(memberId));
 
