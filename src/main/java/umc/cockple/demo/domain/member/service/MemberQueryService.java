@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
-import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.contest.dto.ContestMedalSummaryDTO;
+import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.converter.MemberConverter;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -19,13 +19,14 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.Keyword;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
+import static umc.cockple.demo.domain.contest.dto.ContestMedalSummaryDTO.*;
 import static umc.cockple.demo.domain.member.converter.MemberConverter.*;
 
 @Service
@@ -35,6 +36,9 @@ import static umc.cockple.demo.domain.member.converter.MemberConverter.*;
 public class MemberQueryService {
 
     private final MemberRepository memberRepository;
+    private final MemberPartyRepository memberPartyRepository;
+    private final MemberExerciseRepository memberExerciseRepository;
+    private final ContestQueryService contestQueryService;
     private final FileService fileService;
 
     /*
@@ -57,8 +61,8 @@ public class MemberQueryService {
         // 대표 주소 추출
         MemberAddr memberAddr = findMainAddress(member);
 
-        // 운동 개수 추출
-        int exerciseCnt = member.getMemberExercises().size();
+        // 운동 개수 추출 (컬렉션 로딩 없이 COUNT)
+        int exerciseCnt = (int) memberExerciseRepository.countByMember_Id(memberId);
 
         // 엔티티 -> 값 타입으로 변환
         List<Keyword> keywords = member.getKeywords().stream()
@@ -80,15 +84,14 @@ public class MemberQueryService {
             imgUrl = fileService.getUrlFromKey(member.getProfileImg().getImgKey());
         }
 
-        // 각 메달 개수 카운트
-        Map<MedalType, Long> counts = member.getContests().stream()
-                .collect(Collectors.groupingBy(Contest::getMedalType, Collectors.counting()));
+        // 메달 개수 - contest 도메인 API로 집계 (컬렉션 로딩 없이 집계 쿼리)
+        Response medals = contestQueryService.getMyMedalSummary(memberId);
 
-        int goldMedal = counts.getOrDefault(MedalType.GOLD, 0L).intValue();
-        int silverMedal = counts.getOrDefault(MedalType.SILVER, 0L).intValue();
-        int bronzeMedal = counts.getOrDefault(MedalType.BRONZE, 0L).intValue();
+        // 가입 모임 수 - 컬렉션 로딩 없이 COUNT
+        int partyCnt = (int) memberPartyRepository.countByMember_Id(memberId);
 
-        return memberToGetProfileResponseDTO(member, goldMedal, silverMedal, bronzeMedal, imgUrl);
+        return memberToGetProfileResponseDTO(member, partyCnt,
+                medals.goldCount(), medals.silverCount(), medals.bronzeCount(), imgUrl);
     }
 
     /*

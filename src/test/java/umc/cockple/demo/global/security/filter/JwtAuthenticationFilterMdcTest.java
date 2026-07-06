@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -83,6 +84,24 @@ class JwtAuthenticationFilterMdcTest {
         );
 
         assertThat(memberIdInChain.get()).isNull();
+        assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
+        verifyNoInteractions(jwtTokenProvider, memberRepository, restEntryPoint);
+    }
+
+    @Test
+    @DisplayName("토큰이 없는 요청의 downstream 예외는 인증 실패로 변환하지 않고 전파한다")
+    void propagateDownstreamExceptionWhenRequestHasNoToken() {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenProvider, memberRepository, restEntryPoint);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/public");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MDC.put(JwtAuthenticationFilter.MEMBER_ID, "stale-member");
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, (servletRequest, servletResponse) -> {
+            throw new IllegalStateException("downstream failure");
+        }))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("downstream failure");
+
         assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
         verifyNoInteractions(jwtTokenProvider, memberRepository, restEntryPoint);
     }

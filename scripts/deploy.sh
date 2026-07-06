@@ -26,9 +26,12 @@ KAKAO_REDIRECT_URI_STAGING=${KAKAO_REDIRECT_URI_STAGING}
 KAKAO_ADMIN_KEY=${KAKAO_ADMIN_KEY}
 JWT_SECRET_KEY=${JWT_SECRET_KEY}
 FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
+FCM_FAKE_LATENCY_MS=${FCM_FAKE_LATENCY_MS:-0}
 EOF
 
 echo "${FIREBASE_SERVICE_ACCOUNT_KEY}" > /home/ubuntu/cockple/firebase-service-account.json
+
+mkdir -p /home/ubuntu/cockple/logs/prod /home/ubuntu/cockple/logs/staging
 
 echo "=== 배포 전 상태 ==="
 sudo docker ps
