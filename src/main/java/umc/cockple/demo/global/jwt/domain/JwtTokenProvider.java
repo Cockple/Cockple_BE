@@ -10,10 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.jwt.properties.JwtProperties;
 import umc.cockple.demo.global.security.domain.CustomUserDetails;
 
@@ -25,9 +23,13 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
+    /** 토큰 용도 구분 claim (access ↔ refresh 상호 오용 방지) */
+    public static final String TOKEN_TYPE_ACCESS = "access";
+    public static final String TOKEN_TYPE_REFRESH = "refresh";
+    private static final String CLAIM_TYPE = "type";
+
     private Key key;
     private final JwtProperties jwtProperties;
-    private final MemberRepository memberRepository;
 
     @PostConstruct
     public void init() {
@@ -35,19 +37,19 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, jwtProperties.getAccessTokenValidity());
+    public String createAccessToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, jwtProperties.getAccessTokenValidity(), TOKEN_TYPE_ACCESS);
     }
 
-    public String createRefreshToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, jwtProperties.getRefreshTokenValidity());
+    public String createRefreshToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, jwtProperties.getRefreshTokenValidity(), TOKEN_TYPE_REFRESH);
     }
 
-    public String createDevToken(Long memberId, String nickname) {
-        return createToken(memberId, nickname, 1209600000L * 2);
+    public String createDevToken(Long memberId, String nickname, long tokenVersion) {
+        return createToken(memberId, nickname, tokenVersion, 1209600000L * 2, TOKEN_TYPE_ACCESS);
     }
 
-    private String createToken(Long memberId, String nickname, long validity) {
+    private String createToken(Long memberId, String nickname, long tokenVersion, long validity, String type) {
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberId));
 
         if (nickname == null) {
@@ -55,6 +57,8 @@ public class JwtTokenProvider {
         }
 
         claims.put("nickname", nickname);
+        claims.put("ver", tokenVersion);
+        claims.put(CLAIM_TYPE, type);
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + validity);
@@ -108,21 +112,44 @@ public class JwtTokenProvider {
 
 
     public Long getUserId(String token) {
-        Claims claims = Jwts.parserBuilder()
+        return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public String getNickname(String token) {
+        return parseClaims(token).get("nickname", String.class);
+    }
+
+    public long getTokenVersion(String token) {
+        Object ver = parseClaims(token).get("ver");
+        return ver == null ? 0L : ((Number) ver).longValue();
+    }
+
+    public String getTokenType(String token) {
+        return parseClaims(token).get(CLAIM_TYPE, String.class);
+    }
+
+    public boolean isAccessToken(String token) {
+        return TOKEN_TYPE_ACCESS.equals(getTokenType(token));
+    }
+
+    public boolean isRefreshToken(String token) {
+        return TOKEN_TYPE_REFRESH.equals(getTokenType(token));
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return Long.valueOf(claims.getSubject());
     }
 
     public Authentication getAuthentication(String token) {
-        Long memberId = getUserId(token);
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Claims claims = parseClaims(token);
+        Long memberId = Long.valueOf(claims.getSubject());
+        String nickname = claims.get("nickname", String.class);
 
-        UserDetails userDetails = new CustomUserDetails(member.getId(), member.getNickname());
+        UserDetails userDetails = new CustomUserDetails(memberId, nickname);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 }

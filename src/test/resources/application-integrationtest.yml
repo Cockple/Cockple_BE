@@ -47,6 +47,7 @@ jwt:
   secret: dGVzdC1zZWNyZXQta2V5LWZvci1pbnRlZ3JhdGlvbi10ZXN0LWxvbmctZW5vdWdoLTI1Ng
   access-token-validity: 3600000
   refresh-token-validity: 1209600000
+  refresh-token-reuse-grace: 30000
 
 logging:
   level:

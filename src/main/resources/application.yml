@@ -84,6 +84,7 @@ jwt:
   secret: ${JWT_SECRET_KEY}
   access-token-validity: 900000
   refresh-token-validity: 1209600000
+  refresh-token-reuse-grace: 30000
 
 async:
   # 실시간 채팅 풀 (저지연 내부 I/O)

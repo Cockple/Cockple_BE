@@ -27,6 +27,7 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
+import umc.cockple.demo.global.auth.TokenVersionRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
 import umc.cockple.demo.global.enums.Level;
@@ -66,6 +67,7 @@ class MemberCommandServiceTest {
     @Mock private ApplicationEventPublisher applicationEventPublisher;
     @Mock private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock private KakaoOauthService kakaoOauthService;
+    @Mock private TokenVersionRepository tokenVersionRepository;
 
     private Member normalMember;
 

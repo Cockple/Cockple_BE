@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.member.events.MemberWithdrawnEvent;
 import umc.cockple.demo.domain.member.repository.*;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
+import umc.cockple.demo.global.auth.TokenVersionRepository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -41,6 +42,7 @@ public class MemberCommandService {
 
     private final KakaoOauthService kakaoOauthService;
     private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
+    private final TokenVersionRepository tokenVersionRepository;
 
 
     // ==================== 회원 관련 ===================
@@ -93,8 +95,12 @@ public class MemberCommandService {
         // 카카오 연결 끊기
         kakaoOauthService.unlinkAccess(member);
 
-        // 활성화 여부 해제, 리프레시 토큰 삭제
+        // 활성화 여부 해제
         member.withdraw();
+
+        // 토큰 버전 증가 - 발급된 모든 토큰(AT/RT)을 즉시 무효화
+        tokenVersionRepository.increment(member.getId());
+
         applicationEventPublisher.publishEvent(MemberWithdrawnEvent.withdrawn(member.getId()));
     }
 

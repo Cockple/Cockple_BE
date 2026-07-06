@@ -60,6 +60,10 @@ public class Member extends BaseEntity {
 
     private String fcmToken;
 
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private long tokenVersion;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Contest> contests = new ArrayList<>();
