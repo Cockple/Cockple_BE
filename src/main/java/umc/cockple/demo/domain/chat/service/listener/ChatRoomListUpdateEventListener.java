@@ -24,7 +24,7 @@ public class ChatRoomListUpdateEventListener {
     private final ChatRoomListUpdateBroadcaster chatRoomListUpdateBroadcaster;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("chatExecutor")
     public void handleChatRoomListUpdate(ChatRoomListUpdateEvent event) {
         log.info("채팅방 목록 업데이트 이벤트 처리 시작 - 채팅방: {}", event.chatRoomId());
 

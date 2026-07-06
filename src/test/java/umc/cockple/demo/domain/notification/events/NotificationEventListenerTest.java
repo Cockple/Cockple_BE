@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -27,14 +27,15 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 @DisplayName("NotificationEventListener")
+// 알림 @Async 풀(notificationExecutor)을 SyncTaskExecutor로 덮어써 동기 실행하려면 빈 오버라이드 허용 필요
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class NotificationEventListenerTest extends IntegrationTestBase {
 
-    // @Async를 동기로 실행해 테스트 스레드와 타이밍 문제를 제거
+    // handleNotification의 @Async("notificationExecutor")를 동기로 실행해 테스트 타이밍 문제를 제거
     @TestConfiguration
     static class SyncAsyncConfig {
         @Bean
-        @Primary
-        public TaskExecutor taskExecutor() {
+        public TaskExecutor notificationExecutor() {
             return new SyncTaskExecutor();
         }
     }

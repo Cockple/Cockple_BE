@@ -21,31 +21,37 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-        log.debug("JWT 기반 WebSocket 인증 시작");
+        try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open((Long) null)) {
+            log.debug("JWT 기반 WebSocket 인증 시작");
 
-        try {
-            String token = extractTokenFromRequest(request);
+            try {
+                String token = extractTokenFromRequest(request);
 
-            if (isInvalidToken(token)) return false;
+                if (isInvalidToken(token)) return false;
 
-            Long memberId = jwtTokenProvider.getUserId(token);
+                Long memberId = jwtTokenProvider.getUserId(token);
 
-            attributes.put("memberId", memberId);
-            attributes.put("authenticated", true);
+                attributes.put("memberId", memberId);
+                attributes.put("authenticated", true);
 
-            log.info("JWT 인증 성공 - memberId: {}", memberId);
-            return true;
-        } catch (Exception e) {
-            log.error("JWT 인증 처리 중 오류 발생", e);
-            return false;
+                try (WebSocketMdcSupport.MdcScope memberScope = WebSocketMdcSupport.open(memberId)) {
+                    log.info("JWT 인증 성공 - memberId: {}", memberId);
+                }
+                return true;
+            } catch (Exception e) {
+                log.error("JWT 인증 처리 중 오류 발생", e);
+                return false;
+            }
         }
     }
 
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {
-        if (exception != null) {
-            log.error("JWT HandshakeInterceptor 실행 중 오류", exception);
+        try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open((Long) null)) {
+            if (exception != null) {
+                log.error("JWT HandshakeInterceptor 실행 중 오류", exception);
+            }
         }
     }
 

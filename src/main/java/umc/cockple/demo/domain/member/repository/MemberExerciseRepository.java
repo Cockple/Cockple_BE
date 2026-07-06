@@ -17,6 +17,9 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
 
     boolean existsByExerciseAndMember(Exercise exercise, Member member);
 
+    // 프로필의 참여 운동 수. 컬렉션 전량 로딩 없이 COUNT만 수행한다.
+    long countByMember_Id(Long memberId);
+
     Optional<MemberExercise> findByExerciseAndMember(Exercise exercise, Member member);
 
     @Query("""

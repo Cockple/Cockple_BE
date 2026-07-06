@@ -7,9 +7,9 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -50,14 +50,16 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 
 @DisplayName("ChatUnreadStatusUpdateEvent after-commit flow")
+// 채팅 @Async 풀(chatExecutor)을 SyncTaskExecutor로 덮어써 동기 실행하려면 빈 오버라이드 허용 필요
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class ChatUnreadStatusUpdateEventFlowTest extends IntegrationTestBase {
 
+    // handleChatUnreadStatusUpdate의 @Async("chatExecutor")를 동기로 실행해 테스트 타이밍 문제를 제거
     @TestConfiguration
     static class SyncAsyncConfig {
 
         @Bean
-        @Primary
-        public TaskExecutor taskExecutor() {
+        public TaskExecutor chatExecutor() {
             return new SyncTaskExecutor();
         }
     }

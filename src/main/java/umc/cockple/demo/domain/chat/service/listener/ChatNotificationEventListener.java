@@ -17,7 +17,7 @@ public class ChatNotificationEventListener {
     private final ChatPushNotificationService chatPushNotificationService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @Async("notificationExecutor")
     public void handleChatNotification(ChatNotificationEvent event) {
         log.info("채팅 알림 이벤트 처리 - 채팅방: {}, 발신자: {}", event.chatRoomId(), event.senderId());
         try {

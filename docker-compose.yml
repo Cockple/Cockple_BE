@@ -56,6 +56,7 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
       SPRING_PROFILES_ACTIVE: prod
+      LOG_PATH: /logs
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -64,6 +65,8 @@ services:
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       FIREBASE_SERVICE_ACCOUNT_KEY: ${FIREBASE_SERVICE_ACCOUNT_KEY}
+    volumes:
+      - ./logs/prod:/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -79,6 +82,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
+      LOG_PATH: /logs
+      FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -87,6 +92,8 @@ services:
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       FIREBASE_SERVICE_ACCOUNT_KEY: ${FIREBASE_SERVICE_ACCOUNT_KEY}
+    volumes:
+      - ./logs/staging:/logs
     depends_on:
       mysql:
         condition: service_healthy
