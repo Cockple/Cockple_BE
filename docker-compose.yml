@@ -84,6 +84,11 @@ services:
       SPRING_PROFILES_ACTIVE: staging
       LOG_PATH: /logs
       FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
+      # 관측성(Observability) — OTLP 메트릭 push (staging 전용). 미설정 시 off.
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
+      OTEL_URL: ${OTEL_URL:-}
+      OTEL_AUTH: ${OTEL_AUTH:-}
+      OTLP_STEP: ${OTLP_STEP:-1m}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}

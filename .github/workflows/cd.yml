@@ -72,7 +72,8 @@ jobs:
           envs: >-
             DB_PASSWORD,GCS_BUCKET,GCS_BACKUP_BUCKET,
             KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_REDIRECT_URI_PROD,KAKAO_REDIRECT_URI_STAGING,KAKAO_ADMIN_KEY,
-            JWT_SECRET_KEY,FIREBASE_SERVICE_ACCOUNT_KEY,FCM_FAKE_LATENCY_MS
+            JWT_SECRET_KEY,FIREBASE_SERVICE_ACCOUNT_KEY,FCM_FAKE_LATENCY_MS,
+            OTLP_METRICS_ENABLED,OTEL_URL,OTEL_AUTH,OTLP_STEP
           script: |
             chmod +x /home/ubuntu/cockple/scripts/deploy.sh
             bash /home/ubuntu/cockple/scripts/deploy.sh \
@@ -89,5 +90,9 @@ jobs:
           KAKAO_ADMIN_KEY: ${{ secrets.KAKAO_ADMIN_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-          # [부하테스트용] FCM 지연(ms) 토글. GitHub Variable로 관리(미설정 시 빈값→deploy.sh에서 0). PR 없이 값 변경+deploy 재실행으로 on/off.
           FCM_FAKE_LATENCY_MS: ${{ vars.FCM_FAKE_LATENCY_MS }}
+          # 관측성(OTLP) — URL/토글/step은 Variable, 인증 토큰은 Secret
+          OTLP_METRICS_ENABLED: ${{ vars.OTLP_METRICS_ENABLED }}
+          OTEL_URL: ${{ vars.OTEL_URL }}
+          OTEL_AUTH: ${{ secrets.OTEL_AUTH }}
+          OTLP_STEP: ${{ vars.OTLP_STEP }}
