@@ -103,6 +103,30 @@ async:
 fcm:
   fake-latency-ms: 0
 
+# 관측성(Observability) — OTLP로 메트릭 push
+# 기본 off, staging(및 추후 prod)에서 env로만 켠다.
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_METRICS_ENABLED:false}
+        url: ${OTEL_URL:http://localhost:4318}/v1/metrics
+        step: ${OTLP_STEP:1m}
+        headers:
+          Authorization: ${OTEL_AUTH:}
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+      deployment.environment: ${SPRING_PROFILES_ACTIVE:local}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  endpoints:
+    web:
+      exposure:
+        include: health                             # 웹 노출 최소화 (메트릭은 OTLP push라 endpoint 불필요)
+
 logging:
   level:
     org.hibernate.SQL: WARN
