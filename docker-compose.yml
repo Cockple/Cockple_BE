@@ -113,9 +113,13 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      PROD_SERVER_NAME: ${NGINX_PROD_SERVER_NAME:-api.cockple.store}
+      STAGING_SERVER_NAME: ${NGINX_STAGING_SERVER_NAME:-staging.cockple.store}
+      NGINX_ENVSUBST_FILTER: SERVER_NAME
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
     mem_limit: 64m
     memswap_limit: 128m
 

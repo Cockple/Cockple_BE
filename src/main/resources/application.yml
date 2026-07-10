@@ -71,6 +71,11 @@ spring:
 gcs:
   bucket: ${GCS_BUCKET}
 
+cockple:
+  web:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app}
+    cookie-domain: ${COOKIE_DOMAIN:.cockple.store}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}

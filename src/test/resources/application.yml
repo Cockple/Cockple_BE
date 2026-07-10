@@ -30,3 +30,6 @@ cockple:
   object-storage-delete-outbox:
     scheduler:
       enabled: false
+  web:
+    allowed-origins: http://localhost:5173
+    cookie-domain: ""
