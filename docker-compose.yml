@@ -57,7 +57,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
       SPRING_PROFILES_ACTIVE: prod
       LOG_PATH: /logs
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_PROD:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_PROD:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
@@ -85,7 +85,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
       LOG_PATH: /logs
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_STAGING:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_STAGING:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
       FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
       # 관측성(Observability) — OTLP 메트릭 push (staging 전용). 미설정 시 off.

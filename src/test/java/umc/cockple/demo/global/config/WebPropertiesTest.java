@@ -26,22 +26,24 @@ class WebPropertiesTest {
     @DisplayName("application.yml 기본값(콤마 구분)이 운영과 동일한 origin 목록으로 바인딩된다")
     void bindsCommaSeparatedOriginsExactlyAsBefore() {
         // application.yml의 CORS_ALLOWED_ORIGINS 기본값과 동일한 문자열
+        // (WS 편입으로 CORS/WS가 공유. cockple-fe.vercel.app/ 는 WS 기존값 유지용)
         String defaultOrigins =
                 "http://localhost:5173,https://cockple.store,https://www.cockple.store,"
-                        + "https://staging.cockple.store,https://cockple-fe.vercel.app";
+                        + "https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/";
 
         WebProperties props = bind(Map.of(
                 "cockple.web.allowed-origins", defaultOrigins,
                 "cockple.web.cookie-domain", ".cockple.store"
         ));
 
-        // 리팩토링 전 하드코딩되어 있던 값과 정확히 일치해야 한다(순수 no-op)
+        // 기존 CORS + WS 하드코딩 origin을 모두 포함해야 한다(순수 no-op)
         assertThat(props.getAllowedOrigins()).containsExactly(
                 "http://localhost:5173",
                 "https://cockple.store",
                 "https://www.cockple.store",
                 "https://staging.cockple.store",
-                "https://cockple-fe.vercel.app"
+                "https://cockple-fe.vercel.app",
+                "https://cockple-fe.vercel.app/"
         );
         assertThat(props.getCookieDomain()).isEqualTo(".cockple.store");
     }
