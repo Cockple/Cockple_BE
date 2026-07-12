@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
 import umc.cockple.demo.domain.member.service.MemberProfileUpdateExecutor;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
+import umc.cockple.demo.global.config.WebProperties;
 import umc.cockple.demo.global.jwt.domain.TokenRefreshResponse;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -41,6 +42,8 @@ public class MemberController {
     private final MemberProfileUpdateExecutor memberProfileUpdateExecutor;
     private final MemberQueryService memberQueryService;
     private final KakaoOauthService kakaoOauthService;
+    private final WebProperties webProperties;
+
 
     @PostMapping("/oauth/login")
     @Operation(summary = "카카오 소셜 로그인 API",
@@ -49,15 +52,7 @@ public class MemberController {
 
         KakaoLoginResponseDTO response = kakaoOauthService.signup(requestDTO.code());
 
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", response.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(Duration.ofDays(7))
-                .sameSite("None")
-                .domain(".cockple.store")
-                .build()
-                ;
+        ResponseCookie cookie = buildRefreshTokenCookie(response.refreshToken());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -116,14 +111,7 @@ public class MemberController {
         // 리프레시 토큰 유효성 검사
         TokenRefreshResponse response = kakaoOauthService.validateMember(refreshToken);
 
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", response.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(Duration.ofDays(7))
-                .sameSite("None")
-                .domain(".cockple.store")
-                .build();
+        ResponseCookie cookie = buildRefreshTokenCookie(response.refreshToken());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -243,5 +231,23 @@ public class MemberController {
 
         List<GetAllAddressResponseDTO> addresses = memberQueryService.getAllAddress(memberId);
         return BaseResponse.success(CommonSuccessCode.OK, addresses);
+    }
+
+    /**
+     * refreshToken 쿠키 생성(로그인/재발급 공통)
+     */
+    private ResponseCookie buildRefreshTokenCookie(String refreshToken) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("None");
+
+        String cookieDomain = webProperties.getCookieDomain();
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            builder.domain(cookieDomain);
+        }
+        return builder.build();
     }
 }

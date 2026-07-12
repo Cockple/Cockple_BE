@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import umc.cockple.demo.global.config.WebProperties;
 
 @Configuration
 @EnableWebSocket
@@ -13,13 +14,14 @@ public class ChatWebSocketConfig implements WebSocketConfigurer {
 
     private final ChatWebSocketHandler chatWebSocketHandler;
     private final JWTWebSocketAuthInterceptor jwtWebSocketAuthInterceptor;
+    private final WebProperties webProperties;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
                 .addHandler(chatWebSocketHandler, "/ws/chats")
                 .addInterceptors(jwtWebSocketAuthInterceptor)
-                .setAllowedOrigins("http://localhost:5173", "https://cockple.store", "https://www.cockple.store", "https://cockple-fe.vercel.app/", "https://staging.cockple.store")
+                .setAllowedOrigins(webProperties.getAllowedOrigins().toArray(new String[0]))
                 .withSockJS(); // 브라우저 호환성
     }
 }
