@@ -71,6 +71,12 @@ spring:
 gcs:
   bucket: ${GCS_BUCKET}
 
+cockple:
+  web:
+    # WS도 이 목록 공유. cockple-fe.vercel.app/(끝슬래시)는 WS 기존값 유지용(무해).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+    cookie-domain: ${COOKIE_DOMAIN:.cockple.store}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
@@ -84,6 +90,48 @@ jwt:
   secret: ${JWT_SECRET_KEY}
   access-token-validity: 900000
   refresh-token-validity: 1209600000
+  refresh-token-reuse-grace: 30000
+
+async:
+  # 실시간 채팅 풀 (저지연 내부 I/O)
+  chat:
+    core-size: 8
+    max-size: 16
+    queue-capacity: 500
+    await-termination-seconds: 30
+  # FCM 알림 풀
+  notification:
+    core-size: 4
+    max-size: 12
+    queue-capacity: 1000
+    await-termination-seconds: 30
+
+fcm:
+  fake-latency-ms: 0
+
+# 관측성(Observability) — OTLP로 메트릭 push
+# 기본 off, staging(및 추후 prod)에서 env로만 켠다.
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_METRICS_ENABLED:false}
+        url: ${OTEL_URL:http://localhost:4318}/v1/metrics
+        step: ${OTLP_STEP:1m}
+        headers:
+          Authorization: ${OTEL_AUTH:}
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+      deployment.environment: ${SPRING_PROFILES_ACTIVE:local}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  endpoints:
+    web:
+      exposure:
+        include: health                             # 웹 노출 최소화 (메트릭은 OTLP push라 endpoint 불필요)
 
 logging:
   level:

@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.contest.exception.ContestErrorCode;
 import umc.cockple.demo.domain.contest.exception.ContestException;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
+import umc.cockple.demo.domain.contest.repository.MedalCountProjection;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ContestQueryService")
@@ -388,9 +390,11 @@ class ContestQueryServiceTest {
                         .bronzeCount(1)
                         .build();
 
-                given(contestRepository.countGoldMedalsByMemberId(member.getId())).willReturn(2);
-                given(contestRepository.countSilverMedalsByMemberId(member.getId())).willReturn(1);
-                given(contestRepository.countBronzeMedalsByMemberId(member.getId())).willReturn(1);
+                MedalCountProjection counts = mock(MedalCountProjection.class);
+                given(counts.getGold()).willReturn(2L);
+                given(counts.getSilver()).willReturn(1L);
+                given(counts.getBronze()).willReturn(1L);
+                given(contestRepository.countMedalsByMemberId(member.getId())).willReturn(counts);
                 given(contestConverter.toMedalSummaryResponseDTO(2, 1, 1)).willReturn(expectedResponse);
 
                 // when
@@ -415,9 +419,11 @@ class ContestQueryServiceTest {
                         .bronzeCount(0)
                         .build();
 
-                given(contestRepository.countGoldMedalsByMemberId(member.getId())).willReturn(0);
-                given(contestRepository.countSilverMedalsByMemberId(member.getId())).willReturn(0);
-                given(contestRepository.countBronzeMedalsByMemberId(member.getId())).willReturn(0);
+                MedalCountProjection counts = mock(MedalCountProjection.class);
+                given(counts.getGold()).willReturn(0L);
+                given(counts.getSilver()).willReturn(0L);
+                given(counts.getBronze()).willReturn(0L);
+                given(contestRepository.countMedalsByMemberId(member.getId())).willReturn(counts);
                 given(contestConverter.toMedalSummaryResponseDTO(0, 0, 0)).willReturn(expectedResponse);
 
                 // when

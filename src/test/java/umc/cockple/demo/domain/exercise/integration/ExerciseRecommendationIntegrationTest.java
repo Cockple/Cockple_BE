@@ -7,10 +7,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.bookmark.domain.ExerciseBookmark;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -477,8 +477,8 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                                 .param("startDate", startDate.toString())
                                 .param("endDate", endDate.toString()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -490,8 +490,8 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                                 .param("startDate", startDate.toString())
                                 .param("endDate", endDate.toString()))
                         .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MAIN_ADDRESS_NULL.getMessage()));
             }
 
             @Test

@@ -28,7 +28,8 @@ Nearest `AGENTS.md` wins. Read this file first, then the closest child file for 
 |------|----------|-------|
 | App bootstrap | `src/main/java/umc/cockple/demo/Application.java` | Enables JPA auditing and caching |
 | Runtime config | `src/main/resources/application*.yml` | `local` is default; `staging` and `prod` override DB/Redis |
-| Security/websocket ingress | `src/main/java/umc/cockple/demo/global/config/` | JWT, CORS, WebSocket handler registration |
+| Security ingress | `src/main/java/umc/cockple/demo/global/config/` | HTTP security, JWT filters, CORS, shared runtime config |
+| Chat WebSocket ingress | `src/main/java/umc/cockple/demo/domain/chat/presentation/websocket/` | `/ws/chats` handler, auth interceptor, endpoint config |
 | Business APIs | `src/main/java/umc/cockple/demo/domain/` | Vertical slices by feature |
 | Exercise hotspot | `src/main/java/umc/cockple/demo/domain/exercise/` | Largest converter/query/test surface |
 | Chat hotspot | `src/main/java/umc/cockple/demo/domain/chat/` | REST + WebSocket + cache/event flow |
@@ -48,13 +49,13 @@ Nearest `AGENTS.md` wins. Read this file first, then the closest child file for 
 
 ## ANTI-PATTERNS (THIS PROJECT)
 - Do not edit generated QueryDSL Q-types.
-- Do not widen security whitelist or CORS origins casually; both are explicit in `SecurityConfig` and `WebSocketConfig`.
+- Do not widen security whitelist or CORS origins casually; HTTP origins are explicit in `SecurityConfig` and chat WebSocket origins are explicit in `ChatWebSocketConfig`.
 - Do not rely on JPA auto-DDL for schema work; startup uses validation only.
 - Do not scatter test fixtures inside feature test packages; shared fixtures already live under `src/test/java/umc/cockple/demo/support/fixture/`.
 - Do not assume everything under `global/` is generic; JWT/OAuth code is coupled to member/auth flows.
 
 ## UNIQUE STYLES
-- `domain/chat` has extra realtime sublayers: `handler/`, `interceptor/`, `events/`, `service/websocket/`.
+- `domain/chat` has extra realtime sublayers: `presentation/websocket/`, `events/`, `service/websocket/`.
 - `domain/exercise` is the densest slice: large converter, query service, command internals, and the biggest integration tests.
 - `domain/party` and `domain/notification` use events/notification wiring more than simpler slices like `bookmark` or `terms`.
 

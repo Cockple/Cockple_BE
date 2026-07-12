@@ -25,6 +25,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restEntryPoint;
+    private final WebProperties webProperties;
 
 
     @Bean
@@ -66,7 +67,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://cockple.store", "https://www.cockple.store", "https://staging.cockple.store", "https://cockple-fe.vercel.app")); // 배포 시에는 도메인 지정 권장
+        // 허용 Origin은 WebProperties(SSOT)에서 주입. 정확 매칭 유지 — allowCredentials(true)와
+        // origin 패턴/와일드카드를 함께 쓰면 요청 Origin이 반사되어 심각한 취약점이 되므로 절대 금지.
+        config.setAllowedOrigins(webProperties.getAllowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

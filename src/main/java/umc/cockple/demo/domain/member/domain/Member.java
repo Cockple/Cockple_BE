@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static umc.cockple.demo.domain.member.dto.CreateMemberAddrDTO.*;
 
@@ -58,6 +59,10 @@ public class Member extends BaseEntity {
     private Long socialId; // 카카오에서 받아온 고유id
 
     private String fcmToken;
+
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private long tokenVersion;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
@@ -120,13 +125,23 @@ public class Member extends BaseEntity {
         }
     }
 
-    public void updateMemberFirst(MemberDetailInfoRequestDTO requestDto, List<MemberKeyword> keywords, ProfileImg img) {
-        this.memberName = requestDto.memberName();
-        this.gender = requestDto.gender();
-        this.birth = requestDto.birth();
-        this.level = requestDto.level();
-        this.keywords = keywords;
-        updateProfileImg(img);
+
+    public Optional<String> changeProfileImage(String imgKey) {
+        if (this.profileImg != null) {
+            if (this.profileImg.getImgKey().equals(imgKey)) {
+                return Optional.empty(); // 동일 이미지 -> 변경 없음
+            }
+            String oldKey = this.profileImg.getImgKey();
+            this.profileImg.updateProfile(imgKey); // UPDATE (version 증가 -> 낙관적 락 적용)
+            return Optional.of(oldKey);
+        }
+
+        // 기존 이미지 없음 -> 새로 생성
+        ProfileImg newProfileImg = ProfileImg.builder()
+                .imgKey(imgKey)
+                .build();
+        updateProfileImg(newProfileImg);
+        return Optional.empty();
     }
 
     public void updateMemberFirst(MemberDetailInfoRequestDTO requestDto, List<MemberKeyword> keywords) {
@@ -137,14 +152,6 @@ public class Member extends BaseEntity {
         this.keywords = keywords;
     }
 
-
-    public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords, ProfileImg img) {
-        this.memberName = requestDto.memberName();
-        this.birth = requestDto.birth();
-        this.level = requestDto.level();
-        this.keywords = keywords;
-        updateProfileImg(img);
-    }
 
     public void updateMember(UpdateProfileRequestDTO requestDto, List<MemberKeyword> keywords) {
         this.memberName = requestDto.memberName();

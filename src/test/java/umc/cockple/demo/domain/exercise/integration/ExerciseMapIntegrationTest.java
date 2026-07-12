@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -161,19 +162,6 @@ class ExerciseMapIntegrationTest extends IntegrationTestBase {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
-
-            @Test
-            @DisplayName("존재하지 않는 멤버면 에러를 반환한다")
-            void 존재하지_않는_멤버면_에러를_반환한다() throws Exception {
-                SecurityContextHelper.setAuthentication(999L, "없는멤버");
-
-                mockMvc.perform(get("/api/buildings/exercises/{date}", targetDate)
-                                .param("buildingName", targetBuildingName)
-                                .param("streetAddr", targetStreetAddr))
-                        .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
-            }
 
             @Test
             @DisplayName("buildingName이 없으면 400을 반환한다")
@@ -381,8 +369,8 @@ class ExerciseMapIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/buildings/map/monthly")
                                 .param("date", targetDate.toString()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -393,8 +381,8 @@ class ExerciseMapIntegrationTest extends IntegrationTestBase {
                 mockMvc.perform(get("/api/buildings/map/monthly")
                                 .param("date", targetDate.toString()))
                         .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MAIN_ADDRESS_NULL.getMessage()));
             }
 
             @Test
@@ -407,8 +395,8 @@ class ExerciseMapIntegrationTest extends IntegrationTestBase {
                                 .param("latitude", "37.5")
                                 .param("longitude", "127.0"))
                         .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MAIN_ADDRESS_NULL.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MAIN_ADDRESS_NULL.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MAIN_ADDRESS_NULL.getMessage()));
             }
 
             @Test

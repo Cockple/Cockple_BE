@@ -3,19 +3,18 @@
 Apply parent guides first. This file only covers `global/config/`.
 
 ## OVERVIEW
-This package is the runtime bootstrap surface for security, WebSocket, Redis/cache, Firebase, Swagger, QueryDSL, async work, and external storage wiring.
+This package is the shared runtime bootstrap surface for security, Redis/cache, Firebase, Swagger, QueryDSL, async work, and external storage wiring.
 
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
 | Security whitelist + CORS | `SecurityConfig.java` | explicit public endpoints and allowed origins |
-| WebSocket bootstrap | `WebSocketConfig.java` | binds `/ws/chats` to handler + JWT interceptor |
 | Redis/cache serialization | `RedisConfig.java` | connection factory, templates, cache manager |
 | Firebase init | `FirebaseConfig.java` | disabled for `integrationtest` profile |
 
 ## CONVENTIONS
 - Runtime values belong in `application*.yml`; config classes wire beans around those values.
-- `SecurityConfig` and `WebSocketConfig` both carry explicit frontend origin lists.
+- `SecurityConfig` carries explicit HTTP frontend origin lists. Chat WebSocket origins live in `domain/chat/presentation/websocket/ChatWebSocketConfig.java`.
 - Firebase is suppressed during integration tests and mocked from test config.
 - Redis serialization uses a permissive polymorphic JSON serializer; cache/template behavior lives here, not in slices.
 

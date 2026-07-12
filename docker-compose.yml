@@ -56,6 +56,9 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
       SPRING_PROFILES_ACTIVE: prod
+      LOG_PATH: /logs
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_PROD:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -64,6 +67,8 @@ services:
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       FIREBASE_SERVICE_ACCOUNT_KEY: ${FIREBASE_SERVICE_ACCOUNT_KEY}
+    volumes:
+      - ./logs/prod:/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -79,6 +84,15 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
+      LOG_PATH: /logs
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_STAGING:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
+      FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
+      # 관측성(Observability) — OTLP 메트릭 push (staging 전용). 미설정 시 off.
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
+      OTEL_URL: ${OTEL_URL:-}
+      OTEL_AUTH: ${OTEL_AUTH:-}
+      OTLP_STEP: ${OTLP_STEP:-1m}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -87,6 +101,8 @@ services:
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       FIREBASE_SERVICE_ACCOUNT_KEY: ${FIREBASE_SERVICE_ACCOUNT_KEY}
+    volumes:
+      - ./logs/staging:/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -101,9 +117,13 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      PROD_SERVER_NAME: ${NGINX_PROD_SERVER_NAME:-api.cockple.store}
+      STAGING_SERVER_NAME: ${NGINX_STAGING_SERVER_NAME:-staging.cockple.store}
+      NGINX_ENVSUBST_FILTER: SERVER_NAME
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
     mem_limit: 64m
     memswap_limit: 128m
 

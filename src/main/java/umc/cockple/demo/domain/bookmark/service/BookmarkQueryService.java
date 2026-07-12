@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.bookmark.dto.GetAllPartyBookmarkResponseDTO;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -28,8 +29,11 @@ import umc.cockple.demo.domain.party.enums.PartyOrderType;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -41,6 +45,7 @@ public class BookmarkQueryService {
     private final PartyBookmarkRepository partyBookmarkRepository;
     private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final MemberRepository memberRepository;
     private final BookmarkConverter bookmarkConverter;
     private final FileService fileService;
@@ -50,7 +55,7 @@ public class BookmarkQueryService {
         Member member = findByMemberId(memberId);
 
         // 찜한 운동 가져오기
-        List<ExerciseBookmark> bookmarks = exerciseBookmarkRepository.findAllByMember(member);
+        List<ExerciseBookmark> bookmarks = exerciseBookmarkRepository.findAllByMemberWithDetails(member);
 
         // orderType에 따른 정렬
         Comparator<ExerciseBookmark> comparator = Comparator.comparing(ExerciseBookmark::getCreatedAt);
@@ -61,19 +66,24 @@ public class BookmarkQueryService {
         List<Long> partyIds = bookmarks.stream().map(b -> b.getExercise().getParty().getId()).toList();
         List<Long> exerciseIds = bookmarks.stream().map(b -> b.getExercise().getId()).toList();
 
-        List<Long> myParties = memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds);
-        List<Long> myExercises = memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
+        Set<Long> myParties = new HashSet<>(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds));
+        Set<Long> myExercises = new HashSet<>(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds));
+
+        // exercise 도메인의 공통 참여 인원수 조회 로직 사용 (N+1 제거)
+        Map<Long, Integer> nowCntByExerciseId = exerciseParticipantCountLookupService
+                .getParticipantCountsByExerciseIds(exerciseIds);
 
         // bookmark -> dto 변환
         return bookmarks.stream()
                 .map(bookmark -> {
+                    Long exerciseId = bookmark.getExercise().getId();
                     boolean includeParty = myParties.contains(bookmark.getExercise().getParty().getId());
-                    boolean includeExercise = myExercises.contains(bookmark.getExercise().getId());
-                    return bookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise);
+                    boolean includeExercise = myExercises.contains(exerciseId);
+                    int nowMemberCnt = nowCntByExerciseId.getOrDefault(exerciseId, 0);
+                    return bookmarkConverter.exerciseBookmarkToDTO(bookmark, includeParty, includeExercise, nowMemberCnt);
                 })
                 .toList();
     }
-
 
     public List<GetAllPartyBookmarkResponseDTO> getAllPartyBookmarks(Long memberId, PartyOrderType orderType) {
         // 회원 조회하기

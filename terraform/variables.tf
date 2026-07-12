@@ -16,8 +16,14 @@ variable "cloudflare_api_token" {
 }
 
 variable "cloudflare_zone_id" {
-  description = "cockple.store Cloudflare Zone ID"
+  description = "루트 도메인(root_domain)의 Cloudflare Zone ID"
   type        = string
+}
+
+variable "root_domain" {
+  description = "서비스 루트 도메인. 도메인 변경 시 이 값(+ cloudflare_zone_id)만 교체."
+  type        = string
+  default     = "cockple.store"
 }
 
 variable "ssh_public_key" {

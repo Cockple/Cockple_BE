@@ -22,6 +22,9 @@ public interface PartyBookmarkRepository extends JpaRepository<PartyBookmark, Lo
         SELECT DISTINCT pb
         FROM PartyBookmark pb
         JOIN FETCH pb.party p
+        LEFT JOIN FETCH p.partyAddr
+        LEFT JOIN FETCH p.partyImg
+        LEFT JOIN FETCH p.chatRoom
         LEFT JOIN FETCH p.exercises
         WHERE pb.member = :member
         """)

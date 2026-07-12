@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
+import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 import umc.cockple.demo.domain.chat.dto.LastMessageCacheDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -50,9 +51,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -71,24 +74,84 @@ class ChatQueryServiceTest {
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
+    private ChatUnreadQueryService chatUnreadQueryService;
     private ChatQueryServiceImpl chatQueryService;
 
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
         chatProcessor = new ChatProcessor(fileService, chatConverter);
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
                 chatMessageRepository,
                 partyRepository,
                 memberPartyRepository,
-                messageReadStatusRepository,
+                chatUnreadQueryService,
                 chatConverter,
                 fileService,
                 chatProcessor,
                 chatRoomListCacheService
         );
+        lenient().when(messageReadStatusRepository.countUnreadMessagesByChatRooms(anyLong(), anyList()))
+                .thenReturn(List.of());
+    }
+
+    @Nested
+    @DisplayName("안 읽은 메시지 여부 조회")
+    class GetUnreadStatus {
+
+        @Test
+        @DisplayName("모임과 개인 안읽음 여부를 함께 반환한다")
+        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            var result = chatQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isTrue();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("모임과 개인 모두 안읽음이 없으면 전체 안읽음 여부가 false이다")
+        void getUnreadStatus_returnsFalseWhenNoUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            var result = chatQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isFalse();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("개인 안읽음만 있으면 전체 안읽음 여부가 true이다")
+        void getUnreadStatus_returnsTrueWhenOnlyDirectUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(true);
+
+            // when
+            var result = chatQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isTrue();
+        }
     }
 
     @Nested
@@ -142,7 +205,8 @@ class ChatQueryServiceTest {
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(membership));
                 given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
-                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(4);
+                given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, List.of(roomId)))
+                        .willReturn(List.of(new ChatRoomUnreadCountDTO(roomId, 4L)));
 
                 // when
                 PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 10);
@@ -158,8 +222,7 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.unreadCount()).isEqualTo(4);
                 assertThat(roomInfo.partyImgUrl()).isNull();
                 assertThat(roomInfo.lastMessage()).isNull();
-                verify(messageReadStatusRepository).countAllUnreadMessages(roomId, memberId);
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
+                verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
             }
 
             @Test
@@ -195,7 +258,8 @@ class ChatQueryServiceTest {
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(membership));
                 given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(3);
-                given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 30L)).willReturn(2);
+                given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, List.of(roomId)))
+                        .willReturn(List.of(new ChatRoomUnreadCountDTO(roomId, 2L)));
                 given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
                 given(fileService.getUrlFromKey("party/image.png")).willReturn("https://cdn.example.com/party/image.png");
 
@@ -218,8 +282,7 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage().timestamp()).isEqualTo(sentAt);
                 assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
 
-                verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 30L);
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(roomId, memberId);
+                verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
                 verify(chatRoomListCacheService).getLastMessage(roomId);
                 verify(fileService).getUrlFromKey("party/image.png");
             }
@@ -255,8 +318,6 @@ class ChatQueryServiceTest {
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(12L, memberId)).willReturn(Optional.of(olderMembership));
                 given(chatRoomMemberRepository.countByChatRoomId(11L)).willReturn(2);
                 given(chatRoomMemberRepository.countByChatRoomId(12L)).willReturn(2);
-                given(messageReadStatusRepository.countAllUnreadMessages(11L, memberId)).willReturn(0);
-                given(messageReadStatusRepository.countAllUnreadMessages(12L, memberId)).willReturn(0);
                 given(chatRoomListCacheService.getLastMessage(11L)).willReturn(
                         LastMessageCacheDTO.builder().content("가장 최근 메시지").timestamp(LocalDateTime.of(2026, 4, 1, 20, 0)).messageType("TEXT").build());
                 given(chatRoomListCacheService.getLastMessage(12L)).willReturn(
@@ -360,7 +421,6 @@ class ChatQueryServiceTest {
                         .willReturn(searchResult);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(membership));
                 given(chatRoomMemberRepository.countByChatRoomId(roomId)).willReturn(1);
-                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(0);
 
                 // when
                 PartyChatRoomDTO.Response result = chatQueryService.searchPartyChatRoomsByName(memberId, name, 0, 10);
@@ -410,8 +470,6 @@ class ChatQueryServiceTest {
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(32L, memberId)).willReturn(Optional.of(olderMembership));
                 given(chatRoomMemberRepository.countByChatRoomId(31L)).willReturn(2);
                 given(chatRoomMemberRepository.countByChatRoomId(32L)).willReturn(2);
-                given(messageReadStatusRepository.countAllUnreadMessages(31L, memberId)).willReturn(0);
-                given(messageReadStatusRepository.countAllUnreadMessages(32L, memberId)).willReturn(0);
 
                 // when
                 PartyChatRoomDTO.Response result = chatQueryService.searchPartyChatRoomsByName(memberId, name, 0, 10);
@@ -512,7 +570,8 @@ class ChatQueryServiceTest {
                 given(chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(3);
+                given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, List.of(roomId)))
+                        .willReturn(List.of(new ChatRoomUnreadCountDTO(roomId, 3L)));
 
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
@@ -528,8 +587,7 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.unreadCount()).isEqualTo(3);
                 assertThat(roomInfo.lastMessage()).isNull();
 
-                verify(messageReadStatusRepository).countAllUnreadMessages(roomId, memberId);
-                verify(messageReadStatusRepository, never()).countUnreadMessagesAfter(anyLong(), anyLong(), anyLong());
+                verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
                 verify(fileService, never()).getUrlFromKey(any());
             }
 
@@ -573,7 +631,8 @@ class ChatQueryServiceTest {
                 given(chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 5)))
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-                given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 30L)).willReturn(2);
+                given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, List.of(roomId)))
+                        .willReturn(List.of(new ChatRoomUnreadCountDTO(roomId, 2L)));
                 given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
                 given(fileService.getUrlFromKey("member/profile.png")).willReturn("https://cdn.example.com/member/profile.png");
 
@@ -594,8 +653,7 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage().timestamp()).isEqualTo(sentAt);
                 assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
 
-                verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 30L);
-                verify(messageReadStatusRepository, never()).countAllUnreadMessages(roomId, memberId);
+                verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
                 verify(chatRoomListCacheService).getLastMessage(roomId);
                 verify(fileService).getUrlFromKey("member/profile.png");
             }
@@ -631,7 +689,6 @@ class ChatQueryServiceTest {
                 given(chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(0);
 
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
@@ -670,7 +727,6 @@ class ChatQueryServiceTest {
                 given(chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, PageRequest.of(0, 10)))
                         .willReturn(chatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId)).willReturn(Optional.of(myMembership));
-                given(messageReadStatusRepository.countAllUnreadMessages(roomId, memberId)).willReturn(0);
 
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
@@ -720,8 +776,6 @@ class ChatQueryServiceTest {
                         .willReturn(orderedChatRooms);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(51L, memberId)).willReturn(Optional.of(newerMyMembership));
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(52L, memberId)).willReturn(Optional.of(olderMyMembership));
-                given(messageReadStatusRepository.countAllUnreadMessages(51L, memberId)).willReturn(0);
-                given(messageReadStatusRepository.countAllUnreadMessages(52L, memberId)).willReturn(0);
 
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
@@ -806,8 +860,8 @@ class ChatQueryServiceTest {
                         .willReturn(searchResult);
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(roomId, memberId))
                         .willReturn(Optional.of(myMembership));
-                given(messageReadStatusRepository.countUnreadMessagesAfter(roomId, memberId, 40L))
-                        .willReturn(2);
+                given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, List.of(roomId)))
+                        .willReturn(List.of(new ChatRoomUnreadCountDTO(roomId, 2L)));
                 given(chatRoomListCacheService.getLastMessage(roomId)).willReturn(lastMessage);
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 0, 5);
@@ -828,7 +882,7 @@ class ChatQueryServiceTest {
                 assertThat(roomInfo.lastMessage().messageType()).isEqualTo("TEXT");
 
                 verify(chatRoomRepository).searchDirectChatRoomsByName(memberId, name, PageRequest.of(0, 5));
-                verify(messageReadStatusRepository).countUnreadMessagesAfter(roomId, memberId, 40L);
+                verify(messageReadStatusRepository).countUnreadMessagesByChatRooms(memberId, List.of(roomId));
                 verify(fileService, never()).getUrlFromKey("member/search-profile.png");
                 verify(chatRoomListCacheService).getLastMessage(roomId);
             }
@@ -877,8 +931,6 @@ class ChatQueryServiceTest {
                         .willReturn(Optional.of(newerMyMembership));
                 given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(72L, memberId))
                         .willReturn(Optional.of(olderMyMembership));
-                given(messageReadStatusRepository.countAllUnreadMessages(71L, memberId)).willReturn(0);
-                given(messageReadStatusRepository.countAllUnreadMessages(72L, memberId)).willReturn(0);
 
                 // when
                 DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 1, 2);

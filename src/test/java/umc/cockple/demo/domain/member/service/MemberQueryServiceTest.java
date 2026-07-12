@@ -9,8 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.contest.enums.MedalType;
+import umc.cockple.demo.domain.contest.dto.ContestMedalSummaryDTO;
+import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -23,6 +23,8 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
+import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Keyword;
@@ -47,9 +49,21 @@ class MemberQueryServiceTest {
     private MemberQueryService memberQueryService;
 
     @Mock private MemberRepository memberRepository;
+    @Mock private MemberPartyRepository memberPartyRepository;
+    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ContestQueryService contestQueryService;
     @Mock private FileService fileService;
 
     private Member member;
+
+    private static ContestMedalSummaryDTO.Response medals(int gold, int silver, int bronze) {
+        return ContestMedalSummaryDTO.Response.builder()
+                .myMedalTotal(gold + silver + bronze)
+                .goldCount(gold)
+                .silverCount(silver)
+                .bronzeCount(bronze)
+                .build();
+    }
 
     @BeforeEach
     void setUp() {
@@ -75,6 +89,7 @@ class MemberQueryServiceTest {
                 ReflectionTestUtils.setField(member, "profileImg", profileImg);
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(0, 0, 0));
                 given(fileService.getUrlFromKey("profile/test-key.jpg"))
                         .willReturn("https://cdn.example.com/profile/test-key.jpg");
 
@@ -91,6 +106,7 @@ class MemberQueryServiceTest {
             void profileImg가_없으면_imgUrl이_null로_반환된다() {
                 // given
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(0, 0, 0));
 
                 // when
                 GetProfileResponseDTO response = memberQueryService.getProfile(member.getId());
@@ -101,17 +117,11 @@ class MemberQueryServiceTest {
             }
 
             @Test
-            @DisplayName("금_은_동_메달_개수가_올바르게_집계된다")
+            @DisplayName("금_은_동_메달_개수가_contest_집계_결과로_반환된다")
             void 금_은_동_메달_개수가_올바르게_집계된다() {
                 // given
-                Contest gold1 = Contest.builder().medalType(MedalType.GOLD).build();
-                Contest gold2 = Contest.builder().medalType(MedalType.GOLD).build();
-                Contest silver = Contest.builder().medalType(MedalType.SILVER).build();
-                Contest bronze = Contest.builder().medalType(MedalType.BRONZE).build();
-
-                member.getContests().addAll(List.of(gold1, gold2, silver, bronze));
-
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(2, 1, 1));
 
                 // when
                 GetProfileResponseDTO response = memberQueryService.getProfile(member.getId());
@@ -123,13 +133,12 @@ class MemberQueryServiceTest {
             }
 
             @Test
-            @DisplayName("참여한_모임_수가_올바르게_반환된다")
+            @DisplayName("참여한_모임_수가_COUNT_쿼리_결과로_반환된다")
             void 참여한_모임_수가_올바르게_반환된다() {
                 // given
-                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.PARTY_MEMBER));
-                member.getMemberParties().add(MemberFixture.createMemberParty(null, member, umc.cockple.demo.global.enums.Role.PARTY_MEMBER));
-
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(0, 0, 0));
+                given(memberPartyRepository.countByMember_Id(member.getId())).willReturn(2L);
 
                 // when
                 GetProfileResponseDTO response = memberQueryService.getProfile(member.getId());
@@ -218,9 +227,6 @@ class MemberQueryServiceTest {
                 MemberAddr mainAddr = MemberAddrFixture.createAddr(member, "역삼동", "서울특별시 강남구 테헤란로 1", true);
                 member.getAddresses().add(mainAddr);
 
-                MemberExercise exercise = MemberFixture.createMemberExercise(member, null);
-                member.getMemberExercises().add(exercise);
-
                 umc.cockple.demo.domain.member.domain.MemberKeyword keyword =
                         umc.cockple.demo.domain.member.domain.MemberKeyword.builder()
                                 .member(member)
@@ -229,6 +235,8 @@ class MemberQueryServiceTest {
                 member.getKeywords().add(keyword);
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
+                given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(0, 0, 0));
+                given(memberExerciseRepository.countByMember_Id(member.getId())).willReturn(1L);
 
                 // when
                 GetMyProfileResponseDTO response = memberQueryService.getMyProfile(member.getId());

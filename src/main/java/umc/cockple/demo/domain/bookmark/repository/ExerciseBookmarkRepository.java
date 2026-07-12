@@ -18,6 +18,19 @@ public interface ExerciseBookmarkRepository extends JpaRepository<ExerciseBookma
 
     List<ExerciseBookmark> findAllByMember(Member member);
 
+    @Query("""
+            SELECT DISTINCT eb
+            FROM ExerciseBookmark eb
+            JOIN FETCH eb.exercise e
+            JOIN FETCH e.party p
+            LEFT JOIN FETCH e.exerciseAddr
+            LEFT JOIN FETCH p.partyImg
+            LEFT JOIN FETCH p.chatRoom
+            LEFT JOIN FETCH p.levels
+            WHERE eb.member = :member
+            """)
+    List<ExerciseBookmark> findAllByMemberWithDetails(@Param("member") Member member);
+
 
     @Query("""
             SELECT eb.exercise.id FROM ExerciseBookmark eb
