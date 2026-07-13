@@ -59,8 +59,9 @@ src/main/resources/firebase/*.json
 
 cockple_dump.sql
 
-k6
+### k6 load test ###
+k6/*.json
 
 ### logs ###
 logs/
-/result-bulkhead-*.json
+/result-*.json
