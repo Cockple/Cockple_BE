@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -22,7 +20,6 @@ public class NotificationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async("notificationExecutor")
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public void handleNotification(NotificationEvent event) {
         log.info("[NOTIFICATION] FCM 전송 이벤트 처리 - memberId: {}", event.memberId());
         memberRepository.findById(event.memberId()).ifPresentOrElse(
