@@ -20,8 +20,6 @@ public class NotificationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async("notificationExecutor")
-    // @Transactional 두지 않음: FCM(외부 I/O) 호출 동안 DB 커넥션을 점유하지 않기 위함.
-    // findById는 리포지토리 자체 트랜잭션으로 커넥션을 짧게 잡았다 반납한다.
     public void handleNotification(NotificationEvent event) {
         log.info("[NOTIFICATION] FCM 전송 이벤트 처리 - memberId: {}", event.memberId());
         memberRepository.findById(event.memberId()).ifPresentOrElse(
