@@ -15,6 +15,8 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -87,6 +90,48 @@ class ChatRoomServiceTest {
             assertThat(savedMember.getChatRoom()).isSameAs(savedChatRoom);
             assertThat(savedMember.getMember()).isSameAs(owner);
             assertThat(savedMember.getStatus()).isEqualTo(ChatRoomMemberStatus.JOINED);
+        }
+    }
+
+    @Nested
+    @DisplayName("joinPartyChatRoom")
+    class JoinPartyChatRoom {
+
+        @Test
+        @DisplayName("성공 - 기존 PARTY 채팅방에 멤버를 JOINED 상태로 저장한다")
+        void success_joinPartyChatRoom() {
+            Long partyId = 1L;
+            Long chatRoomId = 2L;
+            Member member = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 1002L);
+            ReflectionTestUtils.setField(member, "id", 20L);
+            var party = PartyFixture.createParty("테스트 모임", 10L, PartyFixture.createPartyAddr("서울", "강남"));
+            ReflectionTestUtils.setField(party, "id", partyId);
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+
+            chatRoomService.joinPartyChatRoom(partyId, member);
+
+            ArgumentCaptor<ChatRoomMember> chatRoomMemberCaptor = ArgumentCaptor.forClass(ChatRoomMember.class);
+            verify(chatRoomMemberRepository).save(chatRoomMemberCaptor.capture());
+            ChatRoomMember savedMember = chatRoomMemberCaptor.getValue();
+            assertThat(savedMember.getChatRoom()).isSameAs(chatRoom);
+            assertThat(savedMember.getMember()).isSameAs(member);
+            assertThat(savedMember.getStatus()).isEqualTo(ChatRoomMemberStatus.JOINED);
+        }
+
+        @Test
+        @DisplayName("실패 - PARTY 채팅방이 없으면 CHAT_ROOM_NOT_FOUND 예외를 던지고 저장하지 않는다")
+        void fail_joinPartyChatRoom_whenRoomMissing() {
+            Long partyId = 1L;
+            Member member = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 1002L);
+            ReflectionTestUtils.setField(member, "id", 20L);
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> chatRoomService.joinPartyChatRoom(partyId, member))
+                    .isInstanceOfSatisfying(ChatException.class,
+                            exception -> assertThat(exception.getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+            verify(chatRoomMemberRepository, never()).save(any(ChatRoomMember.class));
         }
     }
 
