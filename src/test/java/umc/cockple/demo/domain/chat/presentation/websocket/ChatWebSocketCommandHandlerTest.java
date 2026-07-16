@@ -11,6 +11,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
+import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
@@ -20,6 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatWebSocketCommandHandler")
@@ -200,6 +203,276 @@ class ChatWebSocketCommandHandlerTest {
     }
 
     @Test
+    @DisplayName("SEND 검증 실패 시 오류 응답을 보내고 이벤트를 발행하지 않는다")
+    void handleSend_sendsErrorResponse_whenValidationFails() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        ChatErrorCode errorCode = ChatErrorCode.CHAT_ROOM_ACCESS_DENIED;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SEND,
+                chatRoomId,
+                null,
+                "hello",
+                List.of(),
+                null
+        );
+        willThrow(new ChatException(errorCode))
+                .given(chatValidator)
+                .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        thenChatErrorResponseSent(errorCode);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE 검증 실패 시 오류 응답을 보내고 이벤트를 발행하지 않는다")
+    void handleSubscribe_sendsErrorResponse_whenValidationFails() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        ChatErrorCode errorCode = ChatErrorCode.CHAT_ROOM_ACCESS_DENIED;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+        willThrow(new ChatException(errorCode))
+                .given(chatValidator)
+                .validateSubscriptionRequest(chatRoomId, memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        thenChatErrorResponseSent(errorCode);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE 검증 실패 시 오류 응답을 보내고 이벤트를 발행하지 않는다")
+    void handleUnsubscribe_sendsErrorResponse_whenValidationFails() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        ChatErrorCode errorCode = ChatErrorCode.CHAT_ROOM_ACCESS_DENIED;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+        willThrow(new ChatException(errorCode))
+                .given(chatValidator)
+                .validateUnsubscriptionRequest(chatRoomId, memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        thenChatErrorResponseSent(errorCode);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE_CHAT_LIST 검증 실패 시 오류 응답을 보내고 이벤트를 발행하지 않는다")
+    void handleSubscribeChatList_sendsErrorResponse_whenValidationFails() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        ChatErrorCode errorCode = ChatErrorCode.CHAT_ROOM_ACCESS_DENIED;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+        willThrow(new ChatException(errorCode))
+                .given(chatValidator)
+                .validateChatListSubscriptionRequest(memberId, chatRoomIds);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        thenChatErrorResponseSent(errorCode);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE_CHAT_LIST 검증 실패 시 오류 응답을 보내고 이벤트를 발행하지 않는다")
+    void handleUnsubscribeChatList_sendsErrorResponse_whenValidationFails() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        ChatErrorCode errorCode = ChatErrorCode.CHAT_ROOM_ACCESS_DENIED;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+        willThrow(new ChatException(errorCode))
+                .given(chatValidator)
+                .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        thenChatErrorResponseSent(errorCode);
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SEND 처리 중 예상치 못한 예외 발생 시 SEND_MESSAGE_ERROR 응답을 보낸다")
+    void handleSend_sendsFallbackError_whenUnexpectedExceptionOccurs() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SEND,
+                chatRoomId,
+                null,
+                "hello",
+                List.of(),
+                null
+        );
+        willThrow(new IllegalStateException("boom"))
+                .given(chatValidator)
+                .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE 처리 중 예상치 못한 예외 발생 시 SUBSCRIPTION_ERROR 응답을 보낸다")
+    void handleSubscribe_sendsFallbackError_whenUnexpectedExceptionOccurs() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+        willThrow(new IllegalStateException("boom"))
+                .given(chatValidator)
+                .validateSubscriptionRequest(chatRoomId, memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE 처리 중 예상치 못한 예외 발생 시 UNSUBSCRIPTION_ERROR 응답을 보낸다")
+    void handleUnsubscribe_sendsFallbackError_whenUnexpectedExceptionOccurs() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+        willThrow(new IllegalStateException("boom"))
+                .given(chatValidator)
+                .validateUnsubscriptionRequest(chatRoomId, memberId);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE_CHAT_LIST 처리 중 예상치 못한 예외 발생 시 SUBSCRIPTION_ERROR 응답을 보낸다")
+    void handleSubscribeChatList_sendsFallbackError_whenUnexpectedExceptionOccurs() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+        willThrow(new IllegalStateException("boom"))
+                .given(chatValidator)
+                .validateChatListSubscriptionRequest(memberId, chatRoomIds);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE_CHAT_LIST 처리 중 예상치 못한 예외 발생 시 UNSUBSCRIPTION_ERROR 응답을 보낸다")
+    void handleUnsubscribeChatList_sendsFallbackError_whenUnexpectedExceptionOccurs() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+        willThrow(new IllegalStateException("boom"))
+                .given(chatValidator)
+                .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("처리 대상이 아닌 타입이면 UNKNOWN_TYPE 오류 응답을 보낸다")
     void handle_sendsUnknownTypeError_whenRequestTypeIsNotCommand() {
         // given
@@ -221,5 +494,10 @@ class ChatWebSocketCommandHandlerTest {
                 .sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + WebSocketMessageType.ERROR);
         then(chatValidator).shouldHaveNoInteractions();
         then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    private void thenChatErrorResponseSent(ChatErrorCode errorCode) {
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, errorCode.getReason().getCode(), errorCode.getReason().getMessage());
     }
 }
