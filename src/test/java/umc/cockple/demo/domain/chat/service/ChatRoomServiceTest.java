@@ -4,12 +4,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
+import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.events.ChatRoomRedisCleanupEvent;
 import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -17,12 +21,17 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
+import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -50,6 +59,36 @@ class ChatRoomServiceTest {
     private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Nested
+    @DisplayName("createPartyChatRoom")
+    class CreatePartyChatRoom {
+
+        @Test
+        @DisplayName("성공 - PARTY 채팅방을 생성하고 owner를 JOINED 멤버로 포함해 저장한다")
+        void success_createPartyChatRoom() {
+            Long partyId = 1L;
+            Member owner = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+            ReflectionTestUtils.setField(owner, "id", 10L);
+            var party = PartyFixture.createParty("테스트 모임", owner.getId(), PartyFixture.createPartyAddr("서울", "강남"));
+            ReflectionTestUtils.setField(party, "id", partyId);
+            given(chatRoomRepository.save(any(ChatRoom.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            chatRoomService.createPartyChatRoom(party, owner);
+
+            ArgumentCaptor<ChatRoom> chatRoomCaptor = ArgumentCaptor.forClass(ChatRoom.class);
+            verify(chatRoomRepository).save(chatRoomCaptor.capture());
+            ChatRoom savedChatRoom = chatRoomCaptor.getValue();
+            assertThat(savedChatRoom.getType()).isEqualTo(ChatRoomType.PARTY);
+            assertThat(savedChatRoom.getParty()).isSameAs(party);
+            assertThat(savedChatRoom.getChatRoomMembers()).hasSize(1);
+
+            ChatRoomMember savedMember = savedChatRoom.getChatRoomMembers().get(0);
+            assertThat(savedMember.getChatRoom()).isSameAs(savedChatRoom);
+            assertThat(savedMember.getMember()).isSameAs(owner);
+            assertThat(savedMember.getStatus()).isEqualTo(ChatRoomMemberStatus.JOINED);
+        }
+    }
 
     @Nested
     @DisplayName("deletePartyChatRoom")
