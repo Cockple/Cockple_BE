@@ -11,7 +11,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
+import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.service.ChatValidator;
 
 import java.util.List;
@@ -69,6 +71,132 @@ class ChatWebSocketCommandHandlerTest {
         assertThat(event.files()).isEmpty();
 
         then(webSocketResponseSender).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE 요청을 검증한 뒤 채팅방 구독 이벤트를 발행하고 ACK를 보낸다")
+    void handleSubscribe_publishesChatRoomSubscriptionEventAndSendsAck() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(chatValidator).should().validateSubscriptionRequest(chatRoomId, memberId);
+
+        ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        ChatRoomSubscriptionEvent event = eventCaptor.getValue();
+        assertThat(event.chatRoomId()).isEqualTo(chatRoomId);
+        assertThat(event.memberId()).isEqualTo(memberId);
+        assertThat(event.action()).isEqualTo("SUBSCRIBE");
+
+        then(webSocketResponseSender).should().sendSubscriptionMessage(session, chatRoomId, "SUBSCRIBE");
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE 요청을 검증한 뒤 채팅방 구독 해제 이벤트를 발행하고 ACK를 보낸다")
+    void handleUnsubscribe_publishesChatRoomSubscriptionEventAndSendsAck() {
+        // given
+        Long memberId = 10L;
+        Long chatRoomId = 20L;
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE,
+                chatRoomId,
+                null,
+                null,
+                null,
+                null
+        );
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(chatValidator).should().validateUnsubscriptionRequest(chatRoomId, memberId);
+
+        ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        ChatRoomSubscriptionEvent event = eventCaptor.getValue();
+        assertThat(event.chatRoomId()).isEqualTo(chatRoomId);
+        assertThat(event.memberId()).isEqualTo(memberId);
+        assertThat(event.action()).isEqualTo("UNSUBSCRIBE");
+
+        then(webSocketResponseSender).should().sendSubscriptionMessage(session, chatRoomId, "UNSUBSCRIBE");
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE_CHAT_LIST 요청을 검증한 뒤 목록 구독 이벤트를 발행하고 ACK를 보낸다")
+    void handleSubscribeChatList_publishesChatListSubscriptionEventAndSendsAck() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.SUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(chatValidator).should().validateChatListSubscriptionRequest(memberId, chatRoomIds);
+
+        ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        ChatListSubscriptionEvent event = eventCaptor.getValue();
+        assertThat(event.memberId()).isEqualTo(memberId);
+        assertThat(event.chatRoomIds()).containsExactlyElementsOf(chatRoomIds);
+        assertThat(event.action()).isEqualTo("SUBSCRIBE");
+
+        then(webSocketResponseSender).should()
+                .sendChatListSubscriptionMessage(session, chatRoomIds, "SUBSCRIBE_CHAT_LIST");
+    }
+
+    @Test
+    @DisplayName("UNSUBSCRIBE_CHAT_LIST 요청을 검증한 뒤 목록 구독 해제 이벤트를 발행하고 ACK를 보낸다")
+    void handleUnsubscribeChatList_publishesChatListSubscriptionEventAndSendsAck() {
+        // given
+        Long memberId = 10L;
+        List<Long> chatRoomIds = List.of(20L, 30L);
+        WebSocketMessageDTO.Request request = new WebSocketMessageDTO.Request(
+                WebSocketMessageType.UNSUBSCRIBE_CHAT_LIST,
+                null,
+                chatRoomIds,
+                null,
+                null,
+                null
+        );
+
+        // when
+        commandHandler.handle(session, request, memberId);
+
+        // then
+        then(chatValidator).should().validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
+
+        ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        ChatListSubscriptionEvent event = eventCaptor.getValue();
+        assertThat(event.memberId()).isEqualTo(memberId);
+        assertThat(event.chatRoomIds()).containsExactlyElementsOf(chatRoomIds);
+        assertThat(event.action()).isEqualTo("UNSUBSCRIBE");
+
+        then(webSocketResponseSender).should()
+                .sendChatListSubscriptionMessage(session, chatRoomIds, "UNSUBSCRIBE_CHAT_LIST");
     }
 
     @Test
