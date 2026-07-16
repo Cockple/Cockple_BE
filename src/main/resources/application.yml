@@ -2,6 +2,10 @@ server:
   port: 8080
   address: 0.0.0.0
   forward-headers-strategy: native
+  tomcat:
+    mbeanregistry:
+      # Micrometer가 tomcat_threads_* 지표를 읽으려면 Tomcat MBean 등록이 필요(기본 off).
+      enabled: true
 
 spring:
   application:
