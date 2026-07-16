@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -132,6 +133,66 @@ class ChatRoomServiceTest {
                     .isInstanceOfSatisfying(ChatException.class,
                             exception -> assertThat(exception.getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
             verify(chatRoomMemberRepository, never()).save(any(ChatRoomMember.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("leavePartyChatRoom")
+    class LeavePartyChatRoom {
+
+        @Test
+        @DisplayName("성공 - 참여 중인 멤버가 있으면 해당 멤버십을 삭제한다")
+        void success_leavePartyChatRoom() {
+            Long partyId = 1L;
+            Long chatRoomId = 2L;
+            Long memberId = 20L;
+            var party = PartyFixture.createParty("테스트 모임", 10L, PartyFixture.createPartyAddr("서울", "강남"));
+            ReflectionTestUtils.setField(party, "id", partyId);
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
+            Member member = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 1002L);
+            ReflectionTestUtils.setField(member, "id", memberId);
+            ChatRoomMember chatRoomMember = ChatRoomMember.create(chatRoom, member);
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
+                    .willReturn(Optional.of(chatRoomMember));
+
+            chatRoomService.leavePartyChatRoom(partyId, memberId);
+
+            verify(chatRoomMemberRepository).delete(chatRoomMember);
+        }
+
+        @Test
+        @DisplayName("성공 - 참여 중인 멤버가 없으면 삭제하지 않고 종료한다")
+        void success_leavePartyChatRoom_whenMembershipMissing() {
+            Long partyId = 1L;
+            Long chatRoomId = 2L;
+            Long memberId = 20L;
+            var party = PartyFixture.createParty("테스트 모임", 10L, PartyFixture.createPartyAddr("서울", "강남"));
+            ReflectionTestUtils.setField(party, "id", partyId);
+            ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+            ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
+                    .willReturn(Optional.empty());
+
+            chatRoomService.leavePartyChatRoom(partyId, memberId);
+
+            verify(chatRoomMemberRepository, never()).delete(any(ChatRoomMember.class));
+        }
+
+        @Test
+        @DisplayName("실패 - PARTY 채팅방이 없으면 CHAT_ROOM_NOT_FOUND 예외를 던지고 멤버십을 조회하지 않는다")
+        void fail_leavePartyChatRoom_whenRoomMissing() {
+            Long partyId = 1L;
+            Long memberId = 20L;
+            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> chatRoomService.leavePartyChatRoom(partyId, memberId))
+                    .isInstanceOfSatisfying(ChatException.class,
+                            exception -> assertThat(exception.getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+            verify(chatRoomMemberRepository, never()).findByChatRoomIdAndMemberId(anyLong(), anyLong());
+            verify(chatRoomMemberRepository, never()).delete(any(ChatRoomMember.class));
         }
     }
 
