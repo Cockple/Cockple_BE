@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -19,8 +18,6 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
-import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
-import umc.cockple.demo.domain.chat.dto.LastMessageCacheDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
@@ -30,7 +27,6 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
 import umc.cockple.demo.domain.chat.service.query.DirectChatRoomQueryService;
 import umc.cockple.demo.domain.file.service.FileService;
@@ -47,6 +43,7 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,7 +68,6 @@ class ChatQueryServiceTest {
     @Mock private PartyRepository partyRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
-    @Mock private ChatRoomListCacheService chatRoomListCacheService;
     @Mock private FileService fileService;
     @Mock private PartyChatRoomQueryService partyChatRoomQueryService;
     @Mock private DirectChatRoomQueryService directChatRoomQueryService;
@@ -96,7 +92,6 @@ class ChatQueryServiceTest {
                 chatConverter,
                 fileService,
                 chatProcessor,
-                chatRoomListCacheService,
                 partyChatRoomQueryService,
                 directChatRoomQueryService
         );
@@ -157,6 +152,93 @@ class ChatQueryServiceTest {
             assertThat(result.hasUnread()).isTrue();
             assertThat(result.hasPartyUnread()).isFalse();
             assertThat(result.hasDirectUnread()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("채팅방 목록 조회 위임")
+    class ChatRoomListDelegation {
+
+        @Test
+        @DisplayName("모임 채팅방 목록 조회는 모임 조회 서비스로 위임한다")
+        void delegatesPartyChatRooms() {
+            // given
+            Long memberId = 10L;
+            PartyChatRoomDTO.Response expected = PartyChatRoomDTO.Response.builder()
+                    .content(Collections.emptyList())
+                    .hasNext(false)
+                    .build();
+            given(partyChatRoomQueryService.getPartyChatRooms(memberId, 0, 10))
+                    .willReturn(expected);
+
+            // when
+            PartyChatRoomDTO.Response result = chatQueryService.getPartyChatRooms(memberId, 0, 10);
+
+            // then
+            assertThat(result).isSameAs(expected);
+            verify(partyChatRoomQueryService).getPartyChatRooms(memberId, 0, 10);
+        }
+
+        @Test
+        @DisplayName("모임 채팅방 검색은 모임 조회 서비스로 위임한다")
+        void delegatesPartyChatRoomSearch() {
+            // given
+            Long memberId = 10L;
+            String name = "배드";
+            PartyChatRoomDTO.Response expected = PartyChatRoomDTO.Response.builder()
+                    .content(Collections.emptyList())
+                    .hasNext(false)
+                    .build();
+            given(partyChatRoomQueryService.searchPartyChatRoomsByName(memberId, name, 1, 5))
+                    .willReturn(expected);
+
+            // when
+            PartyChatRoomDTO.Response result = chatQueryService.searchPartyChatRoomsByName(memberId, name, 1, 5);
+
+            // then
+            assertThat(result).isSameAs(expected);
+            verify(partyChatRoomQueryService).searchPartyChatRoomsByName(memberId, name, 1, 5);
+        }
+
+        @Test
+        @DisplayName("개인 채팅방 목록 조회는 개인 조회 서비스로 위임한다")
+        void delegatesDirectChatRooms() {
+            // given
+            Long memberId = 10L;
+            DirectChatRoomDTO.Response expected = DirectChatRoomDTO.Response.builder()
+                    .content(Collections.emptyList())
+                    .hasNext(false)
+                    .build();
+            given(directChatRoomQueryService.getDirectChatRooms(memberId, 0, 10))
+                    .willReturn(expected);
+
+            // when
+            DirectChatRoomDTO.Response result = chatQueryService.getDirectChatRooms(memberId, 0, 10);
+
+            // then
+            assertThat(result).isSameAs(expected);
+            verify(directChatRoomQueryService).getDirectChatRooms(memberId, 0, 10);
+        }
+
+        @Test
+        @DisplayName("개인 채팅방 검색은 개인 조회 서비스로 위임한다")
+        void delegatesDirectChatRoomSearch() {
+            // given
+            Long memberId = 10L;
+            String name = "영희";
+            DirectChatRoomDTO.Response expected = DirectChatRoomDTO.Response.builder()
+                    .content(Collections.emptyList())
+                    .hasNext(false)
+                    .build();
+            given(directChatRoomQueryService.searchDirectChatRoomsByName(memberId, name, 1, 5))
+                    .willReturn(expected);
+
+            // when
+            DirectChatRoomDTO.Response result = chatQueryService.searchDirectChatRoomsByName(memberId, name, 1, 5);
+
+            // then
+            assertThat(result).isSameAs(expected);
+            verify(directChatRoomQueryService).searchDirectChatRoomsByName(memberId, name, 1, 5);
         }
     }
 

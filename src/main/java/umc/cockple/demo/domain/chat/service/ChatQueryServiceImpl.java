@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -20,7 +19,6 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.query.DirectChatRoomQueryService;
 import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -49,7 +47,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatConverter chatConverter;
     private final FileService fileService;
     private final ChatProcessor chatProcessor;
-    private final ChatRoomListCacheService chatRoomListCacheService;
     private final PartyChatRoomQueryService partyChatRoomQueryService;
     private final DirectChatRoomQueryService directChatRoomQueryService;
 
