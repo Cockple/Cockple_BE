@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -50,25 +51,16 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final FileService fileService;
     private final ChatProcessor chatProcessor;
     private final ChatRoomListCacheService chatRoomListCacheService;
+    private final PartyChatRoomQueryService partyChatRoomQueryService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
-        log.info("[모임 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
-        PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
-        log.info("[모임 채팅방 목록 조회 완료]");
-        return response;
+        return partyChatRoomQueryService.getPartyChatRooms(memberId, page, size);
     }
 
     @Override
     public PartyChatRoomDTO.Response searchPartyChatRoomsByName(Long memberId, String name, int page, int size) {
-        log.info("[모임 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.searchPartyChatRoomsByName(memberId, name, pageable);
-        PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
-        log.info("[모임 채팅방 이름 검색 완료]");
-        return response;
+        return partyChatRoomQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
     }
 
     @Override
@@ -188,42 +180,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     // ========== 비즈니스 로직 ==========
-    private PartyChatRoomDTO.Response toPartyChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
-        if (chatRooms.isEmpty()) {
-            return chatConverter.toEmptyPartyChatRoomInfos();
-        }
-        List<ChatRoom> chatRoomList = chatRooms.getContent();
-        List<Long> chatRoomIds = chatRoomList.stream()
-                .map(ChatRoom::getId)
-                .toList();
-        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
-
-        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
-                .map(chatRoom -> {
-                    Long chatRoomId = chatRoom.getId();
-
-                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
-
-                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
-                    String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
-
-                    return chatConverter.toPartyChatRoomInfo(
-                            chatRoom,
-                            memberCount,
-                            unreadCount,
-                            chatConverter.toPartyLastMessageInfo(lastMessage),
-                            imgUrl
-                    );
-                })
-                .collect(Collectors.toList());
-
-        return chatConverter.toPartyChatRoomListResponse(roomInfos, chatRooms.hasNext());
-    }
-
     private DirectChatRoomDTO.Response toDirectChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
         if (chatRooms.isEmpty()) {
             return chatConverter.toEmptyDirectChatRoomInfos();
