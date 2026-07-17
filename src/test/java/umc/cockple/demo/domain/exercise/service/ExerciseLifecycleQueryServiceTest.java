@@ -27,7 +27,7 @@ import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
 import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
