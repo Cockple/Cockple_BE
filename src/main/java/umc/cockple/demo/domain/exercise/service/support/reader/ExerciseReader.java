@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -86,8 +86,8 @@ public class ExerciseReader {
             Member member,
             LocalDate startDate,
             LocalDate endDate,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            ExerciseRecommendationSearchCondition searchCondition) {
         return exerciseRepository.findFilteredRecommendedExercisesForCalendar(
-                member.getId(), member.getBirth().getYear(), filterSortType, startDate, endDate);
+                member.getId(), member.getBirth().getYear(), searchCondition, startDate, endDate);
     }
 }

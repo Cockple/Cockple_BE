@@ -1,7 +1,7 @@
 package umc.cockple.demo.domain.exercise.repository;
 
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -9,6 +9,6 @@ import java.util.List;
 public interface ExerciseRepositoryCustom {
 
     List<Exercise> findFilteredRecommendedExercisesForCalendar(
-            Long memberId, Integer memberBirthYear, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Long memberId, Integer memberBirthYear, ExerciseRecommendationSearchCondition searchCondition,
             LocalDate startDate, LocalDate endDate);
 }

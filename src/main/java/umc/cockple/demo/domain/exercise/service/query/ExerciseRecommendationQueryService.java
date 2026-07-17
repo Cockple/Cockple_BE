@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQu
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
@@ -73,7 +74,8 @@ public class ExerciseRecommendationQueryService {
         if (isCockpleRecommend) {
             exercises = exerciseReader.findCockpleRecommendedByDateRange(member, dateRange.start(), dateRange.end());
         } else {
-            exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), filterSortType);
+            ExerciseRecommendationSearchCondition searchCondition = toSearchCondition(filterSortType);
+            exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), searchCondition);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -86,6 +88,17 @@ public class ExerciseRecommendationQueryService {
         return exerciseRecommendationMapper.toRecommendationCalendarResponse(
                 exercises, bookmarkStatus, participantCountMap, mainAddr
                 , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
+    }
+
+    private static ExerciseRecommendationSearchCondition toSearchCondition(
+            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+        return new ExerciseRecommendationSearchCondition(
+                filterSortType.addr1(),
+                filterSortType.addr2(),
+                filterSortType.levels(),
+                filterSortType.participationTypes(),
+                filterSortType.activityTimes()
+        );
     }
 
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.QExercise;
 import umc.cockple.demo.domain.exercise.domain.QExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.member.domain.QMemberExercise;
 import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
@@ -39,7 +39,7 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
 
     @Override
     public List<Exercise> findFilteredRecommendedExercisesForCalendar(
-            Long memberId, Integer memberBirthYear, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            Long memberId, Integer memberBirthYear, ExerciseRecommendationSearchCondition searchCondition,
             LocalDate startDate, LocalDate endDate) {
 
         log.info("필터링된 추천 운동 조회 시작 - memberId: {}, 기간: {} ~ {}", memberId, startDate, endDate);
@@ -47,7 +47,7 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         BooleanBuilder whereClause = new BooleanBuilder();
 
         addBaseConditions(whereClause, memberId, memberBirthYear, startDate, endDate);
-        addDynamicFilters(whereClause, filterSortType);
+        addDynamicFilters(whereClause, searchCondition);
 
         List<Exercise> exercises = queryFactory
                 .selectFrom(exercise)
@@ -88,30 +88,30 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
         whereClause.and(exercise.outsideGuestAccept.eq(true));
     }
 
-    private void addDynamicFilters(BooleanBuilder whereClause, ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
-        if (filterSortType.addr1() != null) {
-            whereClause.and(exercise.exerciseAddr.addr1.eq(filterSortType.addr1()));
+    private void addDynamicFilters(BooleanBuilder whereClause, ExerciseRecommendationSearchCondition searchCondition) {
+        if (searchCondition.addr1() != null) {
+            whereClause.and(exercise.exerciseAddr.addr1.eq(searchCondition.addr1()));
 
-            if (filterSortType.addr2() != null)
-                whereClause.and(exercise.exerciseAddr.addr2.eq(filterSortType.addr2()));
+            if (searchCondition.addr2() != null)
+                whereClause.and(exercise.exerciseAddr.addr2.eq(searchCondition.addr2()));
         }
 
-        if (filterSortType.levels() != null && !filterSortType.levels().isEmpty()) {
+        if (searchCondition.levels() != null && !searchCondition.levels().isEmpty()) {
             whereClause.and(
                     JPAExpressions.selectOne()
                             .from(partyLevel)
                             .where(partyLevel.party.id.eq(party.id)
-                                    .and(partyLevel.level.in(filterSortType.levels())))
+                                    .and(partyLevel.level.in(searchCondition.levels())))
                             .exists()
             );
         }
 
-        if (filterSortType.participationTypes() != null) {
-            whereClause.and(party.partyType.in(filterSortType.participationTypes()));
+        if (searchCondition.participationTypes() != null) {
+            whereClause.and(party.partyType.in(searchCondition.participationTypes()));
         }
 
-        if (filterSortType.activityTimes() != null) {
-            List<ActivityTime> activityTimes = filterSortType.activityTimes().stream().toList();
+        if (searchCondition.activityTimes() != null) {
+            List<ActivityTime> activityTimes = searchCondition.activityTimes().stream().toList();
 
             List<ActivityTime> searchConditions = new ArrayList<>(activityTimes);
             if(ActivityTimeUtils.shouldAddAlways(searchConditions)) {

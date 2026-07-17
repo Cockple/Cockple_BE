@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendatio
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
@@ -443,10 +444,18 @@ class ExerciseRecommendationQueryServiceTest {
                         .sortType(MyPartyExerciseOrderType.POPULARITY)
                         .build();
 
+                ExerciseRecommendationSearchCondition expectedSearchCondition = new ExerciseRecommendationSearchCondition(
+                        "서울특별시",
+                        "강남구",
+                        List.of(Level.B),
+                        List.of(ParticipationType.SINGLE),
+                        List.of(ActivityTime.AFTERNOON)
+                );
+
                 given(memberRepository.findMemberWithAddresses(recommendationMember.getId()))
                         .willReturn(Optional.of(recommendationMember));
                 given(exerciseRepository.findFilteredRecommendedExercisesForCalendar(
-                        recommendationMember.getId(), 1995, filterSortType, startDate, endDate))
+                        recommendationMember.getId(), 1995, expectedSearchCondition, startDate, endDate))
                         .willReturn(List.of(earlyExercise, popularExercise));
                 given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
                         recommendationMember.getId(), List.of(earlyExercise.getId(), popularExercise.getId())))
@@ -480,7 +489,7 @@ class ExerciseRecommendationQueryServiceTest {
                         );
                 verify(exerciseRepository, never()).findCockpleRecommendedExercisesByDateRange(any(), any(), any(), anyInt(), any(), any());
                 verify(exerciseRepository).findFilteredRecommendedExercisesForCalendar(
-                        recommendationMember.getId(), 1995, filterSortType, startDate, endDate);
+                        recommendationMember.getId(), 1995, expectedSearchCondition, startDate, endDate);
             }
 
             @Test
