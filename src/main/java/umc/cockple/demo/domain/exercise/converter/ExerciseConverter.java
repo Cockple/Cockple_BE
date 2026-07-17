@@ -30,45 +30,6 @@ public class ExerciseConverter {
     private final FileService fileService;
 
     // ========== Response 변환 메서드들 ==========
-    public PartyExerciseCalendarDTO.Response toEmptyPartyCalendarResponse(
-            LocalDate start,
-            LocalDate end,
-            Boolean isMember,
-            Party party) {
-
-        return PartyExerciseCalendarDTO.Response.builder()
-                .startDate(start)
-                .endDate(end)
-                .isMember(isMember)
-                .partyName(party.getPartyName())
-                .weeks(Collections.emptyList())
-                .build();
-    }
-
-    public PartyExerciseCalendarDTO.Response toPartyCalendarResponse(
-            List<Exercise> exercises,
-            LocalDate start,
-            LocalDate end,
-            Boolean isMember,
-            Party party,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus,
-            Map<Long, Boolean> participatingStatus) {
-
-        PartyLevelCache levelCache = createPartyLevelCache(party);
-
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks
-                = groupPartyExerciseByWeek(exercises, levelCache, participantCounts, bookmarkStatus, start, end, participatingStatus);
-
-        return PartyExerciseCalendarDTO.Response.builder()
-                .startDate(start)
-                .endDate(end)
-                .isMember(isMember)
-                .partyName(party.getPartyName())
-                .weeks(weeks)
-                .build();
-    }
-
     public MyExerciseCalendarDTO.Response toEmptyMyCalendarResponse(LocalDate start, LocalDate end) {
         return MyExerciseCalendarDTO.Response.builder()
                 .startDate(start)
@@ -279,31 +240,6 @@ public class ExerciseConverter {
     }
 
     // 주별 그룹화 메서드
-    private List<PartyExerciseCalendarDTO.WeeklyExercises> groupPartyExerciseByWeek(
-            List<Exercise> exercises,
-            PartyLevelCache levelCache,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus,
-            LocalDate start,
-            LocalDate end,
-            Map<Long, Boolean> participatingStatus) {
-
-        List<PartyExerciseCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
-
-        for (LocalDate weekStart = getWeekStart(start); !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
-            LocalDate weekEnd = weekStart.plusDays(6);
-
-            List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
-
-            List<PartyExerciseCalendarDTO.DailyExercises> dailyExercisesList =
-                    groupPartyExerciseByDate(weekExercises, weekStart, weekEnd, levelCache, participantCounts, bookmarkStatus, participatingStatus);
-
-            weeks.add(this.createPartyWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
-        }
-
-        return weeks;
-    }
-
     private List<MyExerciseCalendarDTO.WeeklyExercises> groupMyExerciseByWeek(
             List<Exercise> exercises, LocalDate start, LocalDate end) {
 
@@ -374,33 +310,6 @@ public class ExerciseConverter {
     }
 
     // 날짜별 그룹화 메서드
-    private List<PartyExerciseCalendarDTO.DailyExercises> groupPartyExerciseByDate(
-            List<Exercise> weekExercises,
-            LocalDate weekStart,
-            LocalDate weekEnd,
-            PartyLevelCache levelCache,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus,
-            Map<Long, Boolean> participatingStatus) {
-
-        Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
-                .collect(Collectors.groupingBy(Exercise::getDate));
-
-        List<PartyExerciseCalendarDTO.DailyExercises> dailyExercisesList = new ArrayList<>();
-
-        for (LocalDate date = weekStart; !date.isAfter(weekEnd); date = date.plusDays(1)) {
-            List<Exercise> dayExercises = exercisesByDate.getOrDefault(date, Collections.emptyList());
-
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems = dayExercises.stream()
-                    .map(exercise -> toPartyCalendarItem(exercise, levelCache, participantCounts, bookmarkStatus, participatingStatus))
-                    .toList();
-
-            dailyExercisesList.add(createPartyDailyExercises(date, exerciseItems));
-        }
-
-        return dailyExercisesList;
-    }
-
     private List<MyExerciseCalendarDTO.DailyExercises> groupMyExerciseByDate(
             List<Exercise> weekExercises,
             LocalDate weekStart,
@@ -495,18 +404,6 @@ public class ExerciseConverter {
     }
 
     // 주별 운동 변환
-    private PartyExerciseCalendarDTO.WeeklyExercises createPartyWeeklyExercises(
-            LocalDate weekStart,
-            LocalDate weekEnd,
-            List<PartyExerciseCalendarDTO.DailyExercises> days) {
-
-        return PartyExerciseCalendarDTO.WeeklyExercises.builder()
-                .weekStartDate(weekStart)
-                .weekEndDate(weekEnd)
-                .days(days)
-                .build();
-    }
-
     private MyExerciseCalendarDTO.WeeklyExercises createMyWeeklyExercises(
             LocalDate weekStart,
             LocalDate weekEnd,
@@ -544,17 +441,6 @@ public class ExerciseConverter {
     }
 
     // 날짜별 운동 변환
-    private PartyExerciseCalendarDTO.DailyExercises createPartyDailyExercises(
-            LocalDate date,
-            List<PartyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
-
-        return PartyExerciseCalendarDTO.DailyExercises.builder()
-                .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
-                .exercises(exerciseItems)
-                .build();
-    }
-
     private MyExerciseCalendarDTO.DailyExercises createMyDailyExercises(
             LocalDate date,
             List<MyExerciseCalendarDTO.ExerciseCalendarItem> exerciseItems) {
@@ -589,29 +475,6 @@ public class ExerciseConverter {
     }
 
     // 운동 아이템 변환 메서드
-    private PartyExerciseCalendarDTO.ExerciseCalendarItem toPartyCalendarItem(
-            Exercise exercise,
-            PartyLevelCache levelCache,
-            Map<Long, Integer> participantCounts,
-            Map<Long, Boolean> bookmarkStatus,
-            Map<Long, Boolean> participatingStatus) {
-
-        Integer currentParticipants = participantCounts.getOrDefault(exercise.getId(), 0);
-
-        return PartyExerciseCalendarDTO.ExerciseCalendarItem.builder()
-                .exerciseId(exercise.getId())
-                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
-                .startTime(exercise.getStartTime())
-                .endTime(exercise.getEndTime())
-                .buildingName(exercise.getExerciseAddr().getBuildingName())
-                .femaleLevel(levelCache.femaleLevel())
-                .maleLevel(levelCache.maleLevel())
-                .currentParticipants(currentParticipants)
-                .maxCapacity(exercise.getMaxCapacity())
-                .isParticipating((participatingStatus.getOrDefault(exercise.getId(), false)))
-                .build();
-    }
-
     private MyExerciseCalendarDTO.ExerciseCalendarItem toMyCalendarItem(Exercise exercise) {
 
         Party party = exercise.getParty();

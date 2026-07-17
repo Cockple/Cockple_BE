@@ -14,7 +14,7 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.PartyExerciseCalendarMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -42,7 +42,6 @@ import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
-import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -97,14 +96,13 @@ class PartyExerciseQueryServiceTest {
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
-    @Mock private FileService fileService;
 
     private Party party;
     private Exercise exercise;
 
     @BeforeEach
     void setUp() {
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
+        PartyExerciseCalendarMapper partyExerciseCalendarMapper = new PartyExerciseCalendarMapper();
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),
@@ -112,7 +110,7 @@ class PartyExerciseQueryServiceTest {
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new MemberLookupService(memberRepository),
                 new PartyLookupService(partyRepository),
-                exerciseConverter
+                partyExerciseCalendarMapper
         );
 
         Member manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
