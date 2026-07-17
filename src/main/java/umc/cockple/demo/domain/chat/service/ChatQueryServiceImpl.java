@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.query.DirectChatRoomQueryService;
 import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
@@ -31,8 +32,6 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -52,6 +51,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatProcessor chatProcessor;
     private final ChatRoomListCacheService chatRoomListCacheService;
     private final PartyChatRoomQueryService partyChatRoomQueryService;
+    private final DirectChatRoomQueryService directChatRoomQueryService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -65,22 +65,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, int page, int size) {
-        log.info("[개인 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
-        DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
-        log.info("[개인 채팅방 목록 조회 완료]");
-        return response;
+        return directChatRoomQueryService.getDirectChatRooms(memberId, page, size);
     }
 
     @Override
     public DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, int page, int size) {
-        log.info("[개인 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.searchDirectChatRoomsByName(memberId, name, pageable);
-        DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
-        log.info("[개인 채팅방 이름 검색 완료]");
-        return response;
+        return directChatRoomQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
     }
 
     @Override
@@ -180,53 +170,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     // ========== 비즈니스 로직 ==========
-    private DirectChatRoomDTO.Response toDirectChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
-        if (chatRooms.isEmpty()) {
-            return chatConverter.toEmptyDirectChatRoomInfos();
-        }
-        List<ChatRoom> chatRoomList = chatRooms.getContent();
-        List<Long> chatRoomIds = chatRoomList.stream()
-                .map(ChatRoom::getId)
-                .toList();
-        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
-
-        // 각 채팅방에 대해 ChatRoomInfo 생성
-        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
-                .map(chatRoom -> {
-                    Long chatRoomId = chatRoom.getId();
-
-                    // 나의 채팅방 참여 정보
-                    ChatRoomMember myMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    // 상대방 찾기 (나 제외)
-                    ChatRoomMember displayMember = chatRoom.getChatRoomMembers().stream()
-                            .filter(crm -> crm.getMember() == null || !crm.getMember().getId().equals(memberId))
-                            .findFirst()
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
-
-                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
-
-                    Member counterPartMember = displayMember.getMember();
-                    boolean isWithdrawn = isWithdrawn(counterPartMember);
-                    String displayProfileImgUrl = isWithdrawn ? null : getImageUrl(counterPartMember.getProfileImg());
-
-                    return chatConverter.toDirectChatRoomInfo(
-                            chatRoom,
-                            myMember,
-                            isWithdrawn,
-                            unreadCount,
-                            chatConverter.toDirectLastMessageInfo(lastMessage),
-                            displayProfileImgUrl
-                    );
-                })
-                .collect(Collectors.toList());
-
-        return chatConverter.toDirectChatRoomListResponse(roomInfos, chatRooms.hasNext());
-    }
-
     private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {
         String displayName;
         String profileImageUrl = null;
