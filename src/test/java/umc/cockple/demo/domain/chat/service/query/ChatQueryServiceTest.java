@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -74,6 +75,7 @@ class ChatQueryServiceTest {
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
     private ChatUnreadQueryService chatUnreadQueryService;
+    private ImageUrlResolver imageUrlResolver;
     private ChatQueryServiceImpl chatQueryService;
 
     @BeforeEach
@@ -81,6 +83,7 @@ class ChatQueryServiceTest {
         chatConverter = new ChatConverter();
         chatProcessor = new ChatProcessor(fileService, chatConverter);
         chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
+        imageUrlResolver = new ImageUrlResolver(fileService);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
                 chatRoomMemberRepository,
@@ -89,7 +92,7 @@ class ChatQueryServiceTest {
                 memberPartyRepository,
                 chatUnreadQueryService,
                 chatConverter,
-                fileService,
+                imageUrlResolver,
                 chatProcessor,
                 partyChatRoomQueryService,
                 directChatRoomQueryService

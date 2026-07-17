@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public class PartyChatRoomQueryService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
     private final ChatRoomListCacheService chatRoomListCacheService;
 
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -75,7 +75,7 @@ public class PartyChatRoomQueryService {
                     int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
 
                     LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
-                    String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
+                    String imgUrl = imageUrlResolver.resolve(chatRoom.getParty().getPartyImg(), PartyImg::getImgKey);
 
                     return chatConverter.toPartyChatRoomInfo(
                             chatRoom,
@@ -90,10 +90,4 @@ public class PartyChatRoomQueryService {
         return chatConverter.toPartyChatRoomListResponse(roomInfos, chatRooms.hasNext());
     }
 
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
-    }
 }

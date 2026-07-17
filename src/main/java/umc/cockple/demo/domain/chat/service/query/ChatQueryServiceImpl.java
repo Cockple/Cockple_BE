@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -44,7 +44,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
     private final ChatProcessor chatProcessor;
     private final PartyChatRoomQueryService partyChatRoomQueryService;
     private final DirectChatRoomQueryService directChatRoomQueryService;
@@ -177,10 +177,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             isCounterPartWithdrawn = isWithdrawn(member);
 
             displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
-            profileImageUrl = isCounterPartWithdrawn ? null : getImageUrl(member.getProfileImg());
+            profileImageUrl = isCounterPartWithdrawn
+                    ? null
+                    : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
         } else {
             displayName = chatRoom.getParty().getPartyName();
-            profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
+            profileImageUrl = imageUrlResolver.resolve(chatRoom.getParty().getPartyImg(), PartyImg::getImgKey);
         }
 
         int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoom.getId());
@@ -203,7 +205,9 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
         Member member = chatRoomMember.getMember();
-        String memberProfileImgUrl = isWithdrawn(member) ? null : getImageUrl(member.getProfileImg());
+        String memberProfileImgUrl = isWithdrawn(member)
+                ? null
+                : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
     }
@@ -212,19 +216,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return member == null || member.isWithdrawn();
     }
 
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
-    }
-
-    private String getImageUrl(ProfileImg profileImg) {
-        if (profileImg == null || profileImg.getImgKey() == null) {
-            return null;
-        }
-        return fileService.getUrlFromKey(profileImg.getImgKey());
-    }
 
     // ========== 조회 메서드 ==========
 

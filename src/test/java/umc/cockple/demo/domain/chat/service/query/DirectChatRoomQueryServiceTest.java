@@ -24,6 +24,7 @@ import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -56,18 +57,20 @@ class DirectChatRoomQueryServiceTest {
 
     private ChatConverter chatConverter;
     private ChatUnreadQueryService chatUnreadQueryService;
+    private ImageUrlResolver imageUrlResolver;
     private DirectChatRoomQueryService directChatRoomQueryService;
 
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
         chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
+        imageUrlResolver = new ImageUrlResolver(fileService);
         directChatRoomQueryService = new DirectChatRoomQueryService(
                 chatRoomRepository,
                 chatRoomMemberRepository,
                 chatUnreadQueryService,
                 chatConverter,
-                fileService,
+                imageUrlResolver,
                 chatRoomListCacheService
         );
         lenient().when(messageReadStatusRepository.countUnreadMessagesByChatRooms(anyLong(), anyList()))

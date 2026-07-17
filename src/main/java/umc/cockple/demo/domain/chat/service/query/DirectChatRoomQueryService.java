@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 
@@ -35,7 +35,7 @@ public class DirectChatRoomQueryService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
     private final ChatRoomListCacheService chatRoomListCacheService;
 
     public DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, int page, int size) {
@@ -90,7 +90,9 @@ public class DirectChatRoomQueryService {
 
         Member counterPartMember = displayMember.getMember();
         boolean isWithdrawn = isWithdrawn(counterPartMember);
-        String displayProfileImgUrl = isWithdrawn ? null : getImageUrl(counterPartMember.getProfileImg());
+        String displayProfileImgUrl = isWithdrawn
+                ? null
+                : imageUrlResolver.resolve(counterPartMember.getProfileImg(), ProfileImg::getImgKey);
 
         return chatConverter.toDirectChatRoomInfo(
                 chatRoom,
@@ -106,10 +108,4 @@ public class DirectChatRoomQueryService {
         return member == null || member.isWithdrawn();
     }
 
-    private String getImageUrl(ProfileImg profileImg) {
-        if (profileImg == null || profileImg.getImgKey() == null) {
-            return null;
-        }
-        return fileService.getUrlFromKey(profileImg.getImgKey());
-    }
 }
