@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class ExerciseRecommendationQueryMapper {
 
     private final FileService fileService;
+    private final ExerciseDistanceCalculator exerciseDistanceCalculator;
 
     public ExerciseRecommendationDTO.Response toExerciseRecommendationResponse(
             List<Exercise> finalExercises, Map<Long, Boolean> bookmarkStatus) {
@@ -187,7 +189,7 @@ public class ExerciseRecommendationQueryMapper {
     private ExerciseRecommendationCalendarDTO.ExerciseCalendarItem toRecommendationCalendarItemWithDistance(
             Exercise exercise, Map<Long, Boolean> bookmarkStatus, MemberAddr mainAddr) {
 
-        Double distance = calculateDistance(mainAddr.getLatitude(), mainAddr.getLongitude(),
+        Double distance = exerciseDistanceCalculator.calculate(mainAddr.getLatitude(), mainAddr.getLongitude(),
                 exercise.getExerciseAddr().getLatitude(), exercise.getExerciseAddr().getLongitude());
 
         Party party = exercise.getParty();
@@ -220,21 +222,6 @@ public class ExerciseRecommendationQueryMapper {
                 .profileImageUrl(getImageUrl(party.getPartyImg()))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
-    }
-
-    private double calculateDistance(double latitude, double longitude, double latitude1, double longitude1) {
-        final double R = 6371; // 지구 반지름 (km)
-
-        double latDistance = Math.toRadians(latitude1 - latitude);
-        double lonDistance = Math.toRadians(longitude1 - longitude);
-
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(latitude)) * Math.cos(Math.toRadians(latitude1))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return (float) (R * c);
     }
 
     private Comparator<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> getFilterSortComparator(

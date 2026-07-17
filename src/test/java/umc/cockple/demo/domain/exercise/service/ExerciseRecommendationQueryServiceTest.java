@@ -81,7 +81,7 @@ class ExerciseRecommendationQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(fileService);
+        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(fileService, new ExerciseDistanceCalculator());
         exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseRecommendationMapper);
 
         member = MemberFixture.createMember("테스트회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15));
