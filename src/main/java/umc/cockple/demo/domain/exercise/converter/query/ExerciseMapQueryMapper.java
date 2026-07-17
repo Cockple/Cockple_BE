@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExerciseMapQueryMapper {
 
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
 
     public ExerciseBuildingDetailDTO.Response toEmptyBuildingDetailResponse(String buildingName, LocalDate date) {
         return ExerciseBuildingDetailDTO.Response.builder()
@@ -80,17 +80,10 @@ public class ExerciseMapQueryMapper {
                 .exerciseId(exercise.getId())
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .build();
-    }
-
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
     }
 }

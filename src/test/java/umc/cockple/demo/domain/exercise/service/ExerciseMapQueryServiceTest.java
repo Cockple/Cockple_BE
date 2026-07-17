@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.exercise.service.query.ExerciseMapQueryService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -63,7 +64,7 @@ class ExerciseMapQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseMapQueryMapper exerciseMapMapper = new ExerciseMapQueryMapper(fileService);
+        ExerciseMapQueryMapper exerciseMapMapper = new ExerciseMapQueryMapper(new ImageUrlResolver(fileService));
         exerciseMapQueryService = new ExerciseMapQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),

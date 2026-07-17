@@ -6,7 +6,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseRecommendationQueryMapper {
 
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
 
     public ExerciseRecommendationDTO.Response toExerciseRecommendationResponse(
@@ -71,13 +71,6 @@ public class ExerciseRecommendationQueryMapper {
                     return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
                 })
                 .toList();
-    }
-
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
     }
 
     private List<ExerciseRecommendationCalendarDTO.WeeklyExercises> groupRecommendedExerciseByWeek(
@@ -181,7 +174,7 @@ public class ExerciseRecommendationQueryMapper {
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }
@@ -201,7 +194,7 @@ public class ExerciseRecommendationQueryMapper {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .distance(distance)
                 .build();
@@ -219,7 +212,7 @@ public class ExerciseRecommendationQueryMapper {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .build();
     }

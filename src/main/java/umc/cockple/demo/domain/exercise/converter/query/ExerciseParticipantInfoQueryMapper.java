@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -17,7 +17,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExerciseParticipantInfoQueryMapper {
 
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
 
     public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
         Member member = memberParticipant.getMember();
@@ -26,7 +26,7 @@ public class ExerciseParticipantInfoQueryMapper {
         return ExerciseDetailDTO.ParticipantInfo.builder()
                 .participantId(member.getId())
                 .participantNumber(0)
-                .profileImageUrl(getImageUrl(member.getProfileImg()))
+                .profileImageUrl(imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey))
                 .name(member.getMemberName())
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
@@ -44,7 +44,7 @@ public class ExerciseParticipantInfoQueryMapper {
         return ExerciseDetailDTO.ParticipantInfo.builder()
                 .participantId(member.getId())
                 .participantNumber(0)
-                .profileImageUrl(getImageUrl(member.getProfileImg()))
+                .profileImageUrl(imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey))
                 .name(member.getMemberName())
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
@@ -71,12 +71,5 @@ public class ExerciseParticipantInfoQueryMapper {
                 .joinedAt(guest.getCreatedAt())
                 .isWithdrawn(false)
                 .build();
-    }
-
-    private String getImageUrl(ProfileImg profileImg) {
-        if (profileImg != null && profileImg.getImgKey() != null && !profileImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(profileImg.getImgKey());
-        }
-        return null;
     }
 }

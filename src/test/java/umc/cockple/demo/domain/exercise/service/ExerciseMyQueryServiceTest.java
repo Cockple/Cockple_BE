@@ -42,6 +42,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -97,7 +98,7 @@ class ExerciseMyQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseMyQueryMapper exerciseMyMapper = new ExerciseMyQueryMapper(fileService);
+        ExerciseMyQueryMapper exerciseMyMapper = new ExerciseMyQueryMapper(new ImageUrlResolver(fileService));
         exerciseMyQueryService = new ExerciseMyQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),

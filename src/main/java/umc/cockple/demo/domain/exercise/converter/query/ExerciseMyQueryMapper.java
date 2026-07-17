@@ -9,7 +9,7 @@ import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseMyQueryMapper {
 
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
 
     public MyExerciseCalendarDTO.Response toEmptyMyCalendarResponse(LocalDate start, LocalDate end) {
         return MyExerciseCalendarDTO.Response.builder()
@@ -145,13 +145,6 @@ public class ExerciseMyQueryMapper {
                     return !exerciseDate.isBefore(weekStart) && !exerciseDate.isAfter(weekEnd);
                 })
                 .toList();
-    }
-
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
     }
 
     private List<MyExerciseCalendarDTO.WeeklyExercises> groupMyExerciseByWeek(
@@ -309,7 +302,7 @@ public class ExerciseMyQueryMapper {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .build();
     }
 
@@ -324,7 +317,7 @@ public class ExerciseMyQueryMapper {
                 .date(exercise.getDate())
                 .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .build();
     }
 
@@ -340,7 +333,7 @@ public class ExerciseMyQueryMapper {
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
-                .profileImageUrl(getImageUrl(party.getPartyImg()))
+                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .nowCapacity(participantCounts.getOrDefault(exercise.getId(), 0))
                 .build();

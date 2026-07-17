@@ -43,6 +43,7 @@ import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryServ
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -125,7 +126,8 @@ class ExerciseLifecycleQueryServiceTest {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
-        ExerciseParticipantInfoQueryMapper participantInfoMapper = new ExerciseParticipantInfoQueryMapper(fileService);
+        ExerciseParticipantInfoQueryMapper participantInfoMapper =
+                new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
 
         return new ExerciseLifecycleQueryService(

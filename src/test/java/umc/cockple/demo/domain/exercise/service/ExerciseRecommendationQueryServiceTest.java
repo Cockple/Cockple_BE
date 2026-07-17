@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculat
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -81,7 +82,8 @@ class ExerciseRecommendationQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(fileService, new ExerciseDistanceCalculator());
+        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(
+                new ImageUrlResolver(fileService), new ExerciseDistanceCalculator());
         exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseRecommendationMapper);
 
         member = MemberFixture.createMember("테스트회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15));
