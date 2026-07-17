@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.QExercise;
 import umc.cockple.demo.domain.exercise.domain.QExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.member.domain.QMemberExercise;
 import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
