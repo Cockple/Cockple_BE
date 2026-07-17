@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;

@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseGuestApi;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
