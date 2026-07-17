@@ -174,7 +174,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
             Member member = counterPart.getMember();
-            isCounterPartWithdrawn = isWithdrawn(member);
+            isCounterPartWithdrawn = isUnavailableMember(member);
 
             displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
             profileImageUrl = isCounterPartWithdrawn
@@ -205,14 +205,14 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
         Member member = chatRoomMember.getMember();
-        String memberProfileImgUrl = isWithdrawn(member)
+        String memberProfileImgUrl = isUnavailableMember(member)
                 ? null
                 : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
     }
 
-    private boolean isWithdrawn(Member member) {
+    private boolean isUnavailableMember(Member member) {
         return member == null || member.isWithdrawn();
     }
 

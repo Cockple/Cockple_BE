@@ -89,7 +89,7 @@ public class DirectChatRoomQueryService {
         LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
 
         Member counterPartMember = displayMember.getMember();
-        boolean isWithdrawn = isWithdrawn(counterPartMember);
+        boolean isWithdrawn = isUnavailableMember(counterPartMember);
         String displayProfileImgUrl = isWithdrawn
                 ? null
                 : imageUrlResolver.resolve(counterPartMember.getProfileImg(), ProfileImg::getImgKey);
@@ -104,7 +104,7 @@ public class DirectChatRoomQueryService {
         );
     }
 
-    private boolean isWithdrawn(Member member) {
+    private boolean isUnavailableMember(Member member) {
         return member == null || member.isWithdrawn();
     }
 
