@@ -21,7 +21,7 @@ import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
 import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;

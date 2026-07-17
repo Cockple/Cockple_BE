@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.global.enums.Gender;

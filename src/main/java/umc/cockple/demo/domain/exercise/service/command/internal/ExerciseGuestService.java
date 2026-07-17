@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMa
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;

@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
 
 @Component
 public class ExerciseGuestCommandMapper {

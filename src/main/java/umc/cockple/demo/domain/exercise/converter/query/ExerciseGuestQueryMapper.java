@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.exercise.converter.query;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
 
 import java.util.Collections;
 import java.util.List;
