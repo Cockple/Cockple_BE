@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseRecommendationMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
@@ -32,7 +32,7 @@ public class ExerciseRecommendationQueryService {
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseRecommendationMapper exerciseRecommendationMapper;
 
     public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
 
@@ -52,7 +52,7 @@ public class ExerciseRecommendationQueryService {
 
         log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
 
-        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+        return exerciseRecommendationMapper.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
 
     public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
@@ -83,7 +83,7 @@ public class ExerciseRecommendationQueryService {
 
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toRecommendationCalendarResponse(
+        return exerciseRecommendationMapper.toRecommendationCalendarResponse(
                 exercises, bookmarkStatus, participantCountMap, mainAddr
                 , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
     }
