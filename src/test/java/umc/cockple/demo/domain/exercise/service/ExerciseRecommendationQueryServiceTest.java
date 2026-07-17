@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
@@ -435,7 +436,7 @@ class ExerciseRecommendationQueryServiceTest {
                 Exercise earlyExercise = createRecommendationExercise(filteredParty, 1102L, LocalDate.of(2026, 3, 25),
                         LocalTime.of(9, 0), LocalTime.of(11, 0), 37.53, 127.03, "이른 체육관");
 
-                ExerciseRecommendationCalendarDTO.FilterCondition filterCondition = ExerciseRecommendationCalendarDTO.FilterCondition.builder()
+                ExerciseRecommendationFilterCondition filterCondition = ExerciseRecommendationFilterCondition.builder()
                         .addr1("서울특별시")
                         .addr2("강남구")
                         .levels(List.of(Level.B))
@@ -599,8 +600,8 @@ class ExerciseRecommendationQueryServiceTest {
             }
         }
 
-        private ExerciseRecommendationCalendarDTO.FilterCondition recommendationFilter() {
-            return ExerciseRecommendationCalendarDTO.FilterCondition.builder()
+        private ExerciseRecommendationFilterCondition recommendationFilter() {
+            return ExerciseRecommendationFilterCondition.builder()
                     .build();
         }
 

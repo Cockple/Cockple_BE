@@ -1,25 +1,12 @@
 package umc.cockple.demo.domain.exercise.dto.recommendation;
 
 import lombok.Builder;
-import umc.cockple.demo.domain.party.enums.ActivityTime;
-import umc.cockple.demo.domain.party.enums.ParticipationType;
-import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 public class ExerciseRecommendationCalendarDTO {
-
-    @Builder
-    public record FilterCondition(
-            String addr1,
-            String addr2,
-            List<Level> levels,
-            List<ParticipationType> participationTypes,
-            List<ActivityTime> activityTimes
-    ) {
-    }
 
     @Builder
     public record Response(

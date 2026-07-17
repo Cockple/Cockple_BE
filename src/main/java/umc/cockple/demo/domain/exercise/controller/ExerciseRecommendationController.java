@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendatio
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseRecommendationQueryService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
@@ -49,8 +50,8 @@ public class ExerciseRecommendationController implements ExerciseRecommendationA
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseRecommendationCalendarDTO.FilterCondition filterCondition =
-                ExerciseRecommendationCalendarDTO.FilterCondition.builder()
+        ExerciseRecommendationFilterCondition filterCondition =
+                ExerciseRecommendationFilterCondition.builder()
                         .addr1(addr1)
                         .addr2(addr2)
                         .levels(levels)

@@ -6,12 +6,12 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -66,7 +66,7 @@ public class ExerciseReader {
     public List<Exercise> findByMonthAndRadius(
             LocalDate startDate,
             LocalDate endDate,
-            ExerciseMapBuildingsDTO.Query searchQuery) {
+            ExerciseMapSearchQuery searchQuery) {
         return exerciseRepository.findExercisesByMonthAndRadius(
                 startDate,
                 endDate,

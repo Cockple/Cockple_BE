@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -62,7 +63,7 @@ public class ExerciseRecommendationQueryService {
             LocalDate startDate,
             LocalDate endDate,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterCondition filterCondition,
+            ExerciseRecommendationFilterCondition filterCondition,
             MyPartyExerciseOrderType sortType) {
 
         log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터: {}, 정렬: {}, 기간: {}~{}"
@@ -93,7 +94,7 @@ public class ExerciseRecommendationQueryService {
     }
 
     private static ExerciseRecommendationSearchCondition toSearchCondition(
-            ExerciseRecommendationCalendarDTO.FilterCondition filterCondition) {
+            ExerciseRecommendationFilterCondition filterCondition) {
         return new ExerciseRecommendationSearchCondition(
                 filterCondition.addr1(),
                 filterCondition.addr2(),

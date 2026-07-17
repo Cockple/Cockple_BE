@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -53,14 +54,14 @@ public class ExerciseMapQueryService {
     }
 
     public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
-            ExerciseMapBuildingsDTO.Query query, Long memberId) {
+            ExerciseMapSearchQuery query, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
                 query.date(), query.latitude(), query.longitude(), query.radiusKm());
 
         Member member = memberLookupService.findWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = memberLookupService.findMainAddressOrThrow(member);
-        ExerciseMapBuildingsDTO.Query searchQuery =
+        ExerciseMapSearchQuery searchQuery =
                 query.withFallbackLocation(mainAddr.getLatitude(), mainAddr.getLongitude());
 
         DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(query.date());
