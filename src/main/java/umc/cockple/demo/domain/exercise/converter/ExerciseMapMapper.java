@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class ExerciseConverter {
+public class ExerciseMapMapper {
 
     private final FileService fileService;
 

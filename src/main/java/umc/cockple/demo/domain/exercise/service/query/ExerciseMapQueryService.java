@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseMapMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
@@ -30,7 +30,7 @@ public class ExerciseMapQueryService {
     private final ExerciseReader exerciseReader;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseMapMapper exerciseMapMapper;
 
     public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
             String buildingName, String streetAddr, LocalDate date, Long memberId) {
@@ -41,7 +41,7 @@ public class ExerciseMapQueryService {
 
         if (exercises.isEmpty()) {
             log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
-            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName, date);
+            return exerciseMapMapper.toEmptyBuildingDetailResponse(buildingName, date);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -49,7 +49,7 @@ public class ExerciseMapQueryService {
 
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
-        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
+        return exerciseMapMapper.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
     public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
@@ -72,7 +72,7 @@ public class ExerciseMapQueryService {
 
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
-        return exerciseConverter.toMapCalendarSummaryResponse(
+        return exerciseMapMapper.toMapCalendarSummaryResponse(
                 dateRange.start().getYear(), dateRange.start().getMonthValue(),
                 searchQuery.latitude(), searchQuery.longitude(), searchQuery.radiusKm(), dailyBuildings);
     }
@@ -99,7 +99,7 @@ public class ExerciseMapQueryService {
                 .collect(Collectors.groupingBy(this::createBuildingKey));
 
         return exercisesByBuilding.keySet().stream()
-                .map(entry -> exerciseConverter.toBuildingSummary(
+                .map(entry -> exerciseMapMapper.toBuildingSummary(
                         entry.name(), entry.address(), entry.latitude(), entry.longitude())
                 )
                 .toList();
