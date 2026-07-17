@@ -14,7 +14,8 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseGuestQueryMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -42,6 +43,7 @@ import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -103,7 +105,9 @@ class ExerciseGuestQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
+        ExerciseGuestQueryMapper exerciseGuestQueryMapper = new ExerciseGuestQueryMapper();
+        ExerciseParticipantInfoQueryMapper participantInfoMapper =
+                new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
@@ -116,10 +120,10 @@ class ExerciseGuestQueryServiceTest {
                         exerciseParticipantReader,
                         guestReader,
                         memberLookupService,
-                        exerciseConverter
+                        participantInfoMapper
                 ),
                 memberLookupService,
-                exerciseConverter
+                exerciseGuestQueryMapper
         );
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);

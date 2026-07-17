@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseGuestQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
@@ -30,7 +30,7 @@ public class ExerciseGuestQueryService {
     private final GuestReader guestReader;
     private final ExerciseParticipantInfoAssembler participantInfoAssembler;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseGuestQueryMapper exerciseGuestQueryMapper;
 
     public ExerciseMyGuestListDTO.Response getMyInvitedGuests(Long exerciseId, Long memberId) {
 
@@ -43,7 +43,7 @@ public class ExerciseGuestQueryService {
 
         if (myGuests.isEmpty()) {
             log.info("초대한 게스트가 없어 빈 응답 반환 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-            return exerciseConverter.toEmptyGuestListResponse();
+            return exerciseGuestQueryMapper.toEmptyGuestListResponse();
         }
 
         List<ExerciseDetailDTO.ParticipantInfo> allParticipants = participantInfoAssembler.getAllSortedParticipants(
@@ -58,7 +58,7 @@ public class ExerciseGuestQueryService {
 
         log.info("내가 초대한 게스트 조회 완료 - exerciseId: {}", exerciseId);
 
-        return exerciseConverter.toMyGuestListResponse(statistics, guestInfoList);
+        return exerciseGuestQueryMapper.toMyGuestListResponse(statistics, guestInfoList);
     }
 
     private Map<Long, ExerciseMyGuestListDTO.GuestGroups> createGuestNumberMap(
@@ -91,7 +91,7 @@ public class ExerciseGuestQueryService {
             String inviterName) {
 
         return myGuests.stream()
-                .map(guest -> exerciseConverter.toGuestInfo(guest, guestNumberMap, inviterName))
+                .map(guest -> exerciseGuestQueryMapper.toGuestInfo(guest, guestNumberMap, inviterName))
                 .toList();
     }
 

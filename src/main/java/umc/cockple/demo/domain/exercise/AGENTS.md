@@ -10,7 +10,7 @@ Exercise is the densest feature slice: scheduling, guests, participation, waitin
 |------|----------|-------|
 | Read-heavy hotspot | `service/ExerciseQueryService.java` | calendar/detail/recommendation/building/map queries |
 | Command internals | `service/command/internal/` | guest, lifecycle, participation subflows |
-| DTO mapping hotspot | `converter/ExerciseConverter.java` | very large conversion surface |
+| DTO mapping | `converter/*Mapper.java` | use-case-specific response/command mappers |
 | HTTP surface | `controller/` | split by exercise use case; see ownership map below |
 | Error rules | `exception/ExerciseErrorCode.java` | started/past-time/permission constraints |
 | Integration coverage | `src/test/java/umc/cockple/demo/domain/exercise/` | biggest test package in repo |
@@ -30,7 +30,7 @@ Exercise is the densest feature slice: scheduling, guests, participation, waitin
 - Time/date/location validation is centralized and reused through service methods and error codes.
 - Participation logic distinguishes confirmed participants from waiting members/guests.
 - Guest invitation rules depend on both party membership and exercise flags.
-- Converter growth is already high; new mapping code should stay tightly scoped to one flow.
+- Mapping code should stay in the narrow use-case mapper that owns the flow.
 - Keep all exercise HTTP controllers grouped in Swagger with `@Tag(name = "Exercise", description = "운동 관리 API")`.
 - Controllers should return `ResponseEntity<BaseResponse<...>>` via `BaseResponse.of(...)`.
 - Preserve existing public paths when lifting common `@RequestMapping` prefixes; class-level mapping changes should be route-compatible.
@@ -39,5 +39,5 @@ Exercise is the densest feature slice: scheduling, guests, participation, waitin
 ## ANTI-PATTERNS
 - Do not bypass `EXERCISE4xx` guardrails for past/start-state checks.
 - Do not duplicate participant/waiting-list logic in controllers or tests.
-- Do not spread unrelated conversions into `ExerciseConverter` without checking for an existing narrower path first.
+- Do not spread unrelated conversions into an existing mapper without checking for a narrower use-case mapper first.
 - Do not recreate a monolithic `ExerciseController`; add or adjust the focused controller that owns the endpoint family.

@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculat
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -81,8 +82,9 @@ class ExerciseRecommendationQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
-        exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseConverter);
+        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(
+                new ImageUrlResolver(fileService), new ExerciseDistanceCalculator());
+        exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseRecommendationMapper);
 
         member = MemberFixture.createMember("테스트회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15));
         ReflectionTestUtils.setField(member, "id", 1L);
@@ -103,14 +105,14 @@ class ExerciseRecommendationQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", exerciseAddr);
     }
 
-    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseConverter exerciseConverter) {
+    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseRecommendationQueryMapper exerciseRecommendationMapper) {
         return new ExerciseRecommendationQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseDistanceCalculator(),
                 new MemberLookupService(memberRepository),
-                exerciseConverter
+                exerciseRecommendationMapper
         );
     }
 
