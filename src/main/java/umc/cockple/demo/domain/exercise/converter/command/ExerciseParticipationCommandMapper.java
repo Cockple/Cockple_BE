@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.command;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -9,7 +9,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 
 @Component
-public class ExerciseParticipationMapper {
+public class ExerciseParticipationCommandMapper {
 
     public ExerciseJoinDTO.Response toJoinResponse(MemberExercise memberExercise, Exercise exercise) {
         return ExerciseJoinDTO.Response.builder()

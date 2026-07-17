@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class ExerciseRecommendationMapper {
+public class ExerciseRecommendationQueryMapper {
 
     private final FileService fileService;
 

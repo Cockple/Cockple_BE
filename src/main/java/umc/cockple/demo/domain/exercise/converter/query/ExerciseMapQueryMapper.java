@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class ExerciseMapMapper {
+public class ExerciseMapQueryMapper {
 
     private final FileService fileService;
 

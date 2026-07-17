@@ -1,10 +1,7 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.query;
 
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
 
 import java.util.Collections;
@@ -12,31 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class ExerciseGuestMapper {
-
-    public ExerciseGuestInviteDTO.Command toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
-        return ExerciseGuestInviteDTO.Command.builder()
-                .guestName(request.guestName())
-                .gender(request.toParsedGender())
-                .level(request.toParsedLevel())
-                .inviterId(inviterId)
-                .build();
-    }
-
-    public ExerciseGuestInviteDTO.Response toGuestInviteResponse(Guest guest, Exercise exercise) {
-        return ExerciseGuestInviteDTO.Response.builder()
-                .guestId(guest.getId())
-                .invitedAt(guest.getCreatedAt())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
-    public ExerciseCancelDTO.Response toCancelResponse(Exercise exercise, Guest guest) {
-        return ExerciseCancelDTO.Response.builder()
-                .memberName(guest.getGuestName())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
+public class ExerciseGuestQueryMapper {
 
     public ExerciseMyGuestListDTO.Response toEmptyGuestListResponse() {
         return ExerciseMyGuestListDTO.Response.builder()

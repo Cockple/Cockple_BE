@@ -8,7 +8,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseMyMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMyQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
@@ -39,7 +39,7 @@ public class ExerciseMyQueryService {
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
-    private final ExerciseMyMapper exerciseMyMapper;
+    private final ExerciseMyQueryMapper exerciseMyMapper;
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
 

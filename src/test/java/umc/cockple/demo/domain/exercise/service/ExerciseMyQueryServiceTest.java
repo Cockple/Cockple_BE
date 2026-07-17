@@ -14,7 +14,7 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseMyMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMyQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -97,7 +97,7 @@ class ExerciseMyQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseMyMapper exerciseMyMapper = new ExerciseMyMapper(fileService);
+        ExerciseMyQueryMapper exerciseMyMapper = new ExerciseMyQueryMapper(fileService);
         exerciseMyQueryService = new ExerciseMyQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),

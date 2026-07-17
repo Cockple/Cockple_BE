@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseMapMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
@@ -63,7 +63,7 @@ class ExerciseMapQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseMapMapper exerciseMapMapper = new ExerciseMapMapper(fileService);
+        ExerciseMapQueryMapper exerciseMapMapper = new ExerciseMapQueryMapper(fileService);
         exerciseMapQueryService = new ExerciseMapQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),

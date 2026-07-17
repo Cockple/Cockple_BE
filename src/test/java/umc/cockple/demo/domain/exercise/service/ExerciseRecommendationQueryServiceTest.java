@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseRecommendationMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
@@ -81,7 +81,7 @@ class ExerciseRecommendationQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseRecommendationMapper exerciseRecommendationMapper = new ExerciseRecommendationMapper(fileService);
+        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(fileService);
         exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseRecommendationMapper);
 
         member = MemberFixture.createMember("테스트회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15));
@@ -103,7 +103,7 @@ class ExerciseRecommendationQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", exerciseAddr);
     }
 
-    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseRecommendationMapper exerciseRecommendationMapper) {
+    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseRecommendationQueryMapper exerciseRecommendationMapper) {
         return new ExerciseRecommendationQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),

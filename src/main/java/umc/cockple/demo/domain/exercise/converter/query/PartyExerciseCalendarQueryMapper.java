@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.query;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class PartyExerciseCalendarMapper {
+public class PartyExerciseCalendarQueryMapper {
 
     public PartyExerciseCalendarDTO.Response toEmptyPartyCalendarResponse(
             LocalDate start,

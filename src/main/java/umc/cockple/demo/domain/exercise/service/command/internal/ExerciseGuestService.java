@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseGuestMapper;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
@@ -25,12 +25,12 @@ public class ExerciseGuestService {
 
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseGuestMapper exerciseGuestMapper;
+    private final ExerciseGuestCommandMapper exerciseGuestCommandMapper;
 
     public ExerciseGuestInviteDTO.Response inviteGuest(Exercise exercise, Member inviter, ExerciseGuestInviteDTO.Request request) {
         exerciseValidator.validateGuestInvitation(exercise, inviter);
 
-        ExerciseGuestInviteDTO.Command command = exerciseGuestMapper.toGuestInviteCommand(request, inviter.getId());
+        ExerciseGuestInviteDTO.Command command = exerciseGuestCommandMapper.toGuestInviteCommand(request, inviter.getId());
 
         Guest guest = Guest.create(command);
         exercise.addGuest(guest);
@@ -38,7 +38,7 @@ public class ExerciseGuestService {
         Guest savedGuest = guestRepository.save(guest);
 
         log.info("게스트 초대 완료 - guestId: {}", savedGuest.getId());
-        return exerciseGuestMapper.toGuestInviteResponse(savedGuest, exercise);
+        return exerciseGuestCommandMapper.toGuestInviteResponse(savedGuest, exercise);
     }
 
     public ExerciseCancelDTO.Response cancelGuestInvitation(Exercise exercise, Guest guest, Member member) {
@@ -50,6 +50,6 @@ public class ExerciseGuestService {
         exerciseRepository.save(exercise);
 
         log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}", exercise.getId(), guest.getId(), member.getId());
-        return exerciseGuestMapper.toCancelResponse(exercise, guest);
+        return exerciseGuestCommandMapper.toCancelResponse(exercise, guest);
     }
 }

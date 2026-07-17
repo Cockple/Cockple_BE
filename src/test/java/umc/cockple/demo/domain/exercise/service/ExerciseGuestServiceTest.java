@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.ExerciseGuestMapper;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
@@ -56,9 +56,9 @@ class ExerciseGuestServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseGuestMapper exerciseGuestMapper = new ExerciseGuestMapper();
+        ExerciseGuestCommandMapper exerciseGuestCommandMapper = new ExerciseGuestCommandMapper();
         exerciseGuestService = new ExerciseGuestService(
-                exerciseRepository, guestRepository, exerciseValidator, exerciseGuestMapper);
+                exerciseRepository, guestRepository, exerciseValidator, exerciseGuestCommandMapper);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);

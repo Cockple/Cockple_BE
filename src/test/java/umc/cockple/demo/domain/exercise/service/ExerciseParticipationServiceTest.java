@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.ExerciseParticipationMapper;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
@@ -61,7 +61,7 @@ class ExerciseParticipationServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseParticipationMapper exerciseParticipationMapper = new ExerciseParticipationMapper();
+        ExerciseParticipationCommandMapper exerciseParticipationMapper = new ExerciseParticipationCommandMapper();
         exerciseParticipationService = new ExerciseParticipationService(
                 exerciseRepository, memberRepository, memberPartyRepository,
                 memberExerciseRepository, guestRepository, exerciseValidator, exerciseParticipationMapper);

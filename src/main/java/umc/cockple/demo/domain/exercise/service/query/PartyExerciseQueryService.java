@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.PartyExerciseCalendarMapper;
+import umc.cockple.demo.domain.exercise.converter.query.PartyExerciseCalendarQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -37,7 +37,7 @@ public class PartyExerciseQueryService {
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
-    private final PartyExerciseCalendarMapper partyExerciseCalendarMapper;
+    private final PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper;
 
     public PartyExerciseCalendarDTO.Response getPartyExerciseCalendar(
             Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {

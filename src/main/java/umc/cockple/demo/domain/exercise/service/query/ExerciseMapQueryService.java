@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseMapMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
@@ -30,7 +30,7 @@ public class ExerciseMapQueryService {
     private final ExerciseReader exerciseReader;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
-    private final ExerciseMapMapper exerciseMapMapper;
+    private final ExerciseMapQueryMapper exerciseMapMapper;
 
     public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
             String buildingName, String streetAddr, LocalDate date, Long memberId) {

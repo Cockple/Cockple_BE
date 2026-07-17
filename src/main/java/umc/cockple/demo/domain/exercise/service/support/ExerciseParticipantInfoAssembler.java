@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.exercise.service.support;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseParticipantInfoMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
@@ -28,7 +28,7 @@ public class ExerciseParticipantInfoAssembler {
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final GuestReader guestReader;
     private final MemberLookupService memberLookupService;
-    private final ExerciseParticipantInfoMapper exerciseParticipantInfoMapper;
+    private final ExerciseParticipantInfoQueryMapper exerciseParticipantInfoMapper;
 
     public List<ExerciseDetailDTO.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
         List<MemberExercise> memberExercises = exerciseParticipantReader.findMemberExercisesWithMemberAndProfile(exerciseId);

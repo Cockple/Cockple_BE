@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.converter;
+package umc.cockple.demo.domain.exercise.converter.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class ExerciseMyMapper {
+public class ExerciseMyQueryMapper {
 
     private final FileService fileService;
 

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseParticipationMapper;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
@@ -35,7 +35,7 @@ public class ExerciseParticipationService {
 
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseParticipationMapper exerciseParticipationMapper;
+    private final ExerciseParticipationCommandMapper exerciseParticipationMapper;
 
     public ExerciseJoinDTO.Response joinExercise(Exercise exercise, Member member) {
         exerciseValidator.validateJoinExercise(exercise, member);

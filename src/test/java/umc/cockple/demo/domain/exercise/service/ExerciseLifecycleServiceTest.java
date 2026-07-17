@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseLifecycleCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
@@ -57,9 +57,9 @@ class ExerciseLifecycleServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseLifecycleMapper exerciseLifecycleMapper = new ExerciseLifecycleMapper();
+        ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper = new ExerciseLifecycleCommandMapper();
         exerciseLifecycleService = new ExerciseLifecycleService(
-                exerciseRepository, partyRepository, exerciseValidator, exerciseLifecycleMapper);
+                exerciseRepository, partyRepository, exerciseValidator, exerciseLifecycleCommandMapper);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);

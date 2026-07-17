@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseRecommendationMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
@@ -32,7 +32,7 @@ public class ExerciseRecommendationQueryService {
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
-    private final ExerciseRecommendationMapper exerciseRecommendationMapper;
+    private final ExerciseRecommendationQueryMapper exerciseRecommendationMapper;
 
     public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
 

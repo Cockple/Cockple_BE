@@ -14,8 +14,8 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
-import umc.cockple.demo.domain.exercise.converter.ExerciseParticipantInfoMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseLifecycleQueryMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -125,8 +125,8 @@ class ExerciseLifecycleQueryServiceTest {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
-        ExerciseParticipantInfoMapper participantInfoMapper = new ExerciseParticipantInfoMapper(fileService);
-        ExerciseLifecycleMapper exerciseLifecycleMapper = new ExerciseLifecycleMapper();
+        ExerciseParticipantInfoQueryMapper participantInfoMapper = new ExerciseParticipantInfoQueryMapper(fileService);
+        ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
 
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
@@ -139,7 +139,7 @@ class ExerciseLifecycleQueryServiceTest {
                 ),
                 memberLookupService,
                 new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
-                exerciseLifecycleMapper
+                exerciseLifecycleQueryMapper
         );
     }
 

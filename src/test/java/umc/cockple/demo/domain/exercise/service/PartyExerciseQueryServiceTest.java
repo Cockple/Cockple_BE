@@ -14,7 +14,7 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.PartyExerciseCalendarMapper;
+import umc.cockple.demo.domain.exercise.converter.query.PartyExerciseCalendarQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -102,7 +102,7 @@ class PartyExerciseQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        PartyExerciseCalendarMapper partyExerciseCalendarMapper = new PartyExerciseCalendarMapper();
+        PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper = new PartyExerciseCalendarQueryMapper();
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),
