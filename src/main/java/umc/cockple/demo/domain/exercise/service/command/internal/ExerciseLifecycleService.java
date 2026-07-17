@@ -11,6 +11,10 @@ import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
@@ -31,8 +35,8 @@ public class ExerciseLifecycleService {
     public ExerciseCreateDTO.Response createExercise(Party party, Member member, ExerciseCreateDTO.Request request) {
         exerciseValidator.validateCreateExercise(member.getId(), request, party);
 
-        ExerciseCreateDTO.Command exerciseCommand = exerciseLifecycleCommandMapper.toCreateCommand(request);
-        ExerciseCreateDTO.AddrCommand addrCommand = exerciseLifecycleCommandMapper.toAddrCreateCommand(request);
+        ExerciseCreateCommand exerciseCommand = exerciseLifecycleCommandMapper.toCreateCommand(request);
+        ExerciseCreateAddressCommand addrCommand = exerciseLifecycleCommandMapper.toAddrCreateCommand(request);
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         party.addExercise(exercise);
@@ -61,8 +65,8 @@ public class ExerciseLifecycleService {
     public ExerciseUpdateDTO.Response updateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         exerciseValidator.validateUpdateExercise(exercise, member, request);
 
-        ExerciseUpdateDTO.Command updateCommand = exerciseLifecycleCommandMapper.toUpdateCommand(request);
-        ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseLifecycleCommandMapper.toAddrUpdateCommand(request);
+        ExerciseUpdateCommand updateCommand = exerciseLifecycleCommandMapper.toUpdateCommand(request);
+        ExerciseUpdateAddressCommand addrUpdateCommand = exerciseLifecycleCommandMapper.toAddrUpdateCommand(request);
 
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);

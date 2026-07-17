@@ -5,12 +5,13 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 
 @Component
 public class ExerciseGuestCommandMapper {
 
-    public ExerciseGuestInviteDTO.Command toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
-        return ExerciseGuestInviteDTO.Command.builder()
+    public ExerciseGuestInviteCommand toGuestInviteCommand(ExerciseGuestInviteDTO.Request request, Long inviterId) {
+        return ExerciseGuestInviteCommand.builder()
                 .guestName(request.guestName())
                 .gender(request.toParsedGender())
                 .level(request.toParsedLevel())

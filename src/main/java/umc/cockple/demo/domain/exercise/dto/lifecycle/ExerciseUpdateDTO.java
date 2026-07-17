@@ -75,27 +75,6 @@ public class ExerciseUpdateDTO {
     }
 
     @Builder
-    public record Command(
-            LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
-            Integer maxCapacity,
-            Boolean partyGuestAccept,
-            Boolean outsideGuestAccept,
-            String notice
-    ) {
-    }
-
-    @Builder
-    public record AddrCommand(
-            String roadAddress,
-            String buildingName,
-            Double latitude,
-            Double longitude
-    ) {
-    }
-
-    @Builder
     public record Response(
             Long exerciseId,
             LocalDateTime updatedAt

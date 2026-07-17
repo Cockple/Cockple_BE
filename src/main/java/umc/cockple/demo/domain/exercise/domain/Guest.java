@@ -2,7 +2,7 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.global.enums.Gender;
@@ -37,7 +37,7 @@ public class Guest extends BaseEntity {
     @Column(nullable = false)
     private Long inviterId;
 
-    public static Guest create(ExerciseGuestInviteDTO.Command command) {
+    public static Guest create(ExerciseGuestInviteCommand command) {
         return Guest.builder()
                 .guestName(command.guestName())
                 .gender(command.gender())

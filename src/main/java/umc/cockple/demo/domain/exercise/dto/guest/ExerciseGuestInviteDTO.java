@@ -33,15 +33,6 @@ public class ExerciseGuestInviteDTO {
     }
 
     @Builder
-    public record Command(
-            String guestName,
-            Gender gender,
-            Level level,
-            Long inviterId
-    ) {
-    }
-
-    @Builder
     public record Response(
             Long guestId,
             LocalDateTime invitedAt,
