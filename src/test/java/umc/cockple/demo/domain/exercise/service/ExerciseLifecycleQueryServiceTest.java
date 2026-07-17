@@ -18,10 +18,10 @@ import umc.cockple.demo.domain.exercise.converter.query.ExerciseLifecycleQueryMa
 import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;

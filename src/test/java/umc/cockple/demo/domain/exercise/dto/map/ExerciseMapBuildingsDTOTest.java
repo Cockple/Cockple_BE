@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
