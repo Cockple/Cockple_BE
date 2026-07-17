@@ -49,18 +49,17 @@ public class ExerciseRecommendationController implements ExerciseRecommendationA
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseRecommendationCalendarDTO.FilterSortType filterSortType =
-                ExerciseRecommendationCalendarDTO.FilterSortType.builder()
+        ExerciseRecommendationCalendarDTO.FilterCondition filterCondition =
+                ExerciseRecommendationCalendarDTO.FilterCondition.builder()
                         .addr1(addr1)
                         .addr2(addr2)
                         .levels(levels)
                         .participationTypes(participationTypes)
                         .activityTimes(activityTimes)
-                        .sortType(sortType)
                         .build();
 
         ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService
-                .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterSortType);
+                .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterCondition, sortType);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }

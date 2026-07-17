@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -47,11 +48,11 @@ public class ExerciseRecommendationQueryMapper {
             LocalDate start,
             LocalDate end,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            MyPartyExerciseOrderType sortType) {
 
         List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks
                 = groupRecommendedExerciseByWeek(exercises, bookmarkStatus, participantCountMap, mainAddr
-                , start, end, isCockpleRecommend, filterSortType);
+                , start, end, isCockpleRecommend, sortType);
 
         return ExerciseRecommendationCalendarDTO.Response.builder()
                 .startDate(start)
@@ -81,7 +82,7 @@ public class ExerciseRecommendationQueryMapper {
             LocalDate start,
             LocalDate end,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            MyPartyExerciseOrderType sortType) {
 
         List<ExerciseRecommendationCalendarDTO.WeeklyExercises> weeks = new ArrayList<>();
 
@@ -91,7 +92,7 @@ public class ExerciseRecommendationQueryMapper {
             List<Exercise> weekExercises = filterExercisesByWeek(exercises, weekStart, weekEnd);
 
             List<ExerciseRecommendationCalendarDTO.DailyExercises> dailyExercisesList =
-                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, mainAddr, isCockpleRecommend, filterSortType);
+                    groupRecommendedExercisesByDate(weekExercises, weekStart, weekEnd, bookmarkStatus, participantCountMap, mainAddr, isCockpleRecommend, sortType);
 
             weeks.add(createRecommendedWeeklyExercises(weekStart, weekEnd, dailyExercisesList));
         }
@@ -107,7 +108,7 @@ public class ExerciseRecommendationQueryMapper {
             Map<Long, Integer> participantCountMap,
             MemberAddr mainAddr,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            MyPartyExerciseOrderType sortType) {
 
         Map<LocalDate, List<Exercise>> exercisesByDate = weekExercises.stream()
                 .collect(Collectors.groupingBy(Exercise::getDate));
@@ -127,7 +128,7 @@ public class ExerciseRecommendationQueryMapper {
             }else{
                 exerciseItems = dayExercises.stream()
                         .map(exercise -> toRecommendationCalendarItem(exercise, bookmarkStatus))
-                        .sorted(getFilterSortComparator(filterSortType, participantCountMap))
+                        .sorted(getFilterSortComparator(sortType, participantCountMap))
                         .toList();
             }
 
@@ -218,10 +219,10 @@ public class ExerciseRecommendationQueryMapper {
     }
 
     private Comparator<ExerciseRecommendationCalendarDTO.ExerciseCalendarItem> getFilterSortComparator(
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType,
+            MyPartyExerciseOrderType sortType,
             Map<Long, Integer> participantCountMap) {
 
-        return switch (filterSortType.sortType()) {
+        return switch (sortType) {
             case LATEST ->
                     Comparator.comparing(ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime);
 

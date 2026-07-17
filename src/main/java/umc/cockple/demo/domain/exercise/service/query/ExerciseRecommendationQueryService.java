@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQu
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
@@ -61,10 +62,11 @@ public class ExerciseRecommendationQueryService {
             LocalDate startDate,
             LocalDate endDate,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            ExerciseRecommendationCalendarDTO.FilterCondition filterCondition,
+            MyPartyExerciseOrderType sortType) {
 
-        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터정렬: {}, 기간: {}~{}"
-                , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
+        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터: {}, 정렬: {}, 기간: {}~{}"
+                , memberId, isCockpleRecommend, filterCondition, sortType, startDate, endDate);
 
         Member member = memberLookupService.findWithAddressesOrThrow(memberId);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
@@ -74,7 +76,7 @@ public class ExerciseRecommendationQueryService {
         if (isCockpleRecommend) {
             exercises = exerciseReader.findCockpleRecommendedByDateRange(member, dateRange.start(), dateRange.end());
         } else {
-            ExerciseRecommendationSearchCondition searchCondition = toSearchCondition(filterSortType);
+            ExerciseRecommendationSearchCondition searchCondition = toSearchCondition(filterCondition);
             exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), searchCondition);
         }
 
@@ -87,17 +89,17 @@ public class ExerciseRecommendationQueryService {
 
         return exerciseRecommendationMapper.toRecommendationCalendarResponse(
                 exercises, bookmarkStatus, participantCountMap, mainAddr
-                , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
+                , dateRange.start(), dateRange.end(), isCockpleRecommend, sortType);
     }
 
     private static ExerciseRecommendationSearchCondition toSearchCondition(
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            ExerciseRecommendationCalendarDTO.FilterCondition filterCondition) {
         return new ExerciseRecommendationSearchCondition(
-                filterSortType.addr1(),
-                filterSortType.addr2(),
-                filterSortType.levels(),
-                filterSortType.participationTypes(),
-                filterSortType.activityTimes()
+                filterCondition.addr1(),
+                filterCondition.addr2(),
+                filterCondition.levels(),
+                filterCondition.participationTypes(),
+                filterCondition.activityTimes()
         );
     }
 
