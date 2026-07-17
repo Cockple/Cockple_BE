@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.*;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -24,13 +24,13 @@ public class ExerciseLifecycleService {
 
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseLifecycleMapper exerciseLifecycleMapper;
 
     public ExerciseCreateDTO.Response createExercise(Party party, Member member, ExerciseCreateDTO.Request request) {
         exerciseValidator.validateCreateExercise(member.getId(), request, party);
 
-        ExerciseCreateDTO.Command exerciseCommand = exerciseConverter.toCreateCommand(request);
-        ExerciseCreateDTO.AddrCommand addrCommand = exerciseConverter.toAddrCreateCommand(request);
+        ExerciseCreateDTO.Command exerciseCommand = exerciseLifecycleMapper.toCreateCommand(request);
+        ExerciseCreateDTO.AddrCommand addrCommand = exerciseLifecycleMapper.toAddrCreateCommand(request);
 
         Exercise exercise = party.createExercise(exerciseCommand, addrCommand);
         party.addExercise(exercise);
@@ -39,7 +39,7 @@ public class ExerciseLifecycleService {
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
-        return exerciseConverter.toCreateResponse(savedExercise);
+        return exerciseLifecycleMapper.toCreateResponse(savedExercise);
     }
 
     public ExerciseDeleteDTO.Response deleteExercise(Exercise exercise, Member member) {
@@ -53,14 +53,14 @@ public class ExerciseLifecycleService {
 
         log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exercise.getId(), member.getId());
 
-        return exerciseConverter.toDeleteResponse(exercise);
+        return exerciseLifecycleMapper.toDeleteResponse(exercise);
     }
 
     public ExerciseUpdateDTO.Response updateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
         exerciseValidator.validateUpdateExercise(exercise, member, request);
 
-        ExerciseUpdateDTO.Command updateCommand = exerciseConverter.toUpdateCommand(request);
-        ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseConverter.toAddrUpdateCommand(request);
+        ExerciseUpdateDTO.Command updateCommand = exerciseLifecycleMapper.toUpdateCommand(request);
+        ExerciseUpdateDTO.AddrCommand addrUpdateCommand = exerciseLifecycleMapper.toAddrUpdateCommand(request);
 
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);
@@ -69,6 +69,6 @@ public class ExerciseLifecycleService {
 
         log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
 
-        return exerciseConverter.toUpdateResponse(savedExercise);
+        return exerciseLifecycleMapper.toUpdateResponse(savedExercise);
     }
 }

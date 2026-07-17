@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
@@ -17,7 +17,6 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseLifecycleService;
-import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -49,7 +48,6 @@ class ExerciseLifecycleServiceTest {
     @Mock private PartyRepository partyRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
-    @Mock private FileService fileService;
 
     private ExerciseLifecycleService exerciseLifecycleService;
 
@@ -59,9 +57,9 @@ class ExerciseLifecycleServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
+        ExerciseLifecycleMapper exerciseLifecycleMapper = new ExerciseLifecycleMapper();
         exerciseLifecycleService = new ExerciseLifecycleService(
-                exerciseRepository, partyRepository, exerciseValidator, exerciseConverter);
+                exerciseRepository, partyRepository, exerciseValidator, exerciseLifecycleMapper);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
