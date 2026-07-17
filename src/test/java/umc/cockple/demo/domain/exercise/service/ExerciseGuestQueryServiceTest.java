@@ -14,7 +14,8 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseGuestMapper;
+import umc.cockple.demo.domain.exercise.converter.ExerciseParticipantInfoMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -103,7 +104,8 @@ class ExerciseGuestQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
+        ExerciseGuestMapper exerciseGuestMapper = new ExerciseGuestMapper();
+        ExerciseParticipantInfoMapper participantInfoMapper = new ExerciseParticipantInfoMapper(fileService);
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
@@ -116,10 +118,10 @@ class ExerciseGuestQueryServiceTest {
                         exerciseParticipantReader,
                         guestReader,
                         memberLookupService,
-                        exerciseConverter
+                        participantInfoMapper
                 ),
                 memberLookupService,
-                exerciseConverter
+                exerciseGuestMapper
         );
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);

@@ -30,59 +30,6 @@ public class ExerciseConverter {
     private final FileService fileService;
 
     // ========== Response 변환 메서드들 ==========
-    public ExerciseDetailDTO.Response toDetailResponse(
-            boolean isManager,
-            ExerciseDetailDTO.ExerciseInfo exerciseInfo,
-            ExerciseDetailDTO.ParticipantGroup participantGroup,
-            ExerciseDetailDTO.WaitingGroup waitingGroup) {
-
-        return ExerciseDetailDTO.Response.builder()
-                .isManager(isManager)
-                .info(exerciseInfo)
-                .participants(participantGroup)
-                .waiting(waitingGroup)
-                .build();
-    }
-
-    public ExerciseEditDetailDTO.Response toEditDetailResponse(Exercise exercise) {
-        ExerciseAddr addr = exercise.getExerciseAddr();
-
-        return ExerciseEditDetailDTO.Response.builder()
-                .date(exercise.getDate())
-                .buildingName(addr.getBuildingName())
-                .roadAddress(addr.getStreetAddr())
-                .latitude(addr.getLatitude())
-                .longitude(addr.getLongitude())
-                .startTime(exercise.getStartTime())
-                .endTime(exercise.getEndTime())
-                .maxCapacity(exercise.getMaxCapacity())
-                .allowMemberGuestsInvitation(exercise.getPartyGuestAccept())
-                .allowExternalGuests(exercise.getOutsideGuestAccept())
-                .notice(exercise.getNotice())
-                .build();
-    }
-
-    public ExerciseMyGuestListDTO.Response toEmptyGuestListResponse() {
-        return ExerciseMyGuestListDTO.Response.builder()
-                .totalCount(0)
-                .maleCount(0)
-                .femaleCount(0)
-                .list(Collections.emptyList())
-                .build();
-    }
-
-    public ExerciseMyGuestListDTO.Response toMyGuestListResponse(
-            ExerciseMyGuestListDTO.GuestStatistics statistics,
-            List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
-
-        return ExerciseMyGuestListDTO.Response.builder()
-                .totalCount(statistics.totalCount())
-                .maleCount(statistics.maleCount())
-                .femaleCount(statistics.femaleCount())
-                .list(guestInfoList)
-                .build();
-    }
-
     public PartyExerciseCalendarDTO.Response toEmptyPartyCalendarResponse(
             LocalDate start,
             LocalDate end,
@@ -284,79 +231,6 @@ public class ExerciseConverter {
                 .startDate(start)
                 .endDate(end)
                 .weeks(weeks)
-                .build();
-    }
-
-    // ========== 내부 객체 변환 메서드들 ==========
-    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromMember(MemberExercise memberParticipant, Map<Long, Role> memberRoles) {
-        Member member = memberParticipant.getMember();
-        Role role = memberRoles.get(member.getId());
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(member.getId())
-                .participantNumber(0)
-                .profileImageUrl(getImageUrl(member.getProfileImg()))
-                .name(member.getMemberName())
-                .gender(member.getGender().name())
-                .level(member.getLevel().name())
-                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
-                .partyPosition(role.name())
-                .inviterName(null)
-                .joinedAt(memberParticipant.getCreatedAt())
-                .isWithdrawn(member.getIsActive() == MemberStatus.INACTIVE)
-                .build();
-    }
-
-    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromExternalMember(MemberExercise memberParticipant) {
-        Member member = memberParticipant.getMember();
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(member.getId())
-                .participantNumber(0)
-                .profileImageUrl(getImageUrl(member.getProfileImg()))
-                .name(member.getMemberName())
-                .gender(member.getGender().name())
-                .level(member.getLevel().name())
-                .participantType(memberParticipant.getExerciseMemberShipStatus().name())
-                .partyPosition(null)
-                .inviterName(null)
-                .joinedAt(memberParticipant.getCreatedAt())
-                .isWithdrawn(member.getIsActive() == MemberStatus.INACTIVE)
-                .build();
-    }
-
-    public ExerciseDetailDTO.ParticipantInfo toParticipantInfoFromGuest(Guest guest, String inviterName) {
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(guest.getId())
-                .participantNumber(0)
-                .profileImageUrl(null)
-                .name(guest.getGuestName())
-                .gender(guest.getGender().name())
-                .level(guest.getLevel().name())
-                .participantType(guest.getExerciseMemberShipStatus().name())
-                .partyPosition(null)
-                .inviterName(inviterName)
-                .joinedAt(guest.getCreatedAt())
-                .isWithdrawn(false)
-                .build();
-    }
-
-    public ExerciseMyGuestListDTO.GuestInfo toGuestInfo(
-            Guest guest,
-            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestStatusMap,
-            String inviterName) {
-
-        ExerciseMyGuestListDTO.GuestGroups guestGroup = guestStatusMap.get(guest.getId());
-
-        return ExerciseMyGuestListDTO.GuestInfo.builder()
-                .guestId(guest.getId())
-                .isWaiting(guestGroup.isWaiting())
-                .participantNumber(guestGroup.participantNumber())
-                .name(guest.getGuestName())
-                .gender(guest.getGender())
-                .level(guest.getLevel())
-                .inviterName(inviterName)
                 .build();
     }
 

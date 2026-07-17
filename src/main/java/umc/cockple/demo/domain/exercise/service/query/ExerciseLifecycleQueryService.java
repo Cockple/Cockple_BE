@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.dto.*;
@@ -30,7 +30,7 @@ public class ExerciseLifecycleQueryService {
     private final MemberLookupService memberLookupService;
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseLifecycleMapper exerciseLifecycleMapper;
 
     public ExerciseDetailDTO.Response getExerciseDetail(Long exerciseId, Long memberId) {
 
@@ -50,7 +50,7 @@ public class ExerciseLifecycleQueryService {
         ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
         ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-        return exerciseConverter.toDetailResponse(isManager, exerciseInfo, participantGroup, waitingGroup);
+        return exerciseLifecycleMapper.toDetailResponse(isManager, exerciseInfo, participantGroup, waitingGroup);
     }
 
     public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
@@ -58,7 +58,7 @@ public class ExerciseLifecycleQueryService {
         Exercise exercise = exerciseReader.findExerciseWithBasicInfoOrThrow(exerciseId);
         exerciseValidator.validateExerciseManagementPermission(exercise, memberId);
         log.info("운동 수정용 상세조회 완료 - exerciseId: {}", exerciseId);
-        return exerciseConverter.toEditDetailResponse(exercise);
+        return exerciseLifecycleMapper.toEditDetailResponse(exercise);
     }
 
     // ========== 비즈니스 메서드 ==========

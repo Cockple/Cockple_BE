@@ -14,7 +14,8 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.ExerciseLifecycleMapper;
+import umc.cockple.demo.domain.exercise.converter.ExerciseParticipantInfoMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
@@ -99,16 +100,13 @@ class ExerciseLifecycleQueryServiceTest {
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Mock private FileService fileService;
 
-    private ExerciseConverter exerciseConverter;
-
     private Member manager;
     private Party party;
     private Exercise exercise;
 
     @BeforeEach
     void setUp() {
-        exerciseConverter = new ExerciseConverter(fileService);
-        exerciseLifecycleQueryService = createExerciseLifecycleQueryService(exerciseConverter);
+        exerciseLifecycleQueryService = createExerciseLifecycleQueryService();
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -123,10 +121,12 @@ class ExerciseLifecycleQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
 
-    private ExerciseLifecycleQueryService createExerciseLifecycleQueryService(ExerciseConverter exerciseConverter) {
+    private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
+        ExerciseParticipantInfoMapper participantInfoMapper = new ExerciseParticipantInfoMapper(fileService);
+        ExerciseLifecycleMapper exerciseLifecycleMapper = new ExerciseLifecycleMapper();
 
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
@@ -135,11 +135,11 @@ class ExerciseLifecycleQueryServiceTest {
                         exerciseParticipantReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
-                        exerciseConverter
+                        participantInfoMapper
                 ),
                 memberLookupService,
                 new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
-                exerciseConverter
+                exerciseLifecycleMapper
         );
     }
 
