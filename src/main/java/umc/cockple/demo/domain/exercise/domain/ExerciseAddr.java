@@ -2,8 +2,8 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.lifecycle;
 
 import lombok.Builder;
 

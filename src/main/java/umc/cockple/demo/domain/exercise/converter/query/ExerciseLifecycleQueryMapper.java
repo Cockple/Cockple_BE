@@ -3,8 +3,8 @@ package umc.cockple.demo.domain.exercise.converter.query;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
 
 @Component
 public class ExerciseLifecycleQueryMapper {

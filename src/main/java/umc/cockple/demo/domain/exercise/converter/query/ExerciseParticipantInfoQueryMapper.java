@@ -3,7 +3,7 @@ package umc.cockple.demo.domain.exercise.converter.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;

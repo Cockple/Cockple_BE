@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.global.response.BaseResponse;
 
 @RequestMapping("/api")

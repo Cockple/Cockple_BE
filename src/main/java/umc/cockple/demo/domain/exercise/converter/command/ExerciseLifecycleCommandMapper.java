@@ -2,9 +2,9 @@ package umc.cockple.demo.domain.exercise.converter.command;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 
 @Component
 public class ExerciseLifecycleCommandMapper {

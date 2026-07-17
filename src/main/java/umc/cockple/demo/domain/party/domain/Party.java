@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
