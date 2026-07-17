@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.command;
 
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 

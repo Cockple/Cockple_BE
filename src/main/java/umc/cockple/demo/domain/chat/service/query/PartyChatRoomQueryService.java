@@ -15,7 +15,6 @@ import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.party.domain.PartyImg;

@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.events.ChatRoomListUpdateEvent;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.party.domain.Party;
