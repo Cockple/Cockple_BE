@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
+import umc.cockple.demo.domain.chat.dto.PartyChatRoomIdDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
@@ -32,10 +33,8 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
@@ -62,12 +61,11 @@ class ChatQueryServiceTest {
     @Mock private ChatRoomRepository chatRoomRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private ChatMessageRepository chatMessageRepository;
-    @Mock private PartyRepository partyRepository;
-    @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private FileService fileService;
     @Mock private PartyChatRoomQueryService partyChatRoomQueryService;
     @Mock private DirectChatRoomQueryService directChatRoomQueryService;
     @Mock private ChatUnreadQueryService chatUnreadQueryService;
+    @Mock private PartyChatRoomIdQueryService partyChatRoomIdQueryService;
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
@@ -83,15 +81,36 @@ class ChatQueryServiceTest {
                 chatRoomRepository,
                 chatRoomMemberRepository,
                 chatMessageRepository,
-                partyRepository,
-                memberPartyRepository,
                 chatUnreadQueryService,
                 chatConverter,
                 imageUrlResolver,
                 chatProcessor,
                 partyChatRoomQueryService,
-                directChatRoomQueryService
+                directChatRoomQueryService,
+                partyChatRoomIdQueryService
         );
+    }
+
+    @Nested
+    @DisplayName("모임 채팅방 ID 조회 위임")
+    class PartyChatRoomIdDelegation {
+
+        @Test
+        @DisplayName("모임 채팅방 ID 조회는 전용 조회 서비스로 위임한다")
+        void delegatesPartyChatRoomId() {
+            // given
+            Long partyId = 1L;
+            Long memberId = 10L;
+            PartyChatRoomIdDTO expected = PartyChatRoomIdDTO.builder().roomId(100L).build();
+            given(partyChatRoomIdQueryService.getChatRoomId(partyId, memberId)).willReturn(expected);
+
+            // when
+            PartyChatRoomIdDTO result = chatQueryService.getChatRoomId(partyId, memberId);
+
+            // then
+            assertThat(result).isSameAs(expected);
+            verify(partyChatRoomIdQueryService).getChatRoomId(partyId, memberId);
+        }
     }
 
     @Nested

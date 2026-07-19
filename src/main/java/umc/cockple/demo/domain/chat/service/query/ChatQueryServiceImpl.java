@@ -21,10 +21,7 @@ import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyImg;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,8 +36,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final PartyRepository partyRepository;
-    private final MemberPartyRepository memberPartyRepository;
 
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
@@ -48,6 +43,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final ChatProcessor chatProcessor;
     private final PartyChatRoomQueryService partyChatRoomQueryService;
     private final DirectChatRoomQueryService directChatRoomQueryService;
+    private final PartyChatRoomIdQueryService partyChatRoomIdQueryService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -128,22 +124,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public PartyChatRoomIdDTO getChatRoomId(Long partyId, Long memberId) {
-        log.info("채팅방 ID 조회 시작 - partyId: {}, memberId: {}", partyId, memberId);
-
-        //모임 조회
-        Party party = findPartyOrThrow(partyId);
-
-        // 해당 모임의 멤버가 맞는지 검증
-        validateIsMember(partyId, memberId);
-
-        ChatRoom chatRoom = party.getChatRoom();
-        if (chatRoom == null) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
-        }
-
-        log.info("채팅방 ID 조회 완료 - roomId: {}", chatRoom.getId());
-
-        return chatConverter.toChatRoomIdDTO(chatRoom);
+        return partyChatRoomIdQueryService.getChatRoomId(partyId, memberId);
     }
 
     // ========== 검증 로직 ==========
@@ -151,12 +132,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private void validateChatRoomAccess(Long roomId, Long memberId) {
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
             throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
-    }
-
-    private void validateIsMember(Long partyId, Long memberId) {
-        if (!memberPartyRepository.existsByPartyIdAndMemberId(partyId, memberId)) {
-            throw new ChatException(ChatErrorCode.NOT_PARTY_MEMBER);
-        }
     }
 
     // ========== 비즈니스 로직 ==========
@@ -242,8 +217,4 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
     }
 
-    private Party findPartyOrThrow(Long partyId) {
-        return partyRepository.findById(partyId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.PARTY_NOT_FOUND));
-    }
 }
