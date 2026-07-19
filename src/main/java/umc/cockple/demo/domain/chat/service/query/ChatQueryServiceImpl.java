@@ -44,6 +44,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     private final PartyChatRoomQueryService partyChatRoomQueryService;
     private final DirectChatRoomQueryService directChatRoomQueryService;
     private final PartyChatRoomIdQueryService partyChatRoomIdQueryService;
+    private final ChatMessageHistoryQueryService chatMessageHistoryQueryService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
@@ -97,41 +98,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size) {
-        log.info("[채팅방 과거 메시지 조회 시작] - 채팅방 Id: {}, 멤버 Id: {}, 마지막으로 조회된 메시지 Id: {}, size: {}",
-                roomId, memberId, cursor, size);
-
-        validateChatRoomAccess(roomId, memberId);
-
-        Pageable pageable = PageRequest.of(0, size + 1);
-        List<ChatMessage> messages = findMessagesWithCursor(roomId, cursor, pageable);
-
-        boolean hasNext = messages.size() > size;
-        List<ChatMessage> resultMessages = hasNext
-                ? new ArrayList<>(messages.subList(0, size))
-                : new ArrayList<>(messages);
-
-        Collections.reverse(resultMessages);
-        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, resultMessages);
-        List<ChatMessageDTO.MessageInfo> messageInfos = chatConverter.toChatMessageInfos(commonMessages);
-
-        Long nextCursor = hasNext && !resultMessages.isEmpty()
-                ? resultMessages.get(0).getId() : null;
-
-        log.info("[채팅방 과거 메시지 조회 완료] - 메시지 수: {}, hasNext: {}", resultMessages.size(), hasNext);
-
-        return chatConverter.toChatMessageResponse(messageInfos, hasNext, nextCursor);
+        return chatMessageHistoryQueryService.getChatMessages(roomId, memberId, cursor, size);
     }
 
     @Override
     public PartyChatRoomIdDTO getChatRoomId(Long partyId, Long memberId) {
         return partyChatRoomIdQueryService.getChatRoomId(partyId, memberId);
-    }
-
-    // ========== 검증 로직 ==========
-
-    private void validateChatRoomAccess(Long roomId, Long memberId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
     // ========== 비즈니스 로직 ==========
@@ -211,10 +183,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private List<ChatMessage> findRecentMessagesWithImages(Long roomId, Pageable pageable) {
         return chatMessageRepository.findRecentMessagesWithFiles(roomId, pageable);
-    }
-
-    private List<ChatMessage> findMessagesWithCursor(Long roomId, Long cursor, Pageable pageable) {
-        return chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, cursor, pageable);
     }
 
 }
