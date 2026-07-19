@@ -11,8 +11,6 @@ import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.LastMessageCacheDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
-import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
-import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
@@ -67,9 +65,6 @@ public class PartyChatRoomQueryService {
         List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
                 .map(chatRoom -> {
                     Long chatRoomId = chatRoom.getId();
-
-                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
 
                     int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
                     int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
