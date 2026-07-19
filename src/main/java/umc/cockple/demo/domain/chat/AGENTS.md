@@ -15,7 +15,7 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | serializes and sends socket responses |
 | WebSocket response assembly | `converter/ChatWebSocketResponseAssembler.java` | shapes socket response payloads |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
-| Read/query flows | `service/ChatQueryServiceImpl.java` | room lists, unread counts, history |
+| Read/query flows | `service/query/ChatQueryServiceImpl.java` | room lists, unread counts, history |
 | Events | `events/` | send/subscription events bridge transport and async handlers |
 | DTO conversion | `converter/ChatConverter.java` | shapes REST/API and common message payloads |
 

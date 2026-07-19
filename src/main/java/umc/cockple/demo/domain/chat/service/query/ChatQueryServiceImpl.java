@@ -1,10 +1,9 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.query;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
@@ -18,8 +17,8 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.service.websocket.ChatRoomListCacheService;
-import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -30,8 +29,6 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,48 +44,29 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatConverter chatConverter;
-    private final FileService fileService;
+    private final ImageUrlResolver imageUrlResolver;
     private final ChatProcessor chatProcessor;
-    private final ChatRoomListCacheService chatRoomListCacheService;
+    private final PartyChatRoomQueryService partyChatRoomQueryService;
+    private final DirectChatRoomQueryService directChatRoomQueryService;
 
     @Override
     public PartyChatRoomDTO.Response getPartyChatRooms(Long memberId, int page, int size) {
-        log.info("[모임 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findPartyChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
-        PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
-        log.info("[모임 채팅방 목록 조회 완료]");
-        return response;
+        return partyChatRoomQueryService.getPartyChatRooms(memberId, page, size);
     }
 
     @Override
     public PartyChatRoomDTO.Response searchPartyChatRoomsByName(Long memberId, String name, int page, int size) {
-        log.info("[모임 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.searchPartyChatRoomsByName(memberId, name, pageable);
-        PartyChatRoomDTO.Response response = toPartyChatRoomInfos(chatRooms, memberId);
-        log.info("[모임 채팅방 이름 검색 완료]");
-        return response;
+        return partyChatRoomQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
     }
 
     @Override
     public DirectChatRoomDTO.Response getDirectChatRooms(Long memberId, int page, int size) {
-        log.info("[개인 채팅방 목록 조회 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.findDirectChatRoomByMemberIdOrderByLastMsgIdDesc(memberId, pageable);
-        DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
-        log.info("[개인 채팅방 목록 조회 완료]");
-        return response;
+        return directChatRoomQueryService.getDirectChatRooms(memberId, page, size);
     }
 
     @Override
     public DirectChatRoomDTO.Response searchDirectChatRoomsByName(Long memberId, String name, int page, int size) {
-        log.info("[개인 채팅방 이름 검색 시작]- 요청자: {}", memberId);
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<ChatRoom> chatRooms = chatRoomRepository.searchDirectChatRoomsByName(memberId, name, pageable);
-        DirectChatRoomDTO.Response response = toDirectChatRoomInfos(chatRooms, memberId);
-        log.info("[개인 채팅방 이름 검색 완료]");
-        return response;
+        return directChatRoomQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
     }
 
     @Override
@@ -188,89 +166,6 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     }
 
     // ========== 비즈니스 로직 ==========
-    private PartyChatRoomDTO.Response toPartyChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
-        if (chatRooms.isEmpty()) {
-            return chatConverter.toEmptyPartyChatRoomInfos();
-        }
-        List<ChatRoom> chatRoomList = chatRooms.getContent();
-        List<Long> chatRoomIds = chatRoomList.stream()
-                .map(ChatRoom::getId)
-                .toList();
-        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
-
-        List<PartyChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
-                .map(chatRoom -> {
-                    Long chatRoomId = chatRoom.getId();
-
-                    chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoomId);
-                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
-
-                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
-                    String imgUrl = getImageUrl(chatRoom.getParty().getPartyImg());
-
-                    return chatConverter.toPartyChatRoomInfo(
-                            chatRoom,
-                            memberCount,
-                            unreadCount,
-                            chatConverter.toPartyLastMessageInfo(lastMessage),
-                            imgUrl
-                    );
-                })
-                .collect(Collectors.toList());
-
-        return chatConverter.toPartyChatRoomListResponse(roomInfos, chatRooms.hasNext());
-    }
-
-    private DirectChatRoomDTO.Response toDirectChatRoomInfos(Slice<ChatRoom> chatRooms, Long memberId) {
-        if (chatRooms.isEmpty()) {
-            return chatConverter.toEmptyDirectChatRoomInfos();
-        }
-        List<ChatRoom> chatRoomList = chatRooms.getContent();
-        List<Long> chatRoomIds = chatRoomList.stream()
-                .map(ChatRoom::getId)
-                .toList();
-        Map<Long, Integer> unreadCounts = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
-
-        // 각 채팅방에 대해 ChatRoomInfo 생성
-        List<DirectChatRoomDTO.ChatRoomInfo> roomInfos = chatRoomList.stream()
-                .map(chatRoom -> {
-                    Long chatRoomId = chatRoom.getId();
-
-                    // 나의 채팅방 참여 정보
-                    ChatRoomMember myMember = chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId)
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    // 상대방 찾기 (나 제외)
-                    ChatRoomMember displayMember = chatRoom.getChatRoomMembers().stream()
-                            .filter(crm -> crm.getMember() == null || !crm.getMember().getId().equals(memberId))
-                            .findFirst()
-                            .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED));
-
-                    int unreadCount = unreadCounts.getOrDefault(chatRoomId, 0);
-
-                    LastMessageCacheDTO lastMessage = chatRoomListCacheService.getLastMessage(chatRoomId);
-
-                    Member counterPartMember = displayMember.getMember();
-                    boolean isWithdrawn = isWithdrawn(counterPartMember);
-                    String displayProfileImgUrl = isWithdrawn ? null : getImageUrl(counterPartMember.getProfileImg());
-
-                    return chatConverter.toDirectChatRoomInfo(
-                            chatRoom,
-                            myMember,
-                            isWithdrawn,
-                            unreadCount,
-                            chatConverter.toDirectLastMessageInfo(lastMessage),
-                            displayProfileImgUrl
-                    );
-                })
-                .collect(Collectors.toList());
-
-        return chatConverter.toDirectChatRoomListResponse(roomInfos, chatRooms.hasNext());
-    }
-
     private ChatRoomDetailDTO.ChatRoomInfo buildChatRoomInfo(ChatRoom chatRoom, ChatRoomMember myMembership) {
         String displayName;
         String profileImageUrl = null;
@@ -279,13 +174,15 @@ public class ChatQueryServiceImpl implements ChatQueryService {
         if (chatRoom.getType() == ChatRoomType.DIRECT) {
             ChatRoomMember counterPart = findCounterPartWithMemberOrThrow(chatRoom, myMembership);
             Member member = counterPart.getMember();
-            isCounterPartWithdrawn = isWithdrawn(member);
+            isCounterPartWithdrawn = isUnavailableMember(member);
 
             displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
-            profileImageUrl = isCounterPartWithdrawn ? null : getImageUrl(member.getProfileImg());
+            profileImageUrl = isCounterPartWithdrawn
+                    ? null
+                    : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
         } else {
             displayName = chatRoom.getParty().getPartyName();
-            profileImageUrl = getImageUrl(chatRoom.getParty().getPartyImg());
+            profileImageUrl = imageUrlResolver.resolve(chatRoom.getParty().getPartyImg(), PartyImg::getImgKey);
         }
 
         int memberCount = chatRoomMemberRepository.countByChatRoomId(chatRoom.getId());
@@ -308,28 +205,17 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     private ChatRoomDetailDTO.MemberInfo buildMemberInfo(ChatRoomMember chatRoomMember) {
         Member member = chatRoomMember.getMember();
-        String memberProfileImgUrl = isWithdrawn(member) ? null : getImageUrl(member.getProfileImg());
+        String memberProfileImgUrl = isUnavailableMember(member)
+                ? null
+                : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
 
         return chatConverter.toChatRoomDetailMemberInfo(member, memberProfileImgUrl);
     }
 
-    private boolean isWithdrawn(Member member) {
+    private boolean isUnavailableMember(Member member) {
         return member == null || member.isWithdrawn();
     }
 
-    private String getImageUrl(PartyImg partyImg) {
-        if (partyImg != null && partyImg.getImgKey() != null && !partyImg.getImgKey().isBlank()) {
-            return fileService.getUrlFromKey(partyImg.getImgKey());
-        }
-        return null;
-    }
-
-    private String getImageUrl(ProfileImg profileImg) {
-        if (profileImg == null || profileImg.getImgKey() == null) {
-            return null;
-        }
-        return fileService.getUrlFromKey(profileImg.getImgKey());
-    }
 
     // ========== 조회 메서드 ==========
 
