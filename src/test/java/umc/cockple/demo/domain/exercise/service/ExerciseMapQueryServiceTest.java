@@ -11,12 +11,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMapQueryService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.file.service.FileService;
@@ -392,9 +393,9 @@ class ExerciseMapQueryServiceTest {
 
         }
 
-        private ExerciseMapBuildingsDTO.Query createMapQuery(
+        private ExerciseMapSearchQuery createMapQuery(
                 LocalDate date, Double latitude, Double longitude, Double radiusKm) {
-            return ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
+            return ExerciseMapSearchQuery.of(date, latitude, longitude, radiusKm);
         }
 
         private Exercise createMapExercise(long id, LocalDate date, String buildingName,

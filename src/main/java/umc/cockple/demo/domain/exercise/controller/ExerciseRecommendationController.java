@@ -5,10 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseRecommendationApi;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseRecommendationQueryService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
@@ -49,18 +50,17 @@ public class ExerciseRecommendationController implements ExerciseRecommendationA
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseRecommendationCalendarDTO.FilterSortType filterSortType =
-                ExerciseRecommendationCalendarDTO.FilterSortType.builder()
+        ExerciseRecommendationFilterCondition filterCondition =
+                ExerciseRecommendationFilterCondition.builder()
                         .addr1(addr1)
                         .addr2(addr2)
                         .levels(levels)
                         .participationTypes(participationTypes)
                         .activityTimes(activityTimes)
-                        .sortType(sortType)
                         .build();
 
         ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService
-                .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterSortType);
+                .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterCondition, sortType);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }

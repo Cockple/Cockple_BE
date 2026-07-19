@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.global.response.BaseResponse;
 
 import java.time.LocalDate;

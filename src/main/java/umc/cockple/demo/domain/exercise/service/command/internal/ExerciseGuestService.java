@@ -7,11 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 
 @Service
@@ -30,7 +31,7 @@ public class ExerciseGuestService {
     public ExerciseGuestInviteDTO.Response inviteGuest(Exercise exercise, Member inviter, ExerciseGuestInviteDTO.Request request) {
         exerciseValidator.validateGuestInvitation(exercise, inviter);
 
-        ExerciseGuestInviteDTO.Command command = exerciseGuestCommandMapper.toGuestInviteCommand(request, inviter.getId());
+        ExerciseGuestInviteCommand command = exerciseGuestCommandMapper.toGuestInviteCommand(request, inviter.getId());
 
         Guest guest = Guest.create(command);
         exercise.addGuest(guest);

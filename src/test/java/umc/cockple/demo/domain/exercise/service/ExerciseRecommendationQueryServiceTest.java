@@ -12,15 +12,17 @@ import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
 import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
@@ -396,7 +398,7 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when
                 ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
-                        recommendationMember.getId(), null, null, true, recommendationFilter(MyPartyExerciseOrderType.LATEST));
+                        recommendationMember.getId(), null, null, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(expectedStart);
@@ -434,19 +436,26 @@ class ExerciseRecommendationQueryServiceTest {
                 Exercise earlyExercise = createRecommendationExercise(filteredParty, 1102L, LocalDate.of(2026, 3, 25),
                         LocalTime.of(9, 0), LocalTime.of(11, 0), 37.53, 127.03, "이른 체육관");
 
-                ExerciseRecommendationCalendarDTO.FilterSortType filterSortType = ExerciseRecommendationCalendarDTO.FilterSortType.builder()
+                ExerciseRecommendationFilterCondition filterCondition = ExerciseRecommendationFilterCondition.builder()
                         .addr1("서울특별시")
                         .addr2("강남구")
                         .levels(List.of(Level.B))
                         .participationTypes(List.of(ParticipationType.SINGLE))
                         .activityTimes(List.of(ActivityTime.AFTERNOON))
-                        .sortType(MyPartyExerciseOrderType.POPULARITY)
                         .build();
+
+                ExerciseRecommendationSearchCondition expectedSearchCondition = new ExerciseRecommendationSearchCondition(
+                        "서울특별시",
+                        "강남구",
+                        List.of(Level.B),
+                        List.of(ParticipationType.SINGLE),
+                        List.of(ActivityTime.AFTERNOON)
+                );
 
                 given(memberRepository.findMemberWithAddresses(recommendationMember.getId()))
                         .willReturn(Optional.of(recommendationMember));
                 given(exerciseRepository.findFilteredRecommendedExercisesForCalendar(
-                        recommendationMember.getId(), 1995, filterSortType, startDate, endDate))
+                        recommendationMember.getId(), 1995, expectedSearchCondition, startDate, endDate))
                         .willReturn(List.of(earlyExercise, popularExercise));
                 given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
                         recommendationMember.getId(), List.of(earlyExercise.getId(), popularExercise.getId())))
@@ -460,7 +469,7 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when
                 ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
-                        recommendationMember.getId(), startDate, endDate, false, filterSortType);
+                        recommendationMember.getId(), startDate, endDate, false, filterCondition, MyPartyExerciseOrderType.POPULARITY);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(startDate);
@@ -480,7 +489,7 @@ class ExerciseRecommendationQueryServiceTest {
                         );
                 verify(exerciseRepository, never()).findCockpleRecommendedExercisesByDateRange(any(), any(), any(), anyInt(), any(), any());
                 verify(exerciseRepository).findFilteredRecommendedExercisesForCalendar(
-                        recommendationMember.getId(), 1995, filterSortType, startDate, endDate);
+                        recommendationMember.getId(), 1995, expectedSearchCondition, startDate, endDate);
             }
 
             @Test
@@ -495,7 +504,7 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when
                 ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
-                        recommendationMember.getId(), startDate, endDate, true, recommendationFilter(MyPartyExerciseOrderType.LATEST));
+                        recommendationMember.getId(), startDate, endDate, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(startDate);
@@ -522,7 +531,7 @@ class ExerciseRecommendationQueryServiceTest {
                 // when
                 ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), LocalDate.of(2026, 3, 25), null, true,
-                        recommendationFilter(MyPartyExerciseOrderType.LATEST));
+                        recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(expectedStart);
@@ -546,7 +555,7 @@ class ExerciseRecommendationQueryServiceTest {
                 // when
                 ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), reversedStart, reversedEnd, true,
-                        recommendationFilter(MyPartyExerciseOrderType.LATEST));
+                        recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(reversedStart);
@@ -568,7 +577,7 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
-                        999L, startDate, endDate, true, recommendationFilter(MyPartyExerciseOrderType.LATEST)))
+                        999L, startDate, endDate, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MEMBER_NOT_FOUND);
             }
@@ -585,15 +594,14 @@ class ExerciseRecommendationQueryServiceTest {
 
                 // when & then
                 assertThatThrownBy(() -> exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
-                        memberWithoutMainAddr.getId(), startDate, endDate, true, recommendationFilter(MyPartyExerciseOrderType.LATEST)))
+                        memberWithoutMainAddr.getId(), startDate, endDate, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST))
                         .isInstanceOf(MemberException.class)
                         .hasFieldOrPropertyWithValue("code", MemberErrorCode.MAIN_ADDRESS_NULL);
             }
         }
 
-        private ExerciseRecommendationCalendarDTO.FilterSortType recommendationFilter(MyPartyExerciseOrderType sortType) {
-            return ExerciseRecommendationCalendarDTO.FilterSortType.builder()
-                    .sortType(sortType)
+        private ExerciseRecommendationFilterCondition recommendationFilter() {
+            return ExerciseRecommendationFilterCondition.builder()
                     .build();
         }
 

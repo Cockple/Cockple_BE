@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.my;
 
 import lombok.Builder;
 
@@ -6,13 +6,13 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public class MyExerciseCalendarDTO {
+public class MyPartyExerciseCalendarDTO {
 
     @Builder
     public record Response(
             LocalDate startDate,
             LocalDate endDate,
-            List<WeeklyExercises> weeks
+            List<MyPartyExerciseCalendarDTO.WeeklyExercises> weeks
     ) {
     }
 
@@ -20,7 +20,7 @@ public class MyExerciseCalendarDTO {
     public record WeeklyExercises(
             LocalDate weekStartDate,
             LocalDate weekEndDate,
-            List<DailyExercises> days
+            List<MyPartyExerciseCalendarDTO.DailyExercises> days
     ) {
     }
 
@@ -40,7 +40,9 @@ public class MyExerciseCalendarDTO {
             String buildingName,
             LocalTime startTime,
             LocalTime endTime,
-            String profileImageUrl
+            String profileImageUrl,
+            Boolean isBookmarked,
+            Integer nowCapacity
     ) {
     }
 }

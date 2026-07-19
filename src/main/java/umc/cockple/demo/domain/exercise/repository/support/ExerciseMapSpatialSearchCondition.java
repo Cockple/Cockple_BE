@@ -8,7 +8,7 @@ import java.util.Locale;
 /*
  * 월간 지도 spatial 조회 조건 값 객체다.
  *
- * 입력 값 검증은 ExerciseMapBuildingsDTO.Query 책임이다.
+ * 입력 값 검증은 ExerciseMapSearchQuery 책임이다.
  * 이 객체는 검증이 끝난 좌표와 반경을 MySQL spatial query 파라미터로 변환하는 adapter 역할만 한다.
  * MySQL ST_GeomFromText(..., 'axis-order=long-lat') 계약에 맞춰
  * WKT는 항상 longitude latitude 순서로 생성한다.

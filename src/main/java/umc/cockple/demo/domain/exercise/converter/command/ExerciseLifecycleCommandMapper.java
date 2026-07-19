@@ -2,15 +2,19 @@ package umc.cockple.demo.domain.exercise.converter.command;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDeleteDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
 
 @Component
 public class ExerciseLifecycleCommandMapper {
 
-    public ExerciseCreateDTO.Command toCreateCommand(ExerciseCreateDTO.Request request) {
-        return ExerciseCreateDTO.Command.builder()
+    public ExerciseCreateCommand toCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateCommand.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -21,8 +25,8 @@ public class ExerciseLifecycleCommandMapper {
                 .build();
     }
 
-    public ExerciseCreateDTO.AddrCommand toAddrCreateCommand(ExerciseCreateDTO.Request request) {
-        return ExerciseCreateDTO.AddrCommand.builder()
+    public ExerciseCreateAddressCommand toAddrCreateCommand(ExerciseCreateDTO.Request request) {
+        return ExerciseCreateAddressCommand.builder()
                 .roadAddress(request.roadAddress())
                 .buildingName(request.buildingName())
                 .latitude(request.latitude())
@@ -30,8 +34,8 @@ public class ExerciseLifecycleCommandMapper {
                 .build();
     }
 
-    public ExerciseUpdateDTO.Command toUpdateCommand(ExerciseUpdateDTO.Request request) {
-        return ExerciseUpdateDTO.Command.builder()
+    public ExerciseUpdateCommand toUpdateCommand(ExerciseUpdateDTO.Request request) {
+        return ExerciseUpdateCommand.builder()
                 .date(request.toParsedDate())
                 .startTime(request.toParsedStartTime())
                 .endTime(request.toParsedEndTime())
@@ -42,10 +46,10 @@ public class ExerciseLifecycleCommandMapper {
                 .build();
     }
 
-    public ExerciseUpdateDTO.AddrCommand toAddrUpdateCommand(ExerciseUpdateDTO.Request request) {
+    public ExerciseUpdateAddressCommand toAddrUpdateCommand(ExerciseUpdateDTO.Request request) {
         if (request.roadAddress() != null || request.buildingName() != null ||
                 request.latitude() != null || request.longitude() != null) {
-            return ExerciseUpdateDTO.AddrCommand.builder()
+            return ExerciseUpdateAddressCommand.builder()
                     .roadAddress(request.roadAddress())
                     .buildingName(request.buildingName())
                     .latitude(request.latitude())

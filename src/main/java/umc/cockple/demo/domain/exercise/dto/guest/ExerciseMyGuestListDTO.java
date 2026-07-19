@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.guest;
 
 import lombok.Builder;
 import umc.cockple.demo.global.enums.Gender;

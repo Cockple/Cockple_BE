@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.guest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -30,15 +30,6 @@ public class ExerciseGuestInviteDTO {
         public Level toParsedLevel() {
             return Level.fromKorean(level);
         }
-    }
-
-    @Builder
-    public record Command(
-            String guestName,
-            Gender gender,
-            Level level,
-            Long inviterId
-    ) {
     }
 
     @Builder

@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseGuestInviteDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
 import umc.cockple.demo.global.response.BaseResponse;
 
 @RequestMapping("/api/exercises/{exerciseId}/guests")

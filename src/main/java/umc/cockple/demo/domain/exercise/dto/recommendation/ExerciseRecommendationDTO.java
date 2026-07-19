@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.recommendation;
 
 import lombok.Builder;
 
@@ -6,25 +6,27 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public class MyPartyExerciseDTO {
+public class ExerciseRecommendationDTO {
 
     @Builder
     public record Response(
             Integer totalExercises,
-            List<Exercises> exercises
+            List<ExerciseItem> exercises
     ) {
     }
 
     @Builder
-    public record Exercises(
+    public record ExerciseItem(
             Long exerciseId,
             Long partyId,
             String partyName,
-            String buildingName,
             LocalDate date,
             String dayOfWeek,
             LocalTime startTime,
-            String profileImageUrl
-    ){
+            LocalTime endTime,
+            String buildingName,
+            String profileImageUrl,
+            Boolean isBookmarked
+    ) {
     }
 }

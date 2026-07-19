@@ -3,8 +3,8 @@ package umc.cockple.demo.domain.exercise.converter.command;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 

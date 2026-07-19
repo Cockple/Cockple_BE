@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.dto;
+package umc.cockple.demo.domain.exercise.dto.lifecycle;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -80,27 +80,6 @@ public class ExerciseCreateDTO {
                 throw new ExerciseException(ExerciseErrorCode.INVALID_END_TIME_FORMAT);
             }
         }
-    }
-
-    @Builder
-    public record Command(
-            LocalDate date,
-            LocalTime startTime,
-            LocalTime endTime,
-            Integer maxCapacity,
-            Boolean partyGuestAccept,
-            Boolean outsideGuestAccept,
-            String notice
-    ) {
-    }
-
-    @Builder
-    public record AddrCommand(
-            String roadAddress,
-            String buildingName,
-            Double latitude,
-            Double longitude
-    ) {
     }
 
     @Builder
