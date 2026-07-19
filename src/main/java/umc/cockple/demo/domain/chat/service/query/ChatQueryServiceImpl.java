@@ -71,13 +71,7 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public ChatUnreadStatusDTO.Response getUnreadStatus(Long memberId) {
-        log.info("[채팅 안읽음 여부 조회 시작]- 요청자: {}", memberId);
-        boolean hasPartyUnread = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
-        boolean hasDirectUnread = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
-        boolean hasUnread = hasPartyUnread || hasDirectUnread;
-        log.info("[채팅 안읽음 여부 조회 완료]- hasUnread: {}", hasUnread);
-
-        return chatConverter.toUnreadStatusResponse(hasPartyUnread, hasDirectUnread);
+        return chatUnreadQueryService.getUnreadStatus(memberId);
     }
 
     @Override

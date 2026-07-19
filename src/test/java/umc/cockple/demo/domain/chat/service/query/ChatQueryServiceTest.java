@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
+import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.enums.MessageType;
@@ -26,7 +27,6 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.ChatProcessor;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
@@ -50,11 +50,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -67,14 +64,13 @@ class ChatQueryServiceTest {
     @Mock private ChatMessageRepository chatMessageRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MessageReadStatusRepository messageReadStatusRepository;
     @Mock private FileService fileService;
     @Mock private PartyChatRoomQueryService partyChatRoomQueryService;
     @Mock private DirectChatRoomQueryService directChatRoomQueryService;
+    @Mock private ChatUnreadQueryService chatUnreadQueryService;
 
     private ChatConverter chatConverter;
     private ChatProcessor chatProcessor;
-    private ChatUnreadQueryService chatUnreadQueryService;
     private ImageUrlResolver imageUrlResolver;
     private ChatQueryServiceImpl chatQueryService;
 
@@ -82,7 +78,6 @@ class ChatQueryServiceTest {
     void setUp() {
         chatConverter = new ChatConverter();
         chatProcessor = new ChatProcessor(fileService, chatConverter);
-        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
         imageUrlResolver = new ImageUrlResolver(fileService);
         chatQueryService = new ChatQueryServiceImpl(
                 chatRoomRepository,
@@ -97,63 +92,30 @@ class ChatQueryServiceTest {
                 partyChatRoomQueryService,
                 directChatRoomQueryService
         );
-        lenient().when(messageReadStatusRepository.countUnreadMessagesByChatRooms(anyLong(), anyList()))
-                .thenReturn(List.of());
     }
 
     @Nested
-    @DisplayName("안 읽은 메시지 여부 조회")
-    class GetUnreadStatus {
+    @DisplayName("안 읽은 메시지 여부 조회 위임")
+    class GetUnreadStatusDelegation {
 
         @Test
-        @DisplayName("모임과 개인 안읽음 여부를 함께 반환한다")
-        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() {
+        @DisplayName("안읽음 여부 조회는 unread 조회 서비스로 위임한다")
+        void delegatesUnreadStatus() {
             // given
             Long memberId = 10L;
-            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
-            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+            ChatUnreadStatusDTO.Response expected = ChatUnreadStatusDTO.Response.builder()
+                    .hasUnread(true)
+                    .hasPartyUnread(true)
+                    .hasDirectUnread(false)
+                    .build();
+            given(chatUnreadQueryService.getUnreadStatus(memberId)).willReturn(expected);
 
             // when
-            var result = chatQueryService.getUnreadStatus(memberId);
+            ChatUnreadStatusDTO.Response result = chatQueryService.getUnreadStatus(memberId);
 
             // then
-            assertThat(result.hasUnread()).isTrue();
-            assertThat(result.hasPartyUnread()).isTrue();
-            assertThat(result.hasDirectUnread()).isFalse();
-        }
-
-        @Test
-        @DisplayName("모임과 개인 모두 안읽음이 없으면 전체 안읽음 여부가 false이다")
-        void getUnreadStatus_returnsFalseWhenNoUnreadExists() {
-            // given
-            Long memberId = 10L;
-            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
-            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
-
-            // when
-            var result = chatQueryService.getUnreadStatus(memberId);
-
-            // then
-            assertThat(result.hasUnread()).isFalse();
-            assertThat(result.hasPartyUnread()).isFalse();
-            assertThat(result.hasDirectUnread()).isFalse();
-        }
-
-        @Test
-        @DisplayName("개인 안읽음만 있으면 전체 안읽음 여부가 true이다")
-        void getUnreadStatus_returnsTrueWhenOnlyDirectUnreadExists() {
-            // given
-            Long memberId = 10L;
-            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
-            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(true);
-
-            // when
-            var result = chatQueryService.getUnreadStatus(memberId);
-
-            // then
-            assertThat(result.hasUnread()).isTrue();
-            assertThat(result.hasPartyUnread()).isFalse();
-            assertThat(result.hasDirectUnread()).isTrue();
+            assertThat(result).isSameAs(expected);
+            verify(chatUnreadQueryService).getUnreadStatus(memberId);
         }
     }
 

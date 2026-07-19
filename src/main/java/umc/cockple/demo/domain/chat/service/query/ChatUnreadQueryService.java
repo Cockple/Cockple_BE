@@ -1,8 +1,11 @@
 package umc.cockple.demo.domain.chat.service.query;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 
 import java.util.HashSet;
@@ -13,10 +16,21 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class ChatUnreadQueryService {
 
     private final MessageReadStatusRepository messageReadStatusRepository;
+    private final ChatConverter chatConverter;
+
+    public ChatUnreadStatusDTO.Response getUnreadStatus(Long memberId) {
+        log.info("[채팅 안읽음 여부 조회 시작]- 요청자: {}", memberId);
+        boolean hasPartyUnread = hasPartyUnreadMessages(memberId);
+        boolean hasDirectUnread = hasDirectUnreadMessages(memberId);
+        log.info("[채팅 안읽음 여부 조회 완료]- hasUnread: {}", hasPartyUnread || hasDirectUnread);
+
+        return chatConverter.toUnreadStatusResponse(hasPartyUnread, hasDirectUnread);
+    }
 
     public Map<Long, Integer> countUnreadMessagesByChatRooms(Long memberId, List<Long> chatRoomIds) {
         Map<Long, Integer> unreadCounts = initializeZeroCountMap(chatRoomIds);

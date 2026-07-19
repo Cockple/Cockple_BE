@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
 import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
 import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
@@ -27,11 +29,69 @@ class ChatUnreadQueryServiceTest {
 
     @Mock private MessageReadStatusRepository messageReadStatusRepository;
 
+    private ChatConverter chatConverter;
     private ChatUnreadQueryService chatUnreadQueryService;
 
     @BeforeEach
     void setUp() {
-        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
+        chatConverter = new ChatConverter();
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatConverter);
+    }
+
+    @Nested
+    @DisplayName("안 읽은 메시지 여부 조회")
+    class GetUnreadStatus {
+
+        @Test
+        @DisplayName("모임과 개인 안읽음 여부를 함께 반환한다")
+        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isTrue();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("모임과 개인 모두 안읽음이 없으면 전체 안읽음 여부가 false이다")
+        void getUnreadStatus_returnsFalseWhenNoUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isFalse();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("개인 안읽음만 있으면 전체 안읽음 여부가 true이다")
+        void getUnreadStatus_returnsTrueWhenOnlyDirectUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(true);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isTrue();
+        }
     }
 
     @Nested
