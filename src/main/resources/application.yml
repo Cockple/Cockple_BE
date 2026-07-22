@@ -78,8 +78,9 @@ gcs:
 cockple:
   web:
     # WS도 이 목록 공유. cockple-fe.vercel.app/(끝슬래시)는 WS 기존값 유지용(무해).
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
-    cookie-domain: ${COOKIE_DOMAIN:.cockple.store}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.site,https://www.cockple.site,https://staging.cockple.site,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+    # 비우면 host-only 쿠키. 실제 운영/스테이징 값은 GitHub Variables의 COOKIE_DOMAIN이 주입한다.
+    cookie-domain: ${COOKIE_DOMAIN:}
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID}

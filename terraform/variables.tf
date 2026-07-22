@@ -23,7 +23,7 @@ variable "cloudflare_zone_id" {
 variable "root_domain" {
   description = "서비스 루트 도메인. 도메인 변경 시 이 값(+ cloudflare_zone_id)만 교체."
   type        = string
-  default     = "cockple.store"
+  default     = "cockple.site"
 }
 
 variable "ssh_public_key" {
