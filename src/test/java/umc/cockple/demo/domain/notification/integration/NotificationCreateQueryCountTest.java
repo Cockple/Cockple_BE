@@ -32,13 +32,8 @@ import static umc.cockple.demo.support.QueryCountAssert.assertQueryCount;
 class NotificationCreateQueryCountTest extends IntegrationTestBase {
 
     private static final int SEEDED_NOTIFICATIONS = 50;
-
-    /** createNotification 1회가 실행하는 SQL 수 */
-    // countByMember + findFirst(삭제 대상) + delete + party findById + insert = 5
-    private static final int CREATE_QUERY_COUNT = 5;
-
-    // 알림 전량 로딩이 사라지고, 삭제 대상 1건 + party 1건만 로딩
-    private static final int CREATE_ENTITY_LOAD_COUNT = 2;
+    private static final int CREATE_QUERY_COUNT = 3;
+    private static final int CREATE_ENTITY_LOAD_COUNT = 1;
 
     @Autowired NotificationCommandService notificationCommandService;
     @Autowired MemberRepository memberRepository;
@@ -67,7 +62,7 @@ class NotificationCreateQueryCountTest extends IntegrationTestBase {
                 .target(NotificationTarget.PARTY_MODIFY)
                 .build();
 
-        // 캡 로직이 "1건 삭제 + 1건 삽입"이라 두 번 실행해도 보유 건수는 50으로 유지
+        // 50건은 트리거(60) 미만이라 보관 정리가 발동하지 않는다 → 두 번 실행해도 삽입만 발생
         assertEntityLoadCount(em, CREATE_ENTITY_LOAD_COUNT, () ->
                 notificationCommandService.createNotification(dto));
         assertQueryCount(em, CREATE_QUERY_COUNT, () ->
