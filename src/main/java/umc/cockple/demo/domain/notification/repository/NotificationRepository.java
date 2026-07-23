@@ -13,11 +13,19 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findAllByMemberOrderByCreatedAtDesc(Member member);
-
     boolean existsByMember_IdAndIsReadFalse(Long memberId);
 
     long countByMember(Member member);
+
+    @Query("""
+            SELECT n FROM Notification n
+            WHERE n.member = :member
+              AND (:cursor IS NULL OR n.id < :cursor)
+            ORDER BY n.id DESC
+            """)
+    List<Notification> findPageByMember(@Param("member") Member member,
+                                        @Param("cursor") Long cursor,
+                                        Pageable pageable);
 
     @Query("""
             SELECT n.id FROM Notification n
