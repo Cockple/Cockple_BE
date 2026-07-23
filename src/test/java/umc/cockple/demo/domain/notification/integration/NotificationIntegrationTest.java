@@ -17,6 +17,8 @@ import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -53,6 +55,90 @@ class NotificationIntegrationTest extends IntegrationTestBase {
         notificationRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
+    }
+
+
+    @Nested
+    @DisplayName("GET /api/notifications - 내 알림 커서 페이지네이션 조회")
+    class GetAllNotifications {
+
+        @Nested
+        @DisplayName("성공 케이스")
+        class Success {
+
+            @Test
+            @DisplayName("200 - 응답 data가 객체(notifications 배열 + 페이지 메타)로 반환된다")
+            void returnsPagedObject() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // setUp에서 알림 1건 저장됨
+                mockMvc.perform(get("/api/notifications"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.notifications", hasSize(1)))
+                        .andExpect(jsonPath("$.data.notifications[0].notificationId").value(notification.getId()))
+                        .andExpect(jsonPath("$.data.notifications[0].title").value("테스트 모임"))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.nextCursor").value(nullValue()))
+                        .andExpect(jsonPath("$.data.totalElements").value(1));
+            }
+
+            @Test
+            @DisplayName("200 - size보다 많으면 hasNext=true, nextCursor로 다음 페이지를 이어 조회한다")
+            void cursorTraversal() throws Exception {
+                // setUp의 notification(가장 오래됨) + 2건 추가 = 총 3건
+                Notification middle = saveNotification("중간 알림");
+                Notification newest = saveNotification("최신 알림");
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                // 첫 페이지: size=2 → 최신순 [newest, middle], 다음 존재
+                mockMvc.perform(get("/api/notifications").param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.notifications", hasSize(2)))
+                        .andExpect(jsonPath("$.data.notifications[0].notificationId").value(newest.getId()))
+                        .andExpect(jsonPath("$.data.notifications[1].notificationId").value(middle.getId()))
+                        .andExpect(jsonPath("$.data.hasNext").value(true))
+                        .andExpect(jsonPath("$.data.nextCursor").value(middle.getId()))
+                        .andExpect(jsonPath("$.data.totalElements").value(3));
+
+                // 다음 페이지: cursor=middle.id → [oldest(setUp notification)], 다음 없음
+                mockMvc.perform(get("/api/notifications")
+                                .param("size", "2")
+                                .param("cursor", String.valueOf(middle.getId())))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.notifications", hasSize(1)))
+                        .andExpect(jsonPath("$.data.notifications[0].notificationId").value(notification.getId()))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.nextCursor").value(nullValue()));
+            }
+
+            @Test
+            @DisplayName("200 - 알림이 없으면 빈 배열과 hasNext=false를 반환한다")
+            void emptyPage() throws Exception {
+                Member otherMember = memberRepository.save(
+                        MemberFixture.createMember("다른멤버", Gender.FEMALE, Level.B, 2002L));
+                SecurityContextHelper.setAuthentication(otherMember.getId(), otherMember.getNickname());
+
+                mockMvc.perform(get("/api/notifications"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.notifications", hasSize(0)))
+                        .andExpect(jsonPath("$.data.hasNext").value(false))
+                        .andExpect(jsonPath("$.data.nextCursor").value(nullValue()))
+                        .andExpect(jsonPath("$.data.totalElements").value(0));
+            }
+        }
+
+        private Notification saveNotification(String title) {
+            return notificationRepository.save(Notification.builder()
+                    .member(member)
+                    .partyId(200L)
+                    .title(title)
+                    .content("내용")
+                    .type(NotificationType.SIMPLE)
+                    .isRead(false)
+                    .imageKey(null)
+                    .data("{}")
+                    .build());
+        }
     }
 
 
