@@ -25,7 +25,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import static umc.cockple.demo.domain.notification.dto.MarkAsReadDTO.*;
@@ -61,10 +60,9 @@ public class NotificationCommandService {
         try {
             long start = System.currentTimeMillis();
             Member member = dto.member();
-            List<Notification> bookmarks = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
-            if (bookmarks.size() >= 50) {
+            if (notificationRepository.countByMember(member) >= 50) {
                 notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)
-                        .ifPresent(n -> notificationRepository.deleteByIdQuery(n.getId()));
+                        .ifPresent(notificationRepository::delete);
             }
 
             Party party = partyRepository.findById(dto.partyId())

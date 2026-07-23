@@ -34,11 +34,11 @@ class NotificationCreateQueryCountTest extends IntegrationTestBase {
     private static final int SEEDED_NOTIFICATIONS = 50;
 
     /** createNotification 1회가 실행하는 SQL 수 */
-    // findAll(알림) + findFirst(삭제 대상) + deleteByIdQuery + party findById + insert = 5
+    // countByMember + findFirst(삭제 대상) + delete + party findById + insert = 5
     private static final int CREATE_QUERY_COUNT = 5;
 
-    /** createNotification 1회가 DB에서 로딩하는 엔티티 수 */
-    private static final int CREATE_ENTITY_LOAD_COUNT = 51; // 알림 50 + party 1
+    // 알림 전량 로딩이 사라지고, 삭제 대상 1건 + party 1건만 로딩
+    private static final int CREATE_ENTITY_LOAD_COUNT = 2;
 
     @Autowired NotificationCommandService notificationCommandService;
     @Autowired MemberRepository memberRepository;
@@ -49,8 +49,8 @@ class NotificationCreateQueryCountTest extends IntegrationTestBase {
     @PersistenceContext EntityManager em;
 
     @Test
-    @DisplayName("알림 50건 보유 회원에게 알림을 생성하면 보관 개수 판정을 위해 알림을 전량 로딩한다")
-    void createNotification_loadsAllNotificationsForCapCheck() {
+    @DisplayName("알림 50건 보유 회원에게 알림을 생성해도 보관 개수 판정에 알림을 전량 로딩하지 않는다")
+    void createNotification_doesNotLoadAllNotificationsForCapCheck() {
         Member member = memberRepository.save(
                 MemberFixture.createMember("알림측정", Gender.MALE, Level.A, 8101L));
         PartyAddr addr = partyAddrRepository.save(PartyFixture.createPartyAddr("경기도", "알림측정동"));

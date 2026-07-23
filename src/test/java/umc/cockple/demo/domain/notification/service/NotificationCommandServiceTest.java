@@ -30,8 +30,6 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -203,8 +201,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generatePartyDeletedMessage())
                         .willReturn("모임이 삭제되었어요!");
@@ -229,8 +226,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_INVITE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generateInviteMessage(party.getPartyName()))
                         .willReturn("'테스트 모임' 모임에 초대를 받았습니다.");
@@ -256,8 +252,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.EXERCISE_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generateExerciseDeletedMessage("03.15(토)"))
                         .willReturn("03.15(토) 운동이 삭제되었어요!");
@@ -275,13 +270,6 @@ class NotificationCommandServiceTest {
             @DisplayName("알림이 50개 이상이면 INVITE가 아닌 가장 오래된 알림을 삭제 후 저장한다")
             void createNotification_over50_deletesOldestNonInvite() throws Exception {
                 // given
-                List<Notification> existingNotifications = new ArrayList<>();
-                for (int i = 0; i < 50; i++) {
-                    existingNotifications.add(Notification.builder()
-                            .member(member).partyId(100L).title("t").content("c")
-                            .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build());
-                }
-
                 Notification oldestNonInvite = Notification.builder()
                         .member(member).partyId(100L).title("오래된 알림").content("c")
                         .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build();
@@ -293,8 +281,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(existingNotifications);
+                given(notificationRepository.countByMember(member)).willReturn(50L);
                 given(notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(
                         member, NotificationType.INVITE))
                         .willReturn(Optional.of(oldestNonInvite));
@@ -307,7 +294,7 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should().deleteByIdQuery(50L);
+                then(notificationRepository).should().delete(oldestNonInvite);
                 then(notificationRepository).should().save(any(Notification.class));
             }
 
@@ -315,21 +302,13 @@ class NotificationCommandServiceTest {
             @DisplayName("알림이 49개이면 오래된 알림 삭제 없이 바로 저장한다")
             void createNotification_under50_savesWithoutDelete() throws Exception {
                 // given
-                List<Notification> existingNotifications = new ArrayList<>();
-                for (int i = 0; i < 49; i++) {
-                    existingNotifications.add(Notification.builder()
-                            .member(member).partyId(100L).title("t").content("c")
-                            .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build());
-                }
-
                 CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                         .member(member)
                         .partyId(party.getId())
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(existingNotifications);
+                given(notificationRepository.countByMember(member)).willReturn(49L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generatePartyDeletedMessage())
                         .willReturn("모임이 삭제되었어요!");
@@ -339,7 +318,7 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should(never()).deleteByIdQuery(any(Long.class));
+                then(notificationRepository).should(never()).delete(any(Notification.class));
                 then(notificationRepository).should().save(any(Notification.class));
             }
         }
@@ -358,8 +337,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(999L)).willReturn(Optional.empty());
 
                 // when & then
