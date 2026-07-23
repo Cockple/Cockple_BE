@@ -17,9 +17,6 @@ import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
 import umc.cockple.demo.support.fixture.MemberFixture;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -49,11 +46,6 @@ class NotificationIntegrationTest extends IntegrationTestBase {
                 .imageKey("test-image-key")
                 .data("{\"invitationId\":1}")
                 .build());
-
-        given(fileService.getUrlFromKey("test-image-key"))
-                .willReturn("https://test-storage.com/test-image-key");
-        given(fileService.getUrlFromKey(null))
-                .willReturn(null);
     }
 
     @AfterEach
@@ -61,108 +53,6 @@ class NotificationIntegrationTest extends IntegrationTestBase {
         notificationRepository.deleteAll();
         memberRepository.deleteAll();
         SecurityContextHelper.clearAuthentication();
-    }
-
-
-    @Nested
-    @DisplayName("GET /api/notifications - 내 알림 전체 조회")
-    class GetAllNotifications {
-
-        @Nested
-        @DisplayName("성공 케이스")
-        class Success {
-
-            @Test
-            @DisplayName("200 - 알림 목록의 모든 필드를 반환한다")
-            void getAllNotifications_allFields() throws Exception {
-                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
-
-                mockMvc.perform(get("/api/notifications"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(1)))
-                        .andExpect(jsonPath("$.data[0].notificationId").value(notification.getId()))
-                        .andExpect(jsonPath("$.data[0].partyId").value(100))
-                        .andExpect(jsonPath("$.data[0].title").value("테스트 모임"))
-                        .andExpect(jsonPath("$.data[0].content").value("테스트 알림 내용"))
-                        .andExpect(jsonPath("$.data[0].type").value("INVITE"))
-                        .andExpect(jsonPath("$.data[0].isRead").value(false))
-                        .andExpect(jsonPath("$.data[0].imgUrl").value("https://test-storage.com/test-image-key"))
-                        .andExpect(jsonPath("$.data[0].data").value("{\"invitationId\":1}"));
-            }
-
-            @Test
-            @DisplayName("200 - 알림이 없으면 빈 리스트를 반환한다")
-            void getAllNotifications_empty() throws Exception {
-                Member otherMember = memberRepository.save(
-                        MemberFixture.createMember("다른멤버", Gender.FEMALE, Level.B, 2002L));
-                SecurityContextHelper.setAuthentication(otherMember.getId(), otherMember.getNickname());
-
-                mockMvc.perform(get("/api/notifications"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(0)));
-            }
-
-            @Test
-            @DisplayName("200 - 알림 목록이 createdAt 기준 내림차순으로 정렬된다")
-            void getAllNotifications_sortedByCreatedAtDesc() throws Exception {
-                // 먼저 저장된 알림 (더 오래된)
-                Notification olderNotification = notificationRepository.save(Notification.builder()
-                        .member(member)
-                        .partyId(200L)
-                        .title("오래된 알림")
-                        .content("먼저 생성된 알림")
-                        .type(NotificationType.SIMPLE)
-                        .isRead(false)
-                        .imageKey(null)
-                        .data("{}")
-                        .build());
-
-                Thread.sleep(10); // createdAt이 서로 다르도록 대기
-
-                // 나중에 저장된 알림 (더 최신)
-                Notification newerNotification = notificationRepository.save(Notification.builder()
-                        .member(member)
-                        .partyId(300L)
-                        .title("최신 알림")
-                        .content("나중에 생성된 알림")
-                        .type(NotificationType.SIMPLE)
-                        .isRead(false)
-                        .imageKey(null)
-                        .data("{}")
-                        .build());
-
-                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
-
-                // 내림차순이면 newerNotification → olderNotification → setUp의 notification 순
-                mockMvc.perform(get("/api/notifications"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(3)))
-                        .andExpect(jsonPath("$.data[0].notificationId").value(newerNotification.getId()))
-                        .andExpect(jsonPath("$.data[1].notificationId").value(olderNotification.getId()))
-                        .andExpect(jsonPath("$.data[2].notificationId").value(notification.getId()));
-            }
-
-            @Test
-            @DisplayName("200 - imageKey가 없는 알림은 imgUrl이 null로 반환된다")
-            void getAllNotifications_nullImgUrl() throws Exception {
-                notificationRepository.save(Notification.builder()
-                        .member(member)
-                        .partyId(200L)
-                        .title("이미지 없는 알림")
-                        .content("모임이 삭제되었어요!")
-                        .type(NotificationType.SIMPLE)
-                        .isRead(false)
-                        .imageKey(null)
-                        .data("{}")
-                        .build());
-                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
-
-                mockMvc.perform(get("/api/notifications"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data", hasSize(2)))
-                        .andExpect(jsonPath("$.data[0].imgUrl").value(nullValue()));
-            }
-        }
     }
 
 

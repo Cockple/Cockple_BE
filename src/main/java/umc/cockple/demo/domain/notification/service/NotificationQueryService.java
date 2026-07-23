@@ -9,10 +9,13 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import umc.cockple.demo.domain.notification.converter.NotificationConverter;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
+import umc.cockple.demo.domain.notification.dto.NotificationListResponseDTO;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 
 import java.util.List;
@@ -28,23 +31,30 @@ public class NotificationQueryService {
     private final FileService fileService;
 
 
-    public List<AllNotificationsResponseDTO> getAllNotifications(Long memberId) {
+    public NotificationListResponseDTO getAllNotifications(Long memberId, Long cursor, int size) {
         // 회원 조회
         Member member = findByMemberId(memberId);
 
-        // 회원의 모든 알림 조회
-        List<Notification> notifications = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
+        Pageable pageable = PageRequest.of(0, size + 1);
+        List<Notification> rows = notificationRepository.findPageByMember(member, cursor, pageable);
 
-        if (notifications.isEmpty()) {
-            return List.of();
-        }
-        // dto 매핑 및 반환
-        return notifications.stream()
+        boolean hasNext = rows.size() > size;
+        List<Notification> page = hasNext ? rows.subList(0, size) : rows;
+
+        // dto 매핑
+        List<AllNotificationsResponseDTO> notifications = page.stream()
                 .map(notification -> {
                     String url = fileService.getUrlFromKey(notification.getImageKey());
                     return NotificationConverter.toAllNotificationResponseDTO(notification, url);
                 })
                 .toList();
+
+        Long nextCursor = hasNext && !page.isEmpty()
+                ? page.get(page.size() - 1).getId() : null;
+
+        int totalElements = (int) notificationRepository.countByMember(member);
+
+        return NotificationConverter.toNotificationListResponse(notifications, hasNext, nextCursor, totalElements);
     }
 
 
