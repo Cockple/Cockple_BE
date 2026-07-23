@@ -127,6 +127,38 @@ class NotificationIntegrationTest extends IntegrationTestBase {
             }
         }
 
+        @Nested
+        @DisplayName("실패 케이스 - 파라미터 검증")
+        class Failure {
+
+            @Test
+            @DisplayName("400 - size가 1 미만이면 검증에 실패한다")
+            void size_belowMin_returnsBadRequest() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/notifications").param("size", "0"))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("400 - size가 100을 초과하면 검증에 실패한다")
+            void size_aboveMax_returnsBadRequest() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/notifications").param("size", "101"))
+                        .andExpect(status().isBadRequest());
+            }
+
+            @Test
+            @DisplayName("400 - cursor가 양수가 아니면 검증에 실패한다")
+            void cursor_notPositive_returnsBadRequest() throws Exception {
+                SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+                mockMvc.perform(get("/api/notifications").param("cursor", "0"))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+
         private Notification saveNotification(String title) {
             return notificationRepository.save(Notification.builder()
                     .member(member)

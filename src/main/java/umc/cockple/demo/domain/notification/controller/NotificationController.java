@@ -3,6 +3,9 @@ package umc.cockple.demo.domain.notification.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,8 +37,8 @@ public class NotificationController {
             description = "사용자에게 온 알림을 커서 페이지네이션으로 조회합니다. "
                     + "첫 페이지는 cursor 생략, 다음 페이지는 직전 응답의 nextCursor를 전달합니다.")
     public BaseResponse<NotificationListResponseDTO> getAllNotifications(
-            @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) @Positive Long cursor,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
