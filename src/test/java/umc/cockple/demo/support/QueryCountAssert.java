@@ -46,4 +46,27 @@ public final class QueryCountAssert {
                 .as("실행된 SQL 쿼리 수가 기대치와 다릅니다 (N+1 가능성)")
                 .isEqualTo(expected);
     }
+
+    public static void assertEntityLoadCount(EntityManager em, long expected, Runnable action) {
+        Statistics statistics = em.getEntityManagerFactory()
+                .unwrap(SessionFactory.class)
+                .getStatistics();
+
+        if (em.isJoinedToTransaction()) {
+            em.clear();
+        }
+
+        statistics.clear();
+        action.run();
+
+        if (em.isJoinedToTransaction()) {
+            em.flush();
+        }
+
+        long actual = statistics.getEntityLoadCount();
+
+        assertThat(actual)
+                .as("DB에서 로딩된 엔티티 수가 기대치와 다릅니다 (불필요한 전량 로딩 가능성)")
+                .isEqualTo(expected);
+    }
 }
