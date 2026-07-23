@@ -24,6 +24,8 @@ import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -96,6 +98,25 @@ class NotificationRetentionPolicyTest extends IntegrationTestBase {
         assertThat(notificationRepository.countByMember(member)).isEqualTo(61L);
     }
 
+    @Test
+    @DisplayName("생성 7일이 지난 INVITE는 삭제 후보에 포함되어 정리된다")
+    void oldInviteIsDeletable() {
+        Member member = seedMember(8204L);
+        Party party = seedParty(member, "오래된초대모임");
+        for (int i = 0; i < 60; i++) {
+            seedNotification(member, party.getId(), NotificationType.INVITE);
+        }
+        em.flush();
+        backdateAllNotifications(member, 8);   // 전부 8일 전으로 → 7일 경과, 삭제 후보가 됨
+        em.clear();
+
+        notificationCommandService.createNotification(create(member, party));
+
+        // 60건(전부 7일 경과 INVITE) → 초과분 10건 삭제 → INVITE 50건 + 신규 1건 = 51건
+        assertThat(notificationRepository.countByMember(member)).isEqualTo(51L);
+        assertThat(countByType(member, NotificationType.INVITE)).isEqualTo(50L);
+    }
+
     // === 헬퍼 ===
 
     private CreateNotificationRequestDTO create(Member member, Party party) {
@@ -133,5 +154,13 @@ class NotificationRetentionPolicyTest extends IntegrationTestBase {
                 .setParameter("member", member)
                 .setParameter("type", type)
                 .getSingleResult();
+    }
+
+    // @CreatedDate는 persist 시점에 세팅되므로, 오래된 알림 상황은 bulk update로 생성일을 소급한다.
+    private void backdateAllNotifications(Member member, int days) {
+        em.createQuery("UPDATE Notification n SET n.createdAt = :ts WHERE n.member = :member")
+                .setParameter("ts", LocalDateTime.now().minusDays(days))
+                .setParameter("member", member)
+                .executeUpdate();
     }
 }
