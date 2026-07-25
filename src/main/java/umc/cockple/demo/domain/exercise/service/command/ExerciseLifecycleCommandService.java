@@ -88,10 +88,10 @@ public class ExerciseLifecycleCommandService {
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addrUpdateCommand);
 
-        Exercise savedExercise = exerciseRepository.save(exercise);
+        exerciseRepository.flush();
 
-        log.info("운동 수정 완료 - exerciseId: {}", savedExercise.getId());
+        log.info("운동 수정 완료 - exerciseId: {}", exercise.getId());
 
-        return exerciseLifecycleCommandMapper.toUpdateResponse(savedExercise);
+        return exerciseLifecycleCommandMapper.toUpdateResponse(exercise);
     }
 }

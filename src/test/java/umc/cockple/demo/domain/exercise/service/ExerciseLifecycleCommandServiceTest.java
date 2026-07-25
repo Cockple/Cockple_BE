@@ -376,18 +376,6 @@ class ExerciseLifecycleCommandServiceTest {
             @Test
             @DisplayName("모임장이 운동을 수정하면 Response를 반환한다")
             void ownerUpdatesExercise_success() {
-                // given: party.ownerId == manager.id 이므로 권한 통과
-                Exercise savedExercise = Exercise.builder()
-                        .date(LocalDate.of(2099, 12, 31))
-                        .startTime(LocalTime.of(11, 0))
-                        .endTime(LocalTime.of(13, 0))
-                        .maxCapacity(12)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
-                ReflectionTestUtils.setField(savedExercise, "id", 100L);
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
-
                 // when
                 ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), validRequest);
 
@@ -395,7 +383,7 @@ class ExerciseLifecycleCommandServiceTest {
                 assertThat(response.exerciseId()).isEqualTo(100L);
                 assertThat(exercise.getPartyGuestAccept()).isFalse();
                 assertThat(exercise.getOutsideGuestAccept()).isTrue();
-                then(exerciseRepository).should().save(exercise);
+                then(exerciseRepository).should().flush();
             }
 
             @Test
@@ -411,22 +399,12 @@ class ExerciseLifecycleCommandServiceTest {
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
 
-                Exercise savedExercise = Exercise.builder()
-                        .date(LocalDate.of(2099, 12, 31))
-                        .startTime(LocalTime.of(11, 0))
-                        .endTime(LocalTime.of(13, 0))
-                        .maxCapacity(12)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
-                ReflectionTestUtils.setField(savedExercise, "id", 100L);
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
-
                 // when
                 ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), subManager.getId(), validRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
+                then(exerciseRepository).should().flush();
             }
 
             @Test
@@ -446,8 +424,6 @@ class ExerciseLifecycleCommandServiceTest {
                         null,
                         "공지사항만 수정"
                 );
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(exercise);
-
                 // when
                 ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), partialRequest);
 
@@ -456,6 +432,7 @@ class ExerciseLifecycleCommandServiceTest {
                 assertThat(exercise.getPartyGuestAccept()).isTrue();
                 assertThat(exercise.getOutsideGuestAccept()).isFalse();
                 assertThat(exercise.getNotice()).isEqualTo("공지사항만 수정");
+                then(exerciseRepository).should().flush();
             }
         }
 
