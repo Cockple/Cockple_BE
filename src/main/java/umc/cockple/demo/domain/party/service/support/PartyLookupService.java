@@ -15,6 +15,11 @@ public class PartyLookupService {
 
     private final PartyRepository partyRepository;
 
+    public Party findByIdOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
+    }
+
     public Party findByIdWithLevelsOrThrow(Long partyId) {
         return partyRepository.findByIdWithLevels(partyId)
                 .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));

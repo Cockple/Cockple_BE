@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.command.internal;
+package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,24 +15,35 @@ import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddr
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
+import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ExerciseLifecycleService {
+public class ExerciseLifecycleCommandService {
 
     private final ExerciseRepository exerciseRepository;
     private final PartyRepository partyRepository;
+    private final ExerciseReader exerciseReader;
+    private final MemberLookupService memberLookupService;
+    private final PartyLookupService partyLookupService;
 
     private final ExerciseValidator exerciseValidator;
 
     private final ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper;
 
-    public ExerciseCreateDTO.Response createExercise(Party party, Member member, ExerciseCreateDTO.Request request) {
+    public ExerciseCreateDTO.Response createExercise(Long partyId, Long memberId, ExerciseCreateDTO.Request request) {
+        log.info("운동 생성 시작 - partyId: {}, memberId: {}, date: {}", partyId, memberId, request.date());
+
+        Party party = partyLookupService.findByIdOrThrow(partyId);
+        Member member = memberLookupService.findByIdOrThrow(memberId);
+
         exerciseValidator.validateCreateExercise(member.getId(), request, party);
 
         ExerciseCreateCommand exerciseCommand = exerciseLifecycleCommandMapper.toCreateCommand(request);
@@ -48,7 +59,12 @@ public class ExerciseLifecycleService {
         return exerciseLifecycleCommandMapper.toCreateResponse(savedExercise);
     }
 
-    public ExerciseDeleteDTO.Response deleteExercise(Exercise exercise, Member member) {
+    public ExerciseDeleteDTO.Response deleteExercise(Long exerciseId, Long memberId) {
+        log.info("운동 삭제 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
+        Member member = memberLookupService.findByIdOrThrow(memberId);
+
         exerciseValidator.validateDeleteExercise(exercise, member.getId());
 
         Party party = exercise.getParty();
@@ -62,7 +78,12 @@ public class ExerciseLifecycleService {
         return exerciseLifecycleCommandMapper.toDeleteResponse(exercise);
     }
 
-    public ExerciseUpdateDTO.Response updateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
+    public ExerciseUpdateDTO.Response updateExercise(Long exerciseId, Long memberId, ExerciseUpdateDTO.Request request) {
+        log.info("운동 업데이트 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
+        Member member = memberLookupService.findByIdOrThrow(memberId);
+
         exerciseValidator.validateUpdateExercise(exercise, member, request);
 
         ExerciseUpdateCommand updateCommand = exerciseLifecycleCommandMapper.toUpdateCommand(request);
