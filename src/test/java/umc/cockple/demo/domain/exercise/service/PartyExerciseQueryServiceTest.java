@@ -40,8 +40,8 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;

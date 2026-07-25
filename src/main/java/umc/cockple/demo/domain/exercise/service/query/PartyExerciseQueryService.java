@@ -14,12 +14,12 @@ import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLoo
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
 import java.time.LocalDate;
 import java.util.List;

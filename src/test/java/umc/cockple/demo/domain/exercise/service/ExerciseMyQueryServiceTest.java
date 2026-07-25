@@ -40,7 +40,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;

@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoA
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.global.enums.Gender;
 
 import java.util.HashMap;
