@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -61,7 +62,8 @@ class ExerciseLifecycleCommandServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
+        ExerciseValidator exerciseValidator = new ExerciseValidator(
+                new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
         ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper = new ExerciseLifecycleCommandMapper();
         exerciseLifecycleCommandService = new ExerciseLifecycleCommandService(
                 exerciseRepository,

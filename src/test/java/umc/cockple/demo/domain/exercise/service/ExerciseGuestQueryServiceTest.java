@@ -52,6 +52,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -109,9 +110,10 @@ class ExerciseGuestQueryServiceTest {
         ExerciseParticipantInfoQueryMapper participantInfoMapper =
                 new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                memberExerciseRepository, memberPartyRepository);
+                memberExerciseRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
+        MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
 
         exerciseGuestQueryService = new ExerciseGuestQueryService(
                 new ExerciseReader(exerciseRepository),
@@ -120,6 +122,7 @@ class ExerciseGuestQueryServiceTest {
                         exerciseParticipantReader,
                         guestReader,
                         memberLookupService,
+                        memberPartyLookupService,
                         participantInfoMapper
                 ),
                 memberLookupService,

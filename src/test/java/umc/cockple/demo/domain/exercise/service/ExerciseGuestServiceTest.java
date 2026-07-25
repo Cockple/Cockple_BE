@@ -21,6 +21,7 @@ import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseGuestSe
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -55,7 +56,8 @@ class ExerciseGuestServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
+        ExerciseValidator exerciseValidator = new ExerciseValidator(
+                new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
         ExerciseGuestCommandMapper exerciseGuestCommandMapper = new ExerciseGuestCommandMapper();
         exerciseGuestService = new ExerciseGuestService(
                 exerciseRepository, guestRepository, exerciseValidator, exerciseGuestCommandMapper);

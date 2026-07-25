@@ -27,6 +27,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -65,7 +66,9 @@ class ExerciseParticipationCommandServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
+        MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
+        ExerciseValidator exerciseValidator = new ExerciseValidator(
+                memberPartyLookupService, memberExerciseRepository);
         ExerciseParticipationCommandMapper exerciseParticipationMapper = new ExerciseParticipationCommandMapper();
         exerciseParticipationCommandService = new ExerciseParticipationCommandService(
                 memberExerciseRepository,
@@ -74,6 +77,7 @@ class ExerciseParticipationCommandServiceTest {
                 guestReader,
                 exerciseParticipantReader,
                 memberLookupService,
+                memberPartyLookupService,
                 exerciseValidator,
                 exerciseParticipationMapper);
 
@@ -111,7 +115,6 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(exerciseParticipantReader.isPartyMember(party, participant)).willReturn(true);
                 given(memberExerciseRepository.save(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);
@@ -143,7 +146,6 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(outsideMember.getId())).willReturn(outsideMember);
                 given(memberExerciseRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
-                given(exerciseParticipantReader.isPartyMember(party, outsideMember)).willReturn(false);
                 given(memberExerciseRepository.save(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);

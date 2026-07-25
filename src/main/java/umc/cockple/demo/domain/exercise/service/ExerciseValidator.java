@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -27,7 +27,7 @@ import java.time.LocalTime;
 @Slf4j
 public class ExerciseValidator {
 
-    private final MemberPartyRepository memberPartyRepository;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final MemberExerciseRepository memberExerciseRepository;
 
     public void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
@@ -93,9 +93,9 @@ public class ExerciseValidator {
 
     private void validateSubManagerPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
-        boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+        boolean isManager = memberPartyLookupService.hasRole(
                 party.getId(), memberId, Role.PARTY_MANAGER);
-        boolean isSubManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+        boolean isSubManager = memberPartyLookupService.hasRole(
                 party.getId(), memberId, Role.PARTY_SUBMANAGER);
 
         if (!isOwner && !isManager && !isSubManager)
@@ -157,7 +157,7 @@ public class ExerciseValidator {
 
     private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
         Party party = exercise.getParty();
-        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
+        boolean isPartyMember = memberPartyLookupService.isPartyMember(party, inviter);
 
         if (!isPartyMember) {
             throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
@@ -207,7 +207,7 @@ public class ExerciseValidator {
 
     private boolean isPartyMember(Exercise exercise, Member member) {
         Party party = exercise.getParty();
-        return memberPartyRepository.existsByPartyAndMember(party, member);
+        return memberPartyLookupService.isPartyMember(party, member);
     }
 
 }

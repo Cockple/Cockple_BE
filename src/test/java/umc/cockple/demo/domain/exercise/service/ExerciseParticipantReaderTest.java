@@ -13,7 +13,6 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 
 import java.util.Optional;
 
@@ -29,7 +28,6 @@ class ExerciseParticipantReaderTest {
     private ExerciseParticipantReader exerciseParticipantReader;
 
     @Mock private MemberExerciseRepository memberExerciseRepository;
-    @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private Exercise exercise;
     @Mock private Member member;
     @Mock private MemberExercise memberExercise;

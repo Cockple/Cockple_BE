@@ -52,6 +52,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -124,23 +125,25 @@ class ExerciseLifecycleQueryServiceTest {
 
     private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                memberExerciseRepository, memberPartyRepository);
+                memberExerciseRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
+        MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         ExerciseParticipantInfoQueryMapper participantInfoMapper =
                 new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
 
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
-                exerciseParticipantReader,
                 new ExerciseParticipantInfoAssembler(
                         exerciseParticipantReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
+                        memberPartyLookupService,
                         participantInfoMapper
                 ),
                 memberLookupService,
-                new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
+                memberPartyLookupService,
+                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
                 exerciseLifecycleQueryMapper
         );
     }

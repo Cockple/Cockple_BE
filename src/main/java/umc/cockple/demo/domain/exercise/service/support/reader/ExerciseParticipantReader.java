@@ -8,11 +8,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.global.enums.Role;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,37 +23,14 @@ import java.util.stream.Collectors;
 public class ExerciseParticipantReader {
 
     private final MemberExerciseRepository memberExerciseRepository;
-    private final MemberPartyRepository memberPartyRepository;
-
-    public boolean hasManagerPermission(Party party, Member member) {
-        return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                party.getId(), member.getId(), Role.PARTY_MANAGER);
-    }
-
-    public boolean isPartyMember(Party party, Member member) {
-        return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
 
     public MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
         return memberExerciseRepository.findByExerciseAndMember(exercise, member)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 
-    public List<Long> findPartyIdsByMemberId(Long memberId) {
-        return memberPartyRepository.findPartyIdsByMemberId(memberId);
-    }
-
     public List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
         return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId);
-    }
-
-    public Map<Long, Role> findMemberRolesByPartyAndMembers(Long partyId, List<Long> memberIds) {
-        return memberPartyRepository.findMemberRolesByPartyAndMembers(partyId, memberIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        memberParty -> memberParty.getMember().getId(),
-                        MemberParty::getRole
-                ));
     }
 
     public Map<Long, Boolean> getParticipatingStatus(Long memberId, List<Long> exerciseIds) {

@@ -11,11 +11,12 @@ import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Role;
 
 import java.util.*;
 
@@ -26,9 +27,9 @@ import java.util.*;
 public class ExerciseLifecycleQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseParticipantInfoAssembler participantInfoAssembler;
     private final MemberLookupService memberLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseValidator exerciseValidator;
 
     private final ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper;
@@ -65,7 +66,7 @@ public class ExerciseLifecycleQueryService {
     // ========== 비즈니스 메서드 ==========
 
     private boolean checkManagerPermission(Party party, Member member) {
-        return exerciseParticipantReader.hasManagerPermission(party, member);
+        return memberPartyLookupService.hasRole(party, member, Role.PARTY_MANAGER);
     }
 
     private ExerciseDetailDTO.ExerciseInfo createExerciseInfo(Exercise exercise) {

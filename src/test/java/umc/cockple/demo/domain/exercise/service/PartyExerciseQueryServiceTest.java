@@ -50,6 +50,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -105,11 +106,12 @@ class PartyExerciseQueryServiceTest {
         PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper = new PartyExerciseCalendarQueryMapper();
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),
+                new ExerciseParticipantReader(memberExerciseRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new MemberLookupService(memberRepository),
                 new PartyLookupService(partyRepository),
+                new MemberPartyLookupService(memberPartyRepository),
                 partyExerciseCalendarMapper
         );
 

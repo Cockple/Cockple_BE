@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -37,6 +38,7 @@ public class PartyExerciseQueryService {
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper;
 
     public PartyExerciseCalendarDTO.Response getPartyExerciseCalendar(
@@ -49,7 +51,7 @@ public class PartyExerciseQueryService {
         Member member = memberLookupService.findByIdOrThrow(memberId);
         validateGetPartyExerciseCalendar(startDate, endDate, party);
 
-        Boolean isMember = exerciseParticipantReader.isPartyMember(party, member);
+        Boolean isMember = memberPartyLookupService.isPartyMember(party, member);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = exerciseReader.findByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());

@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipa
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
@@ -28,6 +29,7 @@ public class ExerciseParticipantInfoAssembler {
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final GuestReader guestReader;
     private final MemberLookupService memberLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseParticipantInfoQueryMapper exerciseParticipantInfoMapper;
 
     public List<ExerciseDetailDTO.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
@@ -55,7 +57,7 @@ public class ExerciseParticipantInfoAssembler {
                 .map(me -> me.getMember().getId())
                 .toList();
 
-        Map<Long, Role> partyMemberRoles = exerciseParticipantReader
+        Map<Long, Role> partyMemberRoles = memberPartyLookupService
                 .findMemberRolesByPartyAndMembers(party.getId(), memberIds);
 
         return memberExercises.stream()

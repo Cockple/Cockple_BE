@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 
 @Service
 @Transactional
@@ -31,6 +32,7 @@ public class ExerciseParticipationCommandService {
     private final GuestReader guestReader;
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final MemberLookupService memberLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
 
     private final ExerciseValidator exerciseValidator;
 
@@ -44,7 +46,7 @@ public class ExerciseParticipationCommandService {
 
         exerciseValidator.validateJoinExercise(exercise, member);
 
-        boolean isPartyMember = exerciseParticipantReader.isPartyMember(exercise.getParty(), member);
+        boolean isPartyMember = memberPartyLookupService.isPartyMember(exercise.getParty(), member);
         MemberExercise memberExercise = MemberExercise.create(isPartyMember);
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
