@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -55,7 +55,7 @@ class ExerciseParticipationCommandServiceTest {
     @Mock private GuestRepository guestRepository;
     @Mock private ExerciseReader exerciseReader;
     @Mock private GuestReader guestReader;
-    @Mock private ExerciseParticipantReader exerciseParticipantReader;
+    @Mock private MemberExerciseReader memberExerciseReader;
     @Mock private MemberLookupService memberLookupService;
 
     private ExerciseParticipationCommandService exerciseParticipationCommandService;
@@ -75,7 +75,7 @@ class ExerciseParticipationCommandServiceTest {
                 guestRepository,
                 exerciseReader,
                 guestReader,
-                exerciseParticipantReader,
+                memberExerciseReader,
                 memberLookupService,
                 memberPartyLookupService,
                 exerciseValidator,
@@ -262,7 +262,7 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant))
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
                         .willReturn(memberExercise);
 
                 // when
@@ -295,7 +295,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(exerciseParticipantReader.findMemberExerciseOrThrow(startedExercise, participant))
+                given(memberExerciseReader.findMemberExerciseOrThrow(startedExercise, participant))
                         .willReturn(memberExercise);
 
                 assertThatThrownBy(() ->
@@ -312,7 +312,7 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant))
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
                         .willThrow(new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
 
                 assertThatThrownBy(() ->
@@ -345,7 +345,7 @@ class ExerciseParticipationCommandServiceTest {
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant))
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
                         .willReturn(memberExercise);
 
                 // when
@@ -378,7 +378,7 @@ class ExerciseParticipationCommandServiceTest {
                         .willReturn(true);
                 given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant))
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
                         .willReturn(memberExercise);
 
                 // when

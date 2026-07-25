@@ -9,7 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ExerciseParticipantReader")
-class ExerciseParticipantReaderTest {
+@DisplayName("MemberExerciseReader")
+class MemberExerciseReaderTest {
 
     @InjectMocks
-    private ExerciseParticipantReader exerciseParticipantReader;
+    private MemberExerciseReader memberExerciseReader;
 
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private Exercise exercise;
@@ -38,7 +38,7 @@ class ExerciseParticipantReaderTest {
         given(memberExerciseRepository.findByExerciseAndMember(exercise, member))
                 .willReturn(Optional.of(memberExercise));
 
-        assertThat(exerciseParticipantReader.findMemberExerciseOrThrow(exercise, member))
+        assertThat(memberExerciseReader.findMemberExerciseOrThrow(exercise, member))
                 .isSameAs(memberExercise);
     }
 
@@ -48,7 +48,7 @@ class ExerciseParticipantReaderTest {
         given(memberExerciseRepository.findByExerciseAndMember(exercise, member))
                 .willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> exerciseParticipantReader.findMemberExerciseOrThrow(exercise, member))
+        assertThatThrownBy(() -> memberExerciseReader.findMemberExerciseOrThrow(exercise, member))
                 .isInstanceOf(ExerciseException.class)
                 .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                         .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));

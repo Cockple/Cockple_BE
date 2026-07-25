@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -30,7 +30,7 @@ public class ExerciseParticipationCommandService {
     private final GuestRepository guestRepository;
     private final ExerciseReader exerciseReader;
     private final GuestReader guestReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final MemberExerciseReader memberExerciseReader;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
 
@@ -64,7 +64,7 @@ public class ExerciseParticipationCommandService {
 
         Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
         Member member = memberLookupService.findByIdOrThrow(memberId);
-        MemberExercise memberExercise = exerciseParticipantReader.findMemberExerciseOrThrow(exercise, member);
+        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
 
         exercise.removeParticipation(memberExercise);
@@ -121,7 +121,7 @@ public class ExerciseParticipationCommandService {
 
     private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
-        MemberExercise memberExercise = exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant);
+        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
 
         exercise.removeParticipation(memberExercise);
         participant.removeParticipation(memberExercise);

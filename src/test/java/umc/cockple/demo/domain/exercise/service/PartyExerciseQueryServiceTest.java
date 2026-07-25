@@ -36,7 +36,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
@@ -106,7 +106,7 @@ class PartyExerciseQueryServiceTest {
         PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper = new PartyExerciseCalendarQueryMapper();
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseParticipantReader(memberExerciseRepository),
+                new MemberExerciseReader(memberExerciseRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new MemberLookupService(memberRepository),
