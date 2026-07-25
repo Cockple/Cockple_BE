@@ -1,10 +1,10 @@
-package umc.cockple.demo.domain.member.domain;
+package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
 @Builder

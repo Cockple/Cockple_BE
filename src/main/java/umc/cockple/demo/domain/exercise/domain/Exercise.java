@@ -5,7 +5,6 @@ import lombok.*;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
 

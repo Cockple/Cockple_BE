@@ -43,7 +43,7 @@ import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
