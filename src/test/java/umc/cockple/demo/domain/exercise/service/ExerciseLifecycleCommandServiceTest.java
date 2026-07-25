@@ -26,7 +26,6 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
@@ -49,7 +48,6 @@ class ExerciseLifecycleCommandServiceTest {
 
     // 인프라 의존성만 Mock
     @Mock private ExerciseRepository exerciseRepository;
-    @Mock private PartyRepository partyRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private ExerciseReader exerciseReader;
@@ -67,7 +65,6 @@ class ExerciseLifecycleCommandServiceTest {
         ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper = new ExerciseLifecycleCommandMapper();
         exerciseLifecycleCommandService = new ExerciseLifecycleCommandService(
                 exerciseRepository,
-                partyRepository,
                 exerciseReader,
                 memberLookupService,
                 partyLookupService,
@@ -266,7 +263,7 @@ class ExerciseLifecycleCommandServiceTest {
                     .outsideGuestAccept(false)
                     .build();
             ReflectionTestUtils.setField(exercise, "id", 100L);
-            exercise.setParty(party);
+            party.addExercise(exercise);
             lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
         }
 
@@ -284,8 +281,8 @@ class ExerciseLifecycleCommandServiceTest {
 
                 // then
                 assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
-                then(partyRepository).should().save(party);
             }
 
             @Test
@@ -306,8 +303,8 @@ class ExerciseLifecycleCommandServiceTest {
 
                 // then
                 assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
-                then(partyRepository).should().save(party);
             }
         }
 

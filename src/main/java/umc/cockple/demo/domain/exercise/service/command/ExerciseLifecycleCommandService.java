@@ -19,7 +19,6 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
 @Service
@@ -29,7 +28,6 @@ import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 public class ExerciseLifecycleCommandService {
 
     private final ExerciseRepository exerciseRepository;
-    private final PartyRepository partyRepository;
     private final ExerciseReader exerciseReader;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
@@ -70,8 +68,6 @@ public class ExerciseLifecycleCommandService {
         Party party = exercise.getParty();
         party.removeExercise(exercise);
         exerciseRepository.delete(exercise);
-
-        partyRepository.save(party);
 
         log.info("운동 삭제 종료 - exerciseId: {}, memberId: {}", exercise.getId(), member.getId());
 
