@@ -46,4 +46,23 @@ class ExerciseReaderTest {
                 .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                         .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
+
+    @Test
+    @DisplayName("운동 ID로 파티 레벨을 포함한 참가 명령 대상 운동을 조회한다")
+    void findByIdWithPartyLevelsOrThrow_returnsExercise() {
+        given(exerciseRepository.findByIdWithPartyLevels(1L)).willReturn(Optional.of(exercise));
+
+        assertThat(exerciseReader.findByIdWithPartyLevelsOrThrow(1L)).isSameAs(exercise);
+    }
+
+    @Test
+    @DisplayName("파티 레벨을 포함해 조회한 운동이 없으면 ExerciseException(EXERCISE_NOT_FOUND)을 던진다")
+    void findByIdWithPartyLevelsOrThrow_throwsWhenMissing() {
+        given(exerciseRepository.findByIdWithPartyLevels(1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> exerciseReader.findByIdWithPartyLevelsOrThrow(1L))
+                .isInstanceOf(ExerciseException.class)
+                .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                        .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
 }

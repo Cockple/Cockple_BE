@@ -3,6 +3,9 @@ package umc.cockple.demo.domain.exercise.service.support.reader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -33,6 +36,11 @@ public class ExerciseParticipantReader {
 
     public boolean isPartyMember(Party party, Member member) {
         return memberPartyRepository.existsByPartyAndMember(party, member);
+    }
+
+    public MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
+        return memberExerciseRepository.findByExerciseAndMember(exercise, member)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 
     public List<Long> findPartyIdsByMemberId(Long memberId) {

@@ -31,6 +31,11 @@ public class ExerciseReader {
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
+    public Exercise findByIdWithPartyLevelsOrThrow(Long exerciseId) {
+        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
+    }
+
     public Exercise findExerciseWithBasicInfoOrThrow(Long exerciseId) {
         return exerciseRepository.findExerciseWithBasicInfo(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.command.internal;
+package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,38 +9,42 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
-import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ExerciseParticipationService {
+public class ExerciseParticipationCommandService {
 
-    private final ExerciseRepository exerciseRepository;
-    private final MemberRepository memberRepository;
-    private final MemberPartyRepository memberPartyRepository;
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
+    private final ExerciseReader exerciseReader;
+    private final GuestReader guestReader;
+    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final MemberLookupService memberLookupService;
 
     private final ExerciseValidator exerciseValidator;
 
     private final ExerciseParticipationCommandMapper exerciseParticipationMapper;
 
-    public ExerciseJoinDTO.Response joinExercise(Exercise exercise, Member member) {
+    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
+        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = exerciseReader.findByIdWithPartyLevelsOrThrow(exerciseId);
+        Member member = memberLookupService.findByIdOrThrow(memberId);
+
         exerciseValidator.validateJoinExercise(exercise, member);
 
-        boolean isPartyMember = isPartyMember(exercise, member);
+        boolean isPartyMember = exerciseParticipantReader.isPartyMember(exercise.getParty(), member);
         MemberExercise memberExercise = MemberExercise.create(isPartyMember);
         member.addParticipation(memberExercise);
         exercise.addParticipation(memberExercise);
@@ -53,16 +57,18 @@ public class ExerciseParticipationService {
         return exerciseParticipationMapper.toJoinResponse(savedMemberExercise, exercise);
     }
 
-    public ExerciseCancelDTO.Response cancelParticipation(Exercise exercise, Member member) {
-        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, member);
+    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
+        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
+
+        Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
+        Member member = memberLookupService.findByIdOrThrow(memberId);
+        MemberExercise memberExercise = exerciseParticipantReader.findMemberExerciseOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
 
         exercise.removeParticipation(memberExercise);
         member.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
-
-        exerciseRepository.save(exercise);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
@@ -71,7 +77,13 @@ public class ExerciseParticipationService {
     }
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
-            Exercise exercise, Long participantId, Member manager, ExerciseCancelDTO.ByManagerRequest request) {
+            Long exerciseId, Long participantId, Long managerId, ExerciseCancelDTO.ByManagerRequest request) {
+        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}",
+                exerciseId, participantId, managerId);
+
+        Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
+        Member manager = memberLookupService.findByIdOrThrow(managerId);
+
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
         ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
@@ -84,11 +96,6 @@ public class ExerciseParticipationService {
 
     // ========== 비즈니스 메서드 ============
 
-    private boolean isPartyMember(Exercise exercise, Member member) {
-        Party party = exercise.getParty();
-        return memberPartyRepository.existsByPartyAndMember(party, member);
-    }
-
     private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         if(request.isGuest()){
             log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
@@ -100,46 +107,25 @@ public class ExerciseParticipationService {
     }
 
     private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
-        Guest guest = findGuestOrThrow(participantId);
+        Guest guest = guestReader.findByIdOrThrow(participantId);
         exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
 
         exercise.removeGuest(guest);
 
         guestRepository.delete(guest);
 
-        exerciseRepository.save(exercise);
-
         return exerciseParticipationMapper.toCancelResponse(exercise, guest);
     }
 
     private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
-        Member participant = findMemberOrThrow(participantId);
-        MemberExercise memberExercise = findMemberExerciseOrThrow(exercise, participant);
+        Member participant = memberLookupService.findByIdOrThrow(participantId);
+        MemberExercise memberExercise = exerciseParticipantReader.findMemberExerciseOrThrow(exercise, participant);
 
         exercise.removeParticipation(memberExercise);
         participant.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
 
-        exerciseRepository.save(exercise);
-
         return exerciseParticipationMapper.toCancelResponse(exercise, participant);
-    }
-
-    // ========== 조회 메서드 ============
-
-    private Guest findGuestOrThrow(Long guestId) {
-        return guestRepository.findById(guestId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
-    }
-
-    private Member findMemberOrThrow(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_NOT_FOUND));
-    }
-
-    private MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
-        return memberExerciseRepository.findByExerciseAndMember(exercise, member)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 }

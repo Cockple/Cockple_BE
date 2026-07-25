@@ -8,13 +8,11 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseGuestService;
-import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseParticipationService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 
@@ -24,41 +22,11 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 @Slf4j
 public class ExerciseCommandService {
 
-    private final ExerciseParticipationService exerciseParticipationService;
     private final ExerciseGuestService exerciseGuestService;
 
     private final MemberRepository memberRepository;
     private final ExerciseRepository exerciseRepository;
     private final GuestRepository guestRepository;
-
-    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
-        log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseWithPartyLevelOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-
-        return exerciseParticipationService.joinExercise(exercise, member);
-    }
-
-    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
-        log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member member = findMemberOrThrow(memberId);
-
-        return exerciseParticipationService.cancelParticipation(exercise, member);
-    }
-
-    public ExerciseCancelDTO.Response cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long managerId, ExerciseCancelDTO.ByManagerRequest request) {
-        log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}"
-                , exerciseId, participantId, managerId);
-
-        Exercise exercise = findExerciseOrThrow(exerciseId);
-        Member manager = findMemberOrThrow(managerId);
-
-        return exerciseParticipationService.cancelParticipationByManager(exercise, participantId, manager, request);
-    }
 
     public ExerciseGuestInviteDTO.Response inviteGuest(Long exerciseId, Long inviterId, ExerciseGuestInviteDTO.Request request) {
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}"
@@ -89,11 +57,6 @@ public class ExerciseCommandService {
 
     private Exercise findExerciseOrThrow(Long exerciseId) {
         return exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
-    }
-
-    private Exercise findExerciseWithPartyLevelOrThrow(Long exerciseId) {
-        return exerciseRepository.findByIdWithPartyLevels(exerciseId)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
     }
 
