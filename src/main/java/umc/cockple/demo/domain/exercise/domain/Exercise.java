@@ -55,6 +55,7 @@ public class Exercise extends BaseEntity {
     private String notice;
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Guest> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
@@ -110,10 +111,6 @@ public class Exercise extends BaseEntity {
 
     public Integer getNowCapacity() {
         return memberExercises.size() + guests.size();
-    }
-
-    public Integer calculateNextParticipantNumber() {
-        return getNowCapacity() + 1;
     }
 
     public boolean isAlreadyStarted() {

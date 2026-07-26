@@ -155,12 +155,6 @@ public class Member extends BaseEntity {
         this.keywords = keywords;
     }
 
-    public void addMemberParty(MemberParty memberParty) {
-        this.memberParties.add(memberParty);
-        memberParty.setMember(this);
-
-    }
-
     public boolean hasDuplicateAddr(CreateMemberAddrRequestDTO requestDTO) {
         List<MemberAddr> addresses = this.getAddresses();
         return
