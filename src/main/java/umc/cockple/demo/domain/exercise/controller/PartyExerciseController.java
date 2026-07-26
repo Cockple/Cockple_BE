@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.PartyExerciseApi;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;

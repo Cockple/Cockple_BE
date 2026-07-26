@@ -14,19 +14,19 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMyQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
+import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
@@ -42,6 +42,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -97,13 +98,13 @@ class ExerciseMyQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseConverter exerciseConverter = new ExerciseConverter(fileService);
+        ExerciseMyQueryMapper exerciseMyMapper = new ExerciseMyQueryMapper(new ImageUrlResolver(fileService));
         exerciseMyQueryService = new ExerciseMyQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
-                exerciseConverter
+                exerciseMyMapper
         );
 
         Member manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);

@@ -3,11 +3,14 @@ package umc.cockple.demo.domain.notification.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.dto.FcmTokenRequestDTO;
+import umc.cockple.demo.domain.notification.dto.NotificationListResponseDTO;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
@@ -15,8 +18,6 @@ import umc.cockple.demo.domain.notification.service.NotificationQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
-
-import java.util.List;
 
 import static umc.cockple.demo.domain.notification.dto.MarkAsReadDTO.*;
 
@@ -33,12 +34,16 @@ public class NotificationController {
 
     @GetMapping("/notifications")
     @Operation(summary = "내 알림 전체 조회",
-            description = "사용자에게 온 알림 전체를 조회합니다. ")
-    public BaseResponse<List<AllNotificationsResponseDTO>> getAllNotifications() {
+            description = "사용자에게 온 알림을 커서 페이지네이션으로 조회합니다. "
+                    + "첫 페이지는 cursor 생략, 다음 페이지는 직전 응답의 nextCursor를 전달합니다.")
+    public BaseResponse<NotificationListResponseDTO> getAllNotifications(
+            @RequestParam(required = false) @Positive Long cursor,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        return BaseResponse.success(CommonSuccessCode.OK, notificationQueryService.getAllNotifications(memberId));
+        return BaseResponse.success(CommonSuccessCode.OK,
+                notificationQueryService.getAllNotifications(memberId, cursor, size));
     }
 
 

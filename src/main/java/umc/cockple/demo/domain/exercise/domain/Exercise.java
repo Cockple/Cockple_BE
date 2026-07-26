@@ -2,8 +2,9 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -63,7 +64,7 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<Guest> guests = new ArrayList<>();
 
-    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateDTO.Command command) {
+    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
         return Exercise.builder()
                 .exerciseAddr(exerciseAddr)
                 .date(command.date())
@@ -76,7 +77,7 @@ public class Exercise extends BaseEntity {
                 .build();
     }
 
-    public void updateExerciseInfo(ExerciseUpdateDTO.Command command) {
+    public void updateExerciseInfo(ExerciseUpdateCommand command) {
         if (command.date() != null) {
             this.date = command.date();
         }
@@ -100,7 +101,7 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public void updateExerciseAddr(ExerciseUpdateDTO.AddrCommand command) {
+    public void updateExerciseAddr(ExerciseUpdateAddressCommand command) {
         if (this.exerciseAddr != null && command != null) {
             this.exerciseAddr.updateAddress(command);
         }

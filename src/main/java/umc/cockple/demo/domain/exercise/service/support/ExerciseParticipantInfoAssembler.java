@@ -3,9 +3,9 @@ package umc.cockple.demo.domain.exercise.service.support;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
@@ -28,7 +28,7 @@ public class ExerciseParticipantInfoAssembler {
     private final ExerciseParticipantReader exerciseParticipantReader;
     private final GuestReader guestReader;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseParticipantInfoQueryMapper exerciseParticipantInfoMapper;
 
     public List<ExerciseDetailDTO.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
         List<MemberExercise> memberExercises = exerciseParticipantReader.findMemberExercisesWithMemberAndProfile(exerciseId);
@@ -61,9 +61,9 @@ public class ExerciseParticipantInfoAssembler {
         return memberExercises.stream()
                 .map(me -> {
                     if (partyMemberRoles.containsKey(me.getMember().getId())) {
-                        return exerciseConverter.toParticipantInfoFromMember(me, partyMemberRoles);
+                        return exerciseParticipantInfoMapper.toParticipantInfoFromMember(me, partyMemberRoles);
                     } else {
-                        return exerciseConverter.toParticipantInfoFromExternalMember(me);
+                        return exerciseParticipantInfoMapper.toParticipantInfoFromExternalMember(me);
                     }
                 })
                 .toList();
@@ -83,7 +83,7 @@ public class ExerciseParticipantInfoAssembler {
         return guests.stream()
                 .map(guest -> {
                     String inviterName = inviterNames.getOrDefault(guest.getInviterId(), "알 수 없음");
-                    return exerciseConverter.toParticipantInfoFromGuest(guest, inviterName);
+                    return exerciseParticipantInfoMapper.toParticipantInfoFromGuest(guest, inviterName);
                 })
                 .toList();
     }

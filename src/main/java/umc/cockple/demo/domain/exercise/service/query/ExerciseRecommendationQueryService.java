@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
+import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -32,7 +35,7 @@ public class ExerciseRecommendationQueryService {
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseRecommendationQueryMapper exerciseRecommendationMapper;
 
     public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
 
@@ -52,7 +55,7 @@ public class ExerciseRecommendationQueryService {
 
         log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
 
-        return exerciseConverter.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+        return exerciseRecommendationMapper.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
     }
 
     public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
@@ -60,10 +63,11 @@ public class ExerciseRecommendationQueryService {
             LocalDate startDate,
             LocalDate endDate,
             Boolean isCockpleRecommend,
-            ExerciseRecommendationCalendarDTO.FilterSortType filterSortType) {
+            ExerciseRecommendationFilterCondition filterCondition,
+            MyPartyExerciseOrderType sortType) {
 
-        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터정렬: {}, 기간: {}~{}"
-                , memberId, isCockpleRecommend, filterSortType, startDate, endDate);
+        log.info("사용자 추천 운동 캘린더 조회 시작 - memberId: {}, 콕플추천: {}, 필터: {}, 정렬: {}, 기간: {}~{}"
+                , memberId, isCockpleRecommend, filterCondition, sortType, startDate, endDate);
 
         Member member = memberLookupService.findWithAddressesOrThrow(memberId);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
@@ -73,7 +77,8 @@ public class ExerciseRecommendationQueryService {
         if (isCockpleRecommend) {
             exercises = exerciseReader.findCockpleRecommendedByDateRange(member, dateRange.start(), dateRange.end());
         } else {
-            exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), filterSortType);
+            ExerciseRecommendationSearchCondition searchCondition = toSearchCondition(filterCondition);
+            exercises = exerciseReader.findFilteredRecommended(member, dateRange.start(), dateRange.end(), searchCondition);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -83,9 +88,20 @@ public class ExerciseRecommendationQueryService {
 
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
 
-        return exerciseConverter.toRecommendationCalendarResponse(
+        return exerciseRecommendationMapper.toRecommendationCalendarResponse(
                 exercises, bookmarkStatus, participantCountMap, mainAddr
-                , dateRange.start(), dateRange.end(), isCockpleRecommend, filterSortType);
+                , dateRange.start(), dateRange.end(), isCockpleRecommend, sortType);
+    }
+
+    private static ExerciseRecommendationSearchCondition toSearchCondition(
+            ExerciseRecommendationFilterCondition filterCondition) {
+        return new ExerciseRecommendationSearchCondition(
+                filterCondition.addr1(),
+                filterCondition.addr2(),
+                filterCondition.levels(),
+                filterCondition.participationTypes(),
+                filterCondition.activityTimes()
+        );
     }
 
     private List<ExerciseWithDistance> getFinalSortedExercises(List<Exercise> candidateExercises, MemberAddr mainAddr) {

@@ -14,19 +14,20 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseLifecycleQueryMapper;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.PartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
+import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
+import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
@@ -42,6 +43,7 @@ import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryServ
 import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.party.service.support.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -99,16 +101,13 @@ class ExerciseLifecycleQueryServiceTest {
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Mock private FileService fileService;
 
-    private ExerciseConverter exerciseConverter;
-
     private Member manager;
     private Party party;
     private Exercise exercise;
 
     @BeforeEach
     void setUp() {
-        exerciseConverter = new ExerciseConverter(fileService);
-        exerciseLifecycleQueryService = createExerciseLifecycleQueryService(exerciseConverter);
+        exerciseLifecycleQueryService = createExerciseLifecycleQueryService();
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -123,10 +122,13 @@ class ExerciseLifecycleQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
 
-    private ExerciseLifecycleQueryService createExerciseLifecycleQueryService(ExerciseConverter exerciseConverter) {
+    private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
         ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
                 memberExerciseRepository, memberPartyRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
+        ExerciseParticipantInfoQueryMapper participantInfoMapper =
+                new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
+        ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
 
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
@@ -135,11 +137,11 @@ class ExerciseLifecycleQueryServiceTest {
                         exerciseParticipantReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
-                        exerciseConverter
+                        participantInfoMapper
                 ),
                 memberLookupService,
                 new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
-                exerciseConverter
+                exerciseLifecycleQueryMapper
         );
     }
 

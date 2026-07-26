@@ -2,6 +2,9 @@ package umc.cockple.demo.domain.notification.converter;
 
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
+import umc.cockple.demo.domain.notification.dto.NotificationListResponseDTO;
+
+import java.util.List;
 
 public class NotificationConverter {
 
@@ -15,6 +18,16 @@ public class NotificationConverter {
                 .isRead(notification.getIsRead())
                 .imgUrl(imgUrl)
                 .data(notification.getData())
+                .build();
+    }
+
+    public static NotificationListResponseDTO toNotificationListResponse(
+            List<AllNotificationsResponseDTO> notifications, boolean hasNext, Long nextCursor, int totalElements) {
+        return NotificationListResponseDTO.builder()
+                .notifications(notifications)
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
+                .totalElements(totalElements)
                 .build();
     }
 }

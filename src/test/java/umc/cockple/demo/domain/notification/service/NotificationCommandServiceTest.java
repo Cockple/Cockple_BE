@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -30,13 +31,14 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -203,8 +205,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generatePartyDeletedMessage())
                         .willReturn("모임이 삭제되었어요!");
@@ -229,8 +230,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_INVITE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generateInviteMessage(party.getPartyName()))
                         .willReturn("'테스트 모임' 모임에 초대를 받았습니다.");
@@ -256,8 +256,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.EXERCISE_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generateExerciseDeletedMessage("03.15(토)"))
                         .willReturn("03.15(토) 운동이 삭제되었어요!");
@@ -272,20 +271,10 @@ class NotificationCommandServiceTest {
             }
 
             @Test
-            @DisplayName("알림이 50개 이상이면 INVITE가 아닌 가장 오래된 알림을 삭제 후 저장한다")
-            void createNotification_over50_deletesOldestNonInvite() throws Exception {
-                // given
-                List<Notification> existingNotifications = new ArrayList<>();
-                for (int i = 0; i < 50; i++) {
-                    existingNotifications.add(Notification.builder()
-                            .member(member).partyId(100L).title("t").content("c")
-                            .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build());
-                }
-
-                Notification oldestNonInvite = Notification.builder()
-                        .member(member).partyId(100L).title("오래된 알림").content("c")
-                        .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build();
-                ReflectionTestUtils.setField(oldestNonInvite, "id", 50L);
+            @DisplayName("보유 알림이 트리거(60)를 넘으면 초과분을 CAP(50)까지 한 번에 삭제 후 저장한다")
+            void createNotification_overTrigger_deletesExcessDownToCap() throws Exception {
+                // given: 60건 보유 → 초과분 10건 삭제 후보
+                List<Long> excessIds = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
 
                 CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                         .member(member)
@@ -293,11 +282,10 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(existingNotifications);
-                given(notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(
-                        member, NotificationType.INVITE))
-                        .willReturn(Optional.of(oldestNonInvite));
+                given(notificationRepository.countByMember(member)).willReturn(60L);
+                given(notificationRepository.findDeletableIdsOldestFirst(
+                        eq(member), eq(NotificationType.INVITE), any(LocalDateTime.class), any(Pageable.class)))
+                        .willReturn(excessIds);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generatePartyDeletedMessage())
                         .willReturn("모임이 삭제되었어요!");
@@ -307,29 +295,21 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should().deleteByIdQuery(50L);
+                then(notificationRepository).should().deleteAllByIdInBatch(excessIds);
                 then(notificationRepository).should().save(any(Notification.class));
             }
 
             @Test
-            @DisplayName("알림이 49개이면 오래된 알림 삭제 없이 바로 저장한다")
-            void createNotification_under50_savesWithoutDelete() throws Exception {
+            @DisplayName("보유 알림이 트리거(60) 미만이면 정리 없이 바로 저장한다")
+            void createNotification_underTrigger_savesWithoutCleanup() throws Exception {
                 // given
-                List<Notification> existingNotifications = new ArrayList<>();
-                for (int i = 0; i < 49; i++) {
-                    existingNotifications.add(Notification.builder()
-                            .member(member).partyId(100L).title("t").content("c")
-                            .type(NotificationType.SIMPLE).isRead(true).imageKey(null).data("{}").build());
-                }
-
                 CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
                         .member(member)
                         .partyId(party.getId())
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(existingNotifications);
+                given(notificationRepository.countByMember(member)).willReturn(59L);
                 given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
                 given(notificationMessageGenerator.generatePartyDeletedMessage())
                         .willReturn("모임이 삭제되었어요!");
@@ -339,7 +319,34 @@ class NotificationCommandServiceTest {
                 notificationCommandService.createNotification(dto);
 
                 // then
-                then(notificationRepository).should(never()).deleteByIdQuery(any(Long.class));
+                then(notificationRepository).should(never()).deleteAllByIdInBatch(any());
+                then(notificationRepository).should().save(any(Notification.class));
+            }
+
+            @Test
+            @DisplayName("트리거를 넘어도 삭제 후보가 없으면(전부 최근 INVITE) 삭제하지 않고 저장한다")
+            void createNotification_overTrigger_noDeletableCandidates_savesWithoutDelete() throws Exception {
+                // given
+                CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
+                        .member(member)
+                        .partyId(party.getId())
+                        .target(NotificationTarget.PARTY_DELETE)
+                        .build();
+
+                given(notificationRepository.countByMember(member)).willReturn(60L);
+                given(notificationRepository.findDeletableIdsOldestFirst(
+                        eq(member), eq(NotificationType.INVITE), any(LocalDateTime.class), any(Pageable.class)))
+                        .willReturn(List.of());
+                given(partyRepository.findById(party.getId())).willReturn(Optional.of(party));
+                given(notificationMessageGenerator.generatePartyDeletedMessage())
+                        .willReturn("모임이 삭제되었어요!");
+                given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+                // when
+                notificationCommandService.createNotification(dto);
+
+                // then
+                then(notificationRepository).should(never()).deleteAllByIdInBatch(any());
                 then(notificationRepository).should().save(any(Notification.class));
             }
         }
@@ -358,8 +365,7 @@ class NotificationCommandServiceTest {
                         .target(NotificationTarget.PARTY_DELETE)
                         .build();
 
-                given(notificationRepository.findAllByMemberOrderByCreatedAtDesc(member))
-                        .willReturn(List.of());
+                given(notificationRepository.countByMember(member)).willReturn(0L);
                 given(partyRepository.findById(999L)).willReturn(Optional.empty());
 
                 // when & then

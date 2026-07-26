@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
-import umc.cockple.demo.domain.chat.service.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;

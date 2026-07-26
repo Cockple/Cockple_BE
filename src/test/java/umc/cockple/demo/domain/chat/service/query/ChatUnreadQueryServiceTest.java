@@ -1,0 +1,227 @@
+package umc.cockple.demo.domain.chat.service.query;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
+import umc.cockple.demo.domain.chat.repository.projection.ChatMemberUnreadCountDTO;
+import umc.cockple.demo.domain.chat.repository.projection.ChatRoomUnreadCountDTO;
+import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ChatUnreadQueryService")
+class ChatUnreadQueryServiceTest {
+
+    @Mock private MessageReadStatusRepository messageReadStatusRepository;
+
+    private ChatConverter chatConverter;
+    private ChatUnreadQueryService chatUnreadQueryService;
+
+    @BeforeEach
+    void setUp() {
+        chatConverter = new ChatConverter();
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatConverter);
+    }
+
+    @Nested
+    @DisplayName("안 읽은 메시지 여부 조회")
+    class GetUnreadStatus {
+
+        @Test
+        @DisplayName("모임과 개인 안읽음 여부를 함께 반환한다")
+        void getUnreadStatus_returnsPartyAndDirectUnreadStatus() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isTrue();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("모임과 개인 모두 안읽음이 없으면 전체 안읽음 여부가 false이다")
+        void getUnreadStatus_returnsFalseWhenNoUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isFalse();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("개인 안읽음만 있으면 전체 안읽음 여부가 true이다")
+        void getUnreadStatus_returnsTrueWhenOnlyDirectUnreadExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(false);
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(true);
+
+            // when
+            ChatUnreadStatusDTO.Response result = chatUnreadQueryService.getUnreadStatus(memberId);
+
+            // then
+            assertThat(result.hasUnread()).isTrue();
+            assertThat(result.hasPartyUnread()).isFalse();
+            assertThat(result.hasDirectUnread()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("batch countUnreadMessages")
+    class BatchCountUnreadMessages {
+
+        @Test
+        @DisplayName("채팅방별 안읽음 수를 조회하고 결과가 없는 채팅방은 0으로 채운다")
+        void countUnreadMessagesByChatRooms_fillsMissingRoomsWithZero() {
+            // given
+            Long memberId = 10L;
+            List<Long> chatRoomIds = List.of(1L, 2L, 3L);
+            given(messageReadStatusRepository.countUnreadMessagesByChatRooms(memberId, chatRoomIds))
+                    .willReturn(List.of(
+                            new ChatRoomUnreadCountDTO(1L, 4L),
+                            new ChatRoomUnreadCountDTO(3L, 2L)
+                    ));
+
+            // when
+            Map<Long, Integer> result = chatUnreadQueryService.countUnreadMessagesByChatRooms(memberId, chatRoomIds);
+
+            // then
+            assertThat(result).containsEntry(1L, 4)
+                    .containsEntry(2L, 0)
+                    .containsEntry(3L, 2);
+        }
+
+        @Test
+        @DisplayName("입력 목록이 비어 있으면 repository를 호출하지 않고 빈 Map을 반환한다")
+        void countUnreadMessagesByChatRooms_returnsEmptyMap_whenChatRoomIdsAreEmpty() {
+            // when
+            Map<Long, Integer> result = chatUnreadQueryService.countUnreadMessagesByChatRooms(10L, List.of());
+
+            // then
+            assertThat(result).isEmpty();
+            verify(messageReadStatusRepository, never()).countUnreadMessagesByChatRooms(anyLong(), anyList());
+        }
+
+        @Test
+        @DisplayName("멤버별 안읽음 수를 조회하고 결과가 없는 멤버는 0으로 채운다")
+        void countUnreadMessagesByMembers_fillsMissingMembersWithZero() {
+            // given
+            Long chatRoomId = 1L;
+            List<Long> memberIds = List.of(10L, 20L, 30L);
+            given(messageReadStatusRepository.countUnreadMessagesByMembers(chatRoomId, memberIds))
+                    .willReturn(List.of(new ChatMemberUnreadCountDTO(20L, 5L)));
+
+            // when
+            Map<Long, Integer> result = chatUnreadQueryService.countUnreadMessagesByMembers(chatRoomId, memberIds);
+
+            // then
+            assertThat(result).containsEntry(10L, 0)
+                    .containsEntry(20L, 5)
+                    .containsEntry(30L, 0);
+        }
+    }
+
+    @Nested
+    @DisplayName("타입별 안읽음 여부")
+    class HasUnreadMessagesByType {
+
+        @Test
+        @DisplayName("모임 채팅 안읽음 여부는 repository exists 쿼리를 사용한다")
+        void hasPartyUnreadMessages_usesRepositoryExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsPartyUnreadMessagesByMemberId(memberId)).willReturn(true);
+
+            // when
+            boolean result = chatUnreadQueryService.hasPartyUnreadMessages(memberId);
+
+            // then
+            assertThat(result).isTrue();
+            verify(messageReadStatusRepository).existsPartyUnreadMessagesByMemberId(memberId);
+        }
+
+        @Test
+        @DisplayName("개인 채팅 안읽음 여부는 repository exists 쿼리를 사용한다")
+        void hasDirectUnreadMessages_usesRepositoryExists() {
+            // given
+            Long memberId = 10L;
+            given(messageReadStatusRepository.existsDirectUnreadMessagesByMemberId(memberId)).willReturn(false);
+
+            // when
+            boolean result = chatUnreadQueryService.hasDirectUnreadMessages(memberId);
+
+            // then
+            assertThat(result).isFalse();
+            verify(messageReadStatusRepository).existsDirectUnreadMessagesByMemberId(memberId);
+        }
+
+        @Test
+        @DisplayName("멤버 목록의 모임/개인 채팅 안읽음 여부를 batch 조회한다")
+        void findUnreadStatusesByMembers_usesBatchQueries() {
+            // given
+            List<Long> memberIds = List.of(10L, 20L, 30L);
+            given(messageReadStatusRepository.findMemberIdsWithPartyUnreadMessages(memberIds))
+                    .willReturn(List.of(10L));
+            given(messageReadStatusRepository.findMemberIdsWithDirectUnreadMessages(memberIds))
+                    .willReturn(List.of(20L));
+
+            // when
+            Map<Long, ChatUnreadQueryService.UnreadStatus> result =
+                    chatUnreadQueryService.findUnreadStatusesByMembers(memberIds);
+
+            // then
+            assertThat(result).containsOnlyKeys(10L, 20L, 30L);
+            assertThat(result.get(10L).hasUnread()).isTrue();
+            assertThat(result.get(10L).hasPartyUnread()).isTrue();
+            assertThat(result.get(10L).hasDirectUnread()).isFalse();
+            assertThat(result.get(20L).hasUnread()).isTrue();
+            assertThat(result.get(20L).hasPartyUnread()).isFalse();
+            assertThat(result.get(20L).hasDirectUnread()).isTrue();
+            assertThat(result.get(30L).hasUnread()).isFalse();
+            assertThat(result.get(30L).hasPartyUnread()).isFalse();
+            assertThat(result.get(30L).hasDirectUnread()).isFalse();
+        }
+
+        @Test
+        @DisplayName("멤버 목록이 비어 있으면 batch repository를 호출하지 않는다")
+        void findUnreadStatusesByMembers_returnsEmptyMap_whenMemberIdsAreEmpty() {
+            // when
+            Map<Long, ChatUnreadQueryService.UnreadStatus> result =
+                    chatUnreadQueryService.findUnreadStatusesByMembers(List.of());
+
+            // then
+            assertThat(result).isEmpty();
+            verify(messageReadStatusRepository, never()).findMemberIdsWithPartyUnreadMessages(anyList());
+            verify(messageReadStatusRepository, never()).findMemberIdsWithDirectUnreadMessages(anyList());
+        }
+    }
+
+}

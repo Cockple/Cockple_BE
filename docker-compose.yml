@@ -57,8 +57,8 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms768m -Xmx768m"
       SPRING_PROFILES_ACTIVE: prod
       LOG_PATH: /logs
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_PROD:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_PROD:-http://localhost:5173,https://cockple.site,https://www.cockple.site,https://staging.cockple.site,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -85,14 +85,21 @@ services:
       JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
       SPRING_PROFILES_ACTIVE: staging
       LOG_PATH: /logs
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_STAGING:-http://localhost:5173,https://cockple.store,https://www.cockple.store,https://staging.cockple.store,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.cockple.store}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS_STAGING:-http://localhost:5173,https://cockple.site,https://www.cockple.site,https://staging.cockple.site,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       FCM_FAKE_LATENCY_MS: ${FCM_FAKE_LATENCY_MS:-0}
       # 관측성(Observability) — OTLP 메트릭 push (staging 전용). 미설정 시 off.
       OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
       OTEL_URL: ${OTEL_URL:-}
       OTEL_AUTH: ${OTEL_AUTH:-}
       OTLP_STEP: ${OTLP_STEP:-1m}
+      # 스레드풀 튜닝(부하테스트용) 미설정 시 앱 기본값(chat 8/16/500, noti 4/12/1000)
+      ASYNC_CHAT_CORE_SIZE: ${ASYNC_CHAT_CORE_SIZE:-8}
+      ASYNC_CHAT_MAX_SIZE: ${ASYNC_CHAT_MAX_SIZE:-16}
+      ASYNC_CHAT_QUEUE_CAPACITY: ${ASYNC_CHAT_QUEUE_CAPACITY:-500}
+      ASYNC_NOTIFICATION_CORE_SIZE: ${ASYNC_NOTIFICATION_CORE_SIZE:-4}
+      ASYNC_NOTIFICATION_MAX_SIZE: ${ASYNC_NOTIFICATION_MAX_SIZE:-12}
+      ASYNC_NOTIFICATION_QUEUE_CAPACITY: ${ASYNC_NOTIFICATION_QUEUE_CAPACITY:-1000}
       DB_PASSWORD: ${DB_PASSWORD}
       GCS_BUCKET: ${GCS_BUCKET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -118,8 +125,8 @@ services:
     ports:
       - "80:80"
     environment:
-      PROD_SERVER_NAME: ${NGINX_PROD_SERVER_NAME:-api.cockple.store}
-      STAGING_SERVER_NAME: ${NGINX_STAGING_SERVER_NAME:-staging.cockple.store}
+      PROD_SERVER_NAME: ${NGINX_PROD_SERVER_NAME:-api.cockple.site}
+      STAGING_SERVER_NAME: ${NGINX_STAGING_SERVER_NAME:-staging.cockple.site}
       NGINX_ENVSUBST_FILTER: SERVER_NAME
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

@@ -4,11 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -30,7 +31,7 @@ public class ExerciseMapQueryService {
     private final ExerciseReader exerciseReader;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseMapQueryMapper exerciseMapMapper;
 
     public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
             String buildingName, String streetAddr, LocalDate date, Long memberId) {
@@ -41,7 +42,7 @@ public class ExerciseMapQueryService {
 
         if (exercises.isEmpty()) {
             log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
-            return exerciseConverter.toEmptyBuildingDetailResponse(buildingName, date);
+            return exerciseMapMapper.toEmptyBuildingDetailResponse(buildingName, date);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -49,18 +50,18 @@ public class ExerciseMapQueryService {
 
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
-        return exerciseConverter.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
+        return exerciseMapMapper.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
     }
 
     public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
-            ExerciseMapBuildingsDTO.Query query, Long memberId) {
+            ExerciseMapSearchQuery query, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
                 query.date(), query.latitude(), query.longitude(), query.radiusKm());
 
         Member member = memberLookupService.findWithAddressesOrThrow(memberId);
         MemberAddr mainAddr = memberLookupService.findMainAddressOrThrow(member);
-        ExerciseMapBuildingsDTO.Query searchQuery =
+        ExerciseMapSearchQuery searchQuery =
                 query.withFallbackLocation(mainAddr.getLatitude(), mainAddr.getLongitude());
 
         DateRange dateRange = DateRange.calculateMonthlyStartAndEnd(query.date());
@@ -72,7 +73,7 @@ public class ExerciseMapQueryService {
 
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
-        return exerciseConverter.toMapCalendarSummaryResponse(
+        return exerciseMapMapper.toMapCalendarSummaryResponse(
                 dateRange.start().getYear(), dateRange.start().getMonthValue(),
                 searchQuery.latitude(), searchQuery.longitude(), searchQuery.radiusKm(), dailyBuildings);
     }
@@ -99,7 +100,7 @@ public class ExerciseMapQueryService {
                 .collect(Collectors.groupingBy(this::createBuildingKey));
 
         return exercisesByBuilding.keySet().stream()
-                .map(entry -> exerciseConverter.toBuildingSummary(
+                .map(entry -> exerciseMapMapper.toBuildingSummary(
                         entry.name(), entry.address(), entry.latitude(), entry.longitude())
                 )
                 .toList();

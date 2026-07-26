@@ -7,7 +7,8 @@ import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.party.dto.PartyCreateDTO;
@@ -141,7 +142,7 @@ public class Party extends BaseEntity {
         return party;
     }
 
-    public Exercise createExercise(ExerciseCreateDTO.Command command, ExerciseCreateDTO.AddrCommand addrCommand) {
+    public Exercise createExercise(ExerciseCreateCommand command, ExerciseCreateAddressCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
         return Exercise.create(exerciseAddr, command);
     }

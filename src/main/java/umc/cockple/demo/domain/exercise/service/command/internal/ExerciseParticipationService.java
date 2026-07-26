@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.ExerciseConverter;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseJoinDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
@@ -35,7 +35,7 @@ public class ExerciseParticipationService {
 
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseConverter exerciseConverter;
+    private final ExerciseParticipationCommandMapper exerciseParticipationMapper;
 
     public ExerciseJoinDTO.Response joinExercise(Exercise exercise, Member member) {
         exerciseValidator.validateJoinExercise(exercise, member);
@@ -50,7 +50,7 @@ public class ExerciseParticipationService {
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
                 , savedMemberExercise.getId(), isPartyMember);
 
-        return exerciseConverter.toJoinResponse(savedMemberExercise, exercise);
+        return exerciseParticipationMapper.toJoinResponse(savedMemberExercise, exercise);
     }
 
     public ExerciseCancelDTO.Response cancelParticipation(Exercise exercise, Member member) {
@@ -67,7 +67,7 @@ public class ExerciseParticipationService {
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
 
-        return exerciseConverter.toCancelResponse(exercise, member);
+        return exerciseParticipationMapper.toCancelResponse(exercise, member);
     }
 
     public ExerciseCancelDTO.Response cancelParticipationByManager(
@@ -109,7 +109,7 @@ public class ExerciseParticipationService {
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponse(exercise, guest);
+        return exerciseParticipationMapper.toCancelResponse(exercise, guest);
     }
 
     private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
@@ -123,7 +123,7 @@ public class ExerciseParticipationService {
 
         exerciseRepository.save(exercise);
 
-        return exerciseConverter.toCancelResponse(exercise, participant);
+        return exerciseParticipationMapper.toCancelResponse(exercise, participant);
     }
 
     // ========== 조회 메서드 ============

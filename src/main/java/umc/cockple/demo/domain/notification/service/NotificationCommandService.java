@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -22,6 +23,7 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.HashMap;
@@ -35,6 +37,12 @@ import static umc.cockple.demo.domain.notification.dto.MarkAsReadDTO.*;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationCommandService {
+
+    // 보관 정책: 회원당 알림을 대략 RETENTION_CAP개로 유지
+    // 매 생성마다 정리하면 정상 상태에서도 삭제가 발생해 쓰기 경합이 생기므로, RETENTION_TRIGGER를 넘을 때만 CAP까지 한 번에 정리한다(슬랙/히스테리시스)
+    private static final int RETENTION_CAP = 50;
+    private static final int RETENTION_TRIGGER = 60;
+    private static final int INVITE_RETENTION_DAYS = 7;
 
     private final NotificationRepository notificationRepository;
     private final PartyRepository partyRepository;
@@ -61,11 +69,7 @@ public class NotificationCommandService {
         try {
             long start = System.currentTimeMillis();
             Member member = dto.member();
-            List<Notification> bookmarks = notificationRepository.findAllByMemberOrderByCreatedAtDesc(member);
-            if (bookmarks.size() >= 50) {
-                notificationRepository.findFirstByMemberAndTypeNotOrderByCreatedAtAsc(member, NotificationType.INVITE)
-                        .ifPresent(n -> notificationRepository.deleteByIdQuery(n.getId()));
-            }
+            enforceRetentionPolicy(member);
 
             Party party = partyRepository.findById(dto.partyId())
                     .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
@@ -124,6 +128,24 @@ public class NotificationCommandService {
 
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_DATA);
+        }
+    }
+
+    private void enforceRetentionPolicy(Member member) {
+        long count = notificationRepository.countByMember(member);
+        if (count < RETENTION_TRIGGER) {
+            return;
+        }
+
+        int excess = (int) (count - RETENTION_CAP);
+        List<Long> deletableIds = notificationRepository.findDeletableIdsOldestFirst(
+                member,
+                NotificationType.INVITE,
+                LocalDateTime.now().minusDays(INVITE_RETENTION_DAYS),
+                PageRequest.of(0, excess));
+
+        if (!deletableIds.isEmpty()) {
+            notificationRepository.deleteAllByIdInBatch(deletableIds);
         }
     }
 

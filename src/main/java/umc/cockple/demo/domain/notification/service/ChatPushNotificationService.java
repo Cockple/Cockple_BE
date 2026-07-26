@@ -3,7 +3,6 @@ package umc.cockple.demo.domain.notification.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -17,7 +16,6 @@ public class ChatPushNotificationService {
     private final FcmService fcmService;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-    @Transactional(readOnly = true)
     public void sendPush(ChatNotificationEvent event) {
         chatRoomMemberRepository
                 .findByChatRoomIdAndStatusWithMember(event.chatRoomId(), ChatRoomMemberStatus.JOINED)

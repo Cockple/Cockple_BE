@@ -5,9 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseMapApi;
-import umc.cockple.demo.domain.exercise.dto.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.ExerciseMapBuildingsDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
+import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMapQueryService;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -36,7 +37,7 @@ public class ExerciseMapController implements ExerciseMapApi {
     public ResponseEntity<BaseResponse<ExerciseMapBuildingsDTO.Response>> getMonthlyExerciseBuildings(
             LocalDate date, Double latitude, Double longitude, Double radiusKm) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ExerciseMapBuildingsDTO.Query query = ExerciseMapBuildingsDTO.Query.of(date, latitude, longitude, radiusKm);
+        ExerciseMapSearchQuery query = ExerciseMapSearchQuery.of(date, latitude, longitude, radiusKm);
 
         ExerciseMapBuildingsDTO.Response response = exerciseMapQueryService
                 .getExerciseMapCalendarSummary(query, memberId);
