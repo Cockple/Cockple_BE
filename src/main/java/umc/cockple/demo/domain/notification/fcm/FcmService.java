@@ -70,40 +70,6 @@ public class FcmService {
         }
     }
 
-    public void sendChatNotification(Member member, String title, String content,
-                                     Long chatRoomId, ChatRoomType chatRoomType) {
-        if (applyFakeLatencyAndSkip(member.getId())) {
-            return;
-        }
-
-        String fcmToken = member.getFcmToken();
-        if (fcmToken == null || fcmToken.isBlank()) {
-            log.info("FCM 토큰 없음 - memberId: {}, 채팅 알림 전송 생략", member.getId());
-            return;
-        }
-
-        Message message = Message.builder()
-                .setToken(fcmToken)
-                .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(content)
-                        .build())
-                .putData("chatRoomId", chatRoomId.toString())
-                .putData("chatRoomType", chatRoomType.name())
-                .setWebpushConfig(WebpushConfig.builder()
-                        .setFcmOptions(WebpushFcmOptions.withLink(buildChatLink(chatRoomType, chatRoomId)))
-                        .build())
-                .build();
-
-        try {
-            long start = System.currentTimeMillis();
-            firebaseMessaging.send(message);
-            log.info("[FCM] 채팅 알림 전송 완료 - memberId: {}, chatRoomId: {}, 소요시간: {}ms", member.getId(), chatRoomId, System.currentTimeMillis() - start);
-        } catch (FirebaseMessagingException e) {
-            log.error("채팅 FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
-        }
-    }
-
     /**
      * 채팅 알림을 수신자 전체에게 한 번의 요청(fan-out)
      */
