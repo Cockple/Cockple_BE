@@ -2,9 +2,11 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
 
@@ -129,9 +131,10 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public void addParticipation(MemberExercise memberExercise) {
+    public MemberExercise addParticipation(Member member, ExerciseMemberShipStatus status) {
+        MemberExercise memberExercise = MemberExercise.create(member, this, status);
         this.memberExercises.add(memberExercise);
-        memberExercise.setExercise(this);
+        return memberExercise;
     }
 
     public void addGuest(Guest guest) {

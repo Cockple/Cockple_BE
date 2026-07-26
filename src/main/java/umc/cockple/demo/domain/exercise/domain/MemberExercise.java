@@ -29,26 +29,11 @@ public class MemberExercise extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ExerciseMemberShipStatus exerciseMemberShipStatus;
 
-    public static MemberExercise create(boolean isPartyMember) {
-        ExerciseMemberShipStatus status = isPartyMember ?
-                ExerciseMemberShipStatus.PARTY_MEMBER : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
-
+    static MemberExercise create(Member member, Exercise exercise, ExerciseMemberShipStatus status) {
         return MemberExercise.builder()
+                .member(member)
+                .exercise(exercise)
                 .exerciseMemberShipStatus(status)
                 .build();
-    }
-
-    public void setExercise(Exercise exercise) {
-        this.exercise = exercise;
-        if (exercise != null && !exercise.getMemberExercises().contains(this)) {
-            exercise.getMemberExercises().add(this);
-        }
-    }
-
-    public void setMember(Member member) {
-        this.member = member;
-        if (member != null && !member.getMemberExercises().contains(this)) {
-            member.getMemberExercises().add(this);
-        }
     }
 }

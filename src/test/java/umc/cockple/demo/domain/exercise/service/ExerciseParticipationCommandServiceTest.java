@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -13,6 +14,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
@@ -126,8 +128,16 @@ class ExerciseParticipationCommandServiceTest {
                 ExerciseJoinDTO.Response response = exerciseParticipationCommandService.joinExercise(exercise.getId(), participant.getId());
 
                 // then
+                ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
+                then(memberExerciseRepository).should().save(participationCaptor.capture());
+
+                MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(50L);
-                assertThat(response.currentParticipants()).isNotNull();
+                assertThat(response.currentParticipants()).isEqualTo(1);
+                assertThat(savedParticipation.getMember()).isSameAs(participant);
+                assertThat(savedParticipation.getExercise()).isSameAs(exercise);
+                assertThat(savedParticipation.getExerciseMemberShipStatus())
+                        .isEqualTo(ExerciseMemberShipStatus.PARTY_MEMBER);
             }
 
             @Test
@@ -158,8 +168,16 @@ class ExerciseParticipationCommandServiceTest {
                         .joinExercise(outsideAcceptExercise.getId(), outsideMember.getId());
 
                 // then
+                ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
+                then(memberExerciseRepository).should().save(participationCaptor.capture());
+
+                MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(51L);
-                assertThat(response.currentParticipants()).isNotNull();
+                assertThat(response.currentParticipants()).isEqualTo(1);
+                assertThat(savedParticipation.getMember()).isSameAs(outsideMember);
+                assertThat(savedParticipation.getExercise()).isSameAs(outsideAcceptExercise);
+                assertThat(savedParticipation.getExerciseMemberShipStatus())
+                        .isEqualTo(ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT);
             }
         }
 

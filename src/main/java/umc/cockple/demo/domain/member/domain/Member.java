@@ -85,8 +85,11 @@ public class Member extends BaseEntity {
     @Builder.Default
     private List<MemberParty> memberParties = new ArrayList<>();
 
+    // Member hard delete 시 참여 데이터 정리를 위한 ORM 생명주기 매핑이다.
+    // 운동 참여의 생성·취소 책임은 Exercise가 가진다.
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
+    @Getter(AccessLevel.NONE)
     private List<MemberExercise> memberExercises = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
@@ -108,15 +111,6 @@ public class Member extends BaseEntity {
     @Builder.Default
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 
-
-    public void addParticipation(MemberExercise memberExercise) {
-        this.memberExercises.add(memberExercise);
-        memberExercise.setMember(this);
-    }
-
-    public void removeParticipation(MemberExercise memberExercise) {
-        this.memberExercises.remove(memberExercise);
-    }
 
     public void updateProfileImg(ProfileImg newProfileImg) {
         this.profileImg = newProfileImg;

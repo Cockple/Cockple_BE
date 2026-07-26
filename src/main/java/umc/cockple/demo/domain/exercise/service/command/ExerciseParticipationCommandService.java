@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
@@ -47,9 +48,10 @@ public class ExerciseParticipationCommandService {
         exerciseValidator.validateJoinExercise(exercise, member);
 
         boolean isPartyMember = memberPartyLookupService.isPartyMember(exercise.getParty(), member);
-        MemberExercise memberExercise = MemberExercise.create(isPartyMember);
-        member.addParticipation(memberExercise);
-        exercise.addParticipation(memberExercise);
+        ExerciseMemberShipStatus membershipStatus = isPartyMember
+                ? ExerciseMemberShipStatus.PARTY_MEMBER
+                : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
+        MemberExercise memberExercise = exercise.addParticipation(member, membershipStatus);
 
         MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
 
@@ -68,7 +70,6 @@ public class ExerciseParticipationCommandService {
         exerciseValidator.validateCancelParticipation(exercise);
 
         exercise.removeParticipation(memberExercise);
-        member.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
 
@@ -124,7 +125,6 @@ public class ExerciseParticipationCommandService {
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
 
         exercise.removeParticipation(memberExercise);
-        participant.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
 
