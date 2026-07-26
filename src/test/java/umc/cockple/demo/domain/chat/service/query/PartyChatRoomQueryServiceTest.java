@@ -55,7 +55,7 @@ class PartyChatRoomQueryServiceTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository);
+        chatUnreadQueryService = new ChatUnreadQueryService(messageReadStatusRepository, chatConverter);
         imageUrlResolver = new ImageUrlResolver(fileService);
         partyChatRoomQueryService = new PartyChatRoomQueryService(
                 chatRoomRepository,
