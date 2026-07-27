@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.party.service.support;
+package umc.cockple.demo.domain.party.service.query.lookup;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,6 +14,11 @@ import umc.cockple.demo.domain.party.repository.PartyRepository;
 public class PartyLookupService {
 
     private final PartyRepository partyRepository;
+
+    public Party findByIdOrThrow(Long partyId) {
+        return partyRepository.findById(partyId)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
+    }
 
     public Party findByIdWithLevelsOrThrow(Long partyId) {
         return partyRepository.findByIdWithLevels(partyId)

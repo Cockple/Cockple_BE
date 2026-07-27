@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.member.service.support;
+package umc.cockple.demo.domain.member.service.query.lookup;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

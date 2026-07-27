@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 
 import java.util.List;
@@ -14,6 +16,11 @@ import java.util.List;
 public class GuestReader {
 
     private final GuestRepository guestRepository;
+
+    public Guest findByIdOrThrow(Long guestId) {
+        return guestRepository.findById(guestId)
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
+    }
 
     public List<Guest> findByExerciseId(Long exerciseId) {
         return guestRepository.findByExerciseId(exerciseId);

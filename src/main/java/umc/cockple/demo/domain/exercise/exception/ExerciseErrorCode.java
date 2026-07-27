@@ -27,7 +27,6 @@ public enum ExerciseErrorCode implements BaseErrorCode {
 
     PARTY_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE201", "존재하지 않는 파티입니다."),
     EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE202", "존재하지 않는 운동입니다."),
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE203", "존재하지 않는 멤버입니다."),
     MEMBER_EXERCISE_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE204", "존재하지 않는 운동 참여입니다."),
     GUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "EXERCISE205", "존재하지 않는 게스트입니다."),
 

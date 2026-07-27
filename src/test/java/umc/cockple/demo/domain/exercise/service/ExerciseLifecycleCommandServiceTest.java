@@ -16,14 +16,17 @@ import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.service.command.internal.ExerciseLifecycleService;
+import umc.cockple.demo.domain.exercise.service.command.ExerciseLifecycleCommandService;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
@@ -38,28 +41,37 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ExerciseLifecycleService")
-class ExerciseLifecycleServiceTest {
+@DisplayName("ExerciseLifecycleCommandService")
+class ExerciseLifecycleCommandServiceTest {
 
     // 인프라 의존성만 Mock
     @Mock private ExerciseRepository exerciseRepository;
-    @Mock private PartyRepository partyRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseReader exerciseReader;
+    @Mock private MemberLookupService memberLookupService;
+    @Mock private PartyLookupService partyLookupService;
 
-    private ExerciseLifecycleService exerciseLifecycleService;
+    private ExerciseLifecycleCommandService exerciseLifecycleCommandService;
 
     private Member manager;
     private Party party;
 
     @BeforeEach
     void setUp() {
-        ExerciseValidator exerciseValidator = new ExerciseValidator(memberPartyRepository, memberExerciseRepository);
+        ExerciseValidator exerciseValidator = new ExerciseValidator(
+                new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
         ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper = new ExerciseLifecycleCommandMapper();
-        exerciseLifecycleService = new ExerciseLifecycleService(
-                exerciseRepository, partyRepository, exerciseValidator, exerciseLifecycleCommandMapper);
+        exerciseLifecycleCommandService = new ExerciseLifecycleCommandService(
+                exerciseRepository,
+                exerciseReader,
+                memberLookupService,
+                partyLookupService,
+                exerciseValidator,
+                exerciseLifecycleCommandMapper);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -67,6 +79,9 @@ class ExerciseLifecycleServiceTest {
         party = PartyFixture.createParty("테스트 모임", manager.getId(),
                 PartyFixture.createPartyAddr("서울특별시", "강남구"));
         ReflectionTestUtils.setField(party, "id", 10L);
+
+        lenient().when(partyLookupService.findByIdOrThrow(party.getId())).thenReturn(party);
+        lenient().when(memberLookupService.findByIdOrThrow(manager.getId())).thenReturn(manager);
     }
 
     @Nested
@@ -112,7 +127,7 @@ class ExerciseLifecycleServiceTest {
                 given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
 
                 // when
-                ExerciseCreateDTO.Response response = exerciseLifecycleService.createExercise(party, manager, validRequest);
+                ExerciseCreateDTO.Response response = exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), validRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
@@ -125,6 +140,7 @@ class ExerciseLifecycleServiceTest {
                 // given
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -144,7 +160,7 @@ class ExerciseLifecycleServiceTest {
                 given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
 
                 // when
-                ExerciseCreateDTO.Response response = exerciseLifecycleService.createExercise(party, subManager, validRequest);
+                ExerciseCreateDTO.Response response = exerciseLifecycleCommandService.createExercise(party.getId(), subManager.getId(), validRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(200L);
@@ -161,7 +177,7 @@ class ExerciseLifecycleServiceTest {
                 party.delete(); // 실제 도메인 메서드 호출
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.createExercise(party, manager, validRequest))
+                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), validRequest))
                         .isInstanceOf(PartyException.class)
                         .satisfies(e -> assertThat(((PartyException) e).getCode())
                                 .isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
@@ -172,6 +188,7 @@ class ExerciseLifecycleServiceTest {
             void normalMember_throwsException() {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -179,7 +196,7 @@ class ExerciseLifecycleServiceTest {
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.createExercise(party, normalMember, validRequest))
+                        exerciseLifecycleCommandService.createExercise(party.getId(), normalMember.getId(), validRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
@@ -201,7 +218,7 @@ class ExerciseLifecycleServiceTest {
                         .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.createExercise(party, manager, invalidTimeRequest))
+                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), invalidTimeRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INVALID_EXERCISE_TIME));
@@ -223,7 +240,7 @@ class ExerciseLifecycleServiceTest {
                         .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.createExercise(party, manager, pastRequest))
+                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), pastRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED));
@@ -248,7 +265,8 @@ class ExerciseLifecycleServiceTest {
                     .outsideGuestAccept(false)
                     .build();
             ReflectionTestUtils.setField(exercise, "id", 100L);
-            exercise.setParty(party);
+            party.addExercise(exercise);
+            lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
         }
 
         @Nested
@@ -261,12 +279,12 @@ class ExerciseLifecycleServiceTest {
                 // given: party.ownerId == manager.id 이므로 권한 통과
 
                 // when
-                ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(exercise, manager);
+                ExerciseDeleteDTO.Response response = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), manager.getId());
 
                 // then
                 assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
-                then(partyRepository).should().save(party);
             }
 
             @Test
@@ -275,6 +293,7 @@ class ExerciseLifecycleServiceTest {
                 // given
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -282,12 +301,12 @@ class ExerciseLifecycleServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseDeleteDTO.Response response = exerciseLifecycleService.deleteExercise(exercise, subManager);
+                ExerciseDeleteDTO.Response response = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), subManager.getId());
 
                 // then
                 assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
-                then(partyRepository).should().save(party);
             }
         }
 
@@ -300,6 +319,7 @@ class ExerciseLifecycleServiceTest {
             void normalMember_throwsException() {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -307,7 +327,7 @@ class ExerciseLifecycleServiceTest {
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.deleteExercise(exercise, normalMember))
+                        exerciseLifecycleCommandService.deleteExercise(exercise.getId(), normalMember.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
@@ -334,6 +354,7 @@ class ExerciseLifecycleServiceTest {
                     .build();
             ReflectionTestUtils.setField(exercise, "id", 100L);
             exercise.setParty(party);
+            lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
 
             validRequest = new ExerciseUpdateDTO.Request(
                     "2099-12-31",
@@ -357,26 +378,14 @@ class ExerciseLifecycleServiceTest {
             @Test
             @DisplayName("모임장이 운동을 수정하면 Response를 반환한다")
             void ownerUpdatesExercise_success() {
-                // given: party.ownerId == manager.id 이므로 권한 통과
-                Exercise savedExercise = Exercise.builder()
-                        .date(LocalDate.of(2099, 12, 31))
-                        .startTime(LocalTime.of(11, 0))
-                        .endTime(LocalTime.of(13, 0))
-                        .maxCapacity(12)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
-                ReflectionTestUtils.setField(savedExercise, "id", 100L);
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
-
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(exercise, manager, validRequest);
+                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), validRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
                 assertThat(exercise.getPartyGuestAccept()).isFalse();
                 assertThat(exercise.getOutsideGuestAccept()).isTrue();
-                then(exerciseRepository).should().save(exercise);
+                then(exerciseRepository).should().flush();
             }
 
             @Test
@@ -385,28 +394,19 @@ class ExerciseLifecycleServiceTest {
                 // given
                 Member subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(subManager, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER))
                         .willReturn(true);
 
-                Exercise savedExercise = Exercise.builder()
-                        .date(LocalDate.of(2099, 12, 31))
-                        .startTime(LocalTime.of(11, 0))
-                        .endTime(LocalTime.of(13, 0))
-                        .maxCapacity(12)
-                        .partyGuestAccept(true)
-                        .outsideGuestAccept(false)
-                        .build();
-                ReflectionTestUtils.setField(savedExercise, "id", 100L);
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
-
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(exercise, subManager, validRequest);
+                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), subManager.getId(), validRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
+                then(exerciseRepository).should().flush();
             }
 
             @Test
@@ -426,16 +426,15 @@ class ExerciseLifecycleServiceTest {
                         null,
                         "공지사항만 수정"
                 );
-                given(exerciseRepository.save(any(Exercise.class))).willReturn(exercise);
-
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleService.updateExercise(exercise, manager, partialRequest);
+                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), partialRequest);
 
                 // then
                 assertThat(response.exerciseId()).isEqualTo(100L);
                 assertThat(exercise.getPartyGuestAccept()).isTrue();
                 assertThat(exercise.getOutsideGuestAccept()).isFalse();
                 assertThat(exercise.getNotice()).isEqualTo("공지사항만 수정");
+                then(exerciseRepository).should().flush();
             }
         }
 
@@ -448,6 +447,7 @@ class ExerciseLifecycleServiceTest {
             void normalMember_throwsException() {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
+                given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -455,7 +455,7 @@ class ExerciseLifecycleServiceTest {
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.updateExercise(exercise, normalMember, validRequest))
+                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), normalMember.getId(), validRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
@@ -475,9 +475,10 @@ class ExerciseLifecycleServiceTest {
                         .build();
                 ReflectionTestUtils.setField(startedExercise, "id", 200L);
                 startedExercise.setParty(party);
+                given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.updateExercise(startedExercise, manager, validRequest))
+                        exerciseLifecycleCommandService.updateExercise(startedExercise.getId(), manager.getId(), validRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE));
@@ -492,7 +493,7 @@ class ExerciseLifecycleServiceTest {
                 );
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.updateExercise(exercise, manager, invalidTimeRequest))
+                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), invalidTimeRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INVALID_EXERCISE_TIME));
@@ -507,7 +508,7 @@ class ExerciseLifecycleServiceTest {
                 );
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleService.updateExercise(exercise, manager, pastDateRequest))
+                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), pastDateRequest))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED));

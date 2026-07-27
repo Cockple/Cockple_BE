@@ -6,10 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
@@ -25,13 +26,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseParticipantInfoAssembler {
 
-    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final MemberExerciseReader memberExerciseReader;
     private final GuestReader guestReader;
     private final MemberLookupService memberLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseParticipantInfoQueryMapper exerciseParticipantInfoMapper;
 
     public List<ExerciseDetailDTO.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
-        List<MemberExercise> memberExercises = exerciseParticipantReader.findMemberExercisesWithMemberAndProfile(exerciseId);
+        List<MemberExercise> memberExercises = memberExerciseReader.findMemberExercisesWithMemberAndProfile(exerciseId);
         List<ExerciseDetailDTO.ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
 
         List<Guest> guests = guestReader.findByExerciseId(exerciseId);
@@ -55,7 +57,7 @@ public class ExerciseParticipantInfoAssembler {
                 .map(me -> me.getMember().getId())
                 .toList();
 
-        Map<Long, Role> partyMemberRoles = exerciseParticipantReader
+        Map<Long, Role> partyMemberRoles = memberPartyLookupService
                 .findMemberRolesByPartyAndMembers(party.getId(), memberIds);
 
         return memberExercises.stream()

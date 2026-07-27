@@ -11,15 +11,16 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,11 +33,12 @@ import java.util.Map;
 public class PartyExerciseQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final MemberExerciseReader memberExerciseReader;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper;
 
     public PartyExerciseCalendarDTO.Response getPartyExerciseCalendar(
@@ -49,7 +51,7 @@ public class PartyExerciseQueryService {
         Member member = memberLookupService.findByIdOrThrow(memberId);
         validateGetPartyExerciseCalendar(startDate, endDate, party);
 
-        Boolean isMember = exerciseParticipantReader.isPartyMember(party, member);
+        Boolean isMember = memberPartyLookupService.isPartyMember(party, member);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = exerciseReader.findByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
@@ -67,7 +69,7 @@ public class PartyExerciseQueryService {
 
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
-        Map<Long, Boolean> participatingStatus = exerciseParticipantReader.getParticipatingStatus(memberId, exerciseIds);
+        Map<Long, Boolean> participatingStatus = memberExerciseReader.getParticipatingStatus(memberId, exerciseIds);
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 

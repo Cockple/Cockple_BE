@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQue
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 
 import java.time.LocalDate;
 import java.util.List;

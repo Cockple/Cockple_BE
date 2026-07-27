@@ -36,18 +36,17 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMyQueryService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -90,7 +89,6 @@ class ExerciseMyQueryServiceTest {
 
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Mock private FileService fileService;
 
@@ -101,9 +99,9 @@ class ExerciseMyQueryServiceTest {
         ExerciseMyQueryMapper exerciseMyMapper = new ExerciseMyQueryMapper(new ImageUrlResolver(fileService));
         exerciseMyQueryService = new ExerciseMyQueryService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseParticipantReader(memberExerciseRepository, memberPartyRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
+                new MemberPartyLookupService(memberPartyRepository),
                 exerciseMyMapper
         );
 

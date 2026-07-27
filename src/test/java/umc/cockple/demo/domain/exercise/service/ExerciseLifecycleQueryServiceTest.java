@@ -36,22 +36,23 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryService;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -123,24 +124,26 @@ class ExerciseLifecycleQueryServiceTest {
     }
 
     private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
-        ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                memberExerciseRepository, memberPartyRepository);
+        MemberExerciseReader memberExerciseReader = new MemberExerciseReader(
+                memberExerciseRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
+        MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         ExerciseParticipantInfoQueryMapper participantInfoMapper =
                 new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
 
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
-                exerciseParticipantReader,
                 new ExerciseParticipantInfoAssembler(
-                        exerciseParticipantReader,
+                        memberExerciseReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
+                        memberPartyLookupService,
                         participantInfoMapper
                 ),
                 memberLookupService,
-                new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
+                memberPartyLookupService,
+                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
                 exerciseLifecycleQueryMapper
         );
     }

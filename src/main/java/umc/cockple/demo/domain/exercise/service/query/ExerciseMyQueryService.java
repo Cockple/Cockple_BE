@@ -21,8 +21,8 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,9 +36,9 @@ import java.util.stream.Collectors;
 public class ExerciseMyQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseMyQueryMapper exerciseMyMapper;
 
     public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
@@ -68,7 +68,7 @@ public class ExerciseMyQueryService {
         log.info("내 모임 운동 조회 시작 - memberId = {}", memberId);
 
 
-        List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
+        List<Long> myPartyIds = memberPartyLookupService.findPartyIdsByMemberId(memberId);
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
@@ -88,7 +88,7 @@ public class ExerciseMyQueryService {
 
         log.info("내 모임 운동 캘린더 조회 시작 - memberId = {}, orderType = {}, 기간 = {}~{}", memberId, orderType, startDate, endDate);
 
-        List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
+        List<Long> myPartyIds = memberPartyLookupService.findPartyIdsByMemberId(memberId);
 
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 

@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryService;
-import umc.cockple.demo.domain.exercise.service.command.ExerciseCommandService;
+import umc.cockple.demo.domain.exercise.service.command.ExerciseLifecycleCommandService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -21,7 +21,7 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 @Validated
 public class ExerciseLifecycleController implements ExerciseLifecycleApi {
 
-    private final ExerciseCommandService exerciseCommandService;
+    private final ExerciseLifecycleCommandService exerciseLifecycleCommandService;
     private final ExerciseLifecycleQueryService exerciseLifecycleQueryService;
 
     @Override
@@ -29,7 +29,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
             Long partyId, ExerciseCreateDTO.Request request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCreateDTO.Response response = exerciseCommandService.createExercise(
+        ExerciseCreateDTO.Response response = exerciseLifecycleCommandService.createExercise(
                 partyId, memberId, request);
 
         return BaseResponse.of(CommonSuccessCode.CREATED, response);
@@ -39,7 +39,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
     public ResponseEntity<BaseResponse<ExerciseDeleteDTO.Response>> deleteExercise(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseDeleteDTO.Response response = exerciseCommandService.deleteExercise(
+        ExerciseDeleteDTO.Response response = exerciseLifecycleCommandService.deleteExercise(
                 exerciseId, memberId);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
@@ -50,7 +50,7 @@ public class ExerciseLifecycleController implements ExerciseLifecycleApi {
             Long exerciseId, ExerciseUpdateDTO.Request request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseUpdateDTO.Response response = exerciseCommandService.updateExercise(
+        ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(
                 exerciseId, memberId, request);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
