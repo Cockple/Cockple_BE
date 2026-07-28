@@ -30,8 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatPushNotificationService")
@@ -62,6 +60,17 @@ class ChatPushNotificationServiceTest {
         ReflectionTestUtils.setField(offlineMember, "id", 3L);
     }
 
+    /**
+     * sendPush는 필터링된 수신자 전체를 sendChatMulticast에 한 번 넘긴다.
+     * 필터 검증은 "멀티캐스트가 받은 수신자 목록"으로 확인한다(개별 전송 → 묶음 전송으로 전환).
+     */
+    @SuppressWarnings("unchecked")
+    private List<Member> captureMulticastRecipients() {
+        ArgumentCaptor<List<Member>> captor = ArgumentCaptor.forClass(List.class);
+        then(fcmService).should().sendChatMulticast(captor.capture(), any(), any(), any(), any());
+        return captor.getValue();
+    }
+
     @Nested
     @DisplayName("단체채팅")
     class PartyChatRoom {
@@ -77,7 +86,7 @@ class ChatPushNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("오프라인 멤버에게 FCM을 전송한다")
+        @DisplayName("오프라인 멤버를 멀티캐스트 수신자로 전달한다")
         void sendPush_toOfflineMember() {
             // given
             ChatNotificationEvent event = ChatNotificationEvent.create(
@@ -95,8 +104,8 @@ class ChatPushNotificationServiceTest {
             // when
             chatPushNotificationService.sendPush(event);
 
-            // then
-            then(fcmService).should(times(1)).sendChatNotification(any(), any(), any(), any(), any());
+            // then: 개별 전송이 아니라 멀티캐스트 1회, 수신자는 오프라인 멤버 1명
+            assertThat(captureMulticastRecipients()).containsExactly(offlineMember);
         }
 
         @Test
@@ -121,7 +130,7 @@ class ChatPushNotificationServiceTest {
             chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should().sendChatNotification(
+            then(fcmService).should().sendChatMulticast(
                     any(), titleCaptor.capture(), contentCaptor.capture(), any(), any()
             );
             assertThat(titleCaptor.getValue()).isEqualTo("테스트모임");
@@ -129,7 +138,7 @@ class ChatPushNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("sender는 FCM 대상에서 제외된다")
+        @DisplayName("sender는 수신자에서 제외된다")
         void sendPush_excludesSender() {
             // given
             ChatNotificationEvent event = ChatNotificationEvent.create(
@@ -143,12 +152,12 @@ class ChatPushNotificationServiceTest {
             // when
             chatPushNotificationService.sendPush(event);
 
-            // then
-            then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
+            // then: 수신자 목록이 비어 있음
+            assertThat(captureMulticastRecipients()).isEmpty();
         }
 
         @Test
-        @DisplayName("활성 구독자는 FCM 대상에서 제외된다")
+        @DisplayName("활성 구독자는 수신자에서 제외된다")
         void sendPush_excludesActiveSubscribers() {
             // given
             ChatNotificationEvent event = ChatNotificationEvent.create(
@@ -166,11 +175,11 @@ class ChatPushNotificationServiceTest {
             chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
+            assertThat(captureMulticastRecipients()).isEmpty();
         }
 
         @Test
-        @DisplayName("오프라인 멤버가 여러 명이면 모두에게 FCM을 전송한다")
+        @DisplayName("오프라인 멤버가 여러 명이면 모두 한 번의 멀티캐스트 수신자로 전달한다")
         void sendPush_toMultipleOfflineMembers() {
             // given
             Member anotherOffline = MemberFixture.createMember("또다른오프라인", Gender.FEMALE, Level.A, 1004L);
@@ -191,8 +200,8 @@ class ChatPushNotificationServiceTest {
             // when
             chatPushNotificationService.sendPush(event);
 
-            // then
-            then(fcmService).should(times(2)).sendChatNotification(any(), any(), any(), any(), any());
+            // then: 개별 2회가 아니라 멀티캐스트 1회에 수신자 2명
+            assertThat(captureMulticastRecipients()).containsExactly(offlineMember, anotherOffline);
         }
     }
 
@@ -209,7 +218,7 @@ class ChatPushNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("오프라인 상대방에게 FCM을 전송한다")
+        @DisplayName("오프라인 상대방을 멀티캐스트 수신자로 전달한다")
         void sendPush_toOfflineCounterPart() {
             // given
             ChatNotificationEvent event = ChatNotificationEvent.create(
@@ -227,7 +236,7 @@ class ChatPushNotificationServiceTest {
             chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should(times(1)).sendChatNotification(any(), any(), any(), any(), any());
+            assertThat(captureMulticastRecipients()).containsExactly(offlineMember);
         }
 
         @Test
@@ -252,7 +261,7 @@ class ChatPushNotificationServiceTest {
             chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should().sendChatNotification(
+            then(fcmService).should().sendChatMulticast(
                     any(), titleCaptor.capture(), contentCaptor.capture(), any(), any()
             );
             assertThat(titleCaptor.getValue()).isEqualTo("발신자");
@@ -260,7 +269,7 @@ class ChatPushNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("상대방이 활성 구독자면 FCM을 전송하지 않는다")
+        @DisplayName("상대방이 활성 구독자면 수신자에서 제외된다")
         void sendPush_excludesActiveCounterPart() {
             // given
             ChatNotificationEvent event = ChatNotificationEvent.create(
@@ -278,7 +287,7 @@ class ChatPushNotificationServiceTest {
             chatPushNotificationService.sendPush(event);
 
             // then
-            then(fcmService).should(never()).sendChatNotification(any(), any(), any(), any(), any());
+            assertThat(captureMulticastRecipients()).isEmpty();
         }
     }
 }
