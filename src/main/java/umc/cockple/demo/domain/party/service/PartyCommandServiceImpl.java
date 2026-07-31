@@ -12,9 +12,6 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
-import umc.cockple.demo.domain.notification.enums.NotificationTarget;
-import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.*;
 import umc.cockple.demo.domain.party.dto.*;
@@ -24,6 +21,8 @@ import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
 import umc.cockple.demo.domain.party.events.PartyRoleChangedEvent;
@@ -49,7 +48,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     private final PartyInvitationRepository partyInvitationRepository;
     private final PartyKeywordRepository partyKeywordRepository;
 
-    private final NotificationCommandService notificationCommandService;
     private final ChatRoomService chatRoomService;
 
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -218,7 +216,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                         mp.changeRole(Role.PARTY_MEMBER);
                         publishRoleChangedEvent(
                                 party,
-                                NotificationTarget.PARTY_SUBOWNER_RELEASED,
+                                PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED,
                                 mp.getMember().getNickname()
                         );
                     });
@@ -227,10 +225,10 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         // 역할 변경
         targetMemberParty.changeRole(newRole);
 
-        NotificationTarget notifTarget = (newRole == Role.PARTY_SUBMANAGER)
-                ? NotificationTarget.PARTY_SUBOWNER_ASSIGNED
-                : NotificationTarget.PARTY_SUBOWNER_RELEASED;
-        publishRoleChangedEvent(party, notifTarget, targetMember.getNickname());
+        PartyRoleChangedEvent.RoleChangeAction roleChangeAction = (newRole == Role.PARTY_SUBMANAGER)
+                ? PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED
+                : PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED;
+        publishRoleChangedEvent(party, roleChangeAction, targetMember.getNickname());
 
         log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
     }
@@ -306,7 +304,13 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         PartyInvitation newInvitation = PartyInvitation.create(party, inviter, invitee);
         PartyInvitation savedPartyInvitation = partyInvitationRepository.save(newInvitation);
 
-        createInviteNotification(invitee, partyId, NotificationTarget.PARTY_INVITE, savedPartyInvitation.getId());
+        applicationEventPublisher.publishEvent(PartyInvitationCreatedEvent.created(
+                savedPartyInvitation.getId(),
+                partyId,
+                invitee.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null
+        ));
 
         log.info("멤버 초대 완료 - PartyInvitation: {}", savedPartyInvitation.getId());
         return partyConverter.toInviteResponseDTO(savedPartyInvitation);
@@ -326,7 +330,15 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //비즈니스 로직 수행 (승인/거절에 따른 처리)
         if (RequestAction.APPROVE.equals(request.action())) {
             approveInvitation(invitation);
-            createInviteApprovedNotification(invitation.getInviter(), invitation.getParty().getId(), NotificationTarget.PARTY_INVITE_APPROVED, invitee);
+            applicationEventPublisher.publishEvent(PartyInvitationAcceptedEvent.accepted(
+                    invitation.getId(),
+                    invitation.getParty().getId(),
+                    invitation.getInviter().getId(),
+                    invitee.getNickname(),
+                    invitation.getParty().getPartyName(),
+                    invitation.getParty().getPartyImg() != null
+                            ? invitation.getParty().getPartyImg().getImgKey() : null
+            ));
         } else {
             rejectInvitation(invitation);
         }
@@ -599,38 +611,11 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         invitation.updateStatus(RequestStatus.REJECTED);
     }
 
-    //알림 생성 (초대)
-    private void createInviteNotification(Member member, Long partyId, NotificationTarget notificationTarget, Long inviteId) {
-        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
-                .member(member)
-                .partyId(partyId)
-                .target(notificationTarget)
-                .invitationId(inviteId)
-                .build();
-        notificationCommandService.createNotification(dto);
-    }
-
-    //알림 생성 (초대 수락)
-    private void createInviteApprovedNotification(Member member, Long partyId, NotificationTarget notificationTarget, Member invitee) {
-        CreateNotificationRequestDTO dto = CreateNotificationRequestDTO.builder()
-                .member(member)
-                .partyId(partyId)
-                .target(notificationTarget)
-                .subjectName(invitee.getNickname())
-                .build();
-        notificationCommandService.createNotification(dto);
-    }
-
     private void publishRoleChangedEvent(
             Party party,
-            NotificationTarget notificationTarget,
+            PartyRoleChangedEvent.RoleChangeAction action,
             String subjectNickname
     ) {
-        PartyRoleChangedEvent.RoleChangeAction action =
-                notificationTarget == NotificationTarget.PARTY_SUBOWNER_ASSIGNED
-                        ? PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED
-                        : PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED;
-
         List<Long> recipientMemberIds = memberPartyRepository.findAllByPartyIdWithMember(party.getId())
                 .stream()
                 .map(memberParty -> memberParty.getMember().getId())

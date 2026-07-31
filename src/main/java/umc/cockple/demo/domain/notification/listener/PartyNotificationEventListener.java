@@ -16,6 +16,8 @@ import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator
 import umc.cockple.demo.domain.notification.service.NotificationV2CommandService;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
 import umc.cockple.demo.domain.party.events.PartyRoleChangedEvent;
 
@@ -90,6 +92,38 @@ public class PartyNotificationEventListener {
         ));
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("notificationExecutor")
+    public void handleInvitationCreated(PartyInvitationCreatedEvent event) {
+        createNotification(
+                event.inviteeId(),
+                event.partyId(),
+                "새로운 모임",
+                event.imageKey(),
+                notificationMessageGenerator.generateInviteMessage(event.partyName()),
+                destination(
+                        NotificationResourceType.PARTY_INVITATION,
+                        event.invitationId(),
+                        NotificationAction.RESPOND
+                ),
+                Map.of("invitationId", event.invitationId())
+        );
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("notificationExecutor")
+    public void handleInvitationAccepted(PartyInvitationAcceptedEvent event) {
+        createNotification(
+                event.inviterId(),
+                event.partyId(),
+                event.partyName(),
+                event.imageKey(),
+                notificationMessageGenerator.generateInviteApprovedMessage(event.inviteeNickname()),
+                destination(event.partyId()),
+                Map.of()
+        );
+    }
+
     private void createNotification(
             Long recipientMemberId,
             Long partyId,
@@ -114,10 +148,18 @@ public class PartyNotificationEventListener {
     }
 
     private NotificationDestination destination(Long partyId) {
+        return destination(NotificationResourceType.PARTY, partyId, NotificationAction.VIEW);
+    }
+
+    private NotificationDestination destination(
+            NotificationResourceType resourceType,
+            Long resourceId,
+            NotificationAction action
+    ) {
         return new NotificationDestination(
-                NotificationResourceType.PARTY,
-                partyId,
-                NotificationAction.VIEW
+                resourceType,
+                resourceId,
+                action
         );
     }
 }
