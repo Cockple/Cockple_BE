@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
+import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
 

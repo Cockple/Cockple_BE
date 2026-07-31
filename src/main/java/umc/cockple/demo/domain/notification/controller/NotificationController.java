@@ -11,7 +11,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.notification.dto.FcmTokenRequestDTO;
 import umc.cockple.demo.domain.notification.dto.NotificationListResponseDTO;
-import umc.cockple.demo.domain.notification.dto.NotificationV2ListResponseDTO;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
@@ -32,19 +31,6 @@ public class NotificationController {
     private final NotificationQueryService notificationQueryService;
     private final NotificationCommandService notificationCommandService;
     private final FcmService fcmService;
-
-    @GetMapping("/v2/notifications")
-    @Operation(summary = "내 알림 전체 조회 v2",
-            description = "destination(resourceType, resourceId, action) 기반으로 알림을 조회합니다.")
-    public BaseResponse<NotificationV2ListResponseDTO> getAllNotificationsV2(
-            @RequestParam(required = false) @Positive Long cursor,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-
-        Long memberId = SecurityUtil.getCurrentMemberId();
-
-        return BaseResponse.success(CommonSuccessCode.OK,
-                notificationQueryService.getAllNotificationsV2(memberId, cursor, size));
-    }
 
     /**
      * @deprecated [사용금지 예정] destination 기반 v2 알림 조회 API로 대체됩니다.
@@ -94,15 +80,6 @@ public class NotificationController {
         return BaseResponse.success(CommonSuccessCode.OK, notificationCommandService.markAsReadNotification(memberId, notificationId, type.type()));
     }
 
-
-    @PatchMapping("/v2/notifications/{notificationId}/read")
-    @Operation(summary = "알림 읽음 처리 v2",
-            description = "알림의 읽음 상태만 변경합니다. 초대 수락·거절 상태는 초대 API에서 처리합니다.")
-    public BaseResponse<Void> markAsReadNotificationV2(@PathVariable Long notificationId) {
-        Long memberId = SecurityUtil.getCurrentMemberId();
-        notificationCommandService.markAsReadNotificationV2(memberId, notificationId);
-        return BaseResponse.success(CommonSuccessCode.OK, null);
-    }
 
     // ========== FCM 토큰 등록/갱신 API ==========
     @PatchMapping("/notifications/fcm-token")

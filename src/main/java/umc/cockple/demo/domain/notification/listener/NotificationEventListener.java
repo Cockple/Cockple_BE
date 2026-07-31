@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.events;
+package umc.cockple.demo.domain.notification.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
+import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
 
 @Component
 @RequiredArgsConstructor

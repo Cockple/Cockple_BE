@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,4 +38,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                                            @Param("invite") NotificationType invite,
                                            @Param("threshold") LocalDateTime threshold,
                                            Pageable pageable);
+
+    @Query("""
+            SELECT n.id FROM Notification n
+            WHERE n.member = :member
+              AND (n.resourceType IS NULL
+                   OR n.resourceType <> :invitation
+                   OR n.createdAt < :threshold)
+            ORDER BY n.createdAt ASC
+            """)
+    List<Long> findDeletableIdsOldestFirstByResourceType(
+            @Param("member") Member member,
+            @Param("invitation") NotificationResourceType invitation,
+            @Param("threshold") LocalDateTime threshold,
+            Pageable pageable);
 }

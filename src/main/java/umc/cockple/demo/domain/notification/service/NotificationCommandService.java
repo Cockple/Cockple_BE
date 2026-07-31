@@ -8,15 +8,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
-import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
-import umc.cockple.demo.domain.notification.events.NotificationEvent;
+import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
@@ -50,7 +46,6 @@ public class NotificationCommandService {
     private static final int INVITE_RETENTION_DAYS = 7;
 
     private final NotificationRepository notificationRepository;
-    private final MemberRepository memberRepository;
     private final PartyRepository partyRepository;
     private final NotificationMessageGenerator notificationMessageGenerator;
     private final ObjectMapper objectMapper;
@@ -70,16 +65,6 @@ public class NotificationCommandService {
         notification.read();
 
         return new Response(notification.getType());
-    }
-
-    public void markAsReadNotificationV2(Long memberId, Long notificationId) {
-        Notification notification = findByNotificationId(notificationId);
-
-        if (!notification.getMember().getId().equals(memberId)) {
-            throw new NotificationException(NotificationErrorCode.NOTIFICATION_NOT_OWNED);
-        }
-
-        notification.read();
     }
 
     public void createNotification(CreateNotificationRequestDTO dto) {
@@ -125,54 +110,31 @@ public class NotificationCommandService {
             String data = objectMapper.writeValueAsString(context);
             NotificationDestination destination = legacyNotificationDestinationMapper.map(dto);
 
-            createNotification(new NotificationCreateCommand(
-                    member.getId(),
-                    dto.partyId(),
-                    title,
-                    content,
-                    dto.target().getDefaultType(),
-                    party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
-                    data,
-                    destination
-            ));
+            Notification notification = Notification.builder()
+                    .member(member)
+                    .partyId(dto.partyId())
+                    .resourceType(destination != null ? destination.resourceType() : null)
+                    .resourceId(destination != null ? destination.resourceId() : null)
+                    .action(destination != null ? destination.action() : null)
+                    .title(title)
+                    .content(content)
+                    .type(dto.target().getDefaultType())
+                    .isRead(false)
+                    .imageKey(party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null)
+                    .data(data)
+                    .build();
 
-            log.info("[NOTIFICATION] 레거시 알림 변환 완료 - memberId: {}, 총 소요시간: {}ms",
+            notificationRepository.save(notification);
+            log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms",
+                    member.getId(), System.currentTimeMillis() - start);
+
+            eventPublisher.publishEvent(new NotificationEvent(member.getId(), title, content));
+            log.info("[NOTIFICATION] 알림 이벤트 발행 완료 - memberId: {}, 총 소요시간: {}ms",
                     member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_DATA);
         }
-    }
-
-    public void createNotification(NotificationCreateCommand command) {
-        long start = System.currentTimeMillis();
-        Member member = memberRepository.findById(command.recipientMemberId())
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-        enforceRetentionPolicy(member);
-
-        NotificationDestination destination = command.destination();
-        Notification notification = Notification.builder()
-                .member(member)
-                .partyId(command.partyId())
-                .resourceType(destination != null ? destination.resourceType() : null)
-                .resourceId(destination != null ? destination.resourceId() : null)
-                .action(destination != null ? destination.action() : null)
-                .title(command.title())
-                .content(command.content())
-                .type(command.type())
-                .isRead(false)
-                .imageKey(command.imageKey())
-                .data(command.data())
-                .build();
-
-        notificationRepository.save(notification);
-        log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms",
-                member.getId(), System.currentTimeMillis() - start);
-
-        eventPublisher.publishEvent(new NotificationEvent(member.getId(), command.title(), command.content()));
-        log.info("[NOTIFICATION] 알림 이벤트 발행 완료 - memberId: {}, 총 소요시간: {}ms",
-                member.getId(), System.currentTimeMillis() - start);
     }
 
     private void enforceRetentionPolicy(Member member) {

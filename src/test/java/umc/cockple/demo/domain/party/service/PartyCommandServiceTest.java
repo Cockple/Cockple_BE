@@ -30,7 +30,10 @@ import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
+import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
+import umc.cockple.demo.domain.party.events.PartyRoleChangedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -645,7 +648,7 @@ class PartyCommandServiceTest {
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
 
-            verify(notificationCommandService, times(1)).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyInfoChangedEvent.class));
         }
 
         @Test
@@ -868,7 +871,7 @@ class PartyCommandServiceTest {
             // then
             assertThat(targetMemberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
             assertThat(oldSubManagerParty.getRole()).isEqualTo(Role.PARTY_MEMBER);
-            verify(notificationCommandService, times(4)).createNotification(any());
+            verify(applicationEventPublisher, times(2)).publishEvent(any(PartyRoleChangedEvent.class));
         }
 
         @Test
@@ -1228,7 +1231,7 @@ class PartyCommandServiceTest {
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
             verify(chatRoomService).joinPartyChatRoom(partyId, applicant);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
-            verify(notificationCommandService).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyJoinRequestApprovedEvent.class));
         }
 
         @Test

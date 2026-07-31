@@ -23,7 +23,7 @@ public class Notification extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
-    @Column(nullable = false)
+    @Column
     private Long partyId;
 
     @Enumerated(EnumType.STRING)
@@ -39,7 +39,7 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 

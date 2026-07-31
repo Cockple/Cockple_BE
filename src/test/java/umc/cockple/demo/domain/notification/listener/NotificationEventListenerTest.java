@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.events;
+package umc.cockple.demo.domain.notification.listener;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
+import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.IntegrationTestBase;

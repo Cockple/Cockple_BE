@@ -16,8 +16,6 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.AllNotificationsResponseDTO;
 import umc.cockple.demo.domain.notification.dto.ExistNewNotificationResponseDTO;
 import umc.cockple.demo.domain.notification.dto.NotificationListResponseDTO;
-import umc.cockple.demo.domain.notification.dto.NotificationV2ListResponseDTO;
-import umc.cockple.demo.domain.notification.dto.NotificationV2ResponseDTO;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
 
 import java.util.List;
@@ -57,31 +55,6 @@ public class NotificationQueryService {
         int totalElements = (int) notificationRepository.countByMember(member);
 
         return NotificationConverter.toNotificationListResponse(notifications, hasNext, nextCursor, totalElements);
-    }
-
-    public NotificationV2ListResponseDTO getAllNotificationsV2(Long memberId, Long cursor, int size) {
-        Member member = findByMemberId(memberId);
-
-        Pageable pageable = PageRequest.of(0, size + 1);
-        List<Notification> rows = notificationRepository.findPageByMember(member, cursor, pageable);
-
-        boolean hasNext = rows.size() > size;
-        List<Notification> page = hasNext ? rows.subList(0, size) : rows;
-
-        List<NotificationV2ResponseDTO> notifications = page.stream()
-                .map(notification -> {
-                    String url = fileService.getUrlFromKey(notification.getImageKey());
-                    return NotificationConverter.toNotificationV2ResponseDTO(notification, url);
-                })
-                .toList();
-
-        Long nextCursor = hasNext && !page.isEmpty()
-                ? page.get(page.size() - 1).getId() : null;
-
-        int totalElements = (int) notificationRepository.countByMember(member);
-
-        return NotificationConverter.toNotificationV2ListResponse(
-                notifications, hasNext, nextCursor, totalElements);
     }
 
 

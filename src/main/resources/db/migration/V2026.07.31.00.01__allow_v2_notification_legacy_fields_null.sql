@@ -1,0 +1,3 @@
+ALTER TABLE notification
+    MODIFY COLUMN party_id BIGINT NULL,
+    MODIFY COLUMN type VARCHAR(255) NULL;
