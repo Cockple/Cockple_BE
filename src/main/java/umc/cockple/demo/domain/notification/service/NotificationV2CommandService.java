@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
+import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.listener.event.NotificationPushRequestedEvent;
@@ -37,6 +38,13 @@ public class NotificationV2CommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     public void createNotification(NotificationCreateCommand command) {
+        createNotification(command, null);
+    }
+
+    public void createNotification(
+            NotificationCreateCommand command,
+            NotificationLegacyCompatibility legacyCompatibility
+    ) {
         Member member = memberRepository.findById(command.recipientMemberId())
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
@@ -45,13 +53,13 @@ public class NotificationV2CommandService {
         NotificationDestination destination = command.destination();
         Notification notification = Notification.builder()
                 .member(member)
-                .partyId(null)
+                .partyId(legacyCompatibility != null ? legacyCompatibility.partyId() : null)
                 .resourceType(destination != null ? destination.resourceType() : null)
                 .resourceId(destination != null ? destination.resourceId() : null)
                 .action(destination != null ? destination.action() : null)
                 .title(command.title())
                 .content(command.content())
-                .type(null)
+                .type(legacyCompatibility != null ? legacyCompatibility.type() : null)
                 .isRead(false)
                 .imageKey(command.imageKey())
                 .data(command.data())

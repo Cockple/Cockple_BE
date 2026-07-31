@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
+import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
+import umc.cockple.demo.domain.notification.enums.NotificationType;
 import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator;
 import umc.cockple.demo.domain.notification.service.NotificationV2CommandService;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
@@ -42,6 +44,7 @@ public class PartyNotificationEventListener {
                 event.imageKey(),
                 notificationMessageGenerator.generatePartyInfoChangedMessage(),
                 destination(event.partyId()),
+                NotificationType.CHANGE,
                 Map.of()
         );
     }
@@ -56,6 +59,7 @@ public class PartyNotificationEventListener {
                 event.imageKey(),
                 notificationMessageGenerator.generatePartyDeletedMessage(),
                 null,
+                NotificationType.SIMPLE,
                 Map.of()
         );
     }
@@ -70,6 +74,7 @@ public class PartyNotificationEventListener {
                 event.imageKey(),
                 notificationMessageGenerator.generateJoinRequestApprovedMessage(),
                 destination(event.partyId()),
+                NotificationType.CHANGE,
                 Map.of()
         );
     }
@@ -88,6 +93,7 @@ public class PartyNotificationEventListener {
                 event.imageKey(),
                 content,
                 destination(event.partyId()),
+                NotificationType.SIMPLE,
                 Map.of()
         ));
     }
@@ -106,6 +112,7 @@ public class PartyNotificationEventListener {
                         event.invitationId(),
                         NotificationAction.RESPOND
                 ),
+                NotificationType.INVITE,
                 Map.of("invitationId", event.invitationId())
         );
     }
@@ -120,6 +127,7 @@ public class PartyNotificationEventListener {
                 event.imageKey(),
                 notificationMessageGenerator.generateInviteApprovedMessage(event.inviteeNickname()),
                 destination(event.partyId()),
+                NotificationType.SIMPLE,
                 Map.of()
         );
     }
@@ -131,6 +139,7 @@ public class PartyNotificationEventListener {
             String imageKey,
             String content,
             NotificationDestination destination,
+            NotificationType legacyType,
             Map<String, Object> data
     ) {
         try {
@@ -141,7 +150,7 @@ public class PartyNotificationEventListener {
                     imageKey,
                     objectMapper.writeValueAsString(data),
                     destination
-            ));
+            ), new NotificationLegacyCompatibility(partyId, legacyType));
         } catch (JsonProcessingException e) {
             log.error("모임 알림 데이터 생성 실패 - partyId: {}, memberId: {}", partyId, recipientMemberId, e);
         }

@@ -71,6 +71,7 @@ public class NotificationCommandService {
         try {
             long start = System.currentTimeMillis();
             Member member = dto.member();
+            enforceRetentionPolicy(member);
 
             Party party = partyRepository.findById(dto.partyId())
                     .orElseThrow(() -> new PartyException(PartyErrorCode.PARTY_NOT_FOUND));
