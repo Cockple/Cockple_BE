@@ -32,10 +32,15 @@ public class NotificationController {
     private final NotificationCommandService notificationCommandService;
     private final FcmService fcmService;
 
+    /**
+     * @deprecated [사용금지 예정] destination 기반 v2 알림 조회 API로 대체됩니다.
+     */
     @GetMapping("/notifications")
-    @Operation(summary = "내 알림 전체 조회",
-            description = "사용자에게 온 알림을 커서 페이지네이션으로 조회합니다. "
-                    + "첫 페이지는 cursor 생략, 다음 페이지는 직전 응답의 nextCursor를 전달합니다.")
+    @Operation(summary = "[사용금지 예정] 내 알림 전체 조회",
+            description = "destination 기반 v2 알림 조회 API로 대체됩니다. 신규 클라이언트는 이 API를 사용하지 마세요. "
+                    + "첫 페이지는 cursor 생략, 다음 페이지는 직전 응답의 nextCursor를 전달합니다.",
+            deprecated = true)
+    @Deprecated(since = "v2", forRemoval = true)
     public BaseResponse<NotificationListResponseDTO> getAllNotifications(
             @RequestParam(required = false) @Positive Long cursor,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
@@ -60,9 +65,14 @@ public class NotificationController {
 
 
 
+    /**
+     * @deprecated [사용금지 예정] type을 받지 않는 destination 기반 v2 읽음 처리 API로 대체됩니다.
+     */
     @PatchMapping("/notifications/{notificationId}")
-    @Operation(summary = "내 특정 알림 조회 및 읽음 처리",
-            description = "특정 알림을 조회하고 읽음 처리를 진행합니다. ")
+    @Operation(summary = "[사용금지 예정] 내 특정 알림 조회 및 읽음 처리",
+            description = "type을 받지 않는 destination 기반 v2 읽음 처리 API로 대체됩니다. 신규 클라이언트는 이 API를 사용하지 마세요. ",
+            deprecated = true)
+    @Deprecated(since = "v2", forRemoval = true)
     public BaseResponse<Response> markAsReadNotification(@PathVariable Long notificationId,
                                                          Request type) {
         Long memberId = SecurityUtil.getCurrentMemberId();
