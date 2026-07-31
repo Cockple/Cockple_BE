@@ -73,8 +73,6 @@ class NotificationCommandServiceTest {
                 PartyFixture.createPartyAddr("서울특별시", "강남구"));
         ReflectionTestUtils.setField(party, "id", 10L);
 
-        given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-
         notification = Notification.builder()
                 .member(member)
                 .partyId(party.getId())

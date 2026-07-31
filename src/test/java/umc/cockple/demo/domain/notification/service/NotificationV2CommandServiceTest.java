@@ -86,6 +86,6 @@ class NotificationV2CommandServiceTest {
         assertThat(saved.getResourceId()).isEqualTo(20L);
         assertThat(saved.getAction()).isEqualTo(NotificationAction.RESPOND);
         assertThat(saved.getData()).isEqualTo("{\"invitationId\":20}");
-        verify(eventPublisher, times(1)).publishEvent(any());
+        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
     }
 }
