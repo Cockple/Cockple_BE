@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
-import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
+import umc.cockple.demo.domain.notification.listener.event.NotificationPushRequestedEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
@@ -58,7 +58,7 @@ public class NotificationV2CommandService {
                 .build();
 
         notificationRepository.save(notification);
-        eventPublisher.publishEvent(new NotificationEvent(
+        eventPublisher.publishEvent(new NotificationPushRequestedEvent(
                 member.getId(), command.title(), command.content()));
     }
 
