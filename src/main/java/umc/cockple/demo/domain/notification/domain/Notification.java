@@ -5,6 +5,8 @@ import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.NotificationAction;
+import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 
 @Entity
 @Builder
@@ -23,6 +25,14 @@ public class Notification extends BaseEntity {
 
     @Column(nullable = false)
     private Long partyId;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationResourceType resourceType;
+
+    private Long resourceId;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationAction action;
 
     private String title;
 

@@ -65,6 +65,16 @@ public class NotificationCommandService {
         return new Response(notification.getType());
     }
 
+    public void markAsReadNotificationV2(Long memberId, Long notificationId) {
+        Notification notification = findByNotificationId(notificationId);
+
+        if (!notification.getMember().getId().equals(memberId)) {
+            throw new NotificationException(NotificationErrorCode.NOTIFICATION_NOT_OWNED);
+        }
+
+        notification.read();
+    }
+
     public void createNotification(CreateNotificationRequestDTO dto) {
         try {
             long start = System.currentTimeMillis();
