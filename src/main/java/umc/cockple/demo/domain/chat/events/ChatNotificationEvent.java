@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.events;
+package umc.cockple.demo.domain.chat.events;
 
 import lombok.Builder;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -20,7 +20,8 @@ public record ChatNotificationEvent(
             String notificationTitle,
             String notificationContent,
             Long senderId,
-            List<Long> activeSubscriberIds) {
+            List<Long> activeSubscriberIds
+    ) {
         return ChatNotificationEvent.builder()
                 .chatRoomId(chatRoomId)
                 .chatRoomType(chatRoomType)

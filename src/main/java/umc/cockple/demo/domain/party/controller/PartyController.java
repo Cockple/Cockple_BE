@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.party.dto.*;
 import umc.cockple.demo.domain.party.service.PartyCommandService;
 import umc.cockple.demo.domain.party.service.PartyQueryService;
+import umc.cockple.demo.domain.party.service.PartyInvitationQueryService;
+import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -30,6 +32,7 @@ public class PartyController {
 
     private final PartyCommandService partyCommandService;
     private final PartyQueryService partyQueryService;
+    private final PartyInvitationQueryService partyInvitationQueryService;
 
     @GetMapping("/my/parties/simple")
     @Operation(summary = "내 모임 간략화 조회",
@@ -325,6 +328,19 @@ public class PartyController {
 
         partyCommandService.actionInvitation(memberId, request, invitationId);
         return BaseResponse.success(CommonSuccessCode.OK);
+    }
+
+    @GetMapping("/v2/party-invitations/received")
+    @Operation(summary = "받은 모임 초대 목록 조회",
+            description = "현재 사용자가 받은 모임 초대 목록을 상태별로 조회합니다.")
+    public BaseResponse<Slice<PartyInvitationResponseDTO>> getReceivedInvitations(
+            @RequestParam(defaultValue = "PENDING") RequestStatus status,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        Slice<PartyInvitationResponseDTO> response =
+                partyInvitationQueryService.getReceivedInvitations(memberId, status, pageable);
+        return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
     @PostMapping("/parties/{partyId}/keywords")

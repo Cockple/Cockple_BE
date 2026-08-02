@@ -15,7 +15,7 @@ import umc.cockple.demo.domain.chat.enums.ChatRoomMemberStatus;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
+import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;

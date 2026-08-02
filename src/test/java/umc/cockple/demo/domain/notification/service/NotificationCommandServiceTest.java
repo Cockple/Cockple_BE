@@ -17,10 +17,11 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
-import umc.cockple.demo.domain.notification.events.NotificationEvent;
+import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
@@ -52,10 +53,12 @@ class NotificationCommandServiceTest {
     private NotificationCommandService notificationCommandService;
 
     @Mock private NotificationRepository notificationRepository;
+    @Mock private MemberRepository memberRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private NotificationMessageGenerator notificationMessageGenerator;
     @Mock private ObjectMapper objectMapper;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private LegacyNotificationDestinationMapper legacyNotificationDestinationMapper;
 
     private Member member;
     private Party party;

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service.listener;
+package umc.cockple.demo.domain.notification.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import umc.cockple.demo.domain.notification.events.ChatNotificationEvent;
+import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
 import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 
 @Component
