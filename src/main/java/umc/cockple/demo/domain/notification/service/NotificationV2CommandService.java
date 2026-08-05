@@ -65,9 +65,8 @@ public class NotificationV2CommandService {
                 .data(command.data())
                 .build();
 
-        notificationRepository.save(notification);
-        eventPublisher.publishEvent(new NotificationPushRequestedEvent(
-                member.getId(), command.title(), command.content()));
+        Notification savedNotification = notificationRepository.save(notification);
+        eventPublisher.publishEvent(new NotificationPushRequestedEvent(savedNotification.getId()));
     }
 
     public void markAsRead(Long memberId, Long notificationId) {

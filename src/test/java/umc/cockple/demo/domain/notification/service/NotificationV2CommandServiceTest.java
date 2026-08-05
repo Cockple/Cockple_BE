@@ -30,6 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.willAnswer;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationV2CommandServiceTest {
@@ -54,6 +55,11 @@ class NotificationV2CommandServiceTest {
         ReflectionTestUtils.setField(member, "id", 1L);
         given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
         given(notificationRepository.countByMember(member)).willReturn(0L);
+        willAnswer(invocation -> {
+            Notification notification = invocation.getArgument(0);
+            ReflectionTestUtils.setField(notification, "id", 100L);
+            return notification;
+        }).given(notificationRepository).save(any(Notification.class));
     }
 
     @Test
