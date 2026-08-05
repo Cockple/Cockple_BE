@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseLifecycleCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -54,6 +55,7 @@ class ExerciseLifecycleCommandServiceTest {
     @Mock private ExerciseReader exerciseReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private PartyLookupService partyLookupService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ExerciseLifecycleCommandService exerciseLifecycleCommandService;
 
@@ -70,6 +72,7 @@ class ExerciseLifecycleCommandServiceTest {
                 exerciseReader,
                 memberLookupService,
                 partyLookupService,
+                eventPublisher,
                 exerciseValidator,
                 exerciseLifecycleCommandMapper);
 

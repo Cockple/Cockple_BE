@@ -5,10 +5,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import umc.cockple.demo.domain.notification.command.NotificationCreateCommand;
-import umc.cockple.demo.domain.notification.command.NotificationRequest;
-import umc.cockple.demo.domain.notification.strategy.NotificationStrategyRegistry;
-import umc.cockple.demo.domain.notification.service.NotificationV2CommandService;
+import umc.cockple.demo.domain.notification.service.NotificationIngressService;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
@@ -20,8 +17,7 @@ import umc.cockple.demo.domain.party.events.PartyRoleChangedEvent;
 @RequiredArgsConstructor
 public class PartyNotificationEventListener {
 
-    private final NotificationV2CommandService notificationV2CommandService;
-    private final NotificationStrategyRegistry notificationStrategyRegistry;
+    private final NotificationIngressService notificationIngressService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async("notificationIngressExecutor")
@@ -60,21 +56,6 @@ public class PartyNotificationEventListener {
     }
 
     private void handle(Object event) {
-        notificationStrategyRegistry.convert(event)
-                .forEach(this::createNotification);
-    }
-
-    private void createNotification(NotificationRequest request) {
-        notificationV2CommandService.createNotification(
-                new NotificationCreateCommand(
-                        request.recipientMemberId(),
-                        request.title(),
-                        request.content(),
-                        request.imageKey(),
-                        request.data(),
-                        request.destination()
-                ),
-                request.legacyCompatibility()
-        );
+        notificationIngressService.handle(event);
     }
 }

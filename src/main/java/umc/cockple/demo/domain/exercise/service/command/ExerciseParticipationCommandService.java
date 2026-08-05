@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
@@ -17,9 +18,14 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
+import umc.cockple.demo.global.enums.Role;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -34,6 +40,7 @@ public class ExerciseParticipationCommandService {
     private final MemberExerciseReader memberExerciseReader;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
 
@@ -54,6 +61,7 @@ public class ExerciseParticipationCommandService {
         MemberExercise memberExercise = exercise.addParticipation(member, membershipStatus);
 
         MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
+        publishAttendanceChangedEvent(exercise, member.getId());
 
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
                 , savedMemberExercise.getId(), isPartyMember);
@@ -72,6 +80,7 @@ public class ExerciseParticipationCommandService {
         exercise.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
+        publishAttendanceChangedEvent(exercise, member.getId());
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
@@ -127,7 +136,29 @@ public class ExerciseParticipationCommandService {
         exercise.removeParticipation(memberExercise);
 
         memberExerciseRepository.delete(memberExercise);
+        publishAttendanceChangedEvent(exercise, participant.getId());
 
         return exerciseParticipationMapper.toCancelResponse(exercise, participant);
+    }
+
+    private void publishAttendanceChangedEvent(Exercise exercise, Long subjectMemberId) {
+        var party = exercise.getParty();
+        List<Long> recipientMemberIds = party.getMemberParties().stream()
+                .filter(memberParty -> memberParty.getStatus() == MemberPartyStatus.ACTIVE)
+                .filter(memberParty -> memberParty.getRole() == Role.PARTY_MANAGER
+                        || memberParty.getRole() == Role.PARTY_SUBMANAGER)
+                .map(memberParty -> memberParty.getMember().getId())
+                .filter(memberId -> !memberId.equals(subjectMemberId))
+                .toList();
+
+        eventPublisher.publishEvent(ExerciseAttendanceChangedEvent.changed(
+                exercise.getId(),
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                exercise.getDate(),
+                subjectMemberId,
+                recipientMemberIds
+        ));
     }
 }
