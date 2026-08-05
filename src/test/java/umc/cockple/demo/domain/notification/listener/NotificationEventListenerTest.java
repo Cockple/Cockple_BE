@@ -28,15 +28,15 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 @DisplayName("NotificationEventListener")
-// 알림 @Async 풀(notificationExecutor)을 SyncTaskExecutor로 덮어써 동기 실행하려면 빈 오버라이드 허용 필요
+// 알림 @Async 풀(notificationPushExecutor)을 SyncTaskExecutor로 덮어써 동기 실행하려면 빈 오버라이드 허용 필요
 @TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class NotificationEventListenerTest extends IntegrationTestBase {
 
-    // handleNotification의 @Async("notificationExecutor")를 동기로 실행해 테스트 타이밍 문제를 제거
+    // handleNotification의 @Async("notificationPushExecutor")를 동기로 실행해 테스트 타이밍 문제를 제거
     @TestConfiguration
     static class SyncAsyncConfig {
         @Bean
-        public TaskExecutor notificationExecutor() {
+        public TaskExecutor notificationPushExecutor() {
             return new SyncTaskExecutor();
         }
     }

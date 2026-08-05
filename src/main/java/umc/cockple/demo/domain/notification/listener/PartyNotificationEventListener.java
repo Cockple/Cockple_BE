@@ -35,7 +35,7 @@ public class PartyNotificationEventListener {
     private final ObjectMapper objectMapper;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handlePartyInfoChanged(PartyInfoChangedEvent event) {
         createNotification(
                 event.recipientMemberId(),
@@ -50,7 +50,7 @@ public class PartyNotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handlePartyDeleted(PartyDeletedEvent event) {
         createNotification(
                 event.deletedByMemberId(),
@@ -65,7 +65,7 @@ public class PartyNotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handleJoinRequestApproved(PartyJoinRequestApprovedEvent event) {
         createNotification(
                 event.recipientMemberId(),
@@ -80,7 +80,7 @@ public class PartyNotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handleRoleChanged(PartyRoleChangedEvent event) {
         String content = event.action() == PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED
                 ? notificationMessageGenerator.generateSubOwnerAssignedMessage(event.subjectNickname())
@@ -99,7 +99,7 @@ public class PartyNotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handleInvitationCreated(PartyInvitationCreatedEvent event) {
         createNotification(
                 event.inviteeId(),
@@ -118,7 +118,7 @@ public class PartyNotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationIngressExecutor")
     public void handleInvitationAccepted(PartyInvitationAcceptedEvent event) {
         createNotification(
                 event.inviterId(),
