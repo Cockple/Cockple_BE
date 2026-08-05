@@ -10,7 +10,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
-import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
+import umc.cockple.demo.domain.notification.command.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationType;

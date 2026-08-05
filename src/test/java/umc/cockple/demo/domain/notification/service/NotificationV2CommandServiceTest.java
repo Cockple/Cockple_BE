@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
-import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
+import umc.cockple.demo.domain.notification.command.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationType;

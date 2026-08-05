@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.listener.event;
+package umc.cockple.demo.domain.notification.event;
 
 public record NotificationPushRequestedEvent(
         Long memberId,

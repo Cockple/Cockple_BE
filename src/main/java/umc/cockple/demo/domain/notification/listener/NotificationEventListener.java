@@ -9,7 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
-import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
+import umc.cockple.demo.domain.notification.event.NotificationEvent;
 
 @Component
 @RequiredArgsConstructor

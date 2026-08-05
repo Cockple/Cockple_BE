@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
-import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
+import umc.cockple.demo.domain.notification.event.NotificationEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
