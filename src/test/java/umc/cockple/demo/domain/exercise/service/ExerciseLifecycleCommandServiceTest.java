@@ -5,12 +5,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseLifecycleCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
@@ -291,6 +295,32 @@ class ExerciseLifecycleCommandServiceTest {
             }
 
             @Test
+            @DisplayName("운동을 삭제하면 참여자들을 수신자로 ExerciseDeletedEvent를 발행한다")
+            void deleteExercise_publishesDeletedEvent() {
+                // given: 운동에 참여자 2명 존재
+                Member p1 = MemberFixture.createMember("참여자1", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(p1, "id", 20L);
+                Member p2 = MemberFixture.createMember("참여자2", Gender.FEMALE, Level.C, 2002L);
+                ReflectionTestUtils.setField(p2, "id", 30L);
+                exercise.addParticipation(p1, ExerciseMemberShipStatus.PARTY_MEMBER);
+                exercise.addParticipation(p2, ExerciseMemberShipStatus.PARTY_MEMBER);
+
+                // when
+                exerciseLifecycleCommandService.deleteExercise(exercise.getId(), manager.getId());
+
+                // then
+                ArgumentCaptor<ExerciseDeletedEvent> captor = ArgumentCaptor.forClass(ExerciseDeletedEvent.class);
+                then(eventPublisher).should().publishEvent(captor.capture());
+
+                ExerciseDeletedEvent event = captor.getValue();
+                assertThat(event.exerciseId()).isEqualTo(100L);
+                assertThat(event.partyId()).isEqualTo(party.getId());
+                assertThat(event.partyName()).isEqualTo(party.getPartyName());
+                assertThat(event.exerciseDate()).isEqualTo(LocalDate.of(2099, 12, 31));
+                assertThat(event.recipientMemberIds()).containsExactlyInAnyOrder(20L, 30L);
+            }
+
+            @Test
             @DisplayName("부모임장도 운동을 삭제할 수 있다")
             void subManagerDeletesExercise_success() {
                 // given
@@ -389,6 +419,30 @@ class ExerciseLifecycleCommandServiceTest {
                 assertThat(exercise.getPartyGuestAccept()).isFalse();
                 assertThat(exercise.getOutsideGuestAccept()).isTrue();
                 then(exerciseRepository).should().flush();
+            }
+
+            @Test
+            @DisplayName("운동을 수정하면 참여자들을 수신자로 ExerciseUpdatedEvent를 발행한다")
+            void updateExercise_publishesUpdatedEvent() {
+                // given: 운동에 참여자 2명 존재
+                Member p1 = MemberFixture.createMember("참여자1", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(p1, "id", 20L);
+                Member p2 = MemberFixture.createMember("참여자2", Gender.FEMALE, Level.C, 2002L);
+                ReflectionTestUtils.setField(p2, "id", 30L);
+                exercise.addParticipation(p1, ExerciseMemberShipStatus.PARTY_MEMBER);
+                exercise.addParticipation(p2, ExerciseMemberShipStatus.PARTY_MEMBER);
+
+                // when
+                exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), validRequest);
+
+                // then
+                ArgumentCaptor<ExerciseUpdatedEvent> captor = ArgumentCaptor.forClass(ExerciseUpdatedEvent.class);
+                then(eventPublisher).should().publishEvent(captor.capture());
+
+                ExerciseUpdatedEvent event = captor.getValue();
+                assertThat(event.exerciseId()).isEqualTo(100L);
+                assertThat(event.partyId()).isEqualTo(party.getId());
+                assertThat(event.recipientMemberIds()).containsExactlyInAnyOrder(20L, 30L);
             }
 
             @Test

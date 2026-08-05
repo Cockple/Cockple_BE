@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.notification.strategy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
@@ -18,8 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ExerciseNotificationStrategyTest {
 
+    // 운영 환경의 자동설정 ObjectMapper와 동일하게 LocalDate 직렬화를 지원하도록 JavaTimeModule을 등록한다.
     private final ExerciseNotificationStrategy strategy =
-            new ExerciseNotificationStrategy(new NotificationMessageGenerator(), new ObjectMapper());
+            new ExerciseNotificationStrategy(
+                    new NotificationMessageGenerator(),
+                    new ObjectMapper().registerModule(new JavaTimeModule()));
 
     @Test
     @DisplayName("운동 삭제 알림은 수신자별로 생성되고 destination이 없다")

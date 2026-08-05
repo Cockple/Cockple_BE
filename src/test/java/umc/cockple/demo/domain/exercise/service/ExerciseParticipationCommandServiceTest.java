@@ -16,8 +16,10 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
@@ -48,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseParticipationCommandService")
@@ -505,6 +508,123 @@ class ExerciseParticipationCommandServiceTest {
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.GUEST_NOT_FOUND));
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("참석 변경 알림 이벤트(ExerciseAttendanceChangedEvent)")
+    class AttendanceChangedEventPublishing {
+
+        private Member subManager;
+        private Member normalMember;
+
+        @BeforeEach
+        void setUpPartyRoles() {
+            // 모임장(id 1) + 부모임장(id 5) + 일반멤버(id 6)로 모임 구성
+            addPartyMember(manager, Role.PARTY_MANAGER);
+
+            subManager = MemberFixture.createMember("부모임장", Gender.FEMALE, Level.B, 5001L, LocalDate.of(2000, 1, 1));
+            ReflectionTestUtils.setField(subManager, "id", 5L);
+            addPartyMember(subManager, Role.PARTY_SUBMANAGER);
+
+            normalMember = MemberFixture.createMember("일반멤버", Gender.MALE, Level.C, 6001L, LocalDate.of(2000, 1, 1));
+            ReflectionTestUtils.setField(normalMember, "id", 6L);
+            addPartyMember(normalMember, Role.PARTY_MEMBER);
+        }
+
+        @Test
+        @DisplayName("참여 신청 시 참석 변경 이벤트를 발행하고, 수신자는 모임장·부모임장으로 제한된다")
+        void joinExercise_publishesEventToManagersOnly() {
+            // given: 일반멤버(id 6)가 본인 운동에 참여 신청
+            given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
+            given(memberExerciseRepository.existsByExerciseAndMember(exercise, normalMember)).willReturn(false);
+            given(memberPartyRepository.existsByPartyAndMember(party, normalMember)).willReturn(true);
+            given(memberExerciseRepository.save(any(MemberExercise.class)))
+                    .willAnswer(invocation -> {
+                        MemberExercise me = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(me, "id", 50L);
+                        return me;
+                    });
+
+            // when
+            exerciseParticipationCommandService.joinExercise(exercise.getId(), normalMember.getId());
+
+            // then: 본인(6)은 제외, 모임장(1)·부모임장(5)만 수신
+            ExerciseAttendanceChangedEvent event = captureAttendanceEvent();
+            assertThat(event.exerciseId()).isEqualTo(100L);
+            assertThat(event.subjectMemberId()).isEqualTo(6L);
+            assertThat(event.recipientMemberIds()).containsExactlyInAnyOrder(1L, 5L);
+        }
+
+        @Test
+        @DisplayName("본인 참여 취소 시, 취소한 부모임장 본인은 수신자에서 제외된다")
+        void cancelParticipation_excludesSubjectFromRecipients() {
+            // given: 부모임장(id 5) 본인이 참여를 취소
+            MemberExercise memberExercise = MemberFixture.createMemberExercise(subManager, exercise);
+            ReflectionTestUtils.setField(memberExercise, "id", 70L);
+
+            given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
+            given(memberExerciseReader.findMemberExerciseOrThrow(exercise, subManager)).willReturn(memberExercise);
+
+            // when
+            exerciseParticipationCommandService.cancelParticipation(exercise.getId(), subManager.getId());
+
+            // then: 모임장(1)만 수신 - 부모임장 본인(5)·일반멤버(6) 제외
+            ExerciseAttendanceChangedEvent event = captureAttendanceEvent();
+            assertThat(event.subjectMemberId()).isEqualTo(5L);
+            assertThat(event.recipientMemberIds()).containsExactly(1L);
+        }
+
+        @Test
+        @DisplayName("매니저가 멤버 참여를 취소하면 취소된 멤버를 subject로 이벤트를 발행한다")
+        void cancelByManager_member_publishesEvent() {
+            // given: 모임장이 일반멤버(id 6) 참여를 취소
+            MemberExercise memberExercise = MemberFixture.createMemberExercise(normalMember, exercise);
+            ReflectionTestUtils.setField(memberExercise, "id", 71L);
+            ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+
+            given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
+            given(memberExerciseReader.findMemberExerciseOrThrow(exercise, normalMember)).willReturn(memberExercise);
+
+            // when
+            exerciseParticipationCommandService.cancelParticipationByManager(
+                    exercise.getId(), normalMember.getId(), manager.getId(), request);
+
+            // then: subject는 취소된 멤버(6), 수신자는 모임장(1)·부모임장(5)
+            ExerciseAttendanceChangedEvent event = captureAttendanceEvent();
+            assertThat(event.subjectMemberId()).isEqualTo(6L);
+            assertThat(event.recipientMemberIds()).containsExactlyInAnyOrder(1L, 5L);
+        }
+
+        @Test
+        @DisplayName("매니저가 게스트 참여를 취소하면 참석 변경 이벤트를 발행하지 않는다")
+        void cancelByManager_guest_doesNotPublishEvent() {
+            // given: 모임장이 게스트 참여를 취소
+            Guest guest = GuestFixture.createGuest(exercise, manager.getId());
+            ReflectionTestUtils.setField(guest, "id", 80L);
+            ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(true);
+
+            given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
+
+            // when
+            exerciseParticipationCommandService.cancelParticipationByManager(
+                    exercise.getId(), guest.getId(), manager.getId(), request);
+
+            // then: 게스트 취소는 참석 변경 알림 대상이 아니므로 이벤트 미발행
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseAttendanceChangedEvent.class));
+        }
+
+        private void addPartyMember(Member member, Role role) {
+            MemberParty memberParty = MemberParty.create(party, member);
+            memberParty.changeRole(role);
+            party.addMember(memberParty);
+        }
+
+        private ExerciseAttendanceChangedEvent captureAttendanceEvent() {
+            ArgumentCaptor<ExerciseAttendanceChangedEvent> captor =
+                    ArgumentCaptor.forClass(ExerciseAttendanceChangedEvent.class);
+            then(eventPublisher).should().publishEvent(captor.capture());
+            return captor.getValue();
         }
     }
 }
