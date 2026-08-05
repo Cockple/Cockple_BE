@@ -70,7 +70,7 @@ public class AsyncConfig {
      */
     @Bean("notificationIngressExecutor")
     public ThreadPoolTaskExecutor notificationIngressExecutor(
-            @Value("2") int coreSize,
+            @Value("${async.notification.ingress.core-size:2}") int coreSize,
             @Value("${async.notification.ingress.max-size:4}") int maxSize,
             @Value("${async.notification.ingress.queue-capacity:500}") int queueCapacity,
             @Value("${async.notification.ingress.await-termination-seconds:30}") int awaitTerminationSeconds,
@@ -86,7 +86,7 @@ public class AsyncConfig {
      */
     @Bean("notificationPushExecutor")
     public ThreadPoolTaskExecutor notificationPushExecutor(
-            @Value("2") int coreSize,
+            @Value("${async.notification.push.core-size:2}") int coreSize,
             @Value("${async.notification.push.max-size:8}") int maxSize,
             @Value("${async.notification.push.queue-capacity:500}") int queueCapacity,
             @Value("${async.notification.push.await-termination-seconds:30}") int awaitTerminationSeconds,

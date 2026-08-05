@@ -9,14 +9,7 @@ import java.util.List;
  */
 public interface NotificationEventStrategy {
 
-    /**
-     * 이 전략이 처리할 이벤트 타입
-     */
-    Class<?> eventType();
-
-    default boolean supports(Object event) {
-        return event != null && eventType().isInstance(event);
-    }
+    boolean supports(Object event);
 
     List<NotificationRequest> convert(Object event);
 }

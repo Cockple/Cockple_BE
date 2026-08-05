@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.notification.command;
 
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
+import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.enums.NotificationSource;
 
 /**
@@ -13,6 +14,7 @@ public record NotificationRequest(
         String content,
         String imageKey,
         String data,
-        NotificationDestination destination
+        NotificationDestination destination,
+        NotificationLegacyCompatibility legacyCompatibility
 ) {
 }

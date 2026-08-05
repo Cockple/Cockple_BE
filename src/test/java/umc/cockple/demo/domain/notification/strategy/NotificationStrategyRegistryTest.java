@@ -51,8 +51,8 @@ class NotificationStrategyRegistryTest {
     private static class TestPartyStrategy implements NotificationEventStrategy {
 
         @Override
-        public Class<?> eventType() {
-            return TestPartyEvent.class;
+        public boolean supports(Object event) {
+            return event instanceof TestPartyEvent;
         }
 
         @Override
@@ -63,6 +63,7 @@ class NotificationStrategyRegistryTest {
                     partyEvent.memberId(),
                     "title",
                     "content",
+                    null,
                     null,
                     null,
                     null

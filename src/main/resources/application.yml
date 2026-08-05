@@ -107,15 +107,15 @@ async:
   # 외부 도메인 이벤트 -> 알림 DB 저장 풀
   notification:
     ingress:
-      core-size: 4
-      max-size: 12
-      queue-capacity: 1000
+      core-size: 2
+      max-size: 4
+      queue-capacity: 500
       await-termination-seconds: 30
     # FCM 알림 발송 풀
     push:
-      core-size: 4
-      max-size: 12
-      queue-capacity: 1000
+      core-size: 2
+      max-size: 8
+      queue-capacity: 500
       await-termination-seconds: 30
 
 fcm:
