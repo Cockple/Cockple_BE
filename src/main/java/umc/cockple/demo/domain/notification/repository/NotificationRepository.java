@@ -11,8 +11,16 @@ import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    @Query("""
+            SELECT n FROM Notification n
+            JOIN FETCH n.member
+            WHERE n.id = :notificationId
+            """)
+    Optional<Notification> findByIdWithMember(@Param("notificationId") Long notificationId);
 
     boolean existsByMember_IdAndIsReadFalse(Long memberId);
 

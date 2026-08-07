@@ -2,10 +2,13 @@ package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.converter.command.ExerciseLifecycleCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
@@ -21,6 +24,8 @@ import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -31,6 +36,7 @@ public class ExerciseLifecycleCommandService {
     private final ExerciseReader exerciseReader;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
 
@@ -66,6 +72,15 @@ public class ExerciseLifecycleCommandService {
         exerciseValidator.validateDeleteExercise(exercise, member.getId());
 
         Party party = exercise.getParty();
+        List<Long> recipientMemberIds = recipientMemberIds(exercise);
+        eventPublisher.publishEvent(ExerciseDeletedEvent.deleted(
+                exercise.getId(),
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                exercise.getDate(),
+                recipientMemberIds
+        ));
         party.removeExercise(exercise);
         exerciseRepository.delete(exercise);
 
@@ -90,8 +105,24 @@ public class ExerciseLifecycleCommandService {
 
         exerciseRepository.flush();
 
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(ExerciseUpdatedEvent.updated(
+                exercise.getId(),
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                exercise.getDate(),
+                recipientMemberIds(exercise)
+        ));
+
         log.info("운동 수정 완료 - exerciseId: {}", exercise.getId());
 
         return exerciseLifecycleCommandMapper.toUpdateResponse(exercise);
+    }
+
+    private List<Long> recipientMemberIds(Exercise exercise) {
+        return exercise.getMemberExercises().stream()
+                .map(memberExercise -> memberExercise.getMember().getId())
+                .toList();
     }
 }

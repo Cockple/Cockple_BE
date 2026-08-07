@@ -9,7 +9,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
-import umc.cockple.demo.domain.notification.listener.event.NotificationEvent;
+import umc.cockple.demo.domain.notification.event.NotificationEvent;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +20,7 @@ public class NotificationEventListener {
     private final MemberRepository memberRepository;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async("notificationExecutor")
+    @Async("notificationPushExecutor")
     public void handleNotification(NotificationEvent event) {
         log.info("[NOTIFICATION] FCM 전송 이벤트 처리 - memberId: {}", event.memberId());
         memberRepository.findById(event.memberId()).ifPresentOrElse(

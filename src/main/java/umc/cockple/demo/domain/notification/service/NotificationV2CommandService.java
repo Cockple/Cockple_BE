@@ -13,9 +13,9 @@ import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
-import umc.cockple.demo.domain.notification.dto.NotificationCreateCommand;
+import umc.cockple.demo.domain.notification.command.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
-import umc.cockple.demo.domain.notification.listener.event.NotificationPushRequestedEvent;
+import umc.cockple.demo.domain.notification.event.NotificationPushRequestedEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
@@ -65,9 +65,8 @@ public class NotificationV2CommandService {
                 .data(command.data())
                 .build();
 
-        notificationRepository.save(notification);
-        eventPublisher.publishEvent(new NotificationPushRequestedEvent(
-                member.getId(), command.title(), command.content()));
+        Notification savedNotification = notificationRepository.save(notification);
+        eventPublisher.publishEvent(new NotificationPushRequestedEvent(savedNotification.getId()));
     }
 
     public void markAsRead(Long memberId, Long notificationId) {

@@ -17,8 +17,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * 지연 특성별로 벌크헤드(bulkhead) 격리
  * {@code chatExecutor} — 실시간/저지연
- * {@code notificationExecutor} — 외부 FCM HTTP 호출
- * {@code applicationTaskExecutor} — qualifier 없는 @Async의 안전한 기본 착지점
+ * {@code notificationIngressExecutor} — 외부 도메인 이벤트의 알림 DB 저장
+ * {@code notificationPushExecutor} — 외부 FCM HTTP 호출
+ * {@code applicationTaskExecutor} — qualifier 없는 @Async의 기본 executor
  */
 @Configuration
 @EnableAsync
@@ -64,19 +65,34 @@ public class AsyncConfig {
     }
 
     /**
-     * FCM 알림용 풀. 외부 Firebase HTTP 호출을 채팅과 격리
-     * 큐를 크게 잡되 유한하게 두어 Firebase 장애 시 무한 백로그(OOM)를 방지
+     * 외부 도메인 이벤트를 알림 DB 저장으로 변환하는 풀.
+     * 알림 내역 유실 방지를 위해 포화 시 호출 스레드에서 실행해 backpressure를 건다.
      */
-    @Bean("notificationExecutor")
-    public ThreadPoolTaskExecutor notificationExecutor(
-            @Value("${async.notification.core-size:4}") int coreSize,
-            @Value("${async.notification.max-size:12}") int maxSize,
-            @Value("${async.notification.queue-capacity:1000}") int queueCapacity,
-            @Value("${async.notification.await-termination-seconds:30}") int awaitTerminationSeconds,
+    @Bean("notificationIngressExecutor")
+    public ThreadPoolTaskExecutor notificationIngressExecutor(
+            @Value("${async.notification.ingress.core-size:2}") int coreSize,
+            @Value("${async.notification.ingress.max-size:4}") int maxSize,
+            @Value("${async.notification.ingress.queue-capacity:500}") int queueCapacity,
+            @Value("${async.notification.ingress.await-termination-seconds:30}") int awaitTerminationSeconds,
             TaskDecorator mdcTaskDecorator
     ) {
+        return buildExecutor("cockple-noti-ingress-", coreSize, maxSize, queueCapacity,
+                awaitTerminationSeconds, mdcTaskDecorator, new ThreadPoolExecutor.CallerRunsPolicy());
+    }
 
-        return buildExecutor("cockple-noti-", coreSize, maxSize, queueCapacity,
+    /**
+     * FCM 알림용 풀. 외부 Firebase HTTP 호출을 알림 DB 저장과 격리한다.
+     * 큐를 크게 잡되 유한하게 두어 Firebase 장애 시 무한 백로그(OOM)를 방지한다.
+     */
+    @Bean("notificationPushExecutor")
+    public ThreadPoolTaskExecutor notificationPushExecutor(
+            @Value("${async.notification.push.core-size:2}") int coreSize,
+            @Value("${async.notification.push.max-size:8}") int maxSize,
+            @Value("${async.notification.push.queue-capacity:500}") int queueCapacity,
+            @Value("${async.notification.push.await-termination-seconds:30}") int awaitTerminationSeconds,
+            TaskDecorator mdcTaskDecorator
+    ) {
+        return buildExecutor("cockple-noti-push-", coreSize, maxSize, queueCapacity,
                 awaitTerminationSeconds, mdcTaskDecorator, logAndDiscardPolicy());
     }
 

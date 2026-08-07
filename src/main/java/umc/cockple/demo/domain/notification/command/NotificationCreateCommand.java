@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.dto;
+package umc.cockple.demo.domain.notification.command;
 
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 
