@@ -109,6 +109,11 @@
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
             <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
+        <logger name="umc.cockple.demo.global.realtime" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </logger>
         <logger name="org.springframework.web.socket" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
@@ -122,6 +127,10 @@
             <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>
         <logger name="umc.cockple.demo.domain.chat.service.websocket" level="INFO" additivity="false">
+            <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </logger>
+        <logger name="umc.cockple.demo.global.realtime" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_WEBSOCKET_FILE"/>
             <appender-ref ref="ASYNC_ERROR_FILE"/>
         </logger>

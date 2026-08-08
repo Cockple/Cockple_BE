@@ -8,7 +8,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionMessageSender;
 
 import java.util.Optional;
 
@@ -37,7 +38,7 @@ class WebSocketMessageSenderTest {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.of(session));
-        EncodedChatMessage message = new EncodedChatMessage("{\"type\":\"UNREAD_STATUS_UPDATE\"}");
+        EncodedRealtimeMessage message = new EncodedRealtimeMessage("{\"type\":\"UNREAD_STATUS_UPDATE\"}");
         given(sessionMessageSender.send(session, message)).willReturn(true);
 
         // when
@@ -45,7 +46,7 @@ class WebSocketMessageSenderTest {
 
         // then
         assertThat(sent).isTrue();
-        ArgumentCaptor<EncodedChatMessage> messageCaptor = ArgumentCaptor.forClass(EncodedChatMessage.class);
+        ArgumentCaptor<EncodedRealtimeMessage> messageCaptor = ArgumentCaptor.forClass(EncodedRealtimeMessage.class);
         then(sessionMessageSender).should().send(org.mockito.ArgumentMatchers.eq(session), messageCaptor.capture());
         assertThat(messageCaptor.getValue().payload()).contains("\"type\":\"UNREAD_STATUS_UPDATE\"");
     }
@@ -58,7 +59,7 @@ class WebSocketMessageSenderTest {
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.empty());
 
         // when
-        boolean sent = messageSender.send(memberId, new EncodedChatMessage("{}"));
+        boolean sent = messageSender.send(memberId, new EncodedRealtimeMessage("{}"));
 
         // then
         assertThat(sent).isFalse();
@@ -72,7 +73,7 @@ class WebSocketMessageSenderTest {
         // given
         Long memberId = 10L;
         given(sessionRegistry.findOpenSession(memberId)).willReturn(Optional.of(session));
-        EncodedChatMessage message = new EncodedChatMessage("{}");
+        EncodedRealtimeMessage message = new EncodedRealtimeMessage("{}");
         given(sessionMessageSender.send(session, message)).willReturn(false);
 
         // when

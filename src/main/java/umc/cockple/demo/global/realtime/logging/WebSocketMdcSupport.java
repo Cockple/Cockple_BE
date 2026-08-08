@@ -1,8 +1,8 @@
-package umc.cockple.demo.domain.chat.presentation.websocket;
+package umc.cockple.demo.global.realtime.logging;
 
 import org.slf4j.MDC;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ public final class WebSocketMdcSupport {
     private static void putSessionMdc(WebSocketSession session) {
         if (session == null) {
             MDC.remove(WS_SESSION_ID);
-            MDC.remove(JwtAuthenticationFilter.MEMBER_ID);
+            MDC.remove(WebSocketSessionAttributes.MEMBER_ID);
             return;
         }
 
@@ -40,19 +40,19 @@ public final class WebSocketMdcSupport {
         }
 
         Map<String, Object> attributes = session.getAttributes();
-        Object memberId = attributes == null ? null : attributes.get(JwtAuthenticationFilter.MEMBER_ID);
+        Object memberId = attributes == null ? null : attributes.get(WebSocketSessionAttributes.MEMBER_ID);
         if (memberId == null) {
-            MDC.remove(JwtAuthenticationFilter.MEMBER_ID);
+            MDC.remove(WebSocketSessionAttributes.MEMBER_ID);
         } else {
-            MDC.put(JwtAuthenticationFilter.MEMBER_ID, String.valueOf(memberId));
+            MDC.put(WebSocketSessionAttributes.MEMBER_ID, String.valueOf(memberId));
         }
     }
 
     private static void putMemberId(Long memberId) {
         if (memberId == null) {
-            MDC.remove(JwtAuthenticationFilter.MEMBER_ID);
+            MDC.remove(WebSocketSessionAttributes.MEMBER_ID);
         } else {
-            MDC.put(JwtAuthenticationFilter.MEMBER_ID, String.valueOf(memberId));
+            MDC.put(WebSocketSessionAttributes.MEMBER_ID, String.valueOf(memberId));
         }
         MDC.remove(WS_SESSION_ID);
     }

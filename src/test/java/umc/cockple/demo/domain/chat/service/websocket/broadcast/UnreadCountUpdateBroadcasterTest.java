@@ -10,9 +10,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("UnreadCountUpdateBroadcaster")
 class UnreadCountUpdateBroadcasterTest {
 
-    @Mock private ChatMessageEncoder messageEncoder;
+    @Mock private RealtimeMessageEncoder messageEncoder;
     @Mock private ChatMessageSender messageSender;
 
     private UnreadCountUpdateBroadcaster broadcaster;
@@ -44,7 +44,7 @@ class UnreadCountUpdateBroadcasterTest {
         Long excludedMemberId = 10L;
         UnreadCountUpdate update =
                 new UnreadCountUpdate(100L, 2);
-        EncodedChatMessage encodedMessage = new EncodedChatMessage("unread-count-json");
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("unread-count-json");
 
         given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
                 .willReturn(Optional.of(encodedMessage));

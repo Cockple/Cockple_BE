@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.global.realtime.logging.WebSocketMdcSupport;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
 @Component
 @Slf4j
@@ -25,7 +27,7 @@ public class ChatWebSocketRequestDispatcher {
                         payload, WebSocketMessageDTO.Request.class
                 );
 
-                Long memberId = (Long) session.getAttributes().get("memberId");
+                Long memberId = (Long) session.getAttributes().get(WebSocketSessionAttributes.MEMBER_ID);
                 if (memberId == null) {
                     webSocketResponseSender.sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
                     return;

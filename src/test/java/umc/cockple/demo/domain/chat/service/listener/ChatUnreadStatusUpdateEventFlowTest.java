@@ -23,7 +23,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEventPublisher;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.SubscribeReadStatusService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -116,7 +116,7 @@ class ChatUnreadStatusUpdateEventFlowTest extends IntegrationTestBase {
         });
 
         // then
-        ArgumentCaptor<EncodedChatMessage> messageCaptor = ArgumentCaptor.forClass(EncodedChatMessage.class);
+        ArgumentCaptor<EncodedRealtimeMessage> messageCaptor = ArgumentCaptor.forClass(EncodedRealtimeMessage.class);
         then(chatMessageSender).should(times(1)).send(eq(receiver.getId()), messageCaptor.capture());
 
         assertThat(messageCaptor.getValue().payload())
@@ -149,7 +149,7 @@ class ChatUnreadStatusUpdateEventFlowTest extends IntegrationTestBase {
         });
 
         // then
-        ArgumentCaptor<EncodedChatMessage> messageCaptor = ArgumentCaptor.forClass(EncodedChatMessage.class);
+        ArgumentCaptor<EncodedRealtimeMessage> messageCaptor = ArgumentCaptor.forClass(EncodedRealtimeMessage.class);
         then(chatMessageSender).should(times(1)).send(eq(subscriber.getId()), messageCaptor.capture());
 
         assertThat(messageCaptor.getValue().payload())

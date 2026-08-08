@@ -6,9 +6,9 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
 @Slf4j
 public class UnreadCountUpdateBroadcaster {
 
-    private final ChatMessageEncoder messageEncoder;
+    private final RealtimeMessageEncoder messageEncoder;
     private final ChatMessageSender messageSender;
 
     public void broadcast(
@@ -39,7 +39,7 @@ public class UnreadCountUpdateBroadcaster {
                     .timestamp(LocalDateTime.now())
                     .build();
 
-            EncodedChatMessage encodedMessage = messageEncoder.encode(updateMessage).orElse(null);
+            EncodedRealtimeMessage encodedMessage = messageEncoder.encode(updateMessage).orElse(null);
             if (encodedMessage == null) {
                 log.error("안읽은 수 업데이트 메시지 생성 실패 - 메시지: {}", update.messageId());
                 continue;

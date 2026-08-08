@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.presentation.websocket;
+package umc.cockple.demo.global.realtime.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,19 +8,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 import umc.cockple.demo.global.jwt.domain.JwtTokenProvider;
+import umc.cockple.demo.global.realtime.logging.WebSocketMdcSupport;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
 import java.util.Map;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
+public class JwtWebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                                   WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
+                                   WebSocketHandler wsHandler, Map<String, Object> attributes) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open((Long) null)) {
             log.debug("JWT 기반 WebSocket 인증 시작");
 
@@ -31,8 +33,8 @@ public class JWTWebSocketAuthInterceptor implements HandshakeInterceptor {
 
                 Long memberId = jwtTokenProvider.getUserId(token);
 
-                attributes.put("memberId", memberId);
-                attributes.put("authenticated", true);
+                attributes.put(WebSocketSessionAttributes.MEMBER_ID, memberId);
+                attributes.put(WebSocketSessionAttributes.AUTHENTICATED, true);
 
                 try (WebSocketMdcSupport.MdcScope memberScope = WebSocketMdcSupport.open(memberId)) {
                     log.info("JWT 인증 성공 - memberId: {}", memberId);

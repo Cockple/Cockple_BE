@@ -1,16 +1,16 @@
-package umc.cockple.demo.domain.chat.presentation.websocket.session;
+package umc.cockple.demo.global.realtime.session;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 @Component
 @Slf4j
 public class WebSocketSessionMessageSender {
 
-    public boolean send(WebSocketSession session, EncodedChatMessage message) {
+    public boolean send(WebSocketSession session, EncodedRealtimeMessage message) {
         try {
             synchronized (session) {
                 session.sendMessage(new TextMessage(message.payload()));

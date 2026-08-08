@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.presentation.websocket;
+package umc.cockple.demo.global.realtime.logging;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.global.logging.MdcLoggingFilter;
-import umc.cockple.demo.global.security.filter.JwtAuthenticationFilter;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,19 +28,19 @@ class WebSocketMdcSupportTest {
     void openSessionMdcAndRestorePreviousContext() {
         WebSocketSession session = mock(WebSocketSession.class);
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(JwtAuthenticationFilter.MEMBER_ID, 10L);
+        attributes.put(WebSocketSessionAttributes.MEMBER_ID, 10L);
         given(session.getId()).willReturn("session-1");
         given(session.getAttributes()).willReturn(attributes);
         MDC.put(MdcLoggingFilter.REQUEST_ID, "request-1");
 
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
-            assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isEqualTo("10");
+            assertThat(MDC.get(WebSocketSessionAttributes.MEMBER_ID)).isEqualTo("10");
             assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isEqualTo("session-1");
             assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
         }
 
         assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
-        assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
+        assertThat(MDC.get(WebSocketSessionAttributes.MEMBER_ID)).isNull();
         assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isNull();
     }
 
@@ -51,13 +51,13 @@ class WebSocketMdcSupportTest {
         MDC.put(WebSocketMdcSupport.WS_SESSION_ID, "stale-session");
 
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(20L)) {
-            assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isEqualTo("20");
+            assertThat(MDC.get(WebSocketSessionAttributes.MEMBER_ID)).isEqualTo("20");
             assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isNull();
             assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
         }
 
         assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
         assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isEqualTo("stale-session");
-        assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
+        assertThat(MDC.get(WebSocketSessionAttributes.MEMBER_ID)).isNull();
     }
 }

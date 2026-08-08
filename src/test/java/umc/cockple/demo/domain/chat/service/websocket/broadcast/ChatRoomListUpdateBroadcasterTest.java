@@ -11,9 +11,9 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.ChatRoomListUpdate.LastMessageUpdate;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.then;
 class ChatRoomListUpdateBroadcasterTest {
 
     @Mock private ChatListSubscriptionStore chatListSubscriptionStore;
-    @Mock private ChatMessageEncoder messageEncoder;
+    @Mock private RealtimeMessageEncoder messageEncoder;
     @Mock private ChatMessageSender messageSender;
 
     private ChatRoomListUpdateBroadcaster broadcaster;
@@ -54,7 +54,7 @@ class ChatRoomListUpdateBroadcasterTest {
 
         given(chatListSubscriptionStore.getChatListSubscribers(chatRoomId))
                 .willReturn(Set.of(subscribedMemberId));
-        EncodedChatMessage encodedMessage = new EncodedChatMessage("list-update-json");
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("list-update-json");
         given(messageEncoder.encode(org.mockito.ArgumentMatchers.any(WebSocketMessageDTO.ChatRoomListUpdate.class)))
                 .willReturn(Optional.of(encodedMessage));
         given(messageSender.send(subscribedMemberId, encodedMessage))

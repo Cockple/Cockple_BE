@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
 @Slf4j
 public class ChatRoomMessageBroadcaster {
 
-    private final ChatMessageEncoder messageEncoder;
+    private final RealtimeMessageEncoder messageEncoder;
     private final ChatMessageSender messageSender;
 
     public void broadcast(
@@ -29,7 +29,7 @@ public class ChatRoomMessageBroadcaster {
             return;
         }
 
-        EncodedChatMessage encodedMessage = messageEncoder.encode(message).orElse(null);
+        EncodedRealtimeMessage encodedMessage = messageEncoder.encode(message).orElse(null);
         if (encodedMessage == null) {
             return;
         }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistration;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import umc.cockple.demo.global.config.WebProperties;
+import umc.cockple.demo.global.realtime.auth.JwtWebSocketHandshakeInterceptor;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ class ChatWebSocketConfigTest {
     @DisplayName("legacy 채팅 handler를 /ws/chats에 JWT 인증, 허용 origin, SockJS와 함께 등록한다")
     void registerWebSocketHandlersPreservesLegacyEndpointContract() {
         ChatWebSocketHandler handler = mock(ChatWebSocketHandler.class);
-        JWTWebSocketAuthInterceptor authInterceptor = mock(JWTWebSocketAuthInterceptor.class);
+        JwtWebSocketHandshakeInterceptor authInterceptor = mock(JwtWebSocketHandshakeInterceptor.class);
         WebProperties webProperties = new WebProperties();
         webProperties.setAllowedOrigins(List.of("https://cockple.site", "http://localhost:5173"));
         ChatWebSocketConfig config = new ChatWebSocketConfig(handler, authInterceptor, webProperties);

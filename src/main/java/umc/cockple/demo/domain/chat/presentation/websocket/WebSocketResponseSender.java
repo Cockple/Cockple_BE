@@ -7,9 +7,9 @@ import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionMessageSender;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebSocketResponseSender {
 
-    private final ChatMessageEncoder messageEncoder;
+    private final RealtimeMessageEncoder messageEncoder;
     private final WebSocketSessionMessageSender sessionMessageSender;
 
     public void sendConnectionSuccessMessage(WebSocketSession session, MemberConnectionInfo memberInfo) {
@@ -99,7 +99,7 @@ public class WebSocketResponseSender {
     }
 
     private void sendMessage(WebSocketSession session, Object message) {
-        EncodedChatMessage encodedMessage = messageEncoder.encode(message).orElse(null);
+        EncodedRealtimeMessage encodedMessage = messageEncoder.encode(message).orElse(null);
         if (encodedMessage == null) {
             log.error("WebSocket 응답 메시지 인코딩 실패");
             return;

@@ -30,6 +30,7 @@ class LogbackSpringConfigurationTest {
 
     private static final String WEBSOCKET_LOGGER = "umc.cockple.demo.domain.chat.presentation.websocket";
     private static final String WEBSOCKET_SERVICE_LOGGER = "umc.cockple.demo.domain.chat.service.websocket";
+    private static final String REALTIME_INFRA_LOGGER = "umc.cockple.demo.global.realtime";
     private static final String SPRING_WEBSOCKET_LOGGER = "org.springframework.web.socket";
 
     @TempDir
@@ -45,6 +46,8 @@ class LogbackSpringConfigurationTest {
                     .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
             assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER)))
+                    .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
+            assertThat(appenderNames(context.getLogger(REALTIME_INFRA_LOGGER)))
                     .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderNames(context.getLogger(SPRING_WEBSOCKET_LOGGER)))
                     .containsExactlyInAnyOrder("ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
@@ -78,6 +81,8 @@ class LogbackSpringConfigurationTest {
                     .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(context.getLogger(WEBSOCKET_LOGGER).isAdditive()).isFalse();
             assertThat(appenderNames(context.getLogger(WEBSOCKET_SERVICE_LOGGER)))
+                    .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
+            assertThat(appenderNames(context.getLogger(REALTIME_INFRA_LOGGER)))
                     .containsExactlyInAnyOrder("CONSOLE", "ASYNC_WEBSOCKET_FILE", "ASYNC_ERROR_FILE");
             assertThat(appenderNames(context.getLogger(Logger.ROOT_LOGGER_NAME)))
                     .containsExactlyInAnyOrder("CONSOLE", "ASYNC_APPLICATION_FILE", "ASYNC_ERROR_FILE");
@@ -225,6 +230,7 @@ class LogbackSpringConfigurationTest {
                 context.getLogger(Logger.ROOT_LOGGER_NAME),
                 context.getLogger(WEBSOCKET_LOGGER),
                 context.getLogger(WEBSOCKET_SERVICE_LOGGER),
+                context.getLogger(REALTIME_INFRA_LOGGER),
                 context.getLogger(SPRING_WEBSOCKET_LOGGER)
         );
 
