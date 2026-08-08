@@ -21,7 +21,7 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("WebSocketMessageSender")
 class WebSocketMessageSenderTest {
 
-    @Mock private WebSocketSessionRegistry sessionRegistry;
+    @Mock private ChatWebSocketSessionRegistry sessionRegistry;
     @Mock private WebSocketSessionMessageSender sessionMessageSender;
     @Mock private WebSocketSession session;
 

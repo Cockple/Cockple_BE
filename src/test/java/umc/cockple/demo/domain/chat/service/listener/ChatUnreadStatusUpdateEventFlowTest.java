@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.domain.MessageReadStatus;
-import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionRegistry;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
@@ -71,7 +71,7 @@ class ChatUnreadStatusUpdateEventFlowTest extends IntegrationTestBase {
     @Autowired private ChatRoomMemberRepository chatRoomMemberRepository;
     @Autowired private ChatMessageRepository chatMessageRepository;
     @Autowired private MessageReadStatusRepository messageReadStatusRepository;
-    @Autowired private WebSocketSessionRegistry sessionRegistry;
+    @Autowired private ChatWebSocketSessionRegistry sessionRegistry;
     @Autowired private ChatSendEventPublisher chatSendEventPublisher;
     @Autowired private SubscribeReadStatusService subscribeReadStatusService;
     @Autowired private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
@@ -170,6 +170,7 @@ class ChatUnreadStatusUpdateEventFlowTest extends IntegrationTestBase {
 
     private void registerOpenSession(Long memberId) {
         WebSocketSession session = mock(WebSocketSession.class);
+        given(session.getId()).willReturn("chat-session-" + memberId);
         given(session.isOpen()).willReturn(true);
         sessionRegistry.register(memberId, session);
         registeredSessions.add(new RegisteredSession(memberId, session));

@@ -13,7 +13,7 @@ import umc.cockple.demo.global.realtime.session.WebSocketSessionMessageSender;
 @Slf4j
 public class WebSocketMessageSender implements ChatMessageSender {
 
-    private final WebSocketSessionRegistry sessionRegistry;
+    private final ChatWebSocketSessionRegistry sessionRegistry;
     private final WebSocketSessionMessageSender sessionMessageSender;
 
     @Override

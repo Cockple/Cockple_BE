@@ -10,7 +10,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
-import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionRegistry;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 
 import java.util.HashMap;
@@ -29,7 +29,7 @@ class ChatWebSocketHandlerTest {
     @Mock private MemberQueryService memberQueryService;
     @Mock private WebSocketResponseSender webSocketResponseSender;
     @Mock private ChatWebSocketRequestDispatcher requestDispatcher;
-    @Mock private WebSocketSessionRegistry sessionRegistry;
+    @Mock private ChatWebSocketSessionRegistry sessionRegistry;
     @Mock private WebSocketSession session;
 
     private ChatWebSocketHandler handler;

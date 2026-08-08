@@ -8,7 +8,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
-import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionRegistry;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
 import umc.cockple.demo.global.realtime.logging.WebSocketMdcSupport;
 import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
@@ -21,7 +21,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MemberQueryService memberQueryService;
     private final WebSocketResponseSender webSocketResponseSender;
     private final ChatWebSocketRequestDispatcher requestDispatcher;
-    private final WebSocketSessionRegistry sessionRegistry;
+    private final ChatWebSocketSessionRegistry sessionRegistry;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {

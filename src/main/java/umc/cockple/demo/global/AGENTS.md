@@ -12,7 +12,7 @@ Apply root `AGENTS.md` first. This file covers `global/` cross-cutting code.
 | Response wrapper | `response/` | `BaseResponse`, code DTOs, success/error codes |
 | Exception handling | `exception/` | global handler + shared exception base |
 | Security/JWT | `security/`, `jwt/` | auth filter + token creation/parsing |
-| Realtime transport | `realtime/` | WebSocket handshake auth, MDC, message encoding, and session-level writes |
+| Realtime transport | `realtime/` | WebSocket handshake auth, MDC, message encoding, session-level writes, and multi-session registry |
 | OAuth | `oauth2/` | Kakao-specific login flow |
 | Shared types | `common/BaseEntity.java`, `enums/` | audit fields and shared enums |
 

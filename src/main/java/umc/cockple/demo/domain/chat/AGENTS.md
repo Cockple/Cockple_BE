@@ -13,6 +13,7 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | WebSocket dispatch | `presentation/websocket/ChatWebSocketRequestDispatcher.java` | parses socket payloads and delegates authenticated requests |
 | WebSocket commands | `presentation/websocket/ChatWebSocketCommandHandler.java` | handles socket request types and publishes command events |
 | WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | shapes chat responses and delegates encoding/session writes to shared realtime infra |
+| Chat session selection | `presentation/websocket/session/ChatWebSocketSessionRegistry.java` | selects the latest open legacy-chat session from the shared multi-session registry |
 | WebSocket response assembly | `converter/ChatWebSocketResponseAssembler.java` | shapes socket response payloads |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
 | Read/query flows | `service/query/ChatQueryServiceImpl.java` | room lists, unread counts, history |
