@@ -21,6 +21,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JWTWebSocketAuthInterceptor")
@@ -60,5 +61,49 @@ class JWTWebSocketAuthInterceptorTest {
         assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
         assertThat(MDC.get(JwtAuthenticationFilter.MEMBER_ID)).isNull();
         assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isNull();
+    }
+
+    @Test
+    @DisplayName("token 쿼리 파라미터가 없으면 handshake를 거부한다")
+    void beforeHandshakeRejectsRequestWithoutToken() throws Exception {
+        Map<String, Object> attributes = new HashMap<>();
+        given(request.getURI()).willReturn(URI.create("/ws/chats"));
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isFalse();
+        assertThat(attributes).isEmpty();
+        then(jwtTokenProvider).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 token이면 handshake를 거부한다")
+    void beforeHandshakeRejectsInvalidToken() throws Exception {
+        Map<String, Object> attributes = new HashMap<>();
+        given(request.getURI()).willReturn(URI.create("/ws/chats?token=invalid-token"));
+        given(jwtTokenProvider.validateToken("invalid-token")).willReturn(false);
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isFalse();
+        assertThat(attributes).isEmpty();
+        then(jwtTokenProvider).should().validateToken("invalid-token");
+        then(jwtTokenProvider).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    @DisplayName("다른 쿼리 파라미터 사이의 token도 추출한다")
+    void beforeHandshakeExtractsTokenAmongOtherQueryParameters() throws Exception {
+        Map<String, Object> attributes = new HashMap<>();
+        given(request.getURI()).willReturn(URI.create("/ws/chats?transport=websocket&token=access-token&v=1"));
+        given(jwtTokenProvider.validateToken("access-token")).willReturn(true);
+        given(jwtTokenProvider.getUserId("access-token")).willReturn(10L);
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isTrue();
+        assertThat(attributes)
+                .containsEntry(JwtAuthenticationFilter.MEMBER_ID, 10L)
+                .containsEntry("authenticated", true);
     }
 }
