@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+// 도메인이 추가되어도 RealtimeDomainHandler를 구현하고 @Component로 등록하면 자동으로 라우팅되도록 설계
 @Component
 @Slf4j
 public class RealtimeMessageRouter {

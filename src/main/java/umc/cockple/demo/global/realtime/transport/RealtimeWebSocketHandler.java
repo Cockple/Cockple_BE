@@ -13,6 +13,7 @@ import umc.cockple.demo.global.realtime.routing.RealtimeResponder;
 import umc.cockple.demo.global.realtime.session.RealtimeSessionRegistry;
 import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
+// 인증 통과 후 생명주기 관리
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -33,9 +34,9 @@ public class RealtimeWebSocketHandler extends TextWebSocketHandler {
             }
 
             try {
-                sessionRegistry.register(memberId, RealtimeWebSocketEndpoint.SESSION_ENDPOINT, session);
+                sessionRegistry.register(memberId, RealtimeWebSocketEndpoint.SESSION_ENDPOINT, session); // 세션등록
                 RealtimeResponder responder = responderFactory.createInfrastructureResponder(session);
-                responder.send("CONNECTED", new RealtimeConnectionInfo(memberId, session.getId()));
+                responder.send("CONNECTED", new RealtimeConnectionInfo(memberId, session.getId())); // 연결 후 서버->클라 CONNECTED 전송
                 log.info("실시간 WebSocket 연결 완료 - memberId: {}, sessionId: {}", memberId, session.getId());
             } catch (Exception e) {
                 sessionRegistry.remove(memberId, session);
@@ -45,11 +46,13 @@ public class RealtimeWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    // 메세지 수신
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         requestDispatcher.dispatch(session, message.getPayload());
     }
 
+    // 연결 종료
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
@@ -59,6 +62,7 @@ public class RealtimeWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    // 전송 오류
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {

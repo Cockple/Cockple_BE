@@ -15,6 +15,9 @@ import umc.cockple.demo.global.realtime.routing.RealtimeResponder;
 import umc.cockple.demo.global.realtime.routing.RealtimeRoutingErrorCode;
 import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
+
+// WebSocket 문자열 -> 공용 요청 객체로 매핑
+
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -25,6 +28,8 @@ public class RealtimeWebSocketRequestDispatcher {
     private final WebSocketRealtimeResponderFactory responderFactory;
     private final RealtimeWebSocketProperties properties;
 
+
+    // RealtimeMessageRouter에 응답 전달
     public void dispatch(WebSocketSession session, String payload) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
             RealtimeResponder fallbackResponder = responderFactory.createInfrastructureResponder(session);
@@ -39,6 +44,7 @@ public class RealtimeWebSocketRequestDispatcher {
                 return;
             }
 
+            // 요청타입
             RealtimeInboundEnvelope envelope;
             try {
                 envelope = objectMapper.readValue(payload, RealtimeInboundEnvelope.class);
