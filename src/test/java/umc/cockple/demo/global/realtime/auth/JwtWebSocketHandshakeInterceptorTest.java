@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
@@ -51,6 +52,7 @@ class JwtWebSocketHandshakeInterceptorTest {
         Map<String, Object> attributes = new HashMap<>();
         given(request.getURI()).willReturn(URI.create("/ws/chats?token=access-token"));
         given(jwtTokenProvider.validateToken("access-token")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("access-token")).willReturn(true);
         given(jwtTokenProvider.getUserId("access-token")).willReturn(10L);
         MDC.put(MdcLoggingFilter.REQUEST_ID, "request-1");
 
@@ -62,6 +64,7 @@ class JwtWebSocketHandshakeInterceptorTest {
         assertThat(MDC.get(MdcLoggingFilter.REQUEST_ID)).isEqualTo("request-1");
         assertThat(MDC.get(WebSocketSessionAttributes.MEMBER_ID)).isNull();
         assertThat(MDC.get(WebSocketMdcSupport.WS_SESSION_ID)).isNull();
+        then(response).shouldHaveNoInteractions();
     }
 
     @Test
@@ -75,6 +78,7 @@ class JwtWebSocketHandshakeInterceptorTest {
         assertThat(result).isFalse();
         assertThat(attributes).isEmpty();
         then(jwtTokenProvider).shouldHaveNoInteractions();
+        then(response).should().setStatusCode(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -90,6 +94,42 @@ class JwtWebSocketHandshakeInterceptorTest {
         assertThat(attributes).isEmpty();
         then(jwtTokenProvider).should().validateToken("invalid-token");
         then(jwtTokenProvider).shouldHaveNoMoreInteractions();
+        then(response).should().setStatusCode(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("refresh token이면 handshake를 거부한다")
+    void beforeHandshakeRejectsRefreshToken() {
+        Map<String, Object> attributes = new HashMap<>();
+        given(request.getURI()).willReturn(URI.create("/ws/realtime?token=refresh-token"));
+        given(jwtTokenProvider.validateToken("refresh-token")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("refresh-token")).willReturn(false);
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isFalse();
+        assertThat(attributes).isEmpty();
+        then(jwtTokenProvider).should().validateToken("refresh-token");
+        then(jwtTokenProvider).should().isAccessToken("refresh-token");
+        then(jwtTokenProvider).shouldHaveNoMoreInteractions();
+        then(response).should().setStatusCode(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("회원 식별자 claim이 숫자가 아니면 handshake를 거부한다")
+    void beforeHandshakeRejectsInvalidSubject() {
+        Map<String, Object> attributes = new HashMap<>();
+        given(request.getURI()).willReturn(URI.create("/ws/realtime?token=invalid-subject-token"));
+        given(jwtTokenProvider.validateToken("invalid-subject-token")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("invalid-subject-token")).willReturn(true);
+        given(jwtTokenProvider.getUserId("invalid-subject-token"))
+                .willThrow(new NumberFormatException("invalid subject"));
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isFalse();
+        assertThat(attributes).isEmpty();
+        then(response).should().setStatusCode(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -98,6 +138,7 @@ class JwtWebSocketHandshakeInterceptorTest {
         Map<String, Object> attributes = new HashMap<>();
         given(request.getURI()).willReturn(URI.create("/ws/chats?transport=websocket&token=access-token&v=1"));
         given(jwtTokenProvider.validateToken("access-token")).willReturn(true);
+        given(jwtTokenProvider.isAccessToken("access-token")).willReturn(true);
         given(jwtTokenProvider.getUserId("access-token")).willReturn(10L);
 
         boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
