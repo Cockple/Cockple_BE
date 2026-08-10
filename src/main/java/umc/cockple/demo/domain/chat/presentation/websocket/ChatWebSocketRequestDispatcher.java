@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
+import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 import umc.cockple.demo.global.realtime.logging.WebSocketMdcSupport;
 import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
@@ -21,6 +22,7 @@ public class ChatWebSocketRequestDispatcher {
     public void dispatch(WebSocketSession session, String payload) {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
             log.debug("메시지 수신 - 세션 ID: {}, payloadSize: {}", session.getId(), payload == null ? 0 : payload.length());
+            ChatCommandResponder responder = new LegacyChatCommandResponder(session, webSocketResponseSender);
 
             try {
                 WebSocketMessageDTO.Request request = objectMapper.readValue(
@@ -29,16 +31,16 @@ public class ChatWebSocketRequestDispatcher {
 
                 Long memberId = (Long) session.getAttributes().get(WebSocketSessionAttributes.MEMBER_ID);
                 if (memberId == null) {
-                    webSocketResponseSender.sendErrorMessage(session, "UNAUTHORIZED", "인증되지 않은 사용자입니다.");
+                    responder.sendError("UNAUTHORIZED", "인증되지 않은 사용자입니다.");
                     return;
                 }
 
                 log.debug("메시지 타입: {}, 채팅방 ID: {}, 사용자 ID: {}", request.type(), session.getId(), memberId);
-                commandHandler.handle(session, request, memberId);
+                commandHandler.handle(request, memberId, responder);
 
             } catch (Exception e) {
                 log.error("메시지 처리 중 에러 발생", e);
-                webSocketResponseSender.sendErrorMessage(session, "PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다.");
+                responder.sendError("PROCESSING_ERROR", "메시지 처리 중 오류가 발생했습니다.");
             }
         }
     }
