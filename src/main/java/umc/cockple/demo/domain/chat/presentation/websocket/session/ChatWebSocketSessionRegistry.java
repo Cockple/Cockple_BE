@@ -6,6 +6,7 @@ import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
 import umc.cockple.demo.global.realtime.session.RealtimeEndpoint;
 import umc.cockple.demo.global.realtime.session.RealtimeSessionRegistry;
+import umc.cockple.demo.global.realtime.transport.RealtimeWebSocketEndpoint;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +34,16 @@ public class ChatWebSocketSessionRegistry implements ChatSessionRegistry {
 
     @Override
     public List<Long> findOpenMemberIds(Collection<Long> memberIds) {
-        return realtimeSessionRegistry.findOpenMemberIds(memberIds, LEGACY_CHAT_ENDPOINT);
+        return memberIds.stream()
+                .filter(this::hasOpenChatSession)
+                .toList();
+    }
+
+    private boolean hasOpenChatSession(Long memberId) {
+        return realtimeSessionRegistry.findLatestOpenSession(memberId, LEGACY_CHAT_ENDPOINT).isPresent()
+                || realtimeSessionRegistry.findLatestOpenSession(
+                        memberId,
+                        RealtimeWebSocketEndpoint.SESSION_ENDPOINT
+                ).isPresent();
     }
 }

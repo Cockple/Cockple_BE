@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.repository.redis.ChatListSubscriptionStore;
 import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
 import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
@@ -21,7 +21,7 @@ public class ChatRoomListUpdateBroadcaster {
 
     private final ChatListSubscriptionStore chatListSubscriptionStore;
     private final RealtimeMessageEncoder messageEncoder;
-    private final ChatMessageSender messageSender;
+    private final ChatMessageFanout messageFanout;
 
     public void broadcast(Long chatRoomId, Map<Long, ChatRoomListUpdateData> memberUpdateData) {
         log.info("채팅방 목록 업데이트 개별 브로드캐스트 시작 - 채팅방: {}, 대상자: {}명", chatRoomId, memberUpdateData.size());
@@ -48,7 +48,7 @@ public class ChatRoomListUpdateBroadcaster {
                     .build();
 
             EncodedRealtimeMessage encodedMessage = messageEncoder.encode(message).orElse(null);
-            if (encodedMessage != null && messageSender.send(memberId, encodedMessage)) {
+            if (messageFanout.send(memberId, encodedMessage, message.type(), message)) {
                 successCount++;
             } else {
                 log.error("채팅방 목록 업데이트 전송 실패 - 사용자: {}", memberId);

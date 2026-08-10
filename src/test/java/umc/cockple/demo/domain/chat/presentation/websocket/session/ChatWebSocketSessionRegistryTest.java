@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.global.realtime.session.RealtimeSessionRegistry;
+import umc.cockple.demo.global.realtime.transport.RealtimeWebSocketEndpoint;
 
 import java.util.List;
 
@@ -14,8 +15,9 @@ import static org.mockito.Mockito.mock;
 @DisplayName("ChatWebSocketSessionRegistry")
 class ChatWebSocketSessionRegistryTest {
 
+    private final RealtimeSessionRegistry realtimeSessionRegistry = new RealtimeSessionRegistry();
     private final ChatWebSocketSessionRegistry sessionRegistry =
-            new ChatWebSocketSessionRegistry(new RealtimeSessionRegistry());
+            new ChatWebSocketSessionRegistry(realtimeSessionRegistry);
 
     @Test
     @DisplayName("멤버의 가장 최근 legacy 채팅 세션을 조회한다")
@@ -34,11 +36,16 @@ class ChatWebSocketSessionRegistryTest {
     @DisplayName("열린 legacy 채팅 세션이 있는 멤버만 필터링한다")
     void findOpenMemberIdsFiltersMembersWithOpenChatSessions() {
         sessionRegistry.register(10L, openSession("session-open"));
-        sessionRegistry.register(20L, closedSession("session-closed"));
+        realtimeSessionRegistry.register(
+                20L,
+                RealtimeWebSocketEndpoint.SESSION_ENDPOINT,
+                openSession("realtime-session-open")
+        );
+        sessionRegistry.register(30L, closedSession("session-closed"));
 
-        List<Long> openMemberIds = sessionRegistry.findOpenMemberIds(List.of(10L, 20L, 30L));
+        List<Long> openMemberIds = sessionRegistry.findOpenMemberIds(List.of(10L, 20L, 30L, 40L));
 
-        assertThat(openMemberIds).containsExactly(10L);
+        assertThat(openMemberIds).containsExactly(10L, 20L);
     }
 
     @Test

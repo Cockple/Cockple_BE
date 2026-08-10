@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.presentation.websocket.ChatWebSocketCommandHandler;
+import umc.cockple.demo.domain.chat.realtime.ChatRealtimeProtocol;
 import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 import umc.cockple.demo.global.realtime.routing.RealtimeDomainHandler;
 import umc.cockple.demo.global.realtime.routing.RealtimeRequestContext;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatRealtimeDomainHandler implements RealtimeDomainHandler {
 
-    public static final String DOMAIN = "CHAT";
     private static final Set<String> ACTIONS = Arrays.stream(ChatRealtimeAction.values())
             .map(Enum::name)
             .collect(Collectors.toUnmodifiableSet());
@@ -30,7 +30,7 @@ public class ChatRealtimeDomainHandler implements RealtimeDomainHandler {
 
     @Override
     public String domain() {
-        return DOMAIN;
+        return ChatRealtimeProtocol.DOMAIN;
     }
 
     @Override

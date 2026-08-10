@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
 import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ import java.util.List;
 public class ChatRoomMessageBroadcaster {
 
     private final RealtimeMessageEncoder messageEncoder;
-    private final ChatMessageSender messageSender;
+    private final ChatMessageFanout messageFanout;
 
     public void broadcast(
             Long chatRoomId,
@@ -30,10 +30,6 @@ public class ChatRoomMessageBroadcaster {
         }
 
         EncodedRealtimeMessage encodedMessage = messageEncoder.encode(message).orElse(null);
-        if (encodedMessage == null) {
-            return;
-        }
-
         List<Long> successMembers = new ArrayList<>();
         List<Long> failedMembers = new ArrayList<>();
 
@@ -42,7 +38,7 @@ public class ChatRoomMessageBroadcaster {
                 continue;
             }
 
-            if (messageSender.send(memberId, encodedMessage)) {
+            if (messageFanout.send(memberId, encodedMessage, message.type(), message)) {
                 successMembers.add(memberId);
             } else {
                 failedMembers.add(memberId);
