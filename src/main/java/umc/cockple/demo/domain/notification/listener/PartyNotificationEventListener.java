@@ -7,7 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.notification.service.NotificationIngressService;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
-import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
@@ -21,7 +21,7 @@ public class PartyNotificationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async("notificationIngressExecutor")
-    public void handlePartyInfoChanged(PartyInfoChangedEvent event) {
+    public void handlePartyUpdated(PartyUpdatedEvent event) {
         handle(event);
     }
 

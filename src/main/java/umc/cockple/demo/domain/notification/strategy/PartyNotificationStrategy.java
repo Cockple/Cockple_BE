@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
-import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
@@ -35,7 +35,7 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
 
     @Override
     public boolean supports(Object event) {
-        return event instanceof PartyInfoChangedEvent
+        return event instanceof PartyUpdatedEvent
                 || event instanceof PartyDeletedEvent
                 || event instanceof PartyJoinRequestApprovedEvent
                 || event instanceof PartyRoleChangedEvent
@@ -45,12 +45,12 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
 
     @Override
     public List<NotificationRequest> convert(Object event) {
-        if (event instanceof PartyInfoChangedEvent partyInfoChangedEvent) {
+        if (event instanceof PartyUpdatedEvent partyUpdatedEvent) {
             return List.of(request(
-                    partyInfoChangedEvent.recipientMemberId(),
-                    partyInfoChangedEvent.partyId(),
-                    partyInfoChangedEvent.partyName(),
-                    partyInfoChangedEvent.imageKey(),
+                    partyUpdatedEvent.recipientMemberId(),
+                    partyUpdatedEvent.partyId(),
+                    partyUpdatedEvent.partyName(),
+                    partyUpdatedEvent.imageKey(),
                     notificationMessageGenerator.generatePartyInfoChangedMessage(),
                     destination(partyInfoChangedEvent.partyId()),
                     NotificationType.CHANGE,

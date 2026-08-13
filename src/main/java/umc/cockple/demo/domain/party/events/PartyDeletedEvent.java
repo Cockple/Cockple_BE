@@ -1,13 +1,15 @@
 package umc.cockple.demo.domain.party.events;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record PartyDeletedEvent(
         Long partyId,
         Long deletedByMemberId,
         String partyName,
         String imageKey,
-        LocalDateTime occurredAt
+        LocalDateTime occurredAt,
+        UUID eventId
 ) {
     public static PartyDeletedEvent deleted(Long partyId, Long deletedByMemberId) {
         return new PartyDeletedEvent(
@@ -15,7 +17,8 @@ public record PartyDeletedEvent(
                 deletedByMemberId,
                 null,
                 null,
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                UUID.randomUUID()
         );
     }
 
@@ -30,7 +33,8 @@ public record PartyDeletedEvent(
                 deletedByMemberId,
                 partyName,
                 imageKey,
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                UUID.randomUUID()
         );
     }
 }

@@ -29,7 +29,7 @@ import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
-import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
@@ -647,7 +647,7 @@ class PartyCommandServiceTest {
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
 
-            verify(applicationEventPublisher).publishEvent(any(PartyInfoChangedEvent.class));
+            verify(applicationEventPublisher).publishEvent(any(PartyUpdatedEvent.class));
         }
 
         @Test

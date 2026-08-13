@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.events;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record ExerciseUpdatedEvent(
         Long exerciseId,
@@ -11,7 +12,8 @@ public record ExerciseUpdatedEvent(
         String imageKey,
         LocalDate exerciseDate,
         List<Long> recipientMemberIds,
-        LocalDateTime occurredAt
+        LocalDateTime occurredAt,
+        UUID eventId
 ) {
     public ExerciseUpdatedEvent {
         recipientMemberIds = List.copyOf(recipientMemberIds);
@@ -27,7 +29,7 @@ public record ExerciseUpdatedEvent(
     ) {
         return new ExerciseUpdatedEvent(
                 exerciseId, partyId, partyName, imageKey, exerciseDate,
-                recipientMemberIds, LocalDateTime.now()
+                recipientMemberIds, LocalDateTime.now(), UUID.randomUUID()
         );
     }
 }
