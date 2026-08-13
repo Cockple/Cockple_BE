@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationSource;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxEventType;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator;
@@ -57,7 +58,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                             deletedEvent.exerciseDate(),
                             notificationMessageGenerator.generateExerciseDeletedMessage(date),
                             null,
-                            NotificationType.SIMPLE
+                            NotificationType.SIMPLE,
+                            deletedEvent.eventId(),
+                            NotificationOutboxEventType.EXERCISE_DELETED
                     ))
                     .toList();
         }
@@ -74,7 +77,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                             updatedEvent.exerciseDate(),
                             notificationMessageGenerator.generateExerciseChangedMessage(date),
                             destination(updatedEvent.exerciseId()),
-                            NotificationType.CHANGE
+                            NotificationType.CHANGE,
+                            updatedEvent.eventId(),
+                            NotificationOutboxEventType.EXERCISE_UPDATED
                     ))
                     .toList();
         }
@@ -90,7 +95,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                             attendanceEvent.exerciseDate(),
                             notificationMessageGenerator.generateExerciseAttendChangedMessage(),
                             destination(attendanceEvent.exerciseId()),
-                            NotificationType.CHANGE
+                            NotificationType.CHANGE,
+                            attendanceEvent.eventId(),
+                            NotificationOutboxEventType.EXERCISE_ATTENDANCE_CHANGED
                     ))
                     .toList();
         }
@@ -107,7 +114,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
             LocalDate exerciseDate,
             String content,
             NotificationDestination destination,
-            NotificationType legacyType
+            NotificationType legacyType,
+            java.util.UUID eventId,
+            NotificationOutboxEventType eventType
     ) {
         return new NotificationRequest(
                 NotificationSource.EXERCISE,
@@ -117,7 +126,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                 imageKey,
                 serializeData(exerciseId, exerciseDate),
                 destination,
-                new NotificationLegacyCompatibility(partyId, legacyType)
+                new NotificationLegacyCompatibility(partyId, legacyType),
+                eventId,
+                eventType
         );
     }
 
