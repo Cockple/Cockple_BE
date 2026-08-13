@@ -86,6 +86,17 @@ public class FcmService {
      */
     public void sendChatMulticast(List<Member> recipients, String title, String content,
                                   Long chatRoomId, ChatRoomType chatRoomType) {
+        sendChatMulticast(recipients, title, content, chatRoomId, chatRoomType, false);
+    }
+
+    public void sendChatMulticastWithRetry(List<Member> recipients, String title, String content,
+                                           Long chatRoomId, ChatRoomType chatRoomType) {
+        sendChatMulticast(recipients, title, content, chatRoomId, chatRoomType, true);
+    }
+
+    private void sendChatMulticast(List<Member> recipients, String title, String content,
+                                   Long chatRoomId, ChatRoomType chatRoomType,
+                                   boolean propagateFailure) {
         List<String> tokens = recipients.stream()
                 .map(Member::getFcmToken)
                 .filter(token -> token != null && !token.isBlank())
@@ -133,6 +144,9 @@ public class FcmService {
                 failureCount += chunk.size();
                 log.error("[FCM] 채팅 멀티캐스트 청크 전송 실패 - chatRoomId: {}, size: {}, error: {}",
                         chatRoomId, chunk.size(), e.getMessage());
+                if (propagateFailure) {
+                    throw new IllegalStateException("채팅 FCM 멀티캐스트 전송에 실패했습니다.", e);
+                }
             }
         }
 

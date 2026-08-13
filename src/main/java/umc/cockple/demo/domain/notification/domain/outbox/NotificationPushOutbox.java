@@ -36,7 +36,7 @@ public class NotificationPushOutbox extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "notification_id", nullable = false)
+    @Column(name = "notification_id")
     private Long notificationId;
 
     @Enumerated(EnumType.STRING)

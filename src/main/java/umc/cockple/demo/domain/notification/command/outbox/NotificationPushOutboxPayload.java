@@ -4,8 +4,6 @@ import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel
 import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 
-import java.util.List;
-
 public record NotificationPushOutboxPayload(
         Long notificationId,
         NotificationPushChannel channel,

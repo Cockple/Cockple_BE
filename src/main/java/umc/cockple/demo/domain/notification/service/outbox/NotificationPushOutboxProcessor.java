@@ -103,7 +103,7 @@ public class NotificationPushOutboxProcessor {
                 outbox.getActiveSubscriberIds(),
                 objectMapper.getTypeFactory().constructCollectionType(List.class, Long.class)
         );
-        chatPushNotificationService.sendPush(ChatNotificationEvent.create(
+        chatPushNotificationService.sendPushWithRetry(ChatNotificationEvent.create(
                 outbox.getChatRoomId(),
                 outbox.getChatRoomType(),
                 outbox.getTitle(),
