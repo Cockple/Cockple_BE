@@ -7,7 +7,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willAnswer;
 
@@ -44,9 +42,6 @@ class NotificationV2CommandServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
-
-    @Mock
-    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private NotificationPushOutboxService notificationPushOutboxService;
@@ -97,6 +92,5 @@ class NotificationV2CommandServiceTest {
         assertThat(saved.getResourceId()).isEqualTo(20L);
         assertThat(saved.getAction()).isEqualTo(NotificationAction.RESPOND);
         assertThat(saved.getData()).isEqualTo("{\"invitationId\":20}");
-        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
     }
 }
