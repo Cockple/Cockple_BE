@@ -12,12 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class NotificationOutboxClaimService {
 
     private final NotificationOutboxRepository notificationOutboxRepository;
 
-    @Transactional
     public Optional<ClaimedNotificationOutbox> claim(
             Long outboxId,
             int maxRetryCount,
@@ -43,7 +43,6 @@ public class NotificationOutboxClaimService {
                 .map(outbox -> new ClaimedNotificationOutbox(outbox, claimToken));
     }
 
-    @Transactional
     public boolean markDone(ClaimedNotificationOutbox claimedOutbox) {
         return findClaimedOutbox(claimedOutbox)
                 .map(outbox -> {
@@ -53,7 +52,6 @@ public class NotificationOutboxClaimService {
                 .orElse(false);
     }
 
-    @Transactional
     public boolean markFailed(ClaimedNotificationOutbox claimedOutbox, String errorMessage) {
         return findClaimedOutbox(claimedOutbox)
                 .map(outbox -> {

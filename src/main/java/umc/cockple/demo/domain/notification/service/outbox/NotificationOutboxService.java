@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationOutboxService {
@@ -21,7 +22,6 @@ public class NotificationOutboxService {
     private final NotificationOutboxRepository notificationOutboxRepository;
     private final NotificationStrategyRegistry notificationStrategyRegistry;
 
-    @Transactional
     public void record(Object event) {
         List<NotificationOutbox> outboxes = notificationStrategyRegistry.convert(event).stream()
                 .map(this::toOutbox)
