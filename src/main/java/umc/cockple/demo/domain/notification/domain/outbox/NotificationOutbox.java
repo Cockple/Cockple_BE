@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.domain;
+package umc.cockple.demo.domain.notification.domain.outbox;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,10 +14,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import umc.cockple.demo.domain.notification.command.NotificationOutboxPayload;
+import umc.cockple.demo.domain.notification.command.outbox.NotificationOutboxPayload;
+import umc.cockple.demo.domain.notification.domain.NotificationDestination;
+import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
-import umc.cockple.demo.domain.notification.enums.NotificationOutboxEventType;
-import umc.cockple.demo.domain.notification.enums.NotificationOutboxStatus;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxEventType;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxStatus;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationSource;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
@@ -127,6 +129,34 @@ public class NotificationOutbox extends BaseEntity {
                 .status(NotificationOutboxStatus.PENDING)
                 .retryCount(0)
                 .build();
+    }
+
+    public void markProcessing(LocalDateTime attemptedAt, String claimToken) {
+        this.status = NotificationOutboxStatus.PROCESSING;
+        this.lastAttemptedAt = attemptedAt;
+        this.claimToken = claimToken;
+    }
+
+    public void markDone() {
+        this.status = NotificationOutboxStatus.DONE;
+        this.lastError = null;
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
+    }
+
+    public void markFailed(String errorMessage) {
+        this.status = NotificationOutboxStatus.FAILED;
+        this.retryCount++;
+        this.lastError = truncate(errorMessage);
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
+    }
+
+    private String truncate(String value) {
+        if (value == null || value.length() <= LAST_ERROR_MAX_LENGTH) {
+            return value;
+        }
+        return value.substring(0, LAST_ERROR_MAX_LENGTH);
     }
 
 }

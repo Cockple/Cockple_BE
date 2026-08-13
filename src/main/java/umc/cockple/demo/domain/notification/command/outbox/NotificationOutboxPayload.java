@@ -1,10 +1,10 @@
-package umc.cockple.demo.domain.notification.command;
+package umc.cockple.demo.domain.notification.command.outbox;
 
 import java.util.UUID;
 
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
-import umc.cockple.demo.domain.notification.enums.NotificationOutboxEventType;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxEventType;
 import umc.cockple.demo.domain.notification.enums.NotificationSource;
 
 public record NotificationOutboxPayload(
