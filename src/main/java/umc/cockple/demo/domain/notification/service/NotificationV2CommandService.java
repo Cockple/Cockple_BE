@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.notification.event.NotificationPushRequestedEvent
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.domain.notification.service.outbox.NotificationPushOutboxService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +37,7 @@ public class NotificationV2CommandService {
     private final NotificationRepository notificationRepository;
     private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationPushOutboxService notificationPushOutboxService;
 
     public void createNotification(NotificationCreateCommand command) {
         createNotification(command, null);
@@ -67,6 +69,7 @@ public class NotificationV2CommandService {
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
+        notificationPushOutboxService.enqueue(savedNotification.getId());
         eventPublisher.publishEvent(new NotificationPushRequestedEvent(savedNotification.getId()));
     }
 

@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.domain.notification.service.outbox.NotificationPushOutboxService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -46,6 +47,9 @@ class NotificationV2CommandServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private NotificationPushOutboxService notificationPushOutboxService;
 
     private Member member;
 
@@ -84,6 +88,7 @@ class NotificationV2CommandServiceTest {
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
+        verify(notificationPushOutboxService).enqueue(100L);
 
         Notification saved = captor.getValue();
         assertThat(saved.getPartyId()).isEqualTo(10L);
