@@ -100,7 +100,7 @@ public class NotificationPushOutboxProcessor {
             if (e instanceof IllegalArgumentException || e instanceof com.fasterxml.jackson.core.JsonProcessingException) {
                 claimService.markDead(claimed, e.getMessage());
             } else {
-                claimService.markFailed(claimed, e.getMessage());
+                claimService.markFailed(claimed, e.getMessage(), maxRetryCount);
             }
             log.warn("Notification Push outbox 처리 실패 - outboxId: {}", outbox.getId(), e);
             return true;

@@ -47,9 +47,13 @@ public class NotificationPushOutboxClaimService {
         }).orElse(false);
     }
 
-    public boolean markFailed(ClaimedNotificationPushOutbox claimed, String errorMessage) {
+    public boolean markFailed(ClaimedNotificationPushOutbox claimed, String errorMessage, int maxRetryCount) {
         return findClaimed(claimed).map(outbox -> {
-            outbox.markFailed(errorMessage);
+            if (outbox.getRetryCount() >= maxRetryCount) {
+                outbox.markDead(errorMessage);
+            } else {
+                outbox.markFailed(errorMessage);
+            }
             return true;
         }).orElse(false);
     }

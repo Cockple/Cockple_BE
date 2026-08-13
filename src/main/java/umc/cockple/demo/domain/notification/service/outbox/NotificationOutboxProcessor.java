@@ -82,7 +82,7 @@ public class NotificationOutboxProcessor {
                     || e instanceof com.fasterxml.jackson.core.JsonProcessingException) {
                 notificationOutboxClaimService.markDead(claimedOutbox, e.getMessage());
             } else {
-                notificationOutboxClaimService.markFailed(claimedOutbox, e.getMessage());
+                notificationOutboxClaimService.markFailed(claimedOutbox, e.getMessage(), maxRetryCount);
             }
             log.warn("Notification outbox 처리 실패 - outboxId: {}", outbox.getId(), e);
             return true;

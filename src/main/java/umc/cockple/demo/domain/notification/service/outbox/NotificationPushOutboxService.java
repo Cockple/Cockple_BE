@@ -20,7 +20,7 @@ public class NotificationPushOutboxService {
     private final ObjectMapper objectMapper;
 
     public void enqueue(Long notificationId) {
-        String deduplicationKey = notificationId + ":" + NotificationPushChannel.FCM;
+        String deduplicationKey = "notification:" + notificationId + ":" + NotificationPushChannel.FCM;
         if (notificationPushOutboxRepository.existsByDeduplicationKey(deduplicationKey)) {
             return;
         }

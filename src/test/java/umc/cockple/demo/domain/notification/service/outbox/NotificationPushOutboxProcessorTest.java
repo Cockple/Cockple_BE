@@ -84,6 +84,49 @@ class NotificationPushOutboxProcessorTest {
 
         assertThat(processor.processOne(1L)).isTrue();
 
-        verify(claimService).markFailed(claimed, "FCM 장애");
+        verify(claimService).markFailed(claimed, "FCM 장애", 5);
+    }
+
+    @Test
+    void claim에_실패하면_처리하지_않는다() {
+        given(claimService.claim(any(), any(Integer.class), any())).willReturn(Optional.empty());
+
+        assertThat(processor.processOne(1L)).isFalse();
+    }
+
+    @Test
+    void 탈퇴_회원은_푸시하지_않고_DONE_처리한다() {
+        member.withdraw();
+        Notification notification = Notification.builder()
+                .member(member).title("제목").content("내용").isRead(false).build();
+        given(claimService.claim(any(), any(Integer.class), any())).willReturn(Optional.of(claimed));
+        given(notificationRepository.findByIdWithMember(100L)).willReturn(Optional.of(notification));
+        given(claimService.markDone(claimed)).willReturn(true);
+
+        assertThat(processor.processOne(1L)).isTrue();
+
+        org.mockito.Mockito.verifyNoInteractions(fcmService);
+        verify(claimService).markDone(claimed);
+    }
+
+    @Test
+    void 알림이_없으면_DEAD_처리한다() {
+        given(claimService.claim(any(), any(Integer.class), any())).willReturn(Optional.of(claimed));
+        given(notificationRepository.findByIdWithMember(100L)).willReturn(Optional.empty());
+
+        assertThat(processor.processOne(1L)).isTrue();
+
+        verify(claimService).markDead(claimed, "알림을 찾을 수 없습니다. id=100");
+    }
+
+    @Test
+    void 최대_재시도에_도달한_실패는_DEAD로_전환한다() {
+        ReflectionTestUtils.setField(outbox, "retryCount", 5);
+        given(claimService.claim(any(), any(Integer.class), any())).willReturn(Optional.of(claimed));
+        given(notificationRepository.findByIdWithMember(100L)).willReturn(Optional.empty());
+
+        processor.processOne(1L);
+
+        verify(claimService).markDead(claimed, "알림을 찾을 수 없습니다. id=100");
     }
 }

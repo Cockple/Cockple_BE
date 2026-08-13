@@ -52,10 +52,14 @@ public class NotificationOutboxClaimService {
                 .orElse(false);
     }
 
-    public boolean markFailed(ClaimedNotificationOutbox claimedOutbox, String errorMessage) {
+    public boolean markFailed(ClaimedNotificationOutbox claimedOutbox, String errorMessage, int maxRetryCount) {
         return findClaimedOutbox(claimedOutbox)
                 .map(outbox -> {
-                    outbox.markFailed(errorMessage);
+                    if (outbox.getRetryCount() >= maxRetryCount) {
+                        outbox.markDead(errorMessage);
+                    } else {
+                        outbox.markFailed(errorMessage);
+                    }
                     return true;
                 })
                 .orElse(false);
