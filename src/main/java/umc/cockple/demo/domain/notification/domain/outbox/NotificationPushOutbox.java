@@ -16,6 +16,8 @@ import lombok.NoArgsConstructor;
 import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutboxPayload;
 import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
 import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
+import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -36,6 +38,29 @@ public class NotificationPushOutbox extends BaseEntity {
 
     @Column(name = "notification_id", nullable = false)
     private Long notificationId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false, length = 20)
+    private NotificationPushTargetType targetType;
+
+    @Column(name = "chat_room_id")
+    private Long chatRoomId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "chat_room_type", length = 30)
+    private ChatRoomType chatRoomType;
+
+    @Column(name = "title", length = 255)
+    private String title;
+
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "sender_id")
+    private Long senderId;
+
+    @Column(name = "active_subscriber_ids", columnDefinition = "TEXT")
+    private String activeSubscriberIds;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -60,6 +85,13 @@ public class NotificationPushOutbox extends BaseEntity {
     public static NotificationPushOutbox pending(NotificationPushOutboxPayload payload) {
         return NotificationPushOutbox.builder()
                 .notificationId(payload.notificationId())
+                .targetType(payload.targetType())
+                .chatRoomId(payload.chatRoomId())
+                .chatRoomType(payload.chatRoomType())
+                .title(payload.title())
+                .content(payload.content())
+                .senderId(payload.senderId())
+                .activeSubscriberIds(payload.activeSubscriberIdsJson())
                 .channel(payload.channel())
                 .status(NotificationPushOutboxStatus.PENDING)
                 .retryCount(0)
