@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
+import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +61,13 @@ class ChatWebSocketRequestDispatcherTest {
 
         // then
         ArgumentCaptor<WebSocketMessageDTO.Request> requestCaptor = ArgumentCaptor.forClass(WebSocketMessageDTO.Request.class);
-        then(commandHandler).should().handle(eq(session), requestCaptor.capture(), eq(memberId));
+        ArgumentCaptor<ChatCommandResponder> responderCaptor =
+                ArgumentCaptor.forClass(ChatCommandResponder.class);
+        then(commandHandler).should().handle(
+                requestCaptor.capture(),
+                eq(memberId),
+                responderCaptor.capture()
+        );
 
         WebSocketMessageDTO.Request request = requestCaptor.getValue();
         assertThat(request.type()).isEqualTo(WebSocketMessageType.SEND);
@@ -68,7 +75,10 @@ class ChatWebSocketRequestDispatcherTest {
         assertThat(request.content()).isEqualTo("hello");
         assertThat(request.images()).isEmpty();
 
-        then(webSocketResponseSender).shouldHaveNoInteractions();
+        responderCaptor.getValue().sendError("TEST_ERROR", "테스트 오류");
+        then(webSocketResponseSender).should()
+                .sendErrorMessage(session, "TEST_ERROR", "테스트 오류");
+
     }
 
     @Test

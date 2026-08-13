@@ -9,10 +9,11 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | Task | Location | Notes |
 |------|----------|-------|
 | WebSocket ingress | `presentation/websocket/ChatWebSocketHandler.java` | handles connect/message/close/error |
-| Auth for sockets | `presentation/websocket/` | JWT auth is enforced before handler logic |
+| Auth for sockets | `global/realtime/auth/` | Shared JWT handshake auth is enforced before handler logic |
 | WebSocket dispatch | `presentation/websocket/ChatWebSocketRequestDispatcher.java` | parses socket payloads and delegates authenticated requests |
 | WebSocket commands | `presentation/websocket/ChatWebSocketCommandHandler.java` | handles socket request types and publishes command events |
-| WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | serializes and sends socket responses |
+| WebSocket responses | `presentation/websocket/WebSocketResponseSender.java` | shapes chat responses and delegates encoding/session writes to shared realtime infra |
+| Chat session selection | `presentation/websocket/session/ChatWebSocketSessionRegistry.java` | selects the latest open legacy-chat session from the shared multi-session registry |
 | WebSocket response assembly | `converter/ChatWebSocketResponseAssembler.java` | shapes socket response payloads |
 | Realtime services | `service/websocket/` | subscription, room list cache, message fanout |
 | Read/query flows | `service/query/ChatQueryServiceImpl.java` | room lists, unread counts, history |
@@ -20,7 +21,7 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | DTO conversion | `converter/ChatConverter.java` | shapes REST/API and common message payloads |
 
 ## CONVENTIONS
-- `presentation/websocket/ChatWebSocketConfig` registers `/ws/chats` and wires the JWT interceptor.
+- `presentation/websocket/ChatWebSocketConfig` registers `/ws/chats` and wires the shared JWT handshake interceptor.
 - Request `type()` drives socket branching: send, subscribe, unsubscribe, and chat-list variants.
 - Party chat and direct chat share the slice but differ in display-name/image/read-status logic.
 - Room list freshness depends on `service/websocket/ChatRoomListCacheService`.

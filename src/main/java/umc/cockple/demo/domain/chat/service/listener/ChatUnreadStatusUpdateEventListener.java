@@ -10,10 +10,10 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,8 +24,8 @@ import java.util.Map;
 @Slf4j
 public class ChatUnreadStatusUpdateEventListener {
 
-    private final ChatMessageSender chatMessageSender;
-    private final ChatMessageEncoder chatMessageEncoder;
+    private final ChatMessageFanout chatMessageFanout;
+    private final RealtimeMessageEncoder chatMessageEncoder;
     private final ChatUnreadQueryService chatUnreadQueryService;
     private final ChatSessionRegistry chatSessionRegistry;
 
@@ -56,10 +56,8 @@ public class ChatUnreadStatusUpdateEventListener {
                                 .timestamp(LocalDateTime.now())
                                 .build();
 
-                EncodedChatMessage encodedMessage = chatMessageEncoder.encode(message).orElse(null);
-                if (encodedMessage != null) {
-                    chatMessageSender.send(memberId, encodedMessage);
-                }
+                EncodedRealtimeMessage encodedMessage = chatMessageEncoder.encode(message).orElse(null);
+                chatMessageFanout.send(memberId, encodedMessage, message.type(), message);
             } catch (Exception e) {
                 log.error("채팅 안읽음 상태 업데이트 처리 실패 - 멤버: {}", memberId, e);
             }
