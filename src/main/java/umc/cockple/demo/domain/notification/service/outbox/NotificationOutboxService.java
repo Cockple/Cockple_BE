@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.notification.command.NotificationRequest;
 import umc.cockple.demo.domain.notification.command.outbox.NotificationOutboxPayload;
-import umc.cockple.demo.domain.notification.domain.NotificationDestination;
-import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.domain.outbox.NotificationOutbox;
 import umc.cockple.demo.domain.notification.repository.outbox.NotificationOutboxRepository;
 import umc.cockple.demo.domain.notification.strategy.NotificationStrategyRegistry;

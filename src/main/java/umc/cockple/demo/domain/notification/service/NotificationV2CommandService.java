@@ -63,6 +63,7 @@ public class NotificationV2CommandService {
                 .isRead(false)
                 .imageKey(command.imageKey())
                 .data(command.data())
+                .notificationKey(command.notificationKey())
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
