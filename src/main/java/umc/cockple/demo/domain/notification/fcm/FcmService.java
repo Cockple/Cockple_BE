@@ -43,6 +43,14 @@ public class FcmService {
     }
 
     public void sendNotification(Member member, String title, String content) {
+        sendNotification(member, title, content, false);
+    }
+
+    public void sendNotificationWithRetry(Member member, String title, String content) {
+        sendNotification(member, title, content, true);
+    }
+
+    private void sendNotification(Member member, String title, String content, boolean propagateFailure) {
         if (applyFakeLatencyAndSkip(member.getId())) {
             return;
         }
@@ -67,6 +75,9 @@ public class FcmService {
             log.info("[FCM] 일반 알림 전송 완료 - memberId: {}, 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
         } catch (FirebaseMessagingException e) {
             log.error("FCM 전송 실패 - memberId: {}, error: {}", member.getId(), e.getMessage());
+            if (propagateFailure) {
+                throw new IllegalStateException("FCM 전송에 실패했습니다.", e);
+            }
         }
     }
 

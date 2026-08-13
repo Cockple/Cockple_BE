@@ -21,6 +21,7 @@ import umc.cockple.demo.global.common.BaseEntity;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "notification_push_outbox")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -63,5 +64,27 @@ public class NotificationPushOutbox extends BaseEntity {
                 .status(NotificationPushOutboxStatus.PENDING)
                 .retryCount(0)
                 .build();
+    }
+
+    public void markDone() {
+        this.status = NotificationPushOutboxStatus.DONE;
+        this.lastError = null;
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
+    }
+
+    public void markFailed(String errorMessage) {
+        this.status = NotificationPushOutboxStatus.FAILED;
+        this.retryCount++;
+        this.lastError = truncate(errorMessage);
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.claimToken = null;
+    }
+
+    private String truncate(String value) {
+        if (value == null || value.length() <= LAST_ERROR_MAX_LENGTH) {
+            return value;
+        }
+        return value.substring(0, LAST_ERROR_MAX_LENGTH);
     }
 }
