@@ -104,6 +104,9 @@ public class NotificationOutbox extends BaseEntity {
     @Column(name = "last_attempted_at")
     private LocalDateTime lastAttemptedAt;
 
+    @Column(name = "next_attempt_at")
+    private LocalDateTime nextAttemptAt;
+
     @Column(name = "claim_token", length = 36)
     private String claimToken;
 
@@ -133,6 +136,7 @@ public class NotificationOutbox extends BaseEntity {
 
     public void markProcessing(LocalDateTime attemptedAt, String claimToken) {
         this.status = NotificationOutboxStatus.PROCESSING;
+        this.retryCount++;
         this.lastAttemptedAt = attemptedAt;
         this.claimToken = claimToken;
     }
@@ -141,15 +145,28 @@ public class NotificationOutbox extends BaseEntity {
         this.status = NotificationOutboxStatus.DONE;
         this.lastError = null;
         this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = null;
         this.claimToken = null;
     }
 
     public void markFailed(String errorMessage) {
         this.status = NotificationOutboxStatus.FAILED;
-        this.retryCount++;
         this.lastError = truncate(errorMessage);
         this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = LocalDateTime.now().plusSeconds(backoffSeconds());
         this.claimToken = null;
+    }
+
+    public void markDead(String errorMessage) {
+        this.status = NotificationOutboxStatus.DEAD;
+        this.lastError = truncate(errorMessage);
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = null;
+        this.claimToken = null;
+    }
+
+    private long backoffSeconds() {
+        return Math.min(3600L, 30L * (1L << Math.min(Math.max(retryCount - 1, 0), 7)));
     }
 
     private String truncate(String value) {

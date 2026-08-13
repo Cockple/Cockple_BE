@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
@@ -47,7 +48,7 @@ class ChatNotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("Push Outbox 저장 예외는 전파된다")
+    @DisplayName("Push Outbox 저장 예외는 채팅 메시지로 전파하지 않는다")
     void handleChatNotification_swallowsException() {
         // given
         ChatNotificationEvent event = event();
@@ -55,17 +56,21 @@ class ChatNotificationEventListenerTest {
                 .given(notificationPushOutboxService).enqueueChat(event);
 
         assertThatCode(() -> listener.handleChatNotification(event))
-                .isInstanceOf(RuntimeException.class);
+                .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("핸들러는 BEFORE_COMMIT 트랜잭션 이벤트로 동작한다")
+    @DisplayName("핸들러는 AFTER_COMMIT 트랜잭션 이벤트와 Push executor로 동작한다")
     void handler_usesPushExecutorAndAfterCommit() throws NoSuchMethodException {
         Method handler = ChatNotificationEventListener.class
                 .getMethod("handleChatNotification", ChatNotificationEvent.class);
 
+        Async async = handler.getAnnotation(Async.class);
+        assertThat(async).isNotNull();
+        assertThat(async.value()).isEqualTo("notificationPushExecutor");
+
         TransactionalEventListener transactional = handler.getAnnotation(TransactionalEventListener.class);
         assertThat(transactional).isNotNull();
-        assertThat(transactional.phase()).isEqualTo(TransactionPhase.BEFORE_COMMIT);
+        assertThat(transactional.phase()).isEqualTo(TransactionPhase.AFTER_COMMIT);
     }
 }

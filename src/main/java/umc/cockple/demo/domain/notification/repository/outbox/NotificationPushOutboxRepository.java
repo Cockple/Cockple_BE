@@ -15,9 +15,12 @@ import java.util.Optional;
 
 public interface NotificationPushOutboxRepository extends JpaRepository<NotificationPushOutbox, Long> {
 
+    boolean existsByDeduplicationKey(String deduplicationKey);
+
     @Query("""
             SELECT outbox.id FROM NotificationPushOutbox outbox
             WHERE outbox.retryCount < :maxRetryCount
+            AND (outbox.nextAttemptAt IS NULL OR outbox.nextAttemptAt <= CURRENT_TIMESTAMP)
             AND (
                 outbox.status IN :retryableStatuses
                 OR (
@@ -39,10 +42,12 @@ public interface NotificationPushOutboxRepository extends JpaRepository<Notifica
     @Query("""
             UPDATE NotificationPushOutbox outbox
             SET outbox.status = :processingStatus,
+                outbox.retryCount = outbox.retryCount + 1,
                 outbox.lastAttemptedAt = :claimedAt,
                 outbox.claimToken = :claimToken
             WHERE outbox.id = :outboxId
             AND outbox.retryCount < :maxRetryCount
+            AND (outbox.nextAttemptAt IS NULL OR outbox.nextAttemptAt <= CURRENT_TIMESTAMP)
             AND (
                 outbox.status IN :retryableStatuses
                 OR (

@@ -39,6 +39,7 @@ public class ChatSendEventPublisher {
                 : savedMessage.getDisplayContent();
 
         eventPublisher.publishEvent(ChatNotificationEvent.create(
+                savedMessage.getId(),
                 chatRoom.getId(),
                 chatRoom.getType(),
                 notificationTitle,

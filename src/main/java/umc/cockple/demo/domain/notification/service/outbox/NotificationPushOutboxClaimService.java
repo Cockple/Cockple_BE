@@ -54,6 +54,13 @@ public class NotificationPushOutboxClaimService {
         }).orElse(false);
     }
 
+    public boolean markDead(ClaimedNotificationPushOutbox claimed, String errorMessage) {
+        return findClaimed(claimed).map(outbox -> {
+            outbox.markDead(errorMessage);
+            return true;
+        }).orElse(false);
+    }
+
     private Optional<NotificationPushOutbox> findClaimed(ClaimedNotificationPushOutbox claimed) {
         return repository.findByIdAndStatusAndClaimToken(
                 claimed.outbox().getId(), NotificationPushOutboxStatus.PROCESSING, claimed.claimToken());

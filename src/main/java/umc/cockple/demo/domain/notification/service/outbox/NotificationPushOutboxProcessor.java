@@ -82,8 +82,13 @@ public class NotificationPushOutboxProcessor {
             if (outbox.getTargetType() == NotificationPushTargetType.CHAT) {
                 sendChat(outbox);
             } else {
-                Notification notification = notificationRepository.findByIdWithMember(outbox.getNotificationId())
-                        .orElseThrow(() -> new IllegalStateException("알림을 찾을 수 없습니다. id=" + outbox.getNotificationId()));
+                Optional<Notification> notificationOptional = notificationRepository
+                        .findByIdWithMember(outbox.getNotificationId());
+                if (notificationOptional.isEmpty()) {
+                    claimService.markDead(claimed, "알림을 찾을 수 없습니다. id=" + outbox.getNotificationId());
+                    return true;
+                }
+                Notification notification = notificationOptional.get();
                 Member member = notification.getMember();
                 if (!member.isWithdrawn()) {
                     fcmService.sendNotificationWithRetry(member, notification.getTitle(), notification.getContent());
@@ -92,7 +97,11 @@ public class NotificationPushOutboxProcessor {
 
             return claimService.markDone(claimed);
         } catch (Exception e) {
-            claimService.markFailed(claimed, e.getMessage());
+            if (e instanceof IllegalArgumentException || e instanceof com.fasterxml.jackson.core.JsonProcessingException) {
+                claimService.markDead(claimed, e.getMessage());
+            } else {
+                claimService.markFailed(claimed, e.getMessage());
+            }
             log.warn("Notification Push outbox 처리 실패 - outboxId: {}", outbox.getId(), e);
             return true;
         }

@@ -13,10 +13,11 @@ public record NotificationPushOutboxPayload(
         String title,
         String content,
         Long senderId,
-        String activeSubscriberIdsJson
+        String activeSubscriberIdsJson,
+        String deduplicationKey
 ) {
     public NotificationPushOutboxPayload(Long notificationId, NotificationPushChannel channel) {
         this(notificationId, channel, NotificationPushTargetType.NOTIFICATION,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, notificationId + ":" + channel);
     }
 }

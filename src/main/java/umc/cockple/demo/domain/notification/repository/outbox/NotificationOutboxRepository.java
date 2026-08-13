@@ -18,6 +18,7 @@ public interface NotificationOutboxRepository extends JpaRepository<Notification
     @Query("""
             SELECT outbox.id FROM NotificationOutbox outbox
             WHERE outbox.retryCount < :maxRetryCount
+            AND (outbox.nextAttemptAt IS NULL OR outbox.nextAttemptAt <= CURRENT_TIMESTAMP)
             AND (
                 outbox.status IN :retryableStatuses
                 OR (
@@ -42,10 +43,12 @@ public interface NotificationOutboxRepository extends JpaRepository<Notification
     @Query("""
             UPDATE NotificationOutbox outbox
             SET outbox.status = :processingStatus,
+                outbox.retryCount = outbox.retryCount + 1,
                 outbox.lastAttemptedAt = :claimedAt,
                 outbox.claimToken = :claimToken
             WHERE outbox.id = :outboxId
             AND outbox.retryCount < :maxRetryCount
+            AND (outbox.nextAttemptAt IS NULL OR outbox.nextAttemptAt <= CURRENT_TIMESTAMP)
             AND (
                 outbox.status IN :retryableStatuses
                 OR (

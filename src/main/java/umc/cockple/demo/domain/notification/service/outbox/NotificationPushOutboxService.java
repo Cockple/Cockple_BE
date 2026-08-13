@@ -20,6 +20,10 @@ public class NotificationPushOutboxService {
     private final ObjectMapper objectMapper;
 
     public void enqueue(Long notificationId) {
+        String deduplicationKey = notificationId + ":" + NotificationPushChannel.FCM;
+        if (notificationPushOutboxRepository.existsByDeduplicationKey(deduplicationKey)) {
+            return;
+        }
         notificationPushOutboxRepository.save(
                 NotificationPushOutbox.pending(
                         new NotificationPushOutboxPayload(notificationId, NotificationPushChannel.FCM)
@@ -29,6 +33,10 @@ public class NotificationPushOutboxService {
 
     public void enqueueChat(ChatNotificationEvent event) {
         try {
+            String deduplicationKey = "chat:" + event.messageId();
+            if (notificationPushOutboxRepository.existsByDeduplicationKey(deduplicationKey)) {
+                return;
+            }
             notificationPushOutboxRepository.save(NotificationPushOutbox.pending(
                     new NotificationPushOutboxPayload(
                             null,
@@ -39,7 +47,8 @@ public class NotificationPushOutboxService {
                             event.notificationTitle(),
                             event.notificationContent(),
                             event.senderId(),
-                            serialize(event.activeSubscriberIds())
+                            serialize(event.activeSubscriberIds()),
+                            "chat:" + event.messageId()
                     )
             ));
         } catch (Exception e) {

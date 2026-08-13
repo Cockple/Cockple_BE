@@ -61,6 +61,15 @@ public class NotificationOutboxClaimService {
                 .orElse(false);
     }
 
+    public boolean markDead(ClaimedNotificationOutbox claimedOutbox, String errorMessage) {
+        return findClaimedOutbox(claimedOutbox)
+                .map(outbox -> {
+                    outbox.markDead(errorMessage);
+                    return true;
+                })
+                .orElse(false);
+    }
+
     private Optional<NotificationOutbox> findClaimedOutbox(ClaimedNotificationOutbox claimedOutbox) {
         return notificationOutboxRepository.findByIdAndStatusAndClaimToken(
                 claimedOutbox.outbox().getId(),

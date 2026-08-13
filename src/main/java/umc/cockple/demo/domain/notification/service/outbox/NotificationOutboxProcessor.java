@@ -70,7 +70,7 @@ public class NotificationOutboxProcessor {
         if (handler.isEmpty()) {
             log.warn("Notification outbox 처리 핸들러가 없습니다 - outboxId: {}, eventType: {}",
                     outbox.getId(), outbox.getEventType());
-            notificationOutboxClaimService.markFailed(claimedOutbox, "처리 핸들러를 찾을 수 없습니다.");
+            notificationOutboxClaimService.markDead(claimedOutbox, "처리 핸들러를 찾을 수 없습니다.");
             return true;
         }
 
@@ -78,7 +78,12 @@ public class NotificationOutboxProcessor {
             handler.get().handle(outbox);
             return notificationOutboxClaimService.markDone(claimedOutbox);
         } catch (Exception e) {
-            notificationOutboxClaimService.markFailed(claimedOutbox, e.getMessage());
+            if (e instanceof IllegalArgumentException
+                    || e instanceof com.fasterxml.jackson.core.JsonProcessingException) {
+                notificationOutboxClaimService.markDead(claimedOutbox, e.getMessage());
+            } else {
+                notificationOutboxClaimService.markFailed(claimedOutbox, e.getMessage());
+            }
             log.warn("Notification outbox 처리 실패 - outboxId: {}", outbox.getId(), e);
             return true;
         }

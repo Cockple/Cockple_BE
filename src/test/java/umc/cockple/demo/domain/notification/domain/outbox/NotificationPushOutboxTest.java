@@ -5,6 +5,8 @@ import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutbo
 import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
 import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationPushOutboxTest {
@@ -24,6 +26,7 @@ class NotificationPushOutboxTest {
         NotificationPushOutbox outbox = NotificationPushOutbox.pending(
                 new NotificationPushOutboxPayload(10L, NotificationPushChannel.FCM));
 
+        outbox.markProcessing(LocalDateTime.now(), "token");
         outbox.markFailed("FCM 장애");
 
         assertThat(outbox.getStatus()).isEqualTo(NotificationPushOutboxStatus.FAILED);
@@ -35,6 +38,7 @@ class NotificationPushOutboxTest {
     void 완료하면_DONE이_되고_에러가_초기화된다() {
         NotificationPushOutbox outbox = NotificationPushOutbox.pending(
                 new NotificationPushOutboxPayload(10L, NotificationPushChannel.FCM));
+        outbox.markProcessing(LocalDateTime.now(), "token");
         outbox.markFailed("FCM 장애");
 
         outbox.markDone();

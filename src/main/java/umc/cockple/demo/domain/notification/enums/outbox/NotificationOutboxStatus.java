@@ -6,7 +6,8 @@ public enum NotificationOutboxStatus {
     PENDING,
     PROCESSING,
     FAILED,
-    DONE;
+    DONE,
+    DEAD;
 
     public static List<NotificationOutboxStatus> retryableStatuses() {
         return List.of(PENDING, FAILED);

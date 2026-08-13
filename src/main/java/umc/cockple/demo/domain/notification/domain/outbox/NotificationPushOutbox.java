@@ -79,8 +79,19 @@ public class NotificationPushOutbox extends BaseEntity {
     @Column(name = "last_attempted_at")
     private LocalDateTime lastAttemptedAt;
 
+    @Column(name = "next_attempt_at")
+    private LocalDateTime nextAttemptAt;
+
     @Column(name = "claim_token", length = 36)
     private String claimToken;
+
+    /**
+     * 동일 이벤트의 중복 적재를 막기 위한 키다.
+     * 외부 FCM 호출 성공 후 DONE 저장 전에 프로세스가 종료되면 재발송될 수 있어
+     * exactly-once 발송까지 보장하지는 않는다.
+     */
+    @Column(name = "deduplication_key", nullable = false, length = 255)
+    private String deduplicationKey;
 
     public static NotificationPushOutbox pending(NotificationPushOutboxPayload payload) {
         return NotificationPushOutbox.builder()
@@ -92,25 +103,46 @@ public class NotificationPushOutbox extends BaseEntity {
                 .content(payload.content())
                 .senderId(payload.senderId())
                 .activeSubscriberIds(payload.activeSubscriberIdsJson())
+                .deduplicationKey(payload.deduplicationKey())
                 .channel(payload.channel())
                 .status(NotificationPushOutboxStatus.PENDING)
                 .retryCount(0)
                 .build();
     }
 
+    public void markProcessing(LocalDateTime attemptedAt, String claimToken) {
+        this.status = NotificationPushOutboxStatus.PROCESSING;
+        this.retryCount++;
+        this.lastAttemptedAt = attemptedAt;
+        this.claimToken = claimToken;
+    }
+
     public void markDone() {
         this.status = NotificationPushOutboxStatus.DONE;
         this.lastError = null;
         this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = null;
         this.claimToken = null;
     }
 
     public void markFailed(String errorMessage) {
         this.status = NotificationPushOutboxStatus.FAILED;
-        this.retryCount++;
         this.lastError = truncate(errorMessage);
         this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = LocalDateTime.now().plusSeconds(backoffSeconds());
         this.claimToken = null;
+    }
+
+    public void markDead(String errorMessage) {
+        this.status = NotificationPushOutboxStatus.DEAD;
+        this.lastError = truncate(errorMessage);
+        this.lastAttemptedAt = LocalDateTime.now();
+        this.nextAttemptAt = null;
+        this.claimToken = null;
+    }
+
+    private long backoffSeconds() {
+        return Math.min(3600L, 30L * (1L << Math.min(Math.max(retryCount - 1, 0), 7)));
     }
 
     private String truncate(String value) {

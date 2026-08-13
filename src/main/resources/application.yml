@@ -79,9 +79,11 @@ cockple:
   notification-outbox:
     scheduler:
       enabled: true
+      fixed-delay-ms: 5000
   notification-push-outbox:
     scheduler:
       enabled: true
+      fixed-delay-ms: 5000
   web:
     # WS도 이 목록 공유. cockple-fe.vercel.app/(끝슬래시)는 WS 기존값 유지용(무해).
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.site,https://www.cockple.site,https://staging.cockple.site,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
