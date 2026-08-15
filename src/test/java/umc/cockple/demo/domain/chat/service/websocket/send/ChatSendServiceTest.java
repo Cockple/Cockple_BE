@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
@@ -136,6 +137,84 @@ class ChatSendServiceTest {
                 .publishChatNotificationEvent(chatRoom, savedMessage, sender, List.of(senderId));
         then(chatSendEventPublisher).should().publishChatRoomListUpdateEvent(chatRoom, savedMessage);
         then(chatSendEventPublisher).should().publishUnreadStatusUpdateEvent(chatRoom, senderId);
+    }
+
+    @Test
+    @DisplayName("일반 메시지 응답에는 프로필 URL과 저장된 파일 정보가 저장 순서대로 포함된다")
+    void sendMessage_responseContainsProfileAndFilesInStoredOrder() {
+        // given
+        Long roomId = 20L;
+        Long senderId = 101L;
+        Member sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+        ReflectionTestUtils.setField(sender, "id", senderId);
+
+        Party party = PartyFixture.createParty("배드민턴 모임", senderId, PartyFixture.createPartyAddr("서울", "강남구"));
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
+        ReflectionTestUtils.setField(chatRoom, "id", roomId);
+
+        List<WebSocketMessageDTO.Request.FileInfo> requestFiles = List.of(
+                WebSocketMessageDTO.Request.FileInfo.builder()
+                        .imgKey("chat/second.jpg")
+                        .imgOrder(2)
+                        .originalFileName("second.jpg")
+                        .fileSize(200L)
+                        .fileType("image/jpeg")
+                        .build(),
+                WebSocketMessageDTO.Request.FileInfo.builder()
+                        .imgKey("chat/first.jpg")
+                        .imgOrder(1)
+                        .originalFileName("first.jpg")
+                        .fileSize(100L)
+                        .fileType("image/jpeg")
+                        .build()
+        );
+
+        given(chatRoomReader.read(roomId)).willReturn(chatRoom);
+        given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
+        given(chatProcessor.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
+            ChatMessage savedMessage = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedMessage, "id", 300L);
+
+            ChatMessageFile secondFile = ChatMessageFile.create(
+                    savedMessage, "chat/second.jpg", 2, "second.jpg", 200L, "image/jpeg");
+            ChatMessageFile firstFile = ChatMessageFile.create(
+                    savedMessage, "chat/first.jpg", 1, "first.jpg", 100L, "image/jpeg");
+            ReflectionTestUtils.setField(secondFile, "id", 302L);
+            ReflectionTestUtils.setField(firstFile, "id", 301L);
+            ReflectionTestUtils.setField(savedMessage, "chatMessageFiles", List.of(secondFile, firstFile));
+            return savedMessage;
+        });
+        given(chatProcessor.generateFileUrl(any(ChatMessageFile.class))).willAnswer(invocation -> {
+            ChatMessageFile file = invocation.getArgument(0);
+            return "https://cdn.example.com/" + file.getFileKey();
+        });
+        given(activeChatRoomSubscriberReader.findActiveSubscribers(roomId)).willReturn(List.of(senderId));
+        given(sentMessageReadStatusService.markActiveSubscribersAsRead(roomId, 300L, List.of(senderId), senderId))
+                .willReturn(2);
+
+        // when
+        chatSendService.sendMessage(roomId, "사진입니다", requestFiles, senderId);
+
+        // then
+        then(chatMessageFileAppender).should().append(any(ChatMessage.class), eq(requestFiles));
+
+        ArgumentCaptor<WebSocketMessageDTO.MessageResponse> responseCaptor =
+                ArgumentCaptor.forClass(WebSocketMessageDTO.MessageResponse.class);
+        then(chatRoomMessageBroadcaster).should()
+                .broadcast(eq(roomId), responseCaptor.capture(), eq(List.of(senderId)), eq(senderId));
+
+        WebSocketMessageDTO.MessageResponse response = responseCaptor.getValue();
+        assertThat(response.senderProfileImageUrl()).isEqualTo("https://cdn.example.com/profile");
+        assertThat(response.images()).extracting(image -> image.imageId())
+                .containsExactly(302L, 301L);
+        assertThat(response.images()).extracting(image -> image.imageUrl())
+                .containsExactly(
+                        "https://cdn.example.com/chat/second.jpg",
+                        "https://cdn.example.com/chat/first.jpg"
+                );
+        assertThat(response.images()).extracting(image -> image.imgOrder())
+                .containsExactly(2, 1);
     }
 
     @Test
