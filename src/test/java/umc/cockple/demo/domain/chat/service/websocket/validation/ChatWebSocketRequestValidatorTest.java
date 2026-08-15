@@ -10,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomMemberReader;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,10 +33,10 @@ class ChatWebSocketRequestValidatorTest {
     private ChatWebSocketRequestValidator chatWebSocketRequestValidator;
 
     @Mock
-    private ChatRoomRepository chatRoomRepository;
+    private ChatRoomReader chatRoomReader;
 
     @Mock
-    private ChatRoomMemberRepository chatRoomMemberRepository;
+    private ChatRoomMemberReader chatRoomMemberReader;
 
     @Nested
     @DisplayName("validateSendRequest")
@@ -70,26 +70,26 @@ class ChatWebSocketRequestValidatorTest {
                     ChatErrorCode.CHATROOM_ID_NECESSARY,
                     () -> chatWebSocketRequestValidator.validateSendRequest(null, "hello", List.of(), 1L)
             );
-            verify(chatRoomRepository, never()).existsById(null);
+            verify(chatRoomReader, never()).exists(null);
         }
 
         @Test
         @DisplayName("실패 - 채팅방이 없으면 CHAT_ROOM_NOT_FOUND 예외를 던진다")
         void fail_whenChatRoomNotFound() {
-            given(chatRoomRepository.existsById(10L)).willReturn(false);
+            given(chatRoomReader.exists(10L)).willReturn(false);
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_NOT_FOUND,
                     () -> chatWebSocketRequestValidator.validateSendRequest(10L, "hello", List.of(), 1L)
             );
-            verify(chatRoomMemberRepository, never()).existsByChatRoomIdAndMemberId(10L, 1L);
+            verify(chatRoomMemberReader, never()).exists(10L, 1L);
         }
 
         @Test
         @DisplayName("실패 - 채팅방 멤버가 아니면 CHAT_ROOM_ACCESS_DENIED 예외를 던진다")
         void fail_whenNotChatRoomMember() {
-            given(chatRoomRepository.existsById(10L)).willReturn(true);
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(false);
+            given(chatRoomReader.exists(10L)).willReturn(true);
+            given(chatRoomMemberReader.exists(10L, 1L)).willReturn(false);
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
@@ -139,7 +139,7 @@ class ChatWebSocketRequestValidatorTest {
         @Test
         @DisplayName("실패 - 채팅방이 없으면 CHAT_ROOM_NOT_FOUND 예외를 던진다")
         void fail_whenChatRoomNotFound() {
-            given(chatRoomRepository.existsById(10L)).willReturn(false);
+            given(chatRoomReader.exists(10L)).willReturn(false);
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_NOT_FOUND,
@@ -150,8 +150,8 @@ class ChatWebSocketRequestValidatorTest {
         @Test
         @DisplayName("실패 - 권한이 없으면 CHAT_ROOM_ACCESS_DENIED 예외를 던진다")
         void fail_whenNotChatRoomMember() {
-            given(chatRoomRepository.existsById(10L)).willReturn(true);
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(false);
+            given(chatRoomReader.exists(10L)).willReturn(true);
+            given(chatRoomMemberReader.exists(10L, 1L)).willReturn(false);
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
@@ -167,20 +167,20 @@ class ChatWebSocketRequestValidatorTest {
         @Test
         @DisplayName("성공 - 중복 채팅방 ID는 distinct 처리해 권한을 확인한다")
         void success_checksDistinctRoomIds() {
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(20L, 1L)).willReturn(true);
+            given(chatRoomMemberReader.exists(10L, 1L)).willReturn(true);
+            given(chatRoomMemberReader.exists(20L, 1L)).willReturn(true);
 
             assertThatCode(() -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, List.of(10L, 10L, 20L)))
                     .doesNotThrowAnyException();
 
-            verify(chatRoomMemberRepository, times(1)).existsByChatRoomIdAndMemberId(10L, 1L);
-            verify(chatRoomMemberRepository, times(1)).existsByChatRoomIdAndMemberId(20L, 1L);
+            verify(chatRoomMemberReader, times(1)).exists(10L, 1L);
+            verify(chatRoomMemberReader, times(1)).exists(20L, 1L);
         }
 
         @Test
         @DisplayName("성공 - 구독 해제도 동일한 채팅방 목록 검증을 통과한다")
         void success_unsubscriptionUsesSameValidation() {
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
+            given(chatRoomMemberReader.exists(10L, 1L)).willReturn(true);
 
             assertThatCode(() -> chatWebSocketRequestValidator.validateChatListUnsubscriptionRequest(1L, List.of(10L)))
                     .doesNotThrowAnyException();
@@ -226,8 +226,8 @@ class ChatWebSocketRequestValidatorTest {
         @Test
         @DisplayName("실패 - 하나라도 접근 권한이 없으면 CHAT_ROOM_ACCESS_DENIED 예외를 던진다")
         void fail_whenAnyRoomAccessDenied() {
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
-            given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(20L, 1L)).willReturn(false);
+            given(chatRoomMemberReader.exists(10L, 1L)).willReturn(true);
+            given(chatRoomMemberReader.exists(20L, 1L)).willReturn(false);
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
@@ -237,8 +237,8 @@ class ChatWebSocketRequestValidatorTest {
     }
 
     private void givenExistingRoomAndMembership(Long chatRoomId, Long memberId) {
-        given(chatRoomRepository.existsById(chatRoomId)).willReturn(true);
-        given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId)).willReturn(true);
+        given(chatRoomReader.exists(chatRoomId)).willReturn(true);
+        given(chatRoomMemberReader.exists(chatRoomId, memberId)).willReturn(true);
     }
 
     private void assertChatException(ChatErrorCode expectedCode, ThrowingRunnable runnable) {

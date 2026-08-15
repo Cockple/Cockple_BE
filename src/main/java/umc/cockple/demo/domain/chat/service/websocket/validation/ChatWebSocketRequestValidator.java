@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO.Request.FileInfo;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomMemberReader;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 
 import java.util.List;
 
@@ -16,8 +16,8 @@ import java.util.List;
 @Slf4j
 public class ChatWebSocketRequestValidator {
 
-    private final ChatRoomRepository chatRoomRepository;
-    private final ChatRoomMemberRepository chatRoomMemberRepository;
+    private final ChatRoomReader chatRoomReader;
+    private final ChatRoomMemberReader chatRoomMemberReader;
 
     public void validateSendRequest(Long chatRoomId, String content, List<FileInfo> files, Long senderId) {
         validateChatRoom(chatRoomId);
@@ -52,13 +52,13 @@ public class ChatWebSocketRequestValidator {
             throw new ChatException(ChatErrorCode.CHATROOM_ID_NECESSARY);
         }
 
-        if (!chatRoomRepository.existsById(chatRoomId)) {
+        if (!chatRoomReader.exists(chatRoomId)) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND);
         }
     }
 
     private void validateChatRoomMember(Long chatRoomId, Long memberId) {
-        if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId))
+        if (!chatRoomMemberReader.exists(chatRoomId, memberId))
             throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }
 
@@ -93,7 +93,7 @@ public class ChatWebSocketRequestValidator {
                 throw new ChatException(ChatErrorCode.INVALID_CHATROOM_ID);
             }
 
-            if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId)) {
+            if (!chatRoomMemberReader.exists(chatRoomId, memberId)) {
                 throw new ChatException(ChatErrorCode.CHAT_ROOM_ACCESS_DENIED);
             }
         }
