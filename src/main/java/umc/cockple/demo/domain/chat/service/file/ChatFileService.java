@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.file;
 
 import com.google.cloud.storage.Blob;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +17,10 @@ import umc.cockple.demo.domain.chat.domain.DownloadToken;
 import umc.cockple.demo.domain.chat.dto.ChatDownloadTokenDTO;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.DownloadTokenRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatFileReader;
+import umc.cockple.demo.domain.chat.service.support.reader.DownloadTokenReader;
 import umc.cockple.demo.domain.file.service.FileService;
 
 import java.nio.charset.StandardCharsets;
@@ -29,26 +30,22 @@ import java.time.LocalDateTime;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ChatFileServiceImpl implements ChatFileService{
+public class ChatFileService {
 
-    private final ChatFileRepository chatFileRepository;
+    private final ChatFileReader chatFileReader;
+    private final DownloadTokenReader downloadTokenReader;
     private final DownloadTokenRepository downloadTokenRepository;
     private final ChatConverter chatConverter;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final FileService fileService;
     private static final int TOKEN_VALIDITY_SECONDS = 180;
 
-    @Override
     public ChatDownloadTokenDTO.Response issueDownloadToken(Long fileId, Long memberId) {
         log.info("다운로드 토큰 발급 시작 - fileId: {}, memberId: {}", fileId, memberId);
 
-        //채팅 파일 조회
-        ChatMessageFile chatFile = findChatFileOrThrow(fileId);
-
-        //사용자 검증
+        ChatMessageFile chatFile = chatFileReader.read(fileId);
         validateMemberPermission(chatFile, memberId);
 
-        //다운로드 토큰 생성 및 저장
         DownloadToken downloadToken = DownloadToken.create(fileId, memberId, TOKEN_VALIDITY_SECONDS);
         downloadTokenRepository.save(downloadToken);
 
@@ -56,14 +53,11 @@ public class ChatFileServiceImpl implements ChatFileService{
         return chatConverter.toDownloadTokenResponse(downloadToken, TOKEN_VALIDITY_SECONDS);
     }
 
-    @Override
     public ResponseEntity<Resource> downloadFile(Long fileId, String token) {
         log.info("파일 다운로드 시작 - fileId: {}", fileId);
 
-        //토큰 검증
         validateToken(fileId, token);
-        //채팅 파일 조회
-        ChatMessageFile chatFile = findChatFileOrThrow(fileId);
+        ChatMessageFile chatFile = chatFileReader.read(fileId);
 
         //GCS에서 파일 객체 직접 가져오기
         Blob blob = fileService.downloadFile(chatFile.getFileKey());
@@ -73,11 +67,6 @@ public class ChatFileServiceImpl implements ChatFileService{
         return responseEntity;
     }
 
-    private ChatMessageFile findChatFileOrThrow(Long fileId) {
-        return chatFileRepository.findById(fileId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.FILE_NOT_FOUND));
-    }
-
     private void validateMemberPermission(ChatMessageFile chatFile, Long memberId) {
         Long roomId = chatFile.getChatMessage().getChatRoom().getId();
         if (!chatRoomMemberRepository.existsByChatRoomIdAndMemberId(roomId, memberId))
@@ -85,8 +74,7 @@ public class ChatFileServiceImpl implements ChatFileService{
     }
 
     private void validateToken(Long fileId, String tokenValue) {
-        DownloadToken token = downloadTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.INVALID_DOWNLOAD_TOKEN));
+        DownloadToken token = downloadTokenReader.read(tokenValue);
         //토큰 유효성 검증 (만료 시간, 파일 ID)
         if (token.getExpiresAt().isBefore(LocalDateTime.now()) || !token.getFileId().equals(fileId)) {
             throw new ChatException(ChatErrorCode.INVALID_DOWNLOAD_TOKEN);

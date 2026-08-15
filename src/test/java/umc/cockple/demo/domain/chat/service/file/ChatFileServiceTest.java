@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.file;
 
 import com.google.cloud.storage.Blob;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,9 +19,10 @@ import umc.cockple.demo.domain.chat.domain.DownloadToken;
 import umc.cockple.demo.domain.chat.dto.ChatDownloadTokenDTO;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.repository.ChatFileRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.DownloadTokenRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatFileReader;
+import umc.cockple.demo.domain.chat.service.support.reader.DownloadTokenReader;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.enums.Gender;
@@ -31,7 +32,6 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,7 +43,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatFileService 단위 테스트")
 class ChatFileServiceTest {
-    @Mock private ChatFileRepository chatFileRepository;
+    @Mock private ChatFileReader chatFileReader;
+    @Mock private DownloadTokenReader downloadTokenReader;
     @Mock private DownloadTokenRepository downloadTokenRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
     @Mock private FileService fileService;
@@ -57,8 +58,9 @@ class ChatFileServiceTest {
     @BeforeEach
     void setUp() {
         ChatConverter chatConverter = new ChatConverter();
-        chatFileService = new ChatFileServiceImpl(
-                chatFileRepository,
+        chatFileService = new ChatFileService(
+                chatFileReader,
+                downloadTokenReader,
                 downloadTokenRepository,
                 chatConverter,
                 chatRoomMemberRepository,
@@ -88,7 +90,7 @@ class ChatFileServiceTest {
         @Test
         @DisplayName("채팅방 권한이 있는 멤버는 토큰을 성공적으로 발급받는다")
         void success() {
-            given(chatFileRepository.findById(100L)).willReturn(Optional.of(chatFile));
+            given(chatFileReader.read(100L)).willReturn(chatFile);
             given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
 
             ChatDownloadTokenDTO.Response response = chatFileService.issueDownloadToken(100L, 1L);
@@ -101,7 +103,7 @@ class ChatFileServiceTest {
         @Test
         @DisplayName("존재하지 않는 파일 ID를 요청하면 FILE_NOT_FOUND 예외가 발생한다")
         void throwExceptionWhenFileNotFound() {
-            given(chatFileRepository.findById(999L)).willReturn(Optional.empty());
+            given(chatFileReader.read(999L)).willThrow(new ChatException(ChatErrorCode.FILE_NOT_FOUND));
 
             ChatException exception = assertThrows(ChatException.class, () -> chatFileService.issueDownloadToken(999L, 1L));
 
@@ -111,7 +113,7 @@ class ChatFileServiceTest {
         @Test
         @DisplayName("채팅방 멤버가 아닌 경우 권한 부족으로 CHAT_ROOM_ACCESS_DENIED 예외가 발생한다")
         void throwExceptionWhenAccessDenied() {
-            given(chatFileRepository.findById(100L)).willReturn(Optional.of(chatFile));
+            given(chatFileReader.read(100L)).willReturn(chatFile);
             given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 2L)).willReturn(false);
 
             ChatException exception = assertThrows(
@@ -131,8 +133,8 @@ class ChatFileServiceTest {
         void success() {
             DownloadToken token = DownloadToken.create(100L, 1L, 180);
             ReflectionTestUtils.setField(token, "expiresAt", LocalDateTime.now().plusMinutes(5));
-            given(downloadTokenRepository.findByToken("valid-token")).willReturn(Optional.of(token));
-            given(chatFileRepository.findById(100L)).willReturn(Optional.of(chatFile));
+            given(downloadTokenReader.read("valid-token")).willReturn(token);
+            given(chatFileReader.read(100L)).willReturn(chatFile);
             Blob mockBlob = mock(Blob.class);
             given(mockBlob.getSize()).willReturn(1024L);
             given(mockBlob.getContentType()).willReturn("image/webp");
@@ -152,7 +154,7 @@ class ChatFileServiceTest {
         void throwExceptionWhenInvalidToken() {
             DownloadToken token = DownloadToken.create(100L, 1L, 0);
             ReflectionTestUtils.setField(token, "expiresAt", LocalDateTime.now().minusMinutes(5)); // 만료된 토큰
-            given(downloadTokenRepository.findByToken("expired-token")).willReturn(Optional.of(token));
+            given(downloadTokenReader.read("expired-token")).willReturn(token);
 
             ChatException exception = assertThrows(ChatException.class, () ->
                     chatFileService.downloadFile(100L, "expired-token")

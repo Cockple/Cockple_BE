@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.service.command.DirectChatRoomCommandService;
-import umc.cockple.demo.domain.chat.service.ChatFileService;
+import umc.cockple.demo.domain.chat.service.file.ChatFileService;
 import umc.cockple.demo.domain.chat.service.query.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
