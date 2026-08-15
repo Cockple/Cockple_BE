@@ -45,12 +45,12 @@ public class ExerciseGuestQueryService {
 
         List<ExerciseParticipantSnapshot> allParticipants = participantSnapshotAssembler.getAllSortedParticipants(
                 exerciseId, exercise.getParty());
-        Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap = createGuestNumberMap(
+        Map<Long, GuestPosition> guestPositionById = createGuestPositionMap(
                 allParticipants, exercise.getMaxCapacity());
 
         String inviterName = member.getMemberName();
         List<ExerciseMyGuestListResult.GuestInfo> guestInfoList =
-                buildGuestInfoList(myGuests, guestNumberMap, inviterName);
+                buildGuestInfoList(myGuests, guestPositionById, inviterName);
 
         log.info("내가 초대한 게스트 조회 완료 - exerciseId: {}", exerciseId);
 
@@ -61,54 +61,66 @@ public class ExerciseGuestQueryService {
                 guestInfoList.size(), maleCount, guestInfoList.size() - maleCount, guestInfoList);
     }
 
-    private Map<Long, ExerciseMyGuestListResult.GuestGroup> createGuestNumberMap(
+    private Map<Long, GuestPosition> createGuestPositionMap(
             List<ExerciseParticipantSnapshot> allParticipants,
             Integer maxCapacity) {
 
-        Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap = new HashMap<>();
+        Map<Long, GuestPosition> guestPositionById = new HashMap<>();
 
         for (int i = 0; i < allParticipants.size(); i++) {
             ExerciseParticipantSnapshot participant = allParticipants.get(i);
 
             if (participant.isGuest()) {
                 if (i < maxCapacity) {
-                    guestNumberMap.put(participant.participantId(),
-                            ExerciseMyGuestListResult.GuestGroup.participant(i + 1));
+                    guestPositionById.put(participant.participantId(), GuestPosition.participant(i + 1));
                 } else {
                     int waitingNumber = i - maxCapacity + 1;
-                    guestNumberMap.put(participant.participantId(),
-                            ExerciseMyGuestListResult.GuestGroup.waiting(waitingNumber));
+                    guestPositionById.put(participant.participantId(), GuestPosition.waiting(waitingNumber));
                 }
             }
         }
 
-        return guestNumberMap;
+        return guestPositionById;
     }
 
     private List<ExerciseMyGuestListResult.GuestInfo> buildGuestInfoList(
             List<Guest> myGuests,
-            Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap,
+            Map<Long, GuestPosition> guestPositionById,
             String inviterName) {
 
         return myGuests.stream()
-                .map(guest -> toGuestInfo(guest, guestNumberMap, inviterName))
+                .map(guest -> toGuestInfo(guest, guestPositionById, inviterName))
                 .toList();
     }
 
     private ExerciseMyGuestListResult.GuestInfo toGuestInfo(
             Guest guest,
-            Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap,
+            Map<Long, GuestPosition> guestPositionById,
             String inviterName) {
-        ExerciseMyGuestListResult.GuestGroup guestGroup = guestNumberMap.get(guest.getId());
+        GuestPosition guestPosition = guestPositionById.get(guest.getId());
 
         return new ExerciseMyGuestListResult.GuestInfo(
                 guest.getId(),
-                guestGroup.waiting(),
-                guestGroup.participantNumber(),
+                guestPosition.waiting(),
+                guestPosition.participantNumber(),
                 guest.getGuestName(),
                 guest.getGender(),
                 guest.getLevel(),
                 inviterName
         );
+    }
+
+    private record GuestPosition(
+            int participantNumber,
+            boolean waiting
+    ) {
+
+        private static GuestPosition participant(int number) {
+            return new GuestPosition(number, false);
+        }
+
+        private static GuestPosition waiting(int number) {
+            return new GuestPosition(number, true);
+        }
     }
 }

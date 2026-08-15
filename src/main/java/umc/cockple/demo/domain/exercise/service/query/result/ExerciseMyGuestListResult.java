@@ -26,18 +26,4 @@ public record ExerciseMyGuestListResult(
             String inviterName
     ) {
     }
-
-    public record GuestGroup(
-            int participantNumber,
-            boolean waiting
-    ) {
-
-        public static GuestGroup participant(int number) {
-            return new GuestGroup(number, false);
-        }
-
-        public static GuestGroup waiting(int number) {
-            return new GuestGroup(number, true);
-        }
-    }
 }

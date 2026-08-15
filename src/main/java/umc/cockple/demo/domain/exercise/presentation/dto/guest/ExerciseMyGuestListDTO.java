@@ -30,20 +30,6 @@ public class ExerciseMyGuestListDTO {
     }
 
     @Builder
-    public record GuestGroups(
-            Integer participantNumber,
-            Boolean isWaiting
-    ){
-        public static GuestGroups participant(int number) {
-            return new GuestGroups(number, false);
-        }
-
-        public static GuestGroups waiting(int number) {
-            return new GuestGroups(number, true);
-        }
-    }
-
-    @Builder
     public record GuestStatistics(
             int totalCount,     // 전체 게스트 수
             int maleCount,      // 남자 게스트 수
