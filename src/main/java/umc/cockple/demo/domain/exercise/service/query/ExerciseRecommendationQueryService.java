@@ -4,16 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationCalendarResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationResult;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseRecommendationResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
@@ -35,9 +35,9 @@ public class ExerciseRecommendationQueryService {
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseDistanceCalculator exerciseDistanceCalculator;
     private final MemberLookupService memberLookupService;
-    private final ExerciseRecommendationQueryMapper exerciseRecommendationMapper;
+    private final ExerciseRecommendationResultAssembler exerciseRecommendationResultAssembler;
 
-    public ExerciseRecommendationDTO.Response getRecommendedExercises(Long memberId) {
+    public ExerciseRecommendationResult getRecommendedExercises(Long memberId) {
 
         log.info("운동 추천 조회 시작 - memberId: {}", memberId);
 
@@ -55,10 +55,10 @@ public class ExerciseRecommendationQueryService {
 
         log.info("운동 추천 조회 종료 - memberId: {}, 결과 : {}", memberId, exerciseIds.size());
 
-        return exerciseRecommendationMapper.toExerciseRecommendationResponse(finalExercises, bookmarkStatus);
+        return exerciseRecommendationResultAssembler.toExerciseRecommendationResult(finalExercises, bookmarkStatus);
     }
 
-    public ExerciseRecommendationCalendarDTO.Response getRecommendedExerciseCalendar(
+    public ExerciseRecommendationCalendarResult getRecommendedExerciseCalendar(
             Long memberId,
             LocalDate startDate,
             LocalDate endDate,
@@ -88,7 +88,7 @@ public class ExerciseRecommendationQueryService {
 
         log.info("사용자 추천 운동 캘린더 조회 완료 - memberId: {}, 결과 수: {}", memberId, exercises.size());
 
-        return exerciseRecommendationMapper.toRecommendationCalendarResponse(
+        return exerciseRecommendationResultAssembler.toRecommendationCalendarResult(
                 exercises, bookmarkStatus, participantCountMap, mainAddr
                 , dateRange.start(), dateRange.end(), isCockpleRecommend, sortType);
     }

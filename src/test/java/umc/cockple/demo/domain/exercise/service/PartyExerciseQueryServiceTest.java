@@ -7,44 +7,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.query.PartyExerciseCalendarQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
+import umc.cockple.demo.domain.exercise.service.query.result.PartyExerciseCalendarResult;
+import umc.cockple.demo.domain.exercise.service.support.assembler.PartyExerciseCalendarResultAssembler;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
-import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
@@ -58,29 +36,20 @@ import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
-import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -103,7 +72,6 @@ class PartyExerciseQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper = new PartyExerciseCalendarQueryMapper();
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
                 new MemberExerciseReader(memberExerciseRepository),
@@ -112,7 +80,7 @@ class PartyExerciseQueryServiceTest {
                 new MemberLookupService(memberRepository),
                 new PartyLookupService(partyRepository),
                 new MemberPartyLookupService(memberPartyRepository),
-                partyExerciseCalendarMapper
+                new PartyExerciseCalendarResultAssembler()
         );
 
         Member manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
@@ -179,13 +147,13 @@ class PartyExerciseQueryServiceTest {
                         .willReturn(List.of(exercise.getId()));
 
                 // when
-                PartyExerciseCalendarDTO.Response response = partyExerciseQueryService.getPartyExerciseCalendar(
+                PartyExerciseCalendarResult response = partyExerciseQueryService.getPartyExerciseCalendar(
                         party.getId(), partyMember.getId(), startDate, endDate);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(startDate);
                 assertThat(response.endDate()).isEqualTo(endDate);
-                assertThat(response.isMember()).isTrue();
+                assertThat(response.member()).isTrue();
                 assertThat(response.partyName()).isEqualTo(party.getPartyName());
                 assertThat(response.weeks()).hasSize(1);
                 assertThat(response.weeks().get(0).weekStartDate()).isEqualTo(startDate);
@@ -195,12 +163,12 @@ class PartyExerciseQueryServiceTest {
                         .isEqualTo(LocalDate.of(2026, 3, 24));
                 assertThat(response.weeks().get(0).days().get(1).exercises())
                         .extracting(
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::exerciseId,
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::isBookmarked,
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::buildingName,
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::currentParticipants,
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::maxCapacity,
-                                PartyExerciseCalendarDTO.ExerciseCalendarItem::isParticipating)
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::exerciseId,
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::bookmarked,
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::buildingName,
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::currentParticipants,
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::maxCapacity,
+                                PartyExerciseCalendarResult.ExerciseCalendarItem::participating)
                         .containsExactly(tuple(exercise.getId(), true, "테스트 체육관", 2, 10, true));
             }
 
@@ -218,13 +186,13 @@ class PartyExerciseQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                PartyExerciseCalendarDTO.Response response = partyExerciseQueryService.getPartyExerciseCalendar(
+                PartyExerciseCalendarResult response = partyExerciseQueryService.getPartyExerciseCalendar(
                         party.getId(), outsiderMember.getId(), startDate, endDate);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(startDate);
                 assertThat(response.endDate()).isEqualTo(endDate);
-                assertThat(response.isMember()).isFalse();
+                assertThat(response.member()).isFalse();
                 assertThat(response.partyName()).isEqualTo(party.getPartyName());
                 assertThat(response.weeks()).isEmpty();
             }
@@ -246,13 +214,13 @@ class PartyExerciseQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                PartyExerciseCalendarDTO.Response response = partyExerciseQueryService.getPartyExerciseCalendar(
+                PartyExerciseCalendarResult response = partyExerciseQueryService.getPartyExerciseCalendar(
                         party.getId(), partyMember.getId(), null, null);
 
                 // then
                 assertThat(response.startDate()).isEqualTo(expectedStart);
                 assertThat(response.endDate()).isEqualTo(expectedEnd);
-                assertThat(response.isMember()).isTrue();
+                assertThat(response.member()).isTrue();
                 assertThat(response.weeks()).isEmpty();
             }
         }

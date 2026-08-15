@@ -7,46 +7,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseGuestQueryMapper;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMyGuestListResult;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
-import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
-import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
@@ -54,14 +32,8 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.enums.PartyStatus;
-import umc.cockple.demo.domain.party.exception.PartyErrorCode;
-import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
-import umc.cockple.demo.global.enums.Role;
-import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -69,11 +41,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.YearMonth;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,9 +74,6 @@ class ExerciseGuestQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseGuestQueryMapper exerciseGuestQueryMapper = new ExerciseGuestQueryMapper();
-        ExerciseParticipantInfoQueryMapper participantInfoMapper =
-                new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
         MemberExerciseReader memberExerciseReader = new MemberExerciseReader(
                 memberExerciseRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
@@ -118,15 +83,15 @@ class ExerciseGuestQueryServiceTest {
         exerciseGuestQueryService = new ExerciseGuestQueryService(
                 new ExerciseReader(exerciseRepository),
                 guestReader,
-                new ExerciseParticipantInfoAssembler(
+                new ExerciseParticipantSnapshotAssembler(
                         memberExerciseReader,
                         guestReader,
                         memberLookupService,
                         memberPartyLookupService,
-                        participantInfoMapper
+                        new ImageUrlResolver(fileService)
                 ),
-                memberLookupService,
-                exerciseGuestQueryMapper
+                new ExerciseParticipantPositionCalculator(),
+                memberLookupService
         );
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
@@ -179,7 +144,7 @@ class ExerciseGuestQueryServiceTest {
                         .willReturn(List.of(myFirstGuest, otherInvitedGuest, mySecondGuest));
 
                 // when
-                ExerciseMyGuestListDTO.Response response = exerciseGuestQueryService.getMyInvitedGuests(
+                ExerciseMyGuestListResult response = exerciseGuestQueryService.getMyInvitedGuests(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -188,13 +153,13 @@ class ExerciseGuestQueryServiceTest {
                 assertThat(response.femaleCount()).isEqualTo(1);
                 assertThat(response.list())
                         .extracting(
-                                ExerciseMyGuestListDTO.GuestInfo::guestId,
-                                ExerciseMyGuestListDTO.GuestInfo::isWaiting,
-                                ExerciseMyGuestListDTO.GuestInfo::participantNumber,
-                                ExerciseMyGuestListDTO.GuestInfo::name,
-                                ExerciseMyGuestListDTO.GuestInfo::gender,
-                                ExerciseMyGuestListDTO.GuestInfo::level,
-                                ExerciseMyGuestListDTO.GuestInfo::inviterName
+                                ExerciseMyGuestListResult.GuestInfo::guestId,
+                                ExerciseMyGuestListResult.GuestInfo::waiting,
+                                ExerciseMyGuestListResult.GuestInfo::participantNumber,
+                                ExerciseMyGuestListResult.GuestInfo::name,
+                                ExerciseMyGuestListResult.GuestInfo::gender,
+                                ExerciseMyGuestListResult.GuestInfo::level,
+                                ExerciseMyGuestListResult.GuestInfo::inviterName
                         )
                         .containsExactly(
                                 tuple(201L, false, 1, "내게스트1", Gender.MALE, Level.B, manager.getMemberName()),
@@ -214,7 +179,7 @@ class ExerciseGuestQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseMyGuestListDTO.Response response = exerciseGuestQueryService.getMyInvitedGuests(
+                ExerciseMyGuestListResult response = exerciseGuestQueryService.getMyInvitedGuests(
                         exercise.getId(), manager.getId());
 
                 // then

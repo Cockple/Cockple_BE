@@ -10,18 +10,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.command.ExerciseLifecycleCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseLifecycleCommandService;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCreateResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseDeleteResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseUpdateResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
@@ -70,15 +73,13 @@ class ExerciseLifecycleCommandServiceTest {
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(
                 new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
-        ExerciseLifecycleCommandMapper exerciseLifecycleCommandMapper = new ExerciseLifecycleCommandMapper();
         exerciseLifecycleCommandService = new ExerciseLifecycleCommandService(
                 exerciseRepository,
                 exerciseReader,
                 memberLookupService,
                 partyLookupService,
                 eventPublisher,
-                exerciseValidator,
-                exerciseLifecycleCommandMapper);
+                exerciseValidator);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -95,21 +96,24 @@ class ExerciseLifecycleCommandServiceTest {
     @DisplayName("createExercise")
     class CreateExercise {
 
-        private ExerciseCreateDTO.Request validRequest;
+        private ExerciseCreateCommand validCommand;
+        private ExerciseCreateAddressCommand validAddressCommand;
 
         @BeforeEach
         void setUp() {
-            validRequest = ExerciseCreateDTO.Request.builder()
-                    .date("2099-12-31")
+            validCommand = ExerciseCreateCommand.builder()
+                    .date(LocalDate.of(2099, 12, 31))
+                    .startTime(LocalTime.of(10, 0))
+                    .endTime(LocalTime.of(12, 0))
+                    .maxCapacity(10)
+                    .partyGuestAccept(true)
+                    .outsideGuestAccept(false)
+                    .build();
+            validAddressCommand = ExerciseCreateAddressCommand.builder()
                     .buildingName("테스트 체육관")
                     .roadAddress("서울특별시 강남구 테헤란로 1")
                     .latitude(37.5)
                     .longitude(127.0)
-                    .startTime("10:00")
-                    .endTime("12:00")
-                    .maxCapacity(10)
-                    .allowMemberGuestsInvitation(true)
-                    .allowExternalGuests(false)
                     .build();
         }
 
@@ -122,9 +126,9 @@ class ExerciseLifecycleCommandServiceTest {
             void ownerCreatesExercise_success() {
                 // given: 모임장(ownerId 일치)이므로 권한 통과, 매니저 role stub은 불필요
                 Exercise savedExercise = Exercise.builder()
-                        .date(validRequest.toParsedDate())
-                        .startTime(validRequest.toParsedStartTime())
-                        .endTime(validRequest.toParsedEndTime())
+                        .date(validCommand.date())
+                        .startTime(validCommand.startTime())
+                        .endTime(validCommand.endTime())
                         .maxCapacity(10)
                         .partyGuestAccept(true)
                         .outsideGuestAccept(false)
@@ -134,10 +138,11 @@ class ExerciseLifecycleCommandServiceTest {
                 given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
 
                 // when
-                ExerciseCreateDTO.Response response = exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), validRequest);
+                ExerciseCreateResult result = exerciseLifecycleCommandService.createExercise(
+                        party.getId(), manager.getId(), validCommand, validAddressCommand);
 
                 // then
-                assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(result.exerciseId()).isEqualTo(100L);
                 then(exerciseRepository).should().save(any(Exercise.class));
             }
 
@@ -155,9 +160,9 @@ class ExerciseLifecycleCommandServiceTest {
                         .willReturn(true);
 
                 Exercise savedExercise = Exercise.builder()
-                        .date(validRequest.toParsedDate())
-                        .startTime(validRequest.toParsedStartTime())
-                        .endTime(validRequest.toParsedEndTime())
+                        .date(validCommand.date())
+                        .startTime(validCommand.startTime())
+                        .endTime(validCommand.endTime())
                         .maxCapacity(10)
                         .partyGuestAccept(true)
                         .outsideGuestAccept(false)
@@ -167,10 +172,11 @@ class ExerciseLifecycleCommandServiceTest {
                 given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
 
                 // when
-                ExerciseCreateDTO.Response response = exerciseLifecycleCommandService.createExercise(party.getId(), subManager.getId(), validRequest);
+                ExerciseCreateResult result = exerciseLifecycleCommandService.createExercise(
+                        party.getId(), subManager.getId(), validCommand, validAddressCommand);
 
                 // then
-                assertThat(response.exerciseId()).isEqualTo(200L);
+                assertThat(result.exerciseId()).isEqualTo(200L);
             }
         }
 
@@ -184,7 +190,8 @@ class ExerciseLifecycleCommandServiceTest {
                 party.delete(); // 실제 도메인 메서드 호출
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), validRequest))
+                        exerciseLifecycleCommandService.createExercise(
+                                party.getId(), manager.getId(), validCommand, validAddressCommand))
                         .isInstanceOf(PartyException.class)
                         .satisfies(e -> assertThat(((PartyException) e).getCode())
                                 .isEqualTo(PartyErrorCode.PARTY_IS_DELETED));
@@ -203,7 +210,8 @@ class ExerciseLifecycleCommandServiceTest {
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.createExercise(party.getId(), normalMember.getId(), validRequest))
+                        exerciseLifecycleCommandService.createExercise(
+                                party.getId(), normalMember.getId(), validCommand, validAddressCommand))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
@@ -213,19 +221,18 @@ class ExerciseLifecycleCommandServiceTest {
             @DisplayName("시작 시간이 종료 시간 이후면 ExerciseException(INVALID_EXERCISE_TIME)을 던진다")
             void invalidExerciseTime_throwsException() {
                 // given: 모임장 권한 통과 후 시간 검증에서 실패
-                ExerciseCreateDTO.Request invalidTimeRequest = ExerciseCreateDTO.Request.builder()
-                        .date("2099-12-31")
-                        .buildingName("체육관")
-                        .roadAddress("서울특별시 강남구 테헤란로 1")
-                        .latitude(37.5).longitude(127.0)
-                        .startTime("12:00").endTime("10:00") // 종료가 시작보다 빠름
+                ExerciseCreateCommand invalidTimeCommand = ExerciseCreateCommand.builder()
+                        .date(LocalDate.of(2099, 12, 31))
+                        .startTime(LocalTime.of(12, 0))
+                        .endTime(LocalTime.of(10, 0))
                         .maxCapacity(10)
-                        .allowMemberGuestsInvitation(true)
-                        .allowExternalGuests(false)
+                        .partyGuestAccept(true)
+                        .outsideGuestAccept(false)
                         .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), invalidTimeRequest))
+                        exerciseLifecycleCommandService.createExercise(
+                                party.getId(), manager.getId(), invalidTimeCommand, validAddressCommand))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INVALID_EXERCISE_TIME));
@@ -235,19 +242,18 @@ class ExerciseLifecycleCommandServiceTest {
             @DisplayName("과거 시간이면 ExerciseException(PAST_TIME_NOT_ALLOWED)을 던진다")
             void pastTime_throwsException() {
                 // given: 모임장 권한 통과 후 시간 검증에서 실패
-                ExerciseCreateDTO.Request pastRequest = ExerciseCreateDTO.Request.builder()
-                        .date("2000-01-01")
-                        .buildingName("체육관")
-                        .roadAddress("서울특별시 강남구 테헤란로 1")
-                        .latitude(37.5).longitude(127.0)
-                        .startTime("10:00").endTime("12:00")
+                ExerciseCreateCommand pastCommand = ExerciseCreateCommand.builder()
+                        .date(LocalDate.of(2000, 1, 1))
+                        .startTime(LocalTime.of(10, 0))
+                        .endTime(LocalTime.of(12, 0))
                         .maxCapacity(10)
-                        .allowMemberGuestsInvitation(true)
-                        .allowExternalGuests(false)
+                        .partyGuestAccept(true)
+                        .outsideGuestAccept(false)
                         .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.createExercise(party.getId(), manager.getId(), pastRequest))
+                        exerciseLifecycleCommandService.createExercise(
+                                party.getId(), manager.getId(), pastCommand, validAddressCommand))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED));
@@ -286,10 +292,10 @@ class ExerciseLifecycleCommandServiceTest {
                 // given: party.ownerId == manager.id 이므로 권한 통과
 
                 // when
-                ExerciseDeleteDTO.Response response = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), manager.getId());
+                ExerciseDeleteResult result = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), manager.getId());
 
                 // then
-                assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(result.deletedExerciseId()).isEqualTo(100L);
                 assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
             }
@@ -334,10 +340,10 @@ class ExerciseLifecycleCommandServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseDeleteDTO.Response response = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), subManager.getId());
+                ExerciseDeleteResult result = exerciseLifecycleCommandService.deleteExercise(exercise.getId(), subManager.getId());
 
                 // then
-                assertThat(response.deletedExerciseId()).isEqualTo(100L);
+                assertThat(result.deletedExerciseId()).isEqualTo(100L);
                 assertThat(party.getExerciseCount()).isZero();
                 then(exerciseRepository).should().delete(exercise);
             }
@@ -373,7 +379,8 @@ class ExerciseLifecycleCommandServiceTest {
     class UpdateExercise {
 
         private Exercise exercise;
-        private ExerciseUpdateDTO.Request validRequest;
+        private ExerciseUpdateCommand validCommand;
+        private ExerciseUpdateAddressCommand validAddressCommand;
 
         @BeforeEach
         void setUp() {
@@ -389,19 +396,21 @@ class ExerciseLifecycleCommandServiceTest {
             exercise.setParty(party);
             lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
 
-            validRequest = new ExerciseUpdateDTO.Request(
-                    "2099-12-31",
-                    "수정된 체육관",
-                    "서울특별시 강남구 테헤란로 2",
-                    37.6,
-                    127.1,
-                    "11:00",
-                    "13:00",
-                    12,
-                    false,
-                    true,
-                    "공지사항"
-            );
+            validCommand = ExerciseUpdateCommand.builder()
+                    .date(LocalDate.of(2099, 12, 31))
+                    .startTime(LocalTime.of(11, 0))
+                    .endTime(LocalTime.of(13, 0))
+                    .maxCapacity(12)
+                    .partyGuestAccept(false)
+                    .outsideGuestAccept(true)
+                    .notice("공지사항")
+                    .build();
+            validAddressCommand = ExerciseUpdateAddressCommand.builder()
+                    .buildingName("수정된 체육관")
+                    .roadAddress("서울특별시 강남구 테헤란로 2")
+                    .latitude(37.6)
+                    .longitude(127.1)
+                    .build();
         }
 
         @Nested
@@ -412,10 +421,11 @@ class ExerciseLifecycleCommandServiceTest {
             @DisplayName("모임장이 운동을 수정하면 Response를 반환한다")
             void ownerUpdatesExercise_success() {
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), validRequest);
+                ExerciseUpdateResult result = exerciseLifecycleCommandService.updateExercise(
+                        exercise.getId(), manager.getId(), validCommand, validAddressCommand);
 
                 // then
-                assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(result.exerciseId()).isEqualTo(100L);
                 assertThat(exercise.getPartyGuestAccept()).isFalse();
                 assertThat(exercise.getOutsideGuestAccept()).isTrue();
                 then(exerciseRepository).should().flush();
@@ -433,7 +443,8 @@ class ExerciseLifecycleCommandServiceTest {
                 exercise.addParticipation(p2, ExerciseMemberShipStatus.PARTY_MEMBER);
 
                 // when
-                exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), validRequest);
+                exerciseLifecycleCommandService.updateExercise(
+                        exercise.getId(), manager.getId(), validCommand, validAddressCommand);
 
                 // then
                 ArgumentCaptor<ExerciseUpdatedEvent> captor = ArgumentCaptor.forClass(ExerciseUpdatedEvent.class);
@@ -459,10 +470,11 @@ class ExerciseLifecycleCommandServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), subManager.getId(), validRequest);
+                ExerciseUpdateResult result = exerciseLifecycleCommandService.updateExercise(
+                        exercise.getId(), subManager.getId(), validCommand, validAddressCommand);
 
                 // then
-                assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(result.exerciseId()).isEqualTo(100L);
                 then(exerciseRepository).should().flush();
             }
 
@@ -470,24 +482,15 @@ class ExerciseLifecycleCommandServiceTest {
             @DisplayName("게스트 허용 옵션이 null이면 기존 설정을 유지한다")
             void nullGuestPolicyFields_keepExistingValues() {
                 // given
-                ExerciseUpdateDTO.Request partialRequest = new ExerciseUpdateDTO.Request(
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        "공지사항만 수정"
-                );
+                ExerciseUpdateCommand partialCommand = ExerciseUpdateCommand.builder()
+                        .notice("공지사항만 수정")
+                        .build();
                 // when
-                ExerciseUpdateDTO.Response response = exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), partialRequest);
+                ExerciseUpdateResult result = exerciseLifecycleCommandService.updateExercise(
+                        exercise.getId(), manager.getId(), partialCommand, null);
 
                 // then
-                assertThat(response.exerciseId()).isEqualTo(100L);
+                assertThat(result.exerciseId()).isEqualTo(100L);
                 assertThat(exercise.getPartyGuestAccept()).isTrue();
                 assertThat(exercise.getOutsideGuestAccept()).isFalse();
                 assertThat(exercise.getNotice()).isEqualTo("공지사항만 수정");
@@ -512,7 +515,8 @@ class ExerciseLifecycleCommandServiceTest {
                         .willReturn(false);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), normalMember.getId(), validRequest))
+                        exerciseLifecycleCommandService.updateExercise(
+                                exercise.getId(), normalMember.getId(), validCommand, validAddressCommand))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION));
@@ -535,7 +539,8 @@ class ExerciseLifecycleCommandServiceTest {
                 given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.updateExercise(startedExercise.getId(), manager.getId(), validRequest))
+                        exerciseLifecycleCommandService.updateExercise(
+                                startedExercise.getId(), manager.getId(), validCommand, validAddressCommand))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE));
@@ -544,13 +549,15 @@ class ExerciseLifecycleCommandServiceTest {
             @Test
             @DisplayName("시작 시간이 종료 시간 이후면 ExerciseException(INVALID_EXERCISE_TIME)을 던진다")
             void invalidTime_throwsException() {
-                ExerciseUpdateDTO.Request invalidTimeRequest = new ExerciseUpdateDTO.Request(
-                        "2099-12-31", null, null, null, null,
-                        "13:00", "11:00", null, null, null, null
-                );
+                ExerciseUpdateCommand invalidTimeCommand = ExerciseUpdateCommand.builder()
+                        .date(LocalDate.of(2099, 12, 31))
+                        .startTime(LocalTime.of(13, 0))
+                        .endTime(LocalTime.of(11, 0))
+                        .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), invalidTimeRequest))
+                        exerciseLifecycleCommandService.updateExercise(
+                                exercise.getId(), manager.getId(), invalidTimeCommand, null))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.INVALID_EXERCISE_TIME));
@@ -559,13 +566,15 @@ class ExerciseLifecycleCommandServiceTest {
             @Test
             @DisplayName("과거 날짜로 수정 시 ExerciseException(PAST_TIME_NOT_ALLOWED)을 던진다")
             void pastDate_throwsException() {
-                ExerciseUpdateDTO.Request pastDateRequest = new ExerciseUpdateDTO.Request(
-                        "2000-01-01", null, null, null, null,
-                        "10:00", "12:00", null, null, null, null
-                );
+                ExerciseUpdateCommand pastDateCommand = ExerciseUpdateCommand.builder()
+                        .date(LocalDate.of(2000, 1, 1))
+                        .startTime(LocalTime.of(10, 0))
+                        .endTime(LocalTime.of(12, 0))
+                        .build();
 
                 assertThatThrownBy(() ->
-                        exerciseLifecycleCommandService.updateExercise(exercise.getId(), manager.getId(), pastDateRequest))
+                        exerciseLifecycleCommandService.updateExercise(
+                                exercise.getId(), manager.getId(), pastDateCommand, null))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.PAST_TIME_NOT_ALLOWED));
