@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
-import umc.cockple.demo.domain.notification.service.outbox.NotificationPushOutboxService;
+import umc.cockple.demo.domain.push.service.NotificationPushOutboxService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.MemberFixture;

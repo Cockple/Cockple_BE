@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.service.outbox;
+package umc.cockple.demo.domain.push.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,14 +7,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutboxPayload;
+import umc.cockple.demo.domain.push.command.NotificationPushOutboxPayload;
 import umc.cockple.demo.domain.notification.domain.Notification;
-import umc.cockple.demo.domain.notification.domain.outbox.NotificationPushOutbox;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
+import umc.cockple.demo.domain.push.domain.NotificationPushOutbox;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
-import umc.cockple.demo.domain.notification.repository.outbox.NotificationPushOutboxRepository;
+import umc.cockple.demo.domain.push.repository.NotificationPushOutboxRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
-import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.MemberFixture;

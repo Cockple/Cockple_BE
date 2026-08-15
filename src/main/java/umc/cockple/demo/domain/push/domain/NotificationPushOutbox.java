@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.domain.outbox;
+package umc.cockple.demo.domain.push.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,10 +13,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutboxPayload;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
+import umc.cockple.demo.domain.push.command.NotificationPushOutboxPayload;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
+import umc.cockple.demo.domain.push.enums.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.push.enums.NotificationPushTargetType;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.global.common.BaseEntity;
 

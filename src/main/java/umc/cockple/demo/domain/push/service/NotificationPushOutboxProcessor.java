@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.service.outbox;
+package umc.cockple.demo.domain.push.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,14 +8,13 @@ import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.notification.domain.Notification;
-import umc.cockple.demo.domain.notification.domain.outbox.NotificationPushOutbox;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
+import umc.cockple.demo.domain.push.domain.NotificationPushOutbox;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
+import umc.cockple.demo.domain.push.enums.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.push.enums.NotificationPushTargetType;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
-import umc.cockple.demo.domain.notification.repository.outbox.NotificationPushOutboxRepository;
+import umc.cockple.demo.domain.push.repository.NotificationPushOutboxRepository;
 import umc.cockple.demo.domain.notification.fcm.FcmService;
-import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
 import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

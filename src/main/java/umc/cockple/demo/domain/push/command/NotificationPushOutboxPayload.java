@@ -1,7 +1,7 @@
-package umc.cockple.demo.domain.notification.command.outbox;
+package umc.cockple.demo.domain.push.command;
 
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
+import umc.cockple.demo.domain.push.enums.NotificationPushTargetType;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 
 public record NotificationPushOutboxPayload(

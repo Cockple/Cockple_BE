@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.enums.outbox;
+package umc.cockple.demo.domain.push.enums;
 
 import java.util.List;
 

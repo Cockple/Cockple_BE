@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.service;
+package umc.cockple.demo.domain.push.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

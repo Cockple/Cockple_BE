@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.enums.outbox;
+package umc.cockple.demo.domain.push.enums;
 
 public enum NotificationPushTargetType {
     NOTIFICATION,

@@ -1,13 +1,13 @@
-package umc.cockple.demo.domain.notification.service.outbox;
+package umc.cockple.demo.domain.push.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutboxPayload;
-import umc.cockple.demo.domain.notification.domain.outbox.NotificationPushOutbox;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushTargetType;
-import umc.cockple.demo.domain.notification.repository.outbox.NotificationPushOutboxRepository;
+import umc.cockple.demo.domain.push.command.NotificationPushOutboxPayload;
+import umc.cockple.demo.domain.push.domain.NotificationPushOutbox;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
+import umc.cockple.demo.domain.push.enums.NotificationPushTargetType;
+import umc.cockple.demo.domain.push.repository.NotificationPushOutboxRepository;
 import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

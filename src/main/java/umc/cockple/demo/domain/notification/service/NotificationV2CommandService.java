@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
-import umc.cockple.demo.domain.notification.service.outbox.NotificationPushOutboxService;
+import umc.cockple.demo.domain.push.service.NotificationPushOutboxService;
 
 import java.time.LocalDateTime;
 import java.util.List;

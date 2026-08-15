@@ -1,9 +1,9 @@
-package umc.cockple.demo.domain.notification.domain.outbox;
+package umc.cockple.demo.domain.push.domain;
 
 import org.junit.jupiter.api.Test;
-import umc.cockple.demo.domain.notification.command.outbox.NotificationPushOutboxPayload;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushChannel;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.push.command.NotificationPushOutboxPayload;
+import umc.cockple.demo.domain.push.enums.NotificationPushChannel;
+import umc.cockple.demo.domain.push.enums.NotificationPushOutboxStatus;
 
 import java.time.LocalDateTime;
 

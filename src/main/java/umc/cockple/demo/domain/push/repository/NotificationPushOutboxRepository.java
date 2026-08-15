@@ -1,12 +1,12 @@
-package umc.cockple.demo.domain.notification.repository.outbox;
+package umc.cockple.demo.domain.push.repository;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import umc.cockple.demo.domain.notification.domain.outbox.NotificationPushOutbox;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.push.domain.NotificationPushOutbox;
+import umc.cockple.demo.domain.push.enums.NotificationPushOutboxStatus;
 
 import java.time.LocalDateTime;
 import java.util.Collection;

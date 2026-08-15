@@ -1,11 +1,11 @@
-package umc.cockple.demo.domain.notification.service.outbox;
+package umc.cockple.demo.domain.push.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.notification.domain.outbox.NotificationPushOutbox;
-import umc.cockple.demo.domain.notification.enums.outbox.NotificationPushOutboxStatus;
-import umc.cockple.demo.domain.notification.repository.outbox.NotificationPushOutboxRepository;
+import umc.cockple.demo.domain.push.domain.NotificationPushOutbox;
+import umc.cockple.demo.domain.push.enums.NotificationPushOutboxStatus;
+import umc.cockple.demo.domain.push.repository.NotificationPushOutboxRepository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
