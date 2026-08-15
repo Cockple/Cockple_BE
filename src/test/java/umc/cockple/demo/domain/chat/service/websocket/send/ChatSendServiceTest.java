@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.chat.converter.ChatWebSocketResponseAssembler;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
@@ -26,6 +27,7 @@ import umc.cockple.demo.domain.chat.service.websocket.send.ChatSendService;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
@@ -59,6 +61,7 @@ class ChatSendServiceTest {
     @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     @Mock private MessageReadCreationService messageReadCreationService;
     @Mock private ChatMessageViewAssembler chatMessageViewAssembler;
+    @Mock private ImageUrlResolver imageUrlResolver;
     @Mock private SentMessageReadStatusService sentMessageReadStatusService;
 
     private ChatSendService chatSendService;
@@ -78,6 +81,7 @@ class ChatSendServiceTest {
                 chatRoomMessageBroadcaster,
                 messageReadCreationService,
                 chatMessageViewAssembler,
+                imageUrlResolver,
                 chatWebSocketResponseAssembler,
                 sentMessageReadStatusService
         );
@@ -100,7 +104,7 @@ class ChatSendServiceTest {
 
         given(chatRoomReader.read(roomId)).willReturn(chatRoom);
         given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
-        given(chatMessageViewAssembler.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(imageUrlResolver.resolve(isNull(), any())).willReturn("https://cdn.example.com/profile");
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
@@ -171,7 +175,7 @@ class ChatSendServiceTest {
 
         given(chatRoomReader.read(roomId)).willReturn(chatRoom);
         given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
-        given(chatMessageViewAssembler.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(imageUrlResolver.resolve(isNull(), any())).willReturn("https://cdn.example.com/profile");
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
@@ -185,9 +189,17 @@ class ChatSendServiceTest {
             ReflectionTestUtils.setField(savedMessage, "chatMessageFiles", List.of(secondFile, firstFile));
             return savedMessage;
         });
-        given(chatMessageViewAssembler.generateFileUrl(any(ChatMessageFile.class))).willAnswer(invocation -> {
+        given(chatMessageViewAssembler.assembleFileInfo(any(ChatMessageFile.class))).willAnswer(invocation -> {
             ChatMessageFile file = invocation.getArgument(0);
-            return "https://cdn.example.com/" + file.getFileKey();
+            return ChatCommonDTO.FileInfo.builder()
+                    .imageId(file.getId())
+                    .imageUrl("https://cdn.example.com/" + file.getFileKey())
+                    .imgOrder(file.getFileOrder())
+                    .isEmoji(file.getIsEmoji())
+                    .originalFileName(file.getOriginalFileName())
+                    .fileSize(file.getFileSize())
+                    .fileType(file.getFileType())
+                    .build();
         });
         given(activeChatRoomSubscriberReader.findActiveSubscribers(roomId)).willReturn(List.of(senderId));
         given(sentMessageReadStatusService.markActiveSubscribersAsRead(roomId, 300L, List.of(senderId), senderId))

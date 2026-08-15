@@ -57,8 +57,8 @@ class ChatRoomDetailQueryServiceTest {
     @BeforeEach
     void setUp() {
         ChatConverter chatConverter = new ChatConverter();
-        ChatMessageViewAssembler chatMessageViewAssembler = new ChatMessageViewAssembler(fileService, chatConverter);
         ImageUrlResolver imageUrlResolver = new ImageUrlResolver(fileService);
+        ChatMessageViewAssembler chatMessageViewAssembler = new ChatMessageViewAssembler(imageUrlResolver, chatConverter);
         chatRoomDetailQueryService = new ChatRoomDetailQueryService(
                 chatRoomRepository,
                 chatRoomMemberRepository,

@@ -20,7 +20,9 @@ import umc.cockple.demo.domain.chat.service.websocket.send.support.SentMessageRe
 import umc.cockple.demo.domain.chat.service.websocket.send.support.MessageReadCreationService;
 import umc.cockple.demo.domain.chat.service.websocket.broadcast.ChatRoomMessageBroadcaster;
 import umc.cockple.demo.domain.chat.service.websocket.subscription.support.ActiveChatRoomSubscriberReader;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 
 import java.util.List;
 
@@ -41,6 +43,7 @@ public class ChatSendService {
     private final ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     private final MessageReadCreationService messageReadCreationService;
     private final ChatMessageViewAssembler chatMessageViewAssembler;
+    private final ImageUrlResolver imageUrlResolver;
     private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
     private final SentMessageReadStatusService sentMessageReadStatusService;
 
@@ -50,7 +53,7 @@ public class ChatSendService {
         ChatRoom chatRoom = chatRoomReader.read(chatRoomId);
         Member sender = chatMemberReader.readWithProfile(senderId);
 
-        String profileImageUrl = chatMessageViewAssembler.generateProfileImageUrl(sender.getProfileImg());
+        String profileImageUrl = imageUrlResolver.resolve(sender.getProfileImg(), ProfileImg::getImgKey);
 
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         chatMessageFileAppender.append(chatMessage, files);
@@ -106,15 +109,7 @@ public class ChatSendService {
     private List<ChatCommonDTO.FileInfo> createResponseFileInfos(
             List<ChatMessageFile> savedFiles) {
         return savedFiles.stream()
-                .map(file -> ChatCommonDTO.FileInfo.builder()
-                        .imageId(file.getId())
-                        .imageUrl(chatMessageViewAssembler.generateFileUrl(file))
-                        .imgOrder(file.getFileOrder())
-                        .isEmoji(file.getIsEmoji())
-                        .originalFileName(file.getOriginalFileName())
-                        .fileSize(file.getFileSize())
-                        .fileType(file.getFileType())
-                        .build())
+                .map(chatMessageViewAssembler::assembleFileInfo)
                 .toList();
     }
 

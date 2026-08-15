@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -51,7 +52,8 @@ class ChatMessageHistoryQueryServiceTest {
     @BeforeEach
     void setUp() {
         ChatConverter chatConverter = new ChatConverter();
-        ChatMessageViewAssembler chatMessageViewAssembler = new ChatMessageViewAssembler(fileService, chatConverter);
+        ChatMessageViewAssembler chatMessageViewAssembler =
+                new ChatMessageViewAssembler(new ImageUrlResolver(fileService), chatConverter);
         chatMessageHistoryQueryService = new ChatMessageHistoryQueryService(
                 chatRoomMemberRepository,
                 chatMessageRepository,

@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.global.enums.Gender;
@@ -46,7 +47,7 @@ class ChatMessageViewAssemblerTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatMessageViewAssembler = new ChatMessageViewAssembler(fileService, chatConverter);
+        chatMessageViewAssembler = new ChatMessageViewAssembler(new ImageUrlResolver(fileService), chatConverter);
 
         sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(sender, "id", 10L);
@@ -57,138 +58,11 @@ class ChatMessageViewAssemblerTest {
         ReflectionTestUtils.setField(chatRoom, "id", 1L);
     }
 
-    // ========== generateProfileImageUrl ==========
-
-    @Nested
-    @DisplayName("generateProfileImageUrl - 프로필 이미지 URL 생성")
-    class GenerateProfileImageUrl {
-
-        @Test
-        @DisplayName("profileImg가 null이면 null을 반환한다")
-        void returnsNull_whenProfileImgIsNull() {
-            String result = chatMessageViewAssembler.generateProfileImageUrl(null);
-
-            assertThat(result).isNull();
-            verify(fileService, never()).getUrlFromKey(null);
-        }
-
-        @Test
-        @DisplayName("imgKey가 null이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsNull() {
-            ProfileImg profileImg = ProfileImg.builder()
-                    .imgKey(null)
-                    .build();
-
-            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
-
-            assertThat(result).isNull();
-            verify(fileService, never()).getUrlFromKey(null);
-        }
-
-        @Test
-        @DisplayName("imgKey가 공백 문자열이면 null을 반환하고 imageService를 호출하지 않는다")
-        void returnsNull_whenImgKeyIsBlank() {
-            ProfileImg profileImg = ProfileImg.builder()
-                    .imgKey("   ")
-                    .build();
-
-            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
-
-            assertThat(result).isNull();
-            verify(fileService, never()).getUrlFromKey("   ");
-        }
-
-        @Test
-        @DisplayName("유효한 imgKey가 있으면 imageService로 URL을 생성해서 반환한다")
-        void returnsUrl_whenImgKeyIsValid() {
-            ProfileImg profileImg = ProfileImg.builder()
-                    .imgKey("profile/key123.jpg")
-                    .build();
-
-            given(fileService.getUrlFromKey("profile/key123.jpg"))
-                    .willReturn("https://cdn.example.com/profile/key123.jpg");
-
-            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
-
-            assertThat(result).isEqualTo("https://cdn.example.com/profile/key123.jpg");
-            verify(fileService).getUrlFromKey("profile/key123.jpg");
-        }
-    }
-
-    // ========== generateFileUrl ==========
-
-    @Nested
-    @DisplayName("generateFileUrl - 채팅 파일 URL 생성")
-    class GenerateFileUrl {
-
-        @Test
-        @DisplayName("file이 null이면 null을 반환한다")
-        void returnsNull_whenFileIsNull() {
-            String result = chatMessageViewAssembler.generateFileUrl(null);
-
-            assertThat(result).isNull();
-        }
-
-        @Test
-        @DisplayName("fileKey가 null이면 null을 반환하고 fileService를 호출하지 않는다")
-        void returnsNull_whenFileKeyIsNull() {
-            ChatMessageFile img = ChatMessageFile.builder()
-                    .fileKey(null)
-                    .fileOrder(1)
-                    .originalFileName("photo.jpg")
-                    .fileSize(1024L)
-                    .fileType("image/jpeg")
-                    .build();
-
-            String result = chatMessageViewAssembler.generateFileUrl(img);
-
-            assertThat(result).isNull();
-            verify(fileService, never()).getUrlFromKey(null);
-        }
-
-        @Test
-        @DisplayName("fileKey가 공백 문자열이면 null을 반환하고 fileService를 호출하지 않는다")
-        void returnsNull_whenFileKeyIsBlank() {
-            ChatMessageFile img = ChatMessageFile.builder()
-                    .fileKey("  ")
-                    .fileOrder(1)
-                    .originalFileName("photo.jpg")
-                    .fileSize(1024L)
-                    .fileType("image/jpeg")
-                    .build();
-
-            String result = chatMessageViewAssembler.generateFileUrl(img);
-
-            assertThat(result).isNull();
-            verify(fileService, never()).getUrlFromKey("  ");
-        }
-
-        @Test
-        @DisplayName("유효한 fileKey가 있으면 fileService로 URL을 생성해서 반환한다")
-        void returnsUrl_whenFileKeyIsValid() {
-            ChatMessageFile img = ChatMessageFile.builder()
-                    .fileKey("chat/img456.jpg")
-                    .fileOrder(1)
-                    .originalFileName("photo.jpg")
-                    .fileSize(2048L)
-                    .fileType("image/jpeg")
-                    .build();
-
-            given(fileService.getUrlFromKey("chat/img456.jpg"))
-                    .willReturn("https://cdn.example.com/chat/img456.jpg");
-
-            String result = chatMessageViewAssembler.generateFileUrl(img);
-
-            assertThat(result).isEqualTo("https://cdn.example.com/chat/img456.jpg");
-            verify(fileService).getUrlFromKey("chat/img456.jpg");
-        }
-    }
-
     // ========== assembleMessages ==========
 
     @Nested
     @DisplayName("assembleMessages - 메시지 목록 처리")
-    class ProcessMessages {
+    class AssembleMessages {
 
         @Test
         @DisplayName("빈 메시지 목록을 처리하면 빈 리스트를 반환한다")
@@ -305,6 +179,24 @@ class ChatMessageViewAssemblerTest {
 
             assertThat(result.get(0).senderProfileImageUrl()).isNull();
             verify(fileService, never()).getUrlFromKey(null);
+        }
+
+        @Test
+        @DisplayName("활성 발신자의 프로필 이미지 키는 URL로 해석된다")
+        void senderProfileImageUrl_isResolved_whenProfileImgExists() {
+            sender.updateProfileImg(ProfileImg.builder()
+                    .imgKey("profile/sender.jpg")
+                    .build());
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+            given(fileService.getUrlFromKey("profile/sender.jpg"))
+                    .willReturn("https://cdn.example.com/profile/sender.jpg");
+
+            List<ChatCommonDTO.MessageInfo> result =
+                    chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result.get(0).senderProfileImageUrl())
+                    .isEqualTo("https://cdn.example.com/profile/sender.jpg");
         }
 
         @Test
