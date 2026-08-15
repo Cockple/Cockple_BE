@@ -9,7 +9,7 @@ import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.validation.ChatWebSocketRequestValidator;
 import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 
 @Component
@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandRespond
 @RequiredArgsConstructor
 public class ChatWebSocketCommandHandler {
 
-    private final ChatValidator chatValidator;
+    private final ChatWebSocketRequestValidator chatWebSocketRequestValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     public void handle(
@@ -52,7 +52,7 @@ public class ChatWebSocketCommandHandler {
             ChatCommandResponder responder
     ) {
         try {
-            chatValidator.validateSendRequest(
+            chatWebSocketRequestValidator.validateSendRequest(
                     request.chatRoomId(), request.content(), request.images(), memberId);
 
             ChatMessageSendEvent sendEvent =
@@ -75,7 +75,7 @@ public class ChatWebSocketCommandHandler {
             ChatCommandResponder responder
     ) {
         try {
-            chatValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
+            chatWebSocketRequestValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
 
             ChatRoomSubscriptionEvent subscribeEvent =
                     ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
@@ -100,7 +100,7 @@ public class ChatWebSocketCommandHandler {
             ChatCommandResponder responder
     ) {
         try {
-            chatValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
+            chatWebSocketRequestValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
 
             ChatRoomSubscriptionEvent unsubscribeEvent =
                     ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
@@ -125,7 +125,7 @@ public class ChatWebSocketCommandHandler {
             ChatCommandResponder responder
     ) {
         try {
-            chatValidator.validateChatListSubscriptionRequest(memberId, request.memberRooms());
+            chatWebSocketRequestValidator.validateChatListSubscriptionRequest(memberId, request.memberRooms());
 
             ChatListSubscriptionEvent subscribeEvent =
                     ChatListSubscriptionEvent.subscribe(memberId, request.memberRooms());
@@ -150,7 +150,7 @@ public class ChatWebSocketCommandHandler {
             ChatCommandResponder responder
     ) {
         try {
-            chatValidator.validateChatListUnsubscriptionRequest(memberId, request.memberRooms());
+            chatWebSocketRequestValidator.validateChatListUnsubscriptionRequest(memberId, request.memberRooms());
 
             ChatListSubscriptionEvent unsubscribeEvent =
                     ChatListSubscriptionEvent.unsubscribe(memberId, request.memberRooms());

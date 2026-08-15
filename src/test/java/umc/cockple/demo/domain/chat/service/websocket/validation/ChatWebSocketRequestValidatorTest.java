@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.websocket.validation;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,11 +26,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatValidator")
-class ChatValidatorTest {
+@DisplayName("ChatWebSocketRequestValidator")
+class ChatWebSocketRequestValidatorTest {
 
     @InjectMocks
-    private ChatValidator chatValidator;
+    private ChatWebSocketRequestValidator chatWebSocketRequestValidator;
 
     @Mock
     private ChatRoomRepository chatRoomRepository;
@@ -47,7 +47,7 @@ class ChatValidatorTest {
         void success_whenContentExists() {
             givenExistingRoomAndMembership(10L, 1L);
 
-            assertThatCode(() -> chatValidator.validateSendRequest(10L, "hello", List.of(), 1L))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateSendRequest(10L, "hello", List.of(), 1L))
                     .doesNotThrowAnyException();
         }
 
@@ -59,7 +59,7 @@ class ChatValidatorTest {
                     new WebSocketMessageDTO.Request.FileInfo("chat/a.webp", 1, "a.webp", 100L, "image/webp")
             );
 
-            assertThatCode(() -> chatValidator.validateSendRequest(10L, null, files, 1L))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateSendRequest(10L, null, files, 1L))
                     .doesNotThrowAnyException();
         }
 
@@ -68,7 +68,7 @@ class ChatValidatorTest {
         void fail_whenChatRoomIdIsNull() {
             assertChatException(
                     ChatErrorCode.CHATROOM_ID_NECESSARY,
-                    () -> chatValidator.validateSendRequest(null, "hello", List.of(), 1L)
+                    () -> chatWebSocketRequestValidator.validateSendRequest(null, "hello", List.of(), 1L)
             );
             verify(chatRoomRepository, never()).existsById(null);
         }
@@ -80,7 +80,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_NOT_FOUND,
-                    () -> chatValidator.validateSendRequest(10L, "hello", List.of(), 1L)
+                    () -> chatWebSocketRequestValidator.validateSendRequest(10L, "hello", List.of(), 1L)
             );
             verify(chatRoomMemberRepository, never()).existsByChatRoomIdAndMemberId(10L, 1L);
         }
@@ -93,7 +93,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
-                    () -> chatValidator.validateSendRequest(10L, "hello", List.of(), 1L)
+                    () -> chatWebSocketRequestValidator.validateSendRequest(10L, "hello", List.of(), 1L)
             );
         }
 
@@ -104,7 +104,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.EMPTY_MESSAGE_NOT_ALLOWED,
-                    () -> chatValidator.validateSendRequest(10L, "   ", List.of(), 1L)
+                    () -> chatWebSocketRequestValidator.validateSendRequest(10L, "   ", List.of(), 1L)
             );
         }
 
@@ -116,7 +116,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.MESSAGE_TO_LONG,
-                    () -> chatValidator.validateSendRequest(10L, tooLongContent, List.of(), 1L)
+                    () -> chatWebSocketRequestValidator.validateSendRequest(10L, tooLongContent, List.of(), 1L)
             );
         }
     }
@@ -130,9 +130,9 @@ class ChatValidatorTest {
         void success_whenRoomAndMembershipExist() {
             givenExistingRoomAndMembership(10L, 1L);
 
-            assertThatCode(() -> chatValidator.validateSubscriptionRequest(10L, 1L))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateSubscriptionRequest(10L, 1L))
                     .doesNotThrowAnyException();
-            assertThatCode(() -> chatValidator.validateUnsubscriptionRequest(10L, 1L))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateUnsubscriptionRequest(10L, 1L))
                     .doesNotThrowAnyException();
         }
 
@@ -143,7 +143,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_NOT_FOUND,
-                    () -> chatValidator.validateSubscriptionRequest(10L, 1L)
+                    () -> chatWebSocketRequestValidator.validateSubscriptionRequest(10L, 1L)
             );
         }
 
@@ -155,7 +155,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
-                    () -> chatValidator.validateUnsubscriptionRequest(10L, 1L)
+                    () -> chatWebSocketRequestValidator.validateUnsubscriptionRequest(10L, 1L)
             );
         }
     }
@@ -170,7 +170,7 @@ class ChatValidatorTest {
             given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
             given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(20L, 1L)).willReturn(true);
 
-            assertThatCode(() -> chatValidator.validateChatListSubscriptionRequest(1L, List.of(10L, 10L, 20L)))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, List.of(10L, 10L, 20L)))
                     .doesNotThrowAnyException();
 
             verify(chatRoomMemberRepository, times(1)).existsByChatRoomIdAndMemberId(10L, 1L);
@@ -182,7 +182,7 @@ class ChatValidatorTest {
         void success_unsubscriptionUsesSameValidation() {
             given(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(10L, 1L)).willReturn(true);
 
-            assertThatCode(() -> chatValidator.validateChatListUnsubscriptionRequest(1L, List.of(10L)))
+            assertThatCode(() -> chatWebSocketRequestValidator.validateChatListUnsubscriptionRequest(1L, List.of(10L)))
                     .doesNotThrowAnyException();
         }
 
@@ -191,11 +191,11 @@ class ChatValidatorTest {
         void fail_whenRoomIdsAreNullOrEmpty() {
             assertChatException(
                     ChatErrorCode.CHATROOM_LIST_EMPTY,
-                    () -> chatValidator.validateChatListSubscriptionRequest(1L, null)
+                    () -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, null)
             );
             assertChatException(
                     ChatErrorCode.CHATROOM_LIST_EMPTY,
-                    () -> chatValidator.validateChatListSubscriptionRequest(1L, Collections.emptyList())
+                    () -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, Collections.emptyList())
             );
         }
 
@@ -206,7 +206,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.TOO_MANY_CHATROOMS,
-                    () -> chatValidator.validateChatListSubscriptionRequest(1L, tooManyRoomIds)
+                    () -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, tooManyRoomIds)
             );
         }
 
@@ -215,11 +215,11 @@ class ChatValidatorTest {
         void fail_whenRoomIdIsInvalid() {
             assertChatException(
                     ChatErrorCode.INVALID_CHATROOM_ID,
-                    () -> chatValidator.validateChatListSubscriptionRequest(1L, List.of(0L, 10L))
+                    () -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, List.of(0L, 10L))
             );
             assertChatException(
                     ChatErrorCode.INVALID_CHATROOM_ID,
-                    () -> chatValidator.validateChatListSubscriptionRequest(1L, Arrays.asList(null, 10L))
+                    () -> chatWebSocketRequestValidator.validateChatListSubscriptionRequest(1L, Arrays.asList(null, 10L))
             );
         }
 
@@ -231,7 +231,7 @@ class ChatValidatorTest {
 
             assertChatException(
                     ChatErrorCode.CHAT_ROOM_ACCESS_DENIED,
-                    () -> chatValidator.validateChatListUnsubscriptionRequest(1L, List.of(10L, 20L))
+                    () -> chatWebSocketRequestValidator.validateChatListUnsubscriptionRequest(1L, List.of(10L, 20L))
             );
         }
     }

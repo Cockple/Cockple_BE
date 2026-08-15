@@ -21,7 +21,7 @@ import umc.cockple.demo.domain.chat.presentation.websocket.ChatWebSocketRequestD
 import umc.cockple.demo.domain.chat.presentation.websocket.WebSocketResponseSender;
 import umc.cockple.demo.domain.chat.presentation.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketMessageSender;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.validation.ChatWebSocketRequestValidator;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
 import umc.cockple.demo.global.realtime.config.RealtimeWebSocketProperties;
 import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.never;
 class ChatWebSocketCompatibilityTest {
 
     private ObjectMapper objectMapper;
-    private ChatValidator chatValidator;
+    private ChatWebSocketRequestValidator chatWebSocketRequestValidator;
     private ApplicationEventPublisher eventPublisher;
     private ChatWebSocketCommandHandler commandHandler;
     private RealtimeMessageEncoder messageEncoder;
@@ -63,9 +63,9 @@ class ChatWebSocketCompatibilityTest {
         objectMapper = new ObjectMapper()
                 .findAndRegisterModules()
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        chatValidator = mock(ChatValidator.class);
+        chatWebSocketRequestValidator = mock(ChatWebSocketRequestValidator.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
-        commandHandler = new ChatWebSocketCommandHandler(chatValidator, eventPublisher);
+        commandHandler = new ChatWebSocketCommandHandler(chatWebSocketRequestValidator, eventPublisher);
         messageEncoder = new JacksonRealtimeMessageEncoder(objectMapper);
         sessionMessageSender = new WebSocketSessionMessageSender();
     }
