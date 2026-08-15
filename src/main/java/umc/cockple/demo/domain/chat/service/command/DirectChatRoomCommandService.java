@@ -14,9 +14,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,22 +23,22 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ChatCommandServiceImpl implements ChatCommandService {
+public class DirectChatRoomCommandService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
-    private final MemberRepository memberRepository;
     private final ChatConverter chatConverter;
 
-    @Override
+    private final MemberLookupService memberLookupService;
+
     public DirectChatRoomCreateDTO.Response createDirectChatRoom(Long memberId, Long targetMemberId) {
         log.info("[개인 채팅방 생성 시작] sender: {}, receiver: {}", memberId, targetMemberId);
         if (memberId.equals(targetMemberId)) {
             throw new ChatException(ChatErrorCode.CANNOT_CHAT_WITH_SELF);
         }
 
-        Member me = findMemberOrThrow(memberId);
-        Member target = findMemberOrThrow(targetMemberId);
+        Member me = memberLookupService.findByIdOrThrow(memberId);
+        Member target = memberLookupService.findByIdOrThrow(targetMemberId);
         // 이미 존재하는 1:1 채팅방 있는지 확인
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDirectChatRoomByMemberIds(memberId, targetMemberId);
         if (existingRoom.isPresent()) {
@@ -60,8 +58,4 @@ public class ChatCommandServiceImpl implements ChatCommandService {
         return chatConverter.toDirectChatRoomCreateDTO(newRoom, List.of(member1, member2), target.getMemberName());
     }
 
-    private Member findMemberOrThrow(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-    }
 }

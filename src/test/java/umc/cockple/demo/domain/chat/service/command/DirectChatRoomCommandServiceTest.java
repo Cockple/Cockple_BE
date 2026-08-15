@@ -22,7 +22,7 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.ChatFixture;
@@ -41,24 +41,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatCommandService")
-class ChatCommandServiceTest {
+@DisplayName("DirectChatRoomCommandService")
+class DirectChatRoomCommandServiceTest {
 
     @Mock private ChatRoomRepository chatRoomRepository;
     @Mock private ChatRoomMemberRepository chatRoomMemberRepository;
-    @Mock private MemberRepository memberRepository;
+    @Mock private MemberLookupService memberLookupService;
 
-    private ChatCommandServiceImpl chatCommandService;
+    private DirectChatRoomCommandService directChatRoomCommandService;
     private Member member;
     private Member targetMember;
 
     @BeforeEach
     void setUp() {
-        chatCommandService = new ChatCommandServiceImpl(
+        directChatRoomCommandService = new DirectChatRoomCommandService(
                 chatRoomRepository,
                 chatRoomMemberRepository,
-                memberRepository,
-                new ChatConverter()
+                new ChatConverter(),
+                memberLookupService
         );
 
         member = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
@@ -82,8 +82,8 @@ class ChatCommandServiceTest {
             void createNewDirectChatRoom() {
                 LocalDateTime createdAt = LocalDateTime.of(2026, 4, 3, 12, 0);
 
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-                given(memberRepository.findById(targetMember.getId())).willReturn(Optional.of(targetMember));
+                given(memberLookupService.findByIdOrThrow(member.getId())).willReturn(member);
+                given(memberLookupService.findByIdOrThrow(targetMember.getId())).willReturn(targetMember);
                 given(chatRoomRepository.findDirectChatRoomByMemberIds(member.getId(), targetMember.getId()))
                         .willReturn(Optional.empty());
                 given(chatRoomRepository.save(any(ChatRoom.class))).willAnswer(invocation -> {
@@ -94,7 +94,7 @@ class ChatCommandServiceTest {
                 });
 
                 DirectChatRoomCreateDTO.Response result =
-                        chatCommandService.createDirectChatRoom(member.getId(), targetMember.getId());
+                        directChatRoomCommandService.createDirectChatRoom(member.getId(), targetMember.getId());
 
                 assertThat(result.chatRoomId()).isEqualTo(100L);
                 assertThat(result.displayName()).isEqualTo(targetMember.getMemberName());
@@ -143,15 +143,15 @@ class ChatCommandServiceTest {
                 ChatRoomMember targetMembership =
                         ChatRoomMember.createPending(existingRoom, targetMember, member.getMemberName());
 
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-                given(memberRepository.findById(targetMember.getId())).willReturn(Optional.of(targetMember));
+                given(memberLookupService.findByIdOrThrow(member.getId())).willReturn(member);
+                given(memberLookupService.findByIdOrThrow(targetMember.getId())).willReturn(targetMember);
                 given(chatRoomRepository.findDirectChatRoomByMemberIds(member.getId(), targetMember.getId()))
                         .willReturn(Optional.of(existingRoom));
                 given(chatRoomMemberRepository.findByChatRoomId(existingRoom.getId()))
                         .willReturn(List.of(myMembership, targetMembership));
 
                 DirectChatRoomCreateDTO.Response result =
-                        chatCommandService.createDirectChatRoom(member.getId(), targetMember.getId());
+                        directChatRoomCommandService.createDirectChatRoom(member.getId(), targetMember.getId());
 
                 assertThat(result.chatRoomId()).isEqualTo(existingRoom.getId());
                 assertThat(result.displayName()).isEqualTo(targetMember.getMemberName());
@@ -177,42 +177,44 @@ class ChatCommandServiceTest {
             @Test
             @DisplayName("자기 자신에게는 개인 채팅방을 생성할 수 없다")
             void cannotChatWithSelf() {
-                assertThatThrownBy(() -> chatCommandService.createDirectChatRoom(member.getId(), member.getId()))
+                assertThatThrownBy(() -> directChatRoomCommandService.createDirectChatRoom(member.getId(), member.getId()))
                         .isInstanceOf(ChatException.class)
                         .satisfies(e -> assertThat(((ChatException) e).getCode())
                                 .isEqualTo(ChatErrorCode.CANNOT_CHAT_WITH_SELF));
 
-                verifyNoInteractions(memberRepository, chatRoomRepository, chatRoomMemberRepository);
+                verifyNoInteractions(memberLookupService, chatRoomRepository, chatRoomMemberRepository);
             }
 
             @Test
             @DisplayName("요청 회원이 존재하지 않으면 MemberException(MEMBER_NOT_FOUND)을 던진다")
             void requesterNotFound() {
-                given(memberRepository.findById(member.getId())).willReturn(Optional.empty());
+                given(memberLookupService.findByIdOrThrow(member.getId()))
+                        .willThrow(new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-                assertThatThrownBy(() -> chatCommandService.createDirectChatRoom(member.getId(), targetMember.getId()))
+                assertThatThrownBy(() -> directChatRoomCommandService.createDirectChatRoom(member.getId(), targetMember.getId()))
                         .isInstanceOf(MemberException.class)
                         .satisfies(e -> assertThat(((MemberException) e).getCode())
                                 .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
 
-                then(memberRepository).should().findById(member.getId());
-                then(memberRepository).should(never()).findById(targetMember.getId());
+                then(memberLookupService).should().findByIdOrThrow(member.getId());
+                then(memberLookupService).should(never()).findByIdOrThrow(targetMember.getId());
                 verifyNoInteractions(chatRoomRepository, chatRoomMemberRepository);
             }
 
             @Test
             @DisplayName("상대 회원이 존재하지 않으면 MemberException(MEMBER_NOT_FOUND)을 던진다")
             void targetMemberNotFound() {
-                given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
-                given(memberRepository.findById(targetMember.getId())).willReturn(Optional.empty());
+                given(memberLookupService.findByIdOrThrow(member.getId())).willReturn(member);
+                given(memberLookupService.findByIdOrThrow(targetMember.getId()))
+                        .willThrow(new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-                assertThatThrownBy(() -> chatCommandService.createDirectChatRoom(member.getId(), targetMember.getId()))
+                assertThatThrownBy(() -> directChatRoomCommandService.createDirectChatRoom(member.getId(), targetMember.getId()))
                         .isInstanceOf(MemberException.class)
                         .satisfies(e -> assertThat(((MemberException) e).getCode())
                                 .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
 
-                then(memberRepository).should().findById(member.getId());
-                then(memberRepository).should().findById(targetMember.getId());
+                then(memberLookupService).should().findByIdOrThrow(member.getId());
+                then(memberLookupService).should().findByIdOrThrow(targetMember.getId());
                 then(chatRoomRepository).should(never()).findDirectChatRoomByMemberIds(any(), any());
                 then(chatRoomRepository).should(never()).save(any(ChatRoom.class));
                 verifyNoInteractions(chatRoomMemberRepository);

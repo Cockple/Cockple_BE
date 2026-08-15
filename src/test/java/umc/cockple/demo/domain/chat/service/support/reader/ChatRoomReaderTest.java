@@ -91,4 +91,35 @@ class ChatRoomReaderTest {
                         assertThat(exception.getErrorReason().getCode())
                                 .isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND.getCode()));
     }
+
+    @Test
+    @DisplayName("모임 ID로 채팅방을 선택 조회한다")
+    void findByPartyId_returnsChatRoom() {
+        // given
+        Long partyId = 10L;
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(
+                PartyFixture.createParty("모임", 1L, PartyFixture.createPartyAddr("서울", "강남구"))
+        );
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+
+        // when
+        Optional<ChatRoom> result = chatRoomReader.findByPartyId(partyId);
+
+        // then
+        assertThat(result).containsSame(chatRoom);
+    }
+
+    @Test
+    @DisplayName("모임 ID로 선택 조회한 채팅방이 없으면 빈 Optional을 반환한다")
+    void findByPartyId_returnsEmptyWhenChatRoomNotFound() {
+        // given
+        Long partyId = 10L;
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+
+        // when
+        Optional<ChatRoom> result = chatRoomReader.findByPartyId(partyId);
+
+        // then
+        assertThat(result).isEmpty();
+    }
 }

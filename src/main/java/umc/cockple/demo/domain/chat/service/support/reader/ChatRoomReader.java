@@ -8,6 +8,8 @@ import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 
+import java.util.Optional;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -23,5 +25,9 @@ public class ChatRoomReader {
     public ChatRoom readByPartyId(Long partyId) {
         return chatRoomRepository.findByPartyId(partyId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    public Optional<ChatRoom> findByPartyId(Long partyId) {
+        return chatRoomRepository.findByPartyId(partyId);
     }
 }
