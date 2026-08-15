@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
-import umc.cockple.demo.domain.chat.service.command.ChatCommandService;
+import umc.cockple.demo.domain.chat.service.command.DirectChatRoomCommandService;
 import umc.cockple.demo.domain.chat.service.ChatFileService;
 import umc.cockple.demo.domain.chat.service.query.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
@@ -24,7 +24,7 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 public class ChatController {
 
     private final ChatQueryService chatQueryService;
-    private final ChatCommandService chatCommandService;
+    private final DirectChatRoomCommandService directChatRoomCommandService;
     private final ChatFileService chatFileService;
 
     @GetMapping("/unread-status")
@@ -68,7 +68,7 @@ public class ChatController {
             @RequestParam Long targetMemberId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomCreateDTO.Response response = chatCommandService.createDirectChatRoom(memberId, targetMemberId);
+        DirectChatRoomCreateDTO.Response response = directChatRoomCommandService.createDirectChatRoom(memberId, targetMemberId);
         return BaseResponse.success(CommonSuccessCode.CREATED, response);
     }
 
