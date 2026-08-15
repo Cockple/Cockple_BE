@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.validation.ChatWebSocketRequestValidator;
 import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 
 import java.util.List;
@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.willThrow;
 @DisplayName("ChatWebSocketCommandHandler")
 class ChatWebSocketCommandHandlerTest {
 
-    @Mock private ChatValidator chatValidator;
+    @Mock private ChatWebSocketRequestValidator chatWebSocketRequestValidator;
     @Mock private ChatCommandResponder responder;
     @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -38,7 +38,7 @@ class ChatWebSocketCommandHandlerTest {
     @BeforeEach
     void setUp() {
         commandHandler = new ChatWebSocketCommandHandler(
-                chatValidator,
+                chatWebSocketRequestValidator,
                 eventPublisher
         );
     }
@@ -66,7 +66,7 @@ class ChatWebSocketCommandHandlerTest {
             commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateSendRequest(chatRoomId, "hello", List.of(), memberId);
+            then(chatWebSocketRequestValidator).should().validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             ArgumentCaptor<ChatMessageSendEvent> eventCaptor = ArgumentCaptor.forClass(ChatMessageSendEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -95,7 +95,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             // when
@@ -121,7 +121,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             // when
@@ -157,7 +157,7 @@ class ChatWebSocketCommandHandlerTest {
             commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateSubscriptionRequest(chatRoomId, memberId);
+            then(chatWebSocketRequestValidator).should().validateSubscriptionRequest(chatRoomId, memberId);
 
             ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -185,7 +185,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSubscriptionRequest(chatRoomId, memberId);
 
             // when
@@ -211,7 +211,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSubscriptionRequest(chatRoomId, memberId);
 
             // when
@@ -247,7 +247,7 @@ class ChatWebSocketCommandHandlerTest {
             commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateUnsubscriptionRequest(chatRoomId, memberId);
+            then(chatWebSocketRequestValidator).should().validateUnsubscriptionRequest(chatRoomId, memberId);
 
             ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -275,7 +275,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateUnsubscriptionRequest(chatRoomId, memberId);
 
             // when
@@ -301,7 +301,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateUnsubscriptionRequest(chatRoomId, memberId);
 
             // when
@@ -337,7 +337,7 @@ class ChatWebSocketCommandHandlerTest {
             commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateChatListSubscriptionRequest(memberId, chatRoomIds);
+            then(chatWebSocketRequestValidator).should().validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -366,7 +366,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             // when
@@ -392,7 +392,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             // when
@@ -428,7 +428,7 @@ class ChatWebSocketCommandHandlerTest {
             commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
+            then(chatWebSocketRequestValidator).should().validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -457,7 +457,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             // when
@@ -483,7 +483,7 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             // when
@@ -516,7 +516,7 @@ class ChatWebSocketCommandHandlerTest {
         // then
         then(responder).should()
                 .sendError("UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + WebSocketMessageType.ERROR);
-        then(chatValidator).shouldHaveNoInteractions();
+        then(chatWebSocketRequestValidator).shouldHaveNoInteractions();
         then(eventPublisher).shouldHaveNoInteractions();
     }
 

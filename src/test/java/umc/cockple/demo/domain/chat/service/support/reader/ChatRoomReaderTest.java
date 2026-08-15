@@ -33,6 +33,34 @@ class ChatRoomReaderTest {
     }
 
     @Test
+    @DisplayName("채팅방 존재 여부를 반환한다")
+    void exists_returnsRepositoryResult() {
+        // given
+        Long chatRoomId = 1L;
+        given(chatRoomRepository.existsById(chatRoomId)).willReturn(true);
+
+        // when
+        boolean result = chatRoomReader.exists(chatRoomId);
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("채팅방이 없으면 false를 반환한다")
+    void exists_returnsFalseWhenChatRoomNotFound() {
+        // given
+        Long chatRoomId = 1L;
+        given(chatRoomRepository.existsById(chatRoomId)).willReturn(false);
+
+        // when
+        boolean result = chatRoomReader.exists(chatRoomId);
+
+        // then
+        assertThat(result).isFalse();
+    }
+
+    @Test
     @DisplayName("채팅방 ID로 채팅방을 조회한다")
     void read_returnsChatRoom() {
         // given

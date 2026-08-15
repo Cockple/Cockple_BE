@@ -17,6 +17,10 @@ public class ChatRoomReader {
 
     private final ChatRoomRepository chatRoomRepository;
 
+    public boolean exists(Long chatRoomId) {
+        return chatRoomRepository.existsById(chatRoomId);
+    }
+
     public ChatRoom read(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
