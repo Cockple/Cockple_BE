@@ -1,52 +1,39 @@
 package umc.cockple.demo.domain.exercise.converter.query;
 
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMyGuestListResult;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class ExerciseGuestQueryMapper {
 
-    public ExerciseMyGuestListDTO.Response toEmptyGuestListResponse() {
+    public ExerciseMyGuestListDTO.Response toGuestListResponse(ExerciseMyGuestListResult result) {
         return ExerciseMyGuestListDTO.Response.builder()
-                .totalCount(0)
-                .maleCount(0)
-                .femaleCount(0)
-                .list(Collections.emptyList())
+                .totalCount(result.totalCount())
+                .maleCount(result.maleCount())
+                .femaleCount(result.femaleCount())
+                .list(toGuestInfos(result.list()))
                 .build();
     }
 
-    public ExerciseMyGuestListDTO.Response toMyGuestListResponse(
-            ExerciseMyGuestListDTO.GuestStatistics statistics,
-            List<ExerciseMyGuestListDTO.GuestInfo> guestInfoList) {
-
-        return ExerciseMyGuestListDTO.Response.builder()
-                .totalCount(statistics.totalCount())
-                .maleCount(statistics.maleCount())
-                .femaleCount(statistics.femaleCount())
-                .list(guestInfoList)
-                .build();
+    private List<ExerciseMyGuestListDTO.GuestInfo> toGuestInfos(
+            List<ExerciseMyGuestListResult.GuestInfo> results) {
+        return results.stream()
+                .map(this::toGuestInfo)
+                .toList();
     }
 
-    public ExerciseMyGuestListDTO.GuestInfo toGuestInfo(
-            Guest guest,
-            Map<Long, ExerciseMyGuestListDTO.GuestGroups> guestStatusMap,
-            String inviterName) {
-
-        ExerciseMyGuestListDTO.GuestGroups guestGroup = guestStatusMap.get(guest.getId());
-
+    private ExerciseMyGuestListDTO.GuestInfo toGuestInfo(ExerciseMyGuestListResult.GuestInfo result) {
         return ExerciseMyGuestListDTO.GuestInfo.builder()
-                .guestId(guest.getId())
-                .isWaiting(guestGroup.isWaiting())
-                .participantNumber(guestGroup.participantNumber())
-                .name(guest.getGuestName())
-                .gender(guest.getGender())
-                .level(guest.getLevel())
-                .inviterName(inviterName)
+                .guestId(result.guestId())
+                .isWaiting(result.waiting())
+                .participantNumber(result.participantNumber())
+                .name(result.name())
+                .gender(result.gender())
+                .level(result.level())
+                .inviterName(result.inviterName())
                 .build();
     }
 }
