@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.chat.service.command.PartyChatRoomLifecycleService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -19,6 +18,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
@@ -48,8 +48,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     private final PartyInvitationRepository partyInvitationRepository;
     private final PartyKeywordRepository partyKeywordRepository;
 
-    private final PartyChatRoomLifecycleService partyChatRoomLifecycleService;
-
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -72,7 +70,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //DB에 Party 저장
         Party savedParty = partyRepository.save(newParty);
 
-        partyChatRoomLifecycleService.createPartyChatRoom(savedParty, owner);
+        applicationEventPublisher.publishEvent(PartyCreatedEvent.created(savedParty.getId(), owner.getId()));
 
         log.info("모임 생성 완료 - partyId: {}", savedParty.getId());
 
@@ -149,10 +147,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //모임 탈퇴 로직 수행
         memberPartyRepository.delete(memberParty);
 
-        //채팅방 퇴장
-        partyChatRoomLifecycleService.leavePartyChatRoom(party.getId(), member.getId());
-
-        //채팅방 퇴장 이벤트 발행
+        //모임 멤버 탈퇴 이벤트 발행
         applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, member));
         log.info("모임 탈퇴 완료 - partyId: {}, memberId: {}", partyId, memberId);
     }
@@ -175,10 +170,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //모임 멤버 삭제 로직 수행
         memberPartyRepository.delete(memberPartyToRemove);
 
-        //채팅방 퇴장
-        partyChatRoomLifecycleService.leavePartyChatRoom(party.getId(), memberToRemove.getId());
-
-        //채팅방 퇴장 이벤트 발행
+        //모임 멤버 탈퇴 이벤트 발행
         applicationEventPublisher.publishEvent(PartyMemberJoinedEvent.left(partyId, memberToRemove));
         log.info("모임 멤버 삭제 완료 - partyId: {}, removed: {}", partyId, memberIdToRemove);
     }
@@ -583,7 +575,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         MemberParty newMemberParty = MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        partyChatRoomLifecycleService.joinPartyChatRoom(party.getId(), member);
         applicationEventPublisher.publishEvent(
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );
@@ -601,7 +592,6 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         MemberParty newMemberParty = MemberParty.create(party, member);
         party.addMember(newMemberParty);
 
-        partyChatRoomLifecycleService.joinPartyChatRoom(party.getId(), member);
         applicationEventPublisher.publishEvent(
                 PartyMemberJoinedEvent.joined(party.getId(), member)
         );

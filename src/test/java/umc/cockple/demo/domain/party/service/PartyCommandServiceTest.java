@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.service.command.PartyChatRoomLifecycleService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -28,6 +27,7 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
 import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
@@ -72,8 +72,6 @@ class PartyCommandServiceTest {
     private PartyAddrRepository partyAddrRepository;
     @Mock
     private MemberPartyRepository memberPartyRepository;
-    @Mock
-    private PartyChatRoomLifecycleService partyChatRoomLifecycleService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
@@ -122,7 +120,6 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository).delete(memberParty);
-            verify(partyChatRoomLifecycleService).leavePartyChatRoom(partyId, memberId);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
@@ -457,7 +454,11 @@ class PartyCommandServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.partyId()).isEqualTo(1L);
             verify(partyRepository, times(1)).save(any(Party.class));
-            verify(partyChatRoomLifecycleService, times(1)).createPartyChatRoom(any(Party.class), eq(owner));
+            verify(applicationEventPublisher).publishEvent(argThat((Object event) ->
+                    event instanceof PartyCreatedEvent partyCreatedEvent
+                            && partyCreatedEvent.partyId().equals(savedParty.getId())
+                            && partyCreatedEvent.ownerId().equals(owner.getId())
+            ));
         }
 
         @Test
@@ -1034,7 +1035,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(partyChatRoomLifecycleService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
         @Test
@@ -1068,7 +1069,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(partyChatRoomLifecycleService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
         @Test
@@ -1227,7 +1228,6 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(partyChatRoomLifecycleService).joinPartyChatRoom(partyId, applicant);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
             verify(applicationEventPublisher).publishEvent(any(PartyJoinRequestApprovedEvent.class));
         }
@@ -1267,7 +1267,6 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(partyChatRoomLifecycleService);
             verifyNoInteractions(applicationEventPublisher);
         }
 
@@ -1640,7 +1639,6 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(partyChatRoomLifecycleService).joinPartyChatRoom(party.getId(), invitee);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
             verify(applicationEventPublisher).publishEvent(any(PartyInvitationAcceptedEvent.class));
         }
@@ -1675,7 +1673,6 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(partyChatRoomLifecycleService);
             verifyNoInteractions(applicationEventPublisher);
         }
 
