@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
@@ -397,11 +398,11 @@ class ExerciseLifecycleQueryServiceTest {
                                 ExerciseDetailResult.ParticipantInfo::participantType,
                                 ExerciseDetailResult.ParticipantInfo::partyPosition)
                         .containsExactly(
-                                tuple("모임장", "PARTY_MEMBER", "PARTY_MANAGER"),
-                                tuple("부모임장", "PARTY_MEMBER", "PARTY_SUBMANAGER"),
-                                tuple("일반멤버", "PARTY_MEMBER", "PARTY_MEMBER"),
-                                tuple("외부회원", "EXTERNAL_PARTICIPANT", null),
-                                tuple("게스트", "GUEST", null)
+                                tuple("모임장", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_MANAGER),
+                                tuple("부모임장", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_SUBMANAGER),
+                                tuple("일반멤버", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_MEMBER),
+                                tuple("외부회원", ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT, null),
+                                tuple("게스트", ExerciseMemberShipStatus.GUEST, null)
                         );
             }
 
@@ -479,7 +480,7 @@ class ExerciseLifecycleQueryServiceTest {
                 // then
                 List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(1);
-                assertThat(participants.get(0).participantType()).isEqualTo("GUEST");
+                assertThat(participants.get(0).participantType()).isEqualTo(ExerciseMemberShipStatus.GUEST);
                 assertThat(participants.get(0).inviterName()).isEqualTo("모임장");
             }
 

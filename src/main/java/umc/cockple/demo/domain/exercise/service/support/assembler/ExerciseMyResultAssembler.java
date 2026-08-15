@@ -275,7 +275,6 @@ public class ExerciseMyResultAssembler {
 
         return MyExerciseCalendarResult.DailyExercises.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
                 .build();
     }
@@ -286,7 +285,6 @@ public class ExerciseMyResultAssembler {
 
         return MyPartyExerciseCalendarResult.DailyExercises.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
                 .build();
     }
@@ -315,7 +313,6 @@ public class ExerciseMyResultAssembler {
                 .partyName(party.getPartyName())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
                 .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
                 .build();
@@ -354,7 +351,6 @@ public class ExerciseMyResultAssembler {
                 .partyName(party.getPartyName())
                 .bookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
                 .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())

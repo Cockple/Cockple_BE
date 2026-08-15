@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Role;
 
 import java.util.*;
@@ -117,8 +118,8 @@ public class ExerciseLifecycleQueryService {
         return new ExerciseDetailResult.ParticipantGroup(
                 participants.size(),
                 maxCapacity,
-                countByGender(participants, "MALE"),
-                countByGender(participants, "FEMALE"),
+                countByGender(participants, Gender.MALE),
+                countByGender(participants, Gender.FEMALE),
                 participants
         );
     }
@@ -128,8 +129,8 @@ public class ExerciseLifecycleQueryService {
 
         return new ExerciseDetailResult.WaitingGroup(
                 waiting.size(),
-                countByGender(waiting, "MALE"),
-                countByGender(waiting, "FEMALE"),
+                countByGender(waiting, Gender.MALE),
+                countByGender(waiting, Gender.FEMALE),
                 waiting
         );
     }
@@ -143,19 +144,19 @@ public class ExerciseLifecycleQueryService {
                 position.participantNumber(),
                 participant.profileImageUrl(),
                 participant.name(),
-                participant.gender().name(),
-                participant.level().name(),
-                participant.membershipStatus().name(),
-                participant.partyPosition() != null ? participant.partyPosition().name() : null,
+                participant.gender(),
+                participant.level(),
+                participant.membershipStatus(),
+                participant.partyPosition(),
                 participant.inviterName(),
                 participant.joinedAt(),
                 participant.withdrawn()
         );
     }
 
-    private int countByGender(List<ExerciseDetailResult.ParticipantInfo> participants, String gender) {
+    private int countByGender(List<ExerciseDetailResult.ParticipantInfo> participants, Gender gender) {
         return (int) participants.stream()
-                .filter(p -> gender.equals(p.gender()))
+                .filter(participant -> participant.gender() == gender)
                 .count();
     }
 

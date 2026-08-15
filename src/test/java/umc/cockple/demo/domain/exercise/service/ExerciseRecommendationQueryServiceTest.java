@@ -172,7 +172,6 @@ class ExerciseRecommendationQueryServiceTest {
                 assertThat(item.partyId()).isEqualTo(10L);
                 assertThat(item.partyName()).isEqualTo("테스트 모임");
                 assertThat(item.date()).isEqualTo(exercise.getDate());
-                assertThat(item.dayOfWeek()).isEqualTo(exercise.getDate().getDayOfWeek().name());
                 assertThat(item.buildingName()).isEqualTo("테스트 체육관");
                 assertThat(item.bookmarked()).isFalse();
             }

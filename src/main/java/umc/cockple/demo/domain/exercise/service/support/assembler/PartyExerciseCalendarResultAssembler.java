@@ -154,7 +154,6 @@ public class PartyExerciseCalendarResultAssembler {
 
         return PartyExerciseCalendarResult.DailyExercises.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
                 .build();
     }

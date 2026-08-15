@@ -156,7 +156,6 @@ public class ExerciseRecommendationResultAssembler {
 
         return ExerciseRecommendationCalendarResult.DailyExercises.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .exercises(exerciseItems)
                 .build();
     }
@@ -171,7 +170,6 @@ public class ExerciseRecommendationResultAssembler {
                 .partyId(party.getId())
                 .partyName(party.getPartyName())
                 .date(exercise.getDate())
-                .dayOfWeek(exercise.getDate().getDayOfWeek().name())
                 .startTime(exercise.getStartTime())
                 .endTime(exercise.getEndTime())
                 .buildingName(exercise.getExerciseAddr().getBuildingName())

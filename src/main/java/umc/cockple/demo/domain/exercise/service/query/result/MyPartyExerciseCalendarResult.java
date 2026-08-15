@@ -24,7 +24,6 @@ public record MyPartyExerciseCalendarResult(
     @Builder
     public record DailyExercises(
             LocalDate date,
-            String dayOfWeek,
             List<ExerciseCalendarItem> exercises
     ) {
     }

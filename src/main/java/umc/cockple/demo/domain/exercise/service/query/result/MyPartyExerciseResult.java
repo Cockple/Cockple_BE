@@ -19,7 +19,6 @@ public record MyPartyExerciseResult(
             String partyName,
             String buildingName,
             LocalDate date,
-            String dayOfWeek,
             LocalTime startTime,
             String profileImageUrl
     ) {

@@ -18,7 +18,6 @@ public record ExerciseRecommendationResult(
             Long partyId,
             String partyName,
             LocalDate date,
-            String dayOfWeek,
             LocalTime startTime,
             LocalTime endTime,
             String buildingName,

@@ -116,7 +116,6 @@ class ExerciseMapQueryServiceTest {
 
                 // then
                 assertThat(response.date()).isEqualTo(targetDate);
-                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
                 assertThat(response.buildingName()).isEqualTo(buildingName);
                 assertThat(response.exercises()).isEmpty();
                 verify(exerciseRepository).findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate);
@@ -141,7 +140,6 @@ class ExerciseMapQueryServiceTest {
 
                 // then
                 assertThat(response.date()).isEqualTo(targetDate);
-                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
                 assertThat(response.buildingName()).isEqualTo(buildingName);
                 assertThat(response.exercises())
                         .extracting(

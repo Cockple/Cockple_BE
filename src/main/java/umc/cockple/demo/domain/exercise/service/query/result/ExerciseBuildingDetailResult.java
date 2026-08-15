@@ -9,7 +9,6 @@ import java.util.List;
 @Builder
 public record ExerciseBuildingDetailResult(
         LocalDate date,
-        String dayOfWeek,
         String buildingName,
         List<ExerciseItem> exercises
 ) {

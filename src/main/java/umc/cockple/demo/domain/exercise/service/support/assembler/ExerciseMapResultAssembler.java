@@ -22,7 +22,6 @@ public class ExerciseMapResultAssembler {
     public ExerciseBuildingDetailResult toEmptyBuildingDetailResult(String buildingName, LocalDate date) {
         return ExerciseBuildingDetailResult.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .buildingName(buildingName)
                 .exercises(List.of())
                 .build();
@@ -37,7 +36,6 @@ public class ExerciseMapResultAssembler {
 
         return ExerciseBuildingDetailResult.builder()
                 .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
                 .buildingName(buildingName)
                 .exercises(finalExercises)
                 .build();

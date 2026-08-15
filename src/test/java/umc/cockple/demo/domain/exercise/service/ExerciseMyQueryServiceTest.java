@@ -261,12 +261,11 @@ class ExerciseMyQueryServiceTest {
                                 MyPartyExerciseResult.ExerciseItem::partyName,
                                 MyPartyExerciseResult.ExerciseItem::buildingName,
                                 MyPartyExerciseResult.ExerciseItem::date,
-                                MyPartyExerciseResult.ExerciseItem::dayOfWeek,
                                 MyPartyExerciseResult.ExerciseItem::startTime,
                                 MyPartyExerciseResult.ExerciseItem::profileImageUrl)
                         .containsExactly(
-                                tuple(301L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 1), "WEDNESDAY", LocalTime.of(10, 0), null),
-                                tuple(302L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 2), "THURSDAY", LocalTime.of(10, 0), null)
+                                tuple(301L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 1), LocalTime.of(10, 0), null),
+                                tuple(302L, 10L, "테스트 모임", "테스트 체육관", LocalDate.of(2026, 4, 2), LocalTime.of(10, 0), null)
                         );
             }
 
@@ -632,7 +631,6 @@ class ExerciseMyQueryServiceTest {
                                 MyExerciseListResult.ExerciseItem::partyName,
                                 MyExerciseListResult.ExerciseItem::bookmarked,
                                 MyExerciseListResult.ExerciseItem::date,
-                                MyExerciseListResult.ExerciseItem::dayOfWeek,
                                 MyExerciseListResult.ExerciseItem::buildingName,
                                 MyExerciseListResult.ExerciseItem::startTime,
                                 MyExerciseListResult.ExerciseItem::endTime,
@@ -643,10 +641,10 @@ class ExerciseMyQueryServiceTest {
                         )
                         .containsExactly(
                                 tuple(703L, 10L, "테스트 모임", true,
-                                        LocalDate.of(2099, 1, 10), "SATURDAY", "테스트 체육관",
+                                        LocalDate.of(2099, 1, 10), "테스트 체육관",
                                         LocalTime.of(7, 30), LocalTime.of(9, 0), 3, 20, false, true),
                                 tuple(701L, 10L, "테스트 모임", false,
-                                        LocalDate.of(2024, 1, 5), "FRIDAY", "테스트 체육관",
+                                        LocalDate.of(2024, 1, 5), "테스트 체육관",
                                         LocalTime.of(9, 0), LocalTime.of(11, 0), 1, 18, true, false)
                         );
             }

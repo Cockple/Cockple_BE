@@ -20,7 +20,6 @@ public record MyExerciseListResult(
             String partyName,
             boolean bookmarked,
             LocalDate date,
-            String dayOfWeek,
             String buildingName,
             LocalTime startTime,
             LocalTime endTime,

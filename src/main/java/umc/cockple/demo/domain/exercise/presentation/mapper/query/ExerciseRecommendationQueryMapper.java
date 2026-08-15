@@ -33,7 +33,7 @@ public class ExerciseRecommendationQueryMapper {
                 .partyId(result.partyId())
                 .partyName(result.partyName())
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .startTime(result.startTime())
                 .endTime(result.endTime())
                 .buildingName(result.buildingName())
@@ -55,7 +55,7 @@ public class ExerciseRecommendationQueryMapper {
             ExerciseRecommendationCalendarResult.DailyExercises result) {
         return ExerciseRecommendationCalendarDTO.DailyExercises.builder()
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .exercises(result.exercises().stream().map(this::toRecommendationCalendarItem).toList())
                 .build();
     }

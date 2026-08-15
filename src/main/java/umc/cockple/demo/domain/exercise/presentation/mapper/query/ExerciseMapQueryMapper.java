@@ -19,7 +19,7 @@ public class ExerciseMapQueryMapper {
             ExerciseBuildingDetailResult result) {
         return ExerciseBuildingDetailDTO.Response.builder()
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .buildingName(result.buildingName())
                 .exercises(result.exercises().stream().map(this::toBuildingDetailItem).toList())
                 .build();

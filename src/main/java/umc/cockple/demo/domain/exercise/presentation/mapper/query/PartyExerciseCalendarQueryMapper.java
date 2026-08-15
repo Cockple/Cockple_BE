@@ -31,7 +31,7 @@ public class PartyExerciseCalendarQueryMapper {
             PartyExerciseCalendarResult.DailyExercises result) {
         return PartyExerciseCalendarDTO.DailyExercises.builder()
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .exercises(result.exercises().stream().map(this::toExerciseItem).toList())
                 .build();
     }

@@ -58,7 +58,7 @@ public class ExerciseMyQueryMapper {
             MyExerciseCalendarResult.DailyExercises result) {
         return MyExerciseCalendarDTO.DailyExercises.builder()
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .exercises(result.exercises().stream().map(this::toMyExerciseCalendarItem).toList())
                 .build();
     }
@@ -83,7 +83,7 @@ public class ExerciseMyQueryMapper {
                 .partyName(result.partyName())
                 .buildingName(result.buildingName())
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .startTime(result.startTime())
                 .profileImageUrl(result.profileImageUrl())
                 .build();
@@ -102,7 +102,7 @@ public class ExerciseMyQueryMapper {
             MyPartyExerciseCalendarResult.DailyExercises result) {
         return MyPartyExerciseCalendarDTO.DailyExercises.builder()
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .exercises(result.exercises().stream().map(this::toMyPartyExerciseCalendarItem).toList())
                 .build();
     }
@@ -129,7 +129,7 @@ public class ExerciseMyQueryMapper {
                 .partyName(result.partyName())
                 .isBookmarked(result.bookmarked())
                 .date(result.date())
-                .dayOfWeek(result.dayOfWeek())
+                .dayOfWeek(result.date().getDayOfWeek().name())
                 .buildingName(result.buildingName())
                 .startTime(result.startTime())
                 .endTime(result.endTime())
