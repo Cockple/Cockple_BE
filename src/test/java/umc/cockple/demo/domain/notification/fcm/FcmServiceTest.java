@@ -100,6 +100,17 @@ class FcmServiceTest {
                 assertThatCode(() -> fcmService.sendNotification(memberWithToken, "제목", "내용"))
                         .doesNotThrowAnyException();
             }
+
+            @Test
+            @DisplayName("채팅 멀티캐스트 실패는 Push Worker 재시도를 위해 예외를 전파한다")
+            void 채팅_멀티캐스트_실패는_예외를_전파한다() throws FirebaseMessagingException {
+                FirebaseMessagingException exception = mock(FirebaseMessagingException.class);
+                given(firebaseMessaging.sendEachForMulticast(any())).willThrow(exception);
+
+                assertThatCode(() -> fcmService.sendChatMulticastWithRetry(
+                                List.of(memberWithToken), "제목", "내용", 10L, ChatRoomType.PARTY))
+                        .isInstanceOf(IllegalStateException.class);
+            }
         }
     }
 
@@ -161,5 +172,9 @@ class FcmServiceTest {
             ReflectionTestUtils.setField(member, "fcmToken", token);
         }
         return member;
+    }
+
+    private Member memberWithToken() {
+        return memberWith(1L, "token");
     }
 }

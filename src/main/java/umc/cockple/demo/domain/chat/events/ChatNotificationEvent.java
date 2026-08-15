@@ -12,7 +12,8 @@ public record ChatNotificationEvent(
         String notificationTitle,
         String notificationContent,
         Long senderId,
-        List<Long> activeSubscriberIds
+        List<Long> activeSubscriberIds,
+        Long messageId
 ) {
     public static ChatNotificationEvent create(
             Long chatRoomId,
@@ -29,6 +30,20 @@ public record ChatNotificationEvent(
                 .notificationContent(notificationContent)
                 .senderId(senderId)
                 .activeSubscriberIds(activeSubscriberIds)
+                .messageId(null)
                 .build();
+    }
+
+    public static ChatNotificationEvent create(
+            Long messageId,
+            Long chatRoomId,
+            ChatRoomType chatRoomType,
+            String notificationTitle,
+            String notificationContent,
+            Long senderId,
+            List<Long> activeSubscriberIds
+    ) {
+        return new ChatNotificationEvent(chatRoomId, chatRoomType, notificationTitle,
+                notificationContent, senderId, activeSubscriberIds, messageId);
     }
 }

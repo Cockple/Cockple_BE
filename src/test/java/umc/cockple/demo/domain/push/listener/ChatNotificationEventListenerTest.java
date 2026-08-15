@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.listener;
+package umc.cockple.demo.domain.push.listener;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,13 +11,13 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.chat.enums.ChatRoomType;
 import umc.cockple.demo.domain.chat.events.ChatNotificationEvent;
-import umc.cockple.demo.domain.notification.service.ChatPushNotificationService;
+import umc.cockple.demo.domain.push.service.NotificationPushOutboxService;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.only;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.only;
 @DisplayName("ChatNotificationEventListener")
 class ChatNotificationEventListenerTest {
 
-    @Mock private ChatPushNotificationService chatPushNotificationService;
+    @Mock private NotificationPushOutboxService notificationPushOutboxService;
 
     @InjectMocks private ChatNotificationEventListener listener;
 
@@ -36,7 +36,7 @@ class ChatNotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("채팅 알림은 DB 저장 없이 ChatPushNotificationService.sendPush로만 위임한다(push-only)")
+    @DisplayName("채팅 알림은 Push Outbox 저장으로 위임한다")
     void handleChatNotification_delegatesToPushServiceOnly() {
         // given
         ChatNotificationEvent event = event();
@@ -44,35 +44,32 @@ class ChatNotificationEventListenerTest {
         // when
         listener.handleChatNotification(event);
 
-        // then: sendPush 단 한 번만 호출되고 그 외 상호작용은 없다
-        then(chatPushNotificationService).should(only()).sendPush(event);
+        then(notificationPushOutboxService).should(only()).enqueueChat(event);
     }
 
     @Test
-    @DisplayName("sendPush 중 예외가 발생해도 리스너 밖으로 전파되지 않는다")
-    void handleChatNotification_swallowsException() {
+    @DisplayName("Push Outbox 저장 예외는 채팅 메시지 트랜잭션으로 전파되어 함께 롤백된다")
+    void handleChatNotification_propagatesException() {
         // given
         ChatNotificationEvent event = event();
-        willThrow(new RuntimeException("푸시 장애"))
-                .given(chatPushNotificationService).sendPush(event);
+        willThrow(new RuntimeException("아웃박스 장애"))
+                .given(notificationPushOutboxService).enqueueChat(event);
 
-        // when & then
-        assertThatCode(() -> listener.handleChatNotification(event))
-                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> listener.handleChatNotification(event))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test
-    @DisplayName("핸들러는 AFTER_COMMIT 트랜잭션 이벤트로, notificationPushExecutor 스레드풀에서 비동기 실행된다")
-    void handler_usesPushExecutorAndAfterCommit() throws NoSuchMethodException {
+    @DisplayName("핸들러는 BEFORE_COMMIT 트랜잭션 이벤트로 동기 동작하며 비동기가 아니다")
+    void handler_usesBeforeCommitAndNotAsync() throws NoSuchMethodException {
         Method handler = ChatNotificationEventListener.class
                 .getMethod("handleChatNotification", ChatNotificationEvent.class);
 
         Async async = handler.getAnnotation(Async.class);
-        assertThat(async).isNotNull();
-        assertThat(async.value()).isEqualTo("notificationPushExecutor");
+        assertThat(async).isNull();
 
         TransactionalEventListener transactional = handler.getAnnotation(TransactionalEventListener.class);
         assertThat(transactional).isNotNull();
-        assertThat(transactional.phase()).isEqualTo(TransactionPhase.AFTER_COMMIT);
+        assertThat(transactional.phase()).isEqualTo(TransactionPhase.BEFORE_COMMIT);
     }
 }

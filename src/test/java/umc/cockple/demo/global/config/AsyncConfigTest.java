@@ -10,7 +10,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import umc.cockple.demo.global.logging.MdcLoggingFilter;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,34 +46,11 @@ class AsyncConfigTest {
     }
 
     @Test
-    @DisplayName("notificationIngressExecutor는 MDC를 비동기 작업에 전파하고 다음 작업으로 누수하지 않는다")
-    void notificationIngressExecutorPropagatesMdcAndPreventsLeak() throws Exception {
-        ThreadPoolTaskExecutor executor = config.notificationIngressExecutor(1, 1, 1, 1, config.mdcTaskDecorator());
-
-        assertPropagatesMdcAndPreventsLeak(executor);
-    }
-
-    @Test
     @DisplayName("notificationPushExecutor는 MDC를 비동기 작업에 전파하고 다음 작업으로 누수하지 않는다")
     void notificationPushExecutorPropagatesMdcAndPreventsLeak() throws Exception {
         ThreadPoolTaskExecutor executor = config.notificationPushExecutor(1, 1, 1, 1, config.mdcTaskDecorator());
 
         assertPropagatesMdcAndPreventsLeak(executor);
-    }
-
-    @Test
-    @DisplayName("notificationIngressExecutor는 포화 시 호출 스레드에서 실행한다")
-    void notificationIngressExecutorUsesCallerRunsPolicy() {
-        ThreadPoolTaskExecutor executor = config.notificationIngressExecutor(
-                1, 1, 1, 1, config.mdcTaskDecorator());
-        executor.initialize();
-
-        try {
-            assertThat(executor.getThreadPoolExecutor().getRejectedExecutionHandler())
-                    .isInstanceOf(ThreadPoolExecutor.CallerRunsPolicy.class);
-        } finally {
-            executor.shutdown();
-        }
     }
 
     /**

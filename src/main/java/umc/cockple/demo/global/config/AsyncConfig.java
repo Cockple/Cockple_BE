@@ -17,7 +17,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * 지연 특성별로 벌크헤드(bulkhead) 격리
  * {@code chatExecutor} — 실시간/저지연
- * {@code notificationIngressExecutor} — 외부 도메인 이벤트의 알림 DB 저장
  * {@code notificationPushExecutor} — 외부 FCM HTTP 호출
  * {@code applicationTaskExecutor} — qualifier 없는 @Async의 기본 executor
  */
@@ -61,22 +60,6 @@ public class AsyncConfig {
     ) {
         // 채팅은 유실 방지가 우선 -> 포화 시 호출 스레드에서 실행해 백프레셔를 건다.
         return buildExecutor("cockple-chat-", coreSize, maxSize, queueCapacity,
-                awaitTerminationSeconds, mdcTaskDecorator, new ThreadPoolExecutor.CallerRunsPolicy());
-    }
-
-    /**
-     * 외부 도메인 이벤트를 알림 DB 저장으로 변환하는 풀.
-     * 알림 내역 유실 방지를 위해 포화 시 호출 스레드에서 실행해 backpressure를 건다.
-     */
-    @Bean("notificationIngressExecutor")
-    public ThreadPoolTaskExecutor notificationIngressExecutor(
-            @Value("${async.notification.ingress.core-size:2}") int coreSize,
-            @Value("${async.notification.ingress.max-size:4}") int maxSize,
-            @Value("${async.notification.ingress.queue-capacity:500}") int queueCapacity,
-            @Value("${async.notification.ingress.await-termination-seconds:30}") int awaitTerminationSeconds,
-            TaskDecorator mdcTaskDecorator
-    ) {
-        return buildExecutor("cockple-noti-ingress-", coreSize, maxSize, queueCapacity,
                 awaitTerminationSeconds, mdcTaskDecorator, new ThreadPoolExecutor.CallerRunsPolicy());
     }
 

@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.service;
+package umc.cockple.demo.domain.push.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

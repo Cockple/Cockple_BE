@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.notification.service;
+package umc.cockple.demo.domain.push.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +20,14 @@ public class ChatPushNotificationService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     public void sendPush(ChatNotificationEvent event) {
+        sendPush(event, false);
+    }
+
+    public void sendPushWithRetry(ChatNotificationEvent event) {
+        sendPush(event, true);
+    }
+
+    private void sendPush(ChatNotificationEvent event, boolean propagateFailure) {
         // 발신자 본인과 현재 채팅방을 보고 있는(active) 구독자는 푸시 대상에서 제외
         List<Member> recipients = chatRoomMemberRepository
                 .findByChatRoomIdAndStatusWithMember(event.chatRoomId(), ChatRoomMemberStatus.JOINED)
@@ -30,8 +38,14 @@ public class ChatPushNotificationService {
                 .toList();
 
         // 수신자 전체에게 한 번의 멀티캐스트로 전송
-        fcmService.sendChatMulticast(
-                recipients, event.notificationTitle(), event.notificationContent(),
-                event.chatRoomId(), event.chatRoomType());
+        if (propagateFailure) {
+            fcmService.sendChatMulticastWithRetry(
+                    recipients, event.notificationTitle(), event.notificationContent(),
+                    event.chatRoomId(), event.chatRoomType());
+        } else {
+            fcmService.sendChatMulticast(
+                    recipients, event.notificationTitle(), event.notificationContent(),
+                    event.chatRoomId(), event.chatRoomType());
+        }
     }
 }

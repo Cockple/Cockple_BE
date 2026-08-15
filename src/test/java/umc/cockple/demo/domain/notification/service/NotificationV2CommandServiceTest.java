@@ -7,7 +7,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -19,6 +18,7 @@ import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.domain.push.service.NotificationPushOutboxService;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -28,7 +28,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willAnswer;
 
@@ -45,7 +44,7 @@ class NotificationV2CommandServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private NotificationPushOutboxService notificationPushOutboxService;
 
     private Member member;
 
@@ -84,6 +83,7 @@ class NotificationV2CommandServiceTest {
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
+        verify(notificationPushOutboxService).enqueue(100L);
 
         Notification saved = captor.getValue();
         assertThat(saved.getPartyId()).isEqualTo(10L);
@@ -92,6 +92,5 @@ class NotificationV2CommandServiceTest {
         assertThat(saved.getResourceId()).isEqualTo(20L);
         assertThat(saved.getAction()).isEqualTo(NotificationAction.RESPOND);
         assertThat(saved.getData()).isEqualTo("{\"invitationId\":20}");
-        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
     }
 }

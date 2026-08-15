@@ -2,7 +2,6 @@ package umc.cockple.demo.domain.notification.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +14,10 @@ import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.domain.NotificationLegacyCompatibility;
 import umc.cockple.demo.domain.notification.command.NotificationCreateCommand;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
-import umc.cockple.demo.domain.notification.event.NotificationPushRequestedEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
+import umc.cockple.demo.domain.push.service.NotificationPushOutboxService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +34,7 @@ public class NotificationV2CommandService {
 
     private final NotificationRepository notificationRepository;
     private final MemberRepository memberRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationPushOutboxService notificationPushOutboxService;
 
     public void createNotification(NotificationCreateCommand command) {
         createNotification(command, null);
@@ -63,10 +62,11 @@ public class NotificationV2CommandService {
                 .isRead(false)
                 .imageKey(command.imageKey())
                 .data(command.data())
+                .notificationKey(command.notificationKey())
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
-        eventPublisher.publishEvent(new NotificationPushRequestedEvent(savedNotification.getId()));
+        notificationPushOutboxService.enqueue(savedNotification.getId());
     }
 
     public void markAsRead(Long memberId, Long notificationId) {

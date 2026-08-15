@@ -76,6 +76,14 @@ gcs:
   bucket: ${GCS_BUCKET}
 
 cockple:
+  notification-outbox:
+    scheduler:
+      enabled: true
+      fixed-delay-ms: 5000
+  notification-push-outbox:
+    scheduler:
+      enabled: true
+      fixed-delay-ms: 5000
   web:
     # WS도 이 목록 공유. cockple-fe.vercel.app/(끝슬래시)는 WS 기존값 유지용(무해).
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://cockple.site,https://www.cockple.site,https://staging.cockple.site,https://cockple-fe.vercel.app,https://cockple-fe.vercel.app/}
@@ -104,13 +112,7 @@ async:
     max-size: 16
     queue-capacity: 500
     await-termination-seconds: 30
-  # 외부 도메인 이벤트 -> 알림 DB 저장 풀
   notification:
-    ingress:
-      core-size: 2
-      max-size: 4
-      queue-capacity: 500
-      await-termination-seconds: 30
     # FCM 알림 발송 풀
     push:
       core-size: 2

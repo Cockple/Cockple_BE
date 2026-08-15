@@ -15,6 +15,8 @@ import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
+    boolean existsByNotificationKey(String notificationKey);
+
     @Query("""
             SELECT n FROM Notification n
             JOIN FETCH n.member

@@ -8,6 +8,17 @@ public record NotificationCreateCommand(
         String content,
         String imageKey,
         String data,
-        NotificationDestination destination
+        NotificationDestination destination,
+        String notificationKey
 ) {
+    public NotificationCreateCommand(
+            Long recipientMemberId,
+            String title,
+            String content,
+            String imageKey,
+            String data,
+            NotificationDestination destination
+    ) {
+        this(recipientMemberId, title, content, imageKey, data, destination, null);
+    }
 }

@@ -20,7 +20,7 @@ import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
-import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
@@ -94,7 +94,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //비즈니스 로직 수행
         party.update(request);
 
-        applicationEventPublisher.publishEvent(PartyInfoChangedEvent.changed(
+        applicationEventPublisher.publishEvent(PartyUpdatedEvent.updated(
                 partyId,
                 member.getId(),
                 party.getPartyName(),

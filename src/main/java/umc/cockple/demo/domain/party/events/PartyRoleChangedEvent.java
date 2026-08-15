@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.party.events;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record PartyRoleChangedEvent(
         Long partyId,
@@ -10,7 +11,8 @@ public record PartyRoleChangedEvent(
         String imageKey,
         String subjectNickname,
         RoleChangeAction action,
-        LocalDateTime occurredAt
+        LocalDateTime occurredAt,
+        UUID eventId
 ) {
     public PartyRoleChangedEvent {
         recipientMemberIds = List.copyOf(recipientMemberIds);
@@ -26,7 +28,7 @@ public record PartyRoleChangedEvent(
     ) {
         return new PartyRoleChangedEvent(
                 partyId, recipientMemberIds, partyName, imageKey,
-                subjectNickname, action, LocalDateTime.now()
+                subjectNickname, action, LocalDateTime.now(), UUID.randomUUID()
         );
     }
 

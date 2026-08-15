@@ -51,6 +51,9 @@ public class Notification extends BaseEntity {
     @Column(columnDefinition = "TEXT")  // 경우마다 필요한 데이터를 저장 (JSON)
     private String data;
 
+    @Column(name = "notification_key", unique = true, length = 255)
+    private String notificationKey;
+
     public void read() {
         this.isRead = true;
     }

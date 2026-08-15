@@ -12,11 +12,12 @@ import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 import umc.cockple.demo.domain.notification.enums.NotificationSource;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxEventType;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
-import umc.cockple.demo.domain.party.events.PartyInfoChangedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
 import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
@@ -35,7 +36,7 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
 
     @Override
     public boolean supports(Object event) {
-        return event instanceof PartyInfoChangedEvent
+        return event instanceof PartyUpdatedEvent
                 || event instanceof PartyDeletedEvent
                 || event instanceof PartyJoinRequestApprovedEvent
                 || event instanceof PartyRoleChangedEvent
@@ -45,16 +46,18 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
 
     @Override
     public List<NotificationRequest> convert(Object event) {
-        if (event instanceof PartyInfoChangedEvent partyInfoChangedEvent) {
+        if (event instanceof PartyUpdatedEvent partyUpdatedEvent) {
             return List.of(request(
-                    partyInfoChangedEvent.recipientMemberId(),
-                    partyInfoChangedEvent.partyId(),
-                    partyInfoChangedEvent.partyName(),
-                    partyInfoChangedEvent.imageKey(),
+                    partyUpdatedEvent.recipientMemberId(),
+                    partyUpdatedEvent.partyId(),
+                    partyUpdatedEvent.partyName(),
+                    partyUpdatedEvent.imageKey(),
                     notificationMessageGenerator.generatePartyInfoChangedMessage(),
-                    destination(partyInfoChangedEvent.partyId()),
+                    destination(partyUpdatedEvent.partyId()),
                     NotificationType.CHANGE,
-                    Map.of()
+                    Map.of(),
+                    partyUpdatedEvent.eventId(),
+                    NotificationOutboxEventType.PARTY_UPDATED
             ));
         }
 
@@ -67,7 +70,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                     notificationMessageGenerator.generatePartyDeletedMessage(),
                     null,
                     NotificationType.SIMPLE,
-                    Map.of()
+                    Map.of(),
+                    partyDeletedEvent.eventId(),
+                    NotificationOutboxEventType.PARTY_DELETED
             ));
         }
 
@@ -80,7 +85,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                     notificationMessageGenerator.generateJoinRequestApprovedMessage(),
                     destination(approvedEvent.partyId()),
                     NotificationType.CHANGE,
-                    Map.of()
+                    Map.of(),
+                    approvedEvent.eventId(),
+                    NotificationOutboxEventType.PARTY_JOIN_REQUEST_APPROVED
             ));
         }
 
@@ -98,7 +105,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                             content,
                             destination(roleChangedEvent.partyId()),
                             NotificationType.SIMPLE,
-                            Map.of()
+                            Map.of(),
+                            roleChangedEvent.eventId(),
+                            NotificationOutboxEventType.PARTY_ROLE_CHANGED
                     ))
                     .toList();
         }
@@ -116,7 +125,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                             NotificationAction.RESPOND
                     ),
                     NotificationType.INVITE,
-                    Map.of("invitationId", invitationCreatedEvent.invitationId())
+                    Map.of("invitationId", invitationCreatedEvent.invitationId()),
+                    invitationCreatedEvent.eventId(),
+                    NotificationOutboxEventType.PARTY_INVITATION_CREATED
             ));
         }
 
@@ -130,7 +141,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                             invitationAcceptedEvent.inviteeNickname()),
                     destination(invitationAcceptedEvent.partyId()),
                     NotificationType.SIMPLE,
-                    Map.of()
+                    Map.of(),
+                    invitationAcceptedEvent.eventId(),
+                    NotificationOutboxEventType.PARTY_INVITATION_ACCEPTED
             ));
         }
 
@@ -145,7 +158,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
             String content,
             NotificationDestination destination,
             NotificationType legacyType,
-            Map<String, Object> data
+            Map<String, Object> data,
+            java.util.UUID eventId,
+            NotificationOutboxEventType eventType
     ) {
         return new NotificationRequest(
                 NotificationSource.PARTY,
@@ -155,7 +170,9 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                 imageKey,
                 serialize(data),
                 destination,
-                new NotificationLegacyCompatibility(partyId, legacyType)
+                new NotificationLegacyCompatibility(partyId, legacyType),
+                eventId,
+                eventType
         );
     }
 
