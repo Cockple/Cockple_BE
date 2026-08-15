@@ -1,35 +1,31 @@
 package umc.cockple.demo.domain.exercise.converter.command;
 
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
-import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
 
 @Component
 public class ExerciseParticipationCommandMapper {
 
-    public ExerciseJoinDTO.Response toJoinResponse(MemberExercise memberExercise, Exercise exercise) {
+    public ExerciseCancelByManagerCommand toCancelByManagerCommand(ExerciseCancelDTO.ByManagerRequest request) {
+        return new ExerciseCancelByManagerCommand(request.isGuest());
+    }
+
+    public ExerciseJoinDTO.Response toJoinResponse(ExerciseJoinResult result) {
         return ExerciseJoinDTO.Response.builder()
-                .participantId(memberExercise.getId())
-                .joinedAt(memberExercise.getCreatedAt())
-                .currentParticipants(exercise.getNowCapacity())
+                .participantId(result.participantId())
+                .joinedAt(result.joinedAt())
+                .currentParticipants(result.currentParticipants())
                 .build();
     }
 
-    public ExerciseCancelDTO.Response toCancelResponse(Exercise exercise, Member member) {
+    public ExerciseCancelDTO.Response toCancelResponse(ExerciseCancelResult result) {
         return ExerciseCancelDTO.Response.builder()
-                .memberName(member.getMemberName())
-                .currentParticipants(exercise.getNowCapacity())
-                .build();
-    }
-
-    public ExerciseCancelDTO.Response toCancelResponse(Exercise exercise, Guest guest) {
-        return ExerciseCancelDTO.Response.builder()
-                .memberName(guest.getGuestName())
-                .currentParticipants(exercise.getNowCapacity())
+                .memberName(result.memberName())
+                .currentParticipants(result.currentParticipants())
                 .build();
     }
 }

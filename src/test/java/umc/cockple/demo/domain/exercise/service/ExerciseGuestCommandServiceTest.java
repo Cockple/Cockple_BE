@@ -8,16 +8,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGuestInviteResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -70,8 +70,7 @@ class ExerciseGuestCommandServiceTest {
                 exerciseReader,
                 guestReader,
                 memberLookupService,
-                exerciseValidator,
-                new ExerciseGuestCommandMapper());
+                exerciseValidator);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -92,11 +91,11 @@ class ExerciseGuestCommandServiceTest {
     @DisplayName("inviteGuest")
     class InviteGuest {
 
-        private ExerciseGuestInviteDTO.Request request;
+        private ExerciseGuestInviteCommand command;
 
         @BeforeEach
         void setUp() {
-            request = new ExerciseGuestInviteDTO.Request("테스트게스트", "남성", "B조");
+            command = guestInviteCommand(manager.getId());
         }
 
         @Test
@@ -110,11 +109,11 @@ class ExerciseGuestCommandServiceTest {
                         return guest;
                     });
 
-            ExerciseGuestInviteDTO.Response response = exerciseGuestCommandService
-                    .inviteGuest(exercise.getId(), manager.getId(), request);
+            ExerciseGuestInviteResult result = exerciseGuestCommandService
+                    .inviteGuest(exercise.getId(), command);
 
-            assertThat(response.guestId()).isEqualTo(200L);
-            assertThat(response.currentParticipants()).isNotNull();
+            assertThat(result.guestId()).isEqualTo(200L);
+            assertThat(result.currentParticipants()).isNotNull();
         }
 
         @Test
@@ -126,7 +125,7 @@ class ExerciseGuestCommandServiceTest {
             given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
 
             assertThatThrownBy(() -> exerciseGuestCommandService
-                    .inviteGuest(startedExercise.getId(), manager.getId(), request))
+                    .inviteGuest(startedExercise.getId(), command))
                     .isInstanceOf(ExerciseException.class)
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.EXERCISE_ALREADY_STARTED_INVITATION));
@@ -141,7 +140,7 @@ class ExerciseGuestCommandServiceTest {
             given(memberPartyRepository.existsByPartyAndMember(party, outsider)).willReturn(false);
 
             assertThatThrownBy(() -> exerciseGuestCommandService
-                    .inviteGuest(exercise.getId(), outsider.getId(), request))
+                    .inviteGuest(exercise.getId(), guestInviteCommand(outsider.getId())))
                     .isInstanceOf(ExerciseException.class)
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE));
@@ -157,7 +156,7 @@ class ExerciseGuestCommandServiceTest {
             given(memberPartyRepository.existsByPartyAndMember(party, manager)).willReturn(true);
 
             assertThatThrownBy(() -> exerciseGuestCommandService
-                    .inviteGuest(noGuestExercise.getId(), manager.getId(), request))
+                    .inviteGuest(noGuestExercise.getId(), command))
                     .isInstanceOf(ExerciseException.class)
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.GUEST_INVITATION_NOT_ALLOWED));
@@ -169,7 +168,7 @@ class ExerciseGuestCommandServiceTest {
             given(exerciseReader.findByIdOrThrow(999L))
                     .willThrow(new ExerciseException(ExerciseErrorCode.EXERCISE_NOT_FOUND));
 
-            assertThatThrownBy(() -> exerciseGuestCommandService.inviteGuest(999L, manager.getId(), request))
+            assertThatThrownBy(() -> exerciseGuestCommandService.inviteGuest(999L, command))
                     .isInstanceOf(ExerciseException.class)
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.EXERCISE_NOT_FOUND));
@@ -181,10 +180,20 @@ class ExerciseGuestCommandServiceTest {
             given(memberLookupService.findByIdOrThrow(999L))
                     .willThrow(new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-            assertThatThrownBy(() -> exerciseGuestCommandService.inviteGuest(exercise.getId(), 999L, request))
+            assertThatThrownBy(() -> exerciseGuestCommandService.inviteGuest(
+                    exercise.getId(), guestInviteCommand(999L)))
                     .isInstanceOf(MemberException.class)
                     .satisfies(exception -> assertThat(((MemberException) exception).getCode())
                             .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        private ExerciseGuestInviteCommand guestInviteCommand(Long inviterId) {
+            return ExerciseGuestInviteCommand.builder()
+                    .guestName("테스트게스트")
+                    .gender(Gender.MALE)
+                    .level(Level.B)
+                    .inviterId(inviterId)
+                    .build();
         }
     }
 
@@ -198,11 +207,11 @@ class ExerciseGuestCommandServiceTest {
             Guest guest = createGuest(exercise, manager.getId(), 60L);
             given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
 
-            ExerciseCancelDTO.Response response = exerciseGuestCommandService
+            ExerciseCancelResult result = exerciseGuestCommandService
                     .cancelGuestInvitation(exercise.getId(), guest.getId(), manager.getId());
 
-            assertThat(response.memberName()).isEqualTo("게스트");
-            assertThat(response.currentParticipants()).isNotNull();
+            assertThat(result.memberName()).isEqualTo("게스트");
+            assertThat(result.currentParticipants()).isNotNull();
             then(guestRepository).should().delete(guest);
         }
 

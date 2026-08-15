@@ -10,11 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -22,6 +19,9 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
@@ -76,7 +76,6 @@ class ExerciseParticipationCommandServiceTest {
         MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         ExerciseValidator exerciseValidator = new ExerciseValidator(
                 memberPartyLookupService, memberExerciseRepository);
-        ExerciseParticipationCommandMapper exerciseParticipationMapper = new ExerciseParticipationCommandMapper();
         exerciseParticipationCommandService = new ExerciseParticipationCommandService(
                 memberExerciseRepository,
                 guestRepository,
@@ -86,8 +85,7 @@ class ExerciseParticipationCommandServiceTest {
                 memberLookupService,
                 memberPartyLookupService,
                 eventPublisher,
-                exerciseValidator,
-                exerciseParticipationMapper);
+                exerciseValidator);
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -131,7 +129,7 @@ class ExerciseParticipationCommandServiceTest {
                         });
 
                 // when
-                ExerciseJoinDTO.Response response = exerciseParticipationCommandService.joinExercise(exercise.getId(), participant.getId());
+                ExerciseJoinResult response = exerciseParticipationCommandService.joinExercise(exercise.getId(), participant.getId());
 
                 // then
                 ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
@@ -170,7 +168,7 @@ class ExerciseParticipationCommandServiceTest {
                         });
 
                 // when
-                ExerciseJoinDTO.Response response = exerciseParticipationCommandService
+                ExerciseJoinResult response = exerciseParticipationCommandService
                         .joinExercise(outsideAcceptExercise.getId(), outsideMember.getId());
 
                 // then
@@ -290,7 +288,7 @@ class ExerciseParticipationCommandServiceTest {
                         .willReturn(memberExercise);
 
                 // when
-                ExerciseCancelDTO.Response response = exerciseParticipationCommandService
+                ExerciseCancelResult response = exerciseParticipationCommandService
                         .cancelParticipation(exercise.getId(), participant.getId());
 
                 // then
@@ -366,14 +364,14 @@ class ExerciseParticipationCommandServiceTest {
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
 
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
                         .willReturn(memberExercise);
 
                 // when
-                ExerciseCancelDTO.Response response = exerciseParticipationCommandService
+                ExerciseCancelResult response = exerciseParticipationCommandService
                         .cancelParticipationByManager(exercise.getId(), participant.getId(), manager.getId(), request);
 
                 // then
@@ -394,7 +392,7 @@ class ExerciseParticipationCommandServiceTest {
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
 
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), subManager.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -406,7 +404,7 @@ class ExerciseParticipationCommandServiceTest {
                         .willReturn(memberExercise);
 
                 // when
-                ExerciseCancelDTO.Response response = exerciseParticipationCommandService
+                ExerciseCancelResult response = exerciseParticipationCommandService
                         .cancelParticipationByManager(exercise.getId(), participant.getId(), subManager.getId(), request);
 
                 // then
@@ -421,12 +419,12 @@ class ExerciseParticipationCommandServiceTest {
                 Guest guest = GuestFixture.createGuest(exercise, manager.getId());
                 ReflectionTestUtils.setField(guest, "id", 60L);
 
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(true);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(true);
 
                 given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
 
                 // when
-                ExerciseCancelDTO.Response response = exerciseParticipationCommandService
+                ExerciseCancelResult response = exerciseParticipationCommandService
                         .cancelParticipationByManager(exercise.getId(), guest.getId(), manager.getId(), request);
 
                 // then
@@ -445,7 +443,7 @@ class ExerciseParticipationCommandServiceTest {
                 Member normalMember = MemberFixture.createMember("일반멤버", Gender.FEMALE, Level.B, 1002L);
                 ReflectionTestUtils.setField(normalMember, "id", 2L);
 
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(party.getId(), normalMember.getId(), Role.PARTY_MANAGER))
                         .willReturn(false);
@@ -468,7 +466,7 @@ class ExerciseParticipationCommandServiceTest {
                         LocalTime.of(12, 0), true, false);
                 ReflectionTestUtils.setField(startedExercise, "id", 200L);
 
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
                 given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
 
                 assertThatThrownBy(() ->
@@ -482,7 +480,7 @@ class ExerciseParticipationCommandServiceTest {
             @Test
             @DisplayName("존재하지 않는 멤버 참여자면 MemberException(MEMBER_NOT_FOUND)을 던진다")
             void memberParticipantNotFound_throwsException() {
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
                 given(memberLookupService.findByIdOrThrow(999L))
                         .willThrow(new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
@@ -497,7 +495,7 @@ class ExerciseParticipationCommandServiceTest {
             @Test
             @DisplayName("존재하지 않는 게스트면 ExerciseException(GUEST_NOT_FOUND)을 던진다")
             void guestNotFound_throwsException() {
-                ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(true);
+                ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(true);
 
                 given(guestReader.findByIdOrThrow(999L))
                         .willThrow(new ExerciseException(ExerciseErrorCode.GUEST_NOT_FOUND));
@@ -581,7 +579,7 @@ class ExerciseParticipationCommandServiceTest {
             // given: 모임장이 일반멤버(id 6) 참여를 취소
             MemberExercise memberExercise = MemberFixture.createMemberExercise(normalMember, exercise);
             ReflectionTestUtils.setField(memberExercise, "id", 71L);
-            ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
+            ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
             given(memberExerciseReader.findMemberExerciseOrThrow(exercise, normalMember)).willReturn(memberExercise);
@@ -602,7 +600,7 @@ class ExerciseParticipationCommandServiceTest {
             // given: 모임장이 게스트 참여를 취소
             Guest guest = GuestFixture.createGuest(exercise, manager.getId());
             ReflectionTestUtils.setField(guest, "id", 80L);
-            ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(true);
+            ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(true);
 
             given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
 

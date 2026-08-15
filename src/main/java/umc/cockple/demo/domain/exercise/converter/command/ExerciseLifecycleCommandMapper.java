@@ -1,7 +1,6 @@
 package umc.cockple.demo.domain.exercise.converter.command;
 
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDeleteDTO;
 import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
@@ -9,6 +8,9 @@ import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddr
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCreateResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseDeleteResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseUpdateResult;
 
 @Component
 public class ExerciseLifecycleCommandMapper {
@@ -59,23 +61,23 @@ public class ExerciseLifecycleCommandMapper {
         return null;
     }
 
-    public ExerciseCreateDTO.Response toCreateResponse(Exercise exercise) {
+    public ExerciseCreateDTO.Response toCreateResponse(ExerciseCreateResult result) {
         return ExerciseCreateDTO.Response.builder()
-                .exerciseId(exercise.getId())
-                .createdAt(exercise.getCreatedAt())
+                .exerciseId(result.exerciseId())
+                .createdAt(result.createdAt())
                 .build();
     }
 
-    public ExerciseDeleteDTO.Response toDeleteResponse(Exercise exercise) {
+    public ExerciseDeleteDTO.Response toDeleteResponse(ExerciseDeleteResult result) {
         return ExerciseDeleteDTO.Response.builder()
-                .deletedExerciseId(exercise.getId())
+                .deletedExerciseId(result.deletedExerciseId())
                 .build();
     }
 
-    public ExerciseUpdateDTO.Response toUpdateResponse(Exercise exercise) {
+    public ExerciseUpdateDTO.Response toUpdateResponse(ExerciseUpdateResult result) {
         return ExerciseUpdateDTO.Response.builder()
-                .exerciseId(exercise.getId())
-                .updatedAt(exercise.getUpdatedAt())
+                .exerciseId(result.exerciseId())
+                .updatedAt(result.updatedAt())
                 .build();
     }
 }

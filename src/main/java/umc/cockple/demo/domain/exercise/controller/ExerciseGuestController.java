@@ -5,11 +5,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseGuestApi;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseGuestCommandMapper;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseGuestInviteDTO;
 import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGuestInviteResult;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -21,14 +25,16 @@ public class ExerciseGuestController implements ExerciseGuestApi {
 
     private final ExerciseGuestCommandService exerciseGuestCommandService;
     private final ExerciseGuestQueryService exerciseGuestQueryService;
+    private final ExerciseGuestCommandMapper exerciseGuestCommandMapper;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseGuestInviteDTO.Response>> inviteGuest(
             Long exerciseId, ExerciseGuestInviteDTO.Request request) {
         Long inviterId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseGuestInviteDTO.Response response = exerciseGuestCommandService.inviteGuest(
-                exerciseId, inviterId, request);
+        ExerciseGuestInviteCommand command = exerciseGuestCommandMapper.toGuestInviteCommand(request, inviterId);
+        ExerciseGuestInviteResult result = exerciseGuestCommandService.inviteGuest(exerciseId, command);
+        ExerciseGuestInviteDTO.Response response = exerciseGuestCommandMapper.toGuestInviteResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.CREATED, response);
     }
@@ -38,8 +44,9 @@ public class ExerciseGuestController implements ExerciseGuestApi {
             Long exerciseId, Long guestId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCancelDTO.Response response = exerciseGuestCommandService.cancelGuestInvitation(
+        ExerciseCancelResult result = exerciseGuestCommandService.cancelGuestInvitation(
                 exerciseId, guestId, memberId);
+        ExerciseCancelDTO.Response response = exerciseGuestCommandMapper.toCancelResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }

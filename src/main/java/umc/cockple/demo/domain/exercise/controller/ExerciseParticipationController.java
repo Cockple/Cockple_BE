@@ -5,9 +5,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseParticipationApi;
+import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -18,13 +22,14 @@ import umc.cockple.demo.global.security.utils.SecurityUtil;
 public class ExerciseParticipationController implements ExerciseParticipationApi {
 
     private final ExerciseParticipationCommandService exerciseParticipationCommandService;
+    private final ExerciseParticipationCommandMapper exerciseParticipationCommandMapper;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseJoinDTO.Response>> joinExercise(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseJoinDTO.Response response = exerciseParticipationCommandService.joinExercise(
-                exerciseId, memberId);
+        ExerciseJoinResult result = exerciseParticipationCommandService.joinExercise(exerciseId, memberId);
+        ExerciseJoinDTO.Response response = exerciseParticipationCommandMapper.toJoinResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.CREATED, response);
     }
@@ -33,8 +38,8 @@ public class ExerciseParticipationController implements ExerciseParticipationApi
     public ResponseEntity<BaseResponse<ExerciseCancelDTO.Response>> cancelParticipation(Long exerciseId) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCancelDTO.Response response = exerciseParticipationCommandService.cancelParticipation(
-                exerciseId, memberId);
+        ExerciseCancelResult result = exerciseParticipationCommandService.cancelParticipation(exerciseId, memberId);
+        ExerciseCancelDTO.Response response = exerciseParticipationCommandMapper.toCancelResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }
@@ -44,8 +49,10 @@ public class ExerciseParticipationController implements ExerciseParticipationApi
             Long exerciseId, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseCancelDTO.Response response = exerciseParticipationCommandService.cancelParticipationByManager(
-                exerciseId, participantId, memberId, request);
+        ExerciseCancelByManagerCommand command = exerciseParticipationCommandMapper.toCancelByManagerCommand(request);
+        ExerciseCancelResult result = exerciseParticipationCommandService.cancelParticipationByManager(
+                exerciseId, participantId, memberId, command);
+        ExerciseCancelDTO.Response response = exerciseParticipationCommandMapper.toCancelResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }

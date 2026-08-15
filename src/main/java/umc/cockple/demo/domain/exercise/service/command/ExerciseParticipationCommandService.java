@@ -5,14 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.command.ExerciseParticipationCommandMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseJoinDTO;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
+import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
@@ -44,9 +44,7 @@ public class ExerciseParticipationCommandService {
 
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseParticipationCommandMapper exerciseParticipationMapper;
-
-    public ExerciseJoinDTO.Response joinExercise(Long exerciseId, Long memberId) {
+    public ExerciseJoinResult joinExercise(Long exerciseId, Long memberId) {
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
         Exercise exercise = exerciseReader.findByIdWithPartyLevelsOrThrow(exerciseId);
@@ -66,10 +64,11 @@ public class ExerciseParticipationCommandService {
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
                 , savedMemberExercise.getId(), isPartyMember);
 
-        return exerciseParticipationMapper.toJoinResponse(savedMemberExercise, exercise);
+        return new ExerciseJoinResult(
+                savedMemberExercise.getId(), savedMemberExercise.getCreatedAt(), exercise.getNowCapacity());
     }
 
-    public ExerciseCancelDTO.Response cancelParticipation(Long exerciseId, Long memberId) {
+    public ExerciseCancelResult cancelParticipation(Long exerciseId, Long memberId) {
         log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
         Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
@@ -85,11 +84,11 @@ public class ExerciseParticipationCommandService {
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
 
-        return exerciseParticipationMapper.toCancelResponse(exercise, member);
+        return new ExerciseCancelResult(member.getMemberName(), exercise.getNowCapacity());
     }
 
-    public ExerciseCancelDTO.Response cancelParticipationByManager(
-            Long exerciseId, Long participantId, Long managerId, ExerciseCancelDTO.ByManagerRequest request) {
+    public ExerciseCancelResult cancelParticipationByManager(
+            Long exerciseId, Long participantId, Long managerId, ExerciseCancelByManagerCommand command) {
         log.info("매니저에 의한 운동 참여 취소 시작 - exerciseId: {}, participantId: {}, memberId: {}",
                 exerciseId, participantId, managerId);
 
@@ -98,18 +97,19 @@ public class ExerciseParticipationCommandService {
 
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
-        ExerciseCancelDTO.Response response = executeParticipantCancellation(exercise, participantId, request);
+        ExerciseCancelResult result = executeParticipantCancellation(exercise, participantId, command);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
                 exercise.getId(), participantId, exercise.getNowCapacity());
 
-        return response;
+        return result;
     }
 
     // ========== 비즈니스 메서드 ============
 
-    private ExerciseCancelDTO.Response executeParticipantCancellation(Exercise exercise, Long participantId, ExerciseCancelDTO.ByManagerRequest request) {
-        if(request.isGuest()){
+    private ExerciseCancelResult executeParticipantCancellation(
+            Exercise exercise, Long participantId, ExerciseCancelByManagerCommand command) {
+        if(command.guest()){
             log.info("게스트 참여 취소 실행 - participantId: {}", participantId);
             return cancelGuestParticipation(exercise, participantId);
         }
@@ -118,7 +118,7 @@ public class ExerciseParticipationCommandService {
         return cancelMemberParticipation(exercise, participantId);
     }
 
-    private ExerciseCancelDTO.Response cancelGuestParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelResult cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = guestReader.findByIdOrThrow(participantId);
         exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
 
@@ -126,10 +126,10 @@ public class ExerciseParticipationCommandService {
 
         guestRepository.delete(guest);
 
-        return exerciseParticipationMapper.toCancelResponse(exercise, guest);
+        return new ExerciseCancelResult(guest.getGuestName(), exercise.getNowCapacity());
     }
 
-    private ExerciseCancelDTO.Response cancelMemberParticipation(Exercise exercise, Long participantId) {
+    private ExerciseCancelResult cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
 
@@ -138,7 +138,7 @@ public class ExerciseParticipationCommandService {
         memberExerciseRepository.delete(memberExercise);
         publishAttendanceChangedEvent(exercise, participant.getId());
 
-        return exerciseParticipationMapper.toCancelResponse(exercise, participant);
+        return new ExerciseCancelResult(participant.getMemberName(), exercise.getNowCapacity());
     }
 
     private void publishAttendanceChangedEvent(Exercise exercise, Long subjectMemberId) {
