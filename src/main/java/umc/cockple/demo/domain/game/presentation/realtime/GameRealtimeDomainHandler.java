@@ -11,8 +11,10 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
+import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
@@ -37,6 +39,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     private final ObjectMapper objectMapper;
     private final GameBoardSubscriptionService gameBoardSubscriptionService;
     private final GameCourtCommandService gameCourtCommandService;
+    private final GameCommandService gameCommandService;
     private final GameBoardQueryService gameBoardQueryService;
     private final GameBoardMapper gameBoardMapper;
     private final GameBoardBroadcaster gameBoardBroadcaster;
@@ -76,6 +79,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case SUBSCRIBE -> handleSubscribe(context, gamePayload, responder);
                 case UNSUBSCRIBE -> handleUnsubscribe(context, gamePayload, responder);
                 case MOVE_COURT -> handleMoveCourt(context, gamePayload, responder);
+                case START_GAME -> handleStartGame(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -107,7 +111,22 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 gameBoardId, payload.courtId(), payload.targetCourtNo());
         gameCourtCommandService.moveCourt(context.memberId(), command);
 
-        // 변경 후 최신 보드 스냅샷을 만들어, 호출자에게 ack + 나머지 구독자에게 브로드캐스트
+        respondAndBroadcastBoard(context, gameBoardId, responder);
+    }
+
+    private void handleStartGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+
+        GameStartCommand command = new GameStartCommand(
+                gameBoardId, payload.gameId(), payload.courtId());
+        gameCommandService.startGame(context.memberId(), command);
+
+        respondAndBroadcastBoard(context, gameBoardId, responder);
+    }
+
+    private void respondAndBroadcastBoard(
+            RealtimeRequestContext context, Long gameBoardId, RealtimeResponder responder) {
         GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
         GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
 

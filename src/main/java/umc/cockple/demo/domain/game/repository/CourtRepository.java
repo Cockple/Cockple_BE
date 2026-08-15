@@ -13,4 +13,6 @@ public interface CourtRepository extends JpaRepository<Court, Long> {
     List<Court> findByGameBoardIdOrderByCourtNoAsc(Long gameBoardId);
 
     Optional<Court> findByGameBoardIdAndCourtNo(Long gameBoardId, int courtNo);
+
+    Optional<Court> findByIdAndGameBoardId(Long id, Long gameBoardId);
 }
