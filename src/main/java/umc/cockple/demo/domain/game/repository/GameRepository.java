@@ -8,12 +8,12 @@ import umc.cockple.demo.domain.game.enums.GameStatus;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface GameRepository extends JpaRepository<Game, Long> {
 
-    /**
-     * 게임판의 특정 상태 게임들을 코트/플레이어/멤버까지 함께 조회한다. (보드 조회 N+1 방지)
-     */
+    Optional<Game> findByCourtIdAndStatus(Long courtId, GameStatus status);
+
     @Query("select distinct g from Game g " +
             "left join fetch g.court " +
             "left join fetch g.players p " +

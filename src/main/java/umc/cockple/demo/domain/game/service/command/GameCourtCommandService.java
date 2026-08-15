@@ -6,11 +6,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.game.domain.Court;
+import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
+import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
@@ -18,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,6 +35,7 @@ public class GameCourtCommandService {
 
     private final GameBoardReader gameBoardReader;
     private final CourtRepository courtRepository;
+    private final GameRepository gameRepository;
 
     /**
      * 게임 코트 관리
@@ -55,6 +61,39 @@ public class GameCourtCommandService {
 
         log.info("게임 코트 관리 완료 - gameBoardId: {}, 코트 수: {}", gameBoard.getId(), finalCourts.size());
         return toResult(gameBoard.getId(), finalCourts);
+    }
+
+    /**
+     * 코트 위치 변경
+     * 목적지 코트에 이미 게임이 있으면 두 게임의 코트를 SWAP
+     *
+     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     */
+    public void moveCourt(Long memberId, GameCourtMoveCommand command) {
+        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+
+        Game sourceGame = gameRepository.findByCourtIdAndStatus(command.courtId(), GameStatus.PLAYING)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_ON_COURT));
+        if (!sourceGame.getGameBoard().getId().equals(gameBoard.getId())) {
+            throw new GameException(GameErrorCode.COURT_NOT_FOUND);
+        }
+
+        Court sourceCourt = sourceGame.getCourt();
+        Court targetCourt = courtRepository
+                .findByGameBoardIdAndCourtNo(gameBoard.getId(), command.targetCourtNo())
+                .orElseThrow(() -> new GameException(GameErrorCode.COURT_NOT_FOUND));
+
+        if (targetCourt.getId().equals(sourceCourt.getId())) {
+            return; // 같은 코트로의 이동은 무시
+        }
+
+        Optional<Game> targetGame = gameRepository.findByCourtIdAndStatus(targetCourt.getId(), GameStatus.PLAYING);
+
+        sourceGame.changeCourt(targetCourt);
+        targetGame.ifPresent(game -> game.changeCourt(sourceCourt));
+
+        log.info("게임 코트 위치 변경 완료 - gameBoardId: {}, {}번코트 → {}번코트, swap: {}",
+                gameBoard.getId(), sourceCourt.getCourtNo(), targetCourt.getCourtNo(), targetGame.isPresent());
     }
 
     private void validateRequestedCourtsBelongToBoard(

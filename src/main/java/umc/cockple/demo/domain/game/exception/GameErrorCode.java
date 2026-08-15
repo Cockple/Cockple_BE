@@ -12,6 +12,7 @@ public enum GameErrorCode implements BaseErrorCode {
 
     GAME_BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "GAME201", "게임판을 찾을 수 없습니다."),
     COURT_NOT_FOUND(HttpStatus.NOT_FOUND, "GAME202", "해당 게임판에 존재하지 않는 코트입니다."),
+    GAME_NOT_ON_COURT(HttpStatus.NOT_FOUND, "GAME203", "해당 코트에 이동할 게임이 없습니다."),
 
     GAME_BOARD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "GAME301", "게임판을 관리할 권한이 없습니다."),
 

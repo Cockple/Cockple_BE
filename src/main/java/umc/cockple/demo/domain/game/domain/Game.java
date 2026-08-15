@@ -49,6 +49,10 @@ public class Game extends BaseEntity {
                 .build();
     }
 
+    public void changeCourt(Court court) {
+        this.court = court;
+    }
+
     /**
      * 연관관계 매핑 메서드
      */
