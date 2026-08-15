@@ -18,7 +18,6 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +34,7 @@ public class ExerciseParticipantSnapshotAssembler {
     private final MemberPartyLookupService memberPartyLookupService;
     private final ImageUrlResolver imageUrlResolver;
 
-    public List<ExerciseParticipantSnapshot> getAllSortedParticipants(Long exerciseId, Party party) {
+    public List<ExerciseParticipantSnapshot> getAllParticipants(Long exerciseId, Party party) {
         List<MemberExercise> memberExercises = memberExerciseReader.findMemberExercisesWithMemberAndProfile(exerciseId);
         List<ExerciseParticipantSnapshot> memberParticipants = buildMemberParticipantSnapshots(memberExercises, party);
 
@@ -45,8 +44,6 @@ public class ExerciseParticipantSnapshotAssembler {
         List<ExerciseParticipantSnapshot> allParticipants = new ArrayList<>();
         allParticipants.addAll(memberParticipants);
         allParticipants.addAll(guestParticipants);
-
-        allParticipants.sort(Comparator.comparing(ExerciseParticipantSnapshot::joinedAt));
 
         return allParticipants;
     }

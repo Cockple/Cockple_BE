@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantPosition;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantSnapshot;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseEditDetailResult;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -28,6 +30,7 @@ public class ExerciseLifecycleQueryService {
 
     private final ExerciseReader exerciseReader;
     private final ExerciseParticipantSnapshotAssembler participantSnapshotAssembler;
+    private final ExerciseParticipantPositionCalculator participantPositionCalculator;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseValidator exerciseValidator;
@@ -44,9 +47,11 @@ public class ExerciseLifecycleQueryService {
 
         ExerciseDetailResult.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
 
-        List<ExerciseParticipantSnapshot> allParticipants =
-                participantSnapshotAssembler.getAllSortedParticipants(exerciseId, party);
-        ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
+        List<ExerciseParticipantSnapshot> participants =
+                participantSnapshotAssembler.getAllParticipants(exerciseId, party);
+        List<ExerciseParticipantPosition> participantPositions =
+                participantPositionCalculator.calculate(participants, exercise.getMaxCapacity());
+        ParticipantGroups groups = splitParticipants(participantPositions);
 
         ExerciseDetailResult.ParticipantGroup participantGroup =
                 createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
@@ -91,13 +96,16 @@ public class ExerciseLifecycleQueryService {
     }
 
     private ParticipantGroups splitParticipants(
-            List<ExerciseParticipantSnapshot> allParticipants,
-            int maxCapacity) {
+            List<ExerciseParticipantPosition> participantPositions) {
 
-        List<ExerciseDetailResult.ParticipantInfo> participantList =
-                createParticipantList(allParticipants, maxCapacity);
-        List<ExerciseDetailResult.ParticipantInfo> waitingList =
-                createWaitingList(allParticipants, maxCapacity);
+        List<ExerciseDetailResult.ParticipantInfo> participantList = participantPositions.stream()
+                .filter(position -> !position.waiting())
+                .map(this::toParticipantInfo)
+                .toList();
+        List<ExerciseDetailResult.ParticipantInfo> waitingList = participantPositions.stream()
+                .filter(ExerciseParticipantPosition::waiting)
+                .map(this::toParticipantInfo)
+                .toList();
 
         return new ParticipantGroups(participantList, waitingList);
     }
@@ -126,58 +134,22 @@ public class ExerciseLifecycleQueryService {
         );
     }
 
-    private List<ExerciseDetailResult.ParticipantInfo> createParticipantList(
-            List<ExerciseParticipantSnapshot> allParticipants,
-            int maxCapacity) {
-
-        List<ExerciseDetailResult.ParticipantInfo> participantList = new ArrayList<>();
-        int endIndex = Math.min(allParticipants.size(), maxCapacity);
-
-        for (int i = 0; i < endIndex; i++) {
-            ExerciseParticipantSnapshot original = allParticipants.get(i);
-            ExerciseDetailResult.ParticipantInfo participant = createParticipantWithNumber(original, i + 1);
-            participantList.add(participant);
-        }
-
-        return participantList;
-    }
-
-    private List<ExerciseDetailResult.ParticipantInfo> createWaitingList(
-            List<ExerciseParticipantSnapshot> allParticipants,
-            int maxCapacity) {
-
-        List<ExerciseDetailResult.ParticipantInfo> waitingList = new ArrayList<>();
-
-        if (allParticipants.size() <= maxCapacity) {
-            return waitingList;
-        }
-
-        for (int i = maxCapacity; i < allParticipants.size(); i++) {
-            ExerciseParticipantSnapshot original = allParticipants.get(i);
-            int waitingNumber = (i - maxCapacity) + 1;
-            ExerciseDetailResult.ParticipantInfo waiting = createParticipantWithNumber(original, waitingNumber);
-            waitingList.add(waiting);
-        }
-
-        return waitingList;
-    }
-
-    private ExerciseDetailResult.ParticipantInfo createParticipantWithNumber(
-            ExerciseParticipantSnapshot original,
-            int number) {
+    private ExerciseDetailResult.ParticipantInfo toParticipantInfo(
+            ExerciseParticipantPosition position) {
+        ExerciseParticipantSnapshot participant = position.participant();
 
         return new ExerciseDetailResult.ParticipantInfo(
-                original.participantId(),
-                number,
-                original.profileImageUrl(),
-                original.name(),
-                original.gender().name(),
-                original.level().name(),
-                original.membershipStatus().name(),
-                original.partyPosition() != null ? original.partyPosition().name() : null,
-                original.inviterName(),
-                original.joinedAt(),
-                original.withdrawn()
+                participant.participantId(),
+                position.participantNumber(),
+                participant.profileImageUrl(),
+                participant.name(),
+                participant.gender().name(),
+                participant.level().name(),
+                participant.membershipStatus().name(),
+                participant.partyPosition() != null ? participant.partyPosition().name() : null,
+                participant.inviterName(),
+                participant.joinedAt(),
+                participant.withdrawn()
         );
     }
 

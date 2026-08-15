@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
@@ -112,6 +113,7 @@ class ExerciseLifecycleQueryServiceTest {
                         memberPartyLookupService,
                         new ImageUrlResolver(fileService)
                 ),
+                new ExerciseParticipantPositionCalculator(),
                 memberLookupService,
                 memberPartyLookupService,
                 new ExerciseValidator(memberPartyLookupService, memberExerciseRepository)
