@@ -6,6 +6,7 @@ import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -34,6 +35,10 @@ public class Exercise extends BaseEntity {
     @JoinColumn(name = "party_id")
     @ManyToOne(fetch = FetchType.LAZY)
     private Party party;
+
+    @JoinColumn(name = "game_board_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private GameBoard gameBoard;
 
     @Column(nullable = false)
     private LocalDate date; // 운동 날짜
@@ -126,6 +131,10 @@ public class Exercise extends BaseEntity {
         if (party != null && !party.getExercises().contains(this)) {
             party.getExercises().add(this);
         }
+    }
+
+    public void assignGameBoard(GameBoard gameBoard) {
+        this.gameBoard = gameBoard;
     }
 
     public MemberExercise addParticipation(Member member, ExerciseMemberShipStatus status) {
