@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +28,7 @@ public class ChatMessageHistoryQueryService {
 
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatProcessor chatProcessor;
+    private final ChatMessageViewAssembler chatMessageViewAssembler;
     private final ChatConverter chatConverter;
 
     public ChatMessageDTO.Response getChatMessages(Long roomId, Long memberId, Long cursor, int size) {
@@ -47,7 +47,7 @@ public class ChatMessageHistoryQueryService {
                 : new ArrayList<>(messages);
 
         Collections.reverse(resultMessages);
-        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, resultMessages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatMessageViewAssembler.assembleMessages(memberId, resultMessages);
         List<ChatMessageDTO.MessageInfo> messageInfos = chatConverter.toChatMessageInfos(commonMessages);
 
         Long nextCursor = hasNext && !resultMessages.isEmpty()

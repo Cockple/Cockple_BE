@@ -15,7 +15,7 @@ import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
-import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatMessageFileAppender;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEventPublisher;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
@@ -58,7 +58,7 @@ class ChatSendServiceTest {
     @Mock private ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
     @Mock private ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     @Mock private MessageReadCreationService messageReadCreationService;
-    @Mock private ChatProcessor chatProcessor;
+    @Mock private ChatMessageViewAssembler chatMessageViewAssembler;
     @Mock private SentMessageReadStatusService sentMessageReadStatusService;
 
     private ChatSendService chatSendService;
@@ -77,7 +77,7 @@ class ChatSendServiceTest {
                 activeChatRoomSubscriberReader,
                 chatRoomMessageBroadcaster,
                 messageReadCreationService,
-                chatProcessor,
+                chatMessageViewAssembler,
                 chatWebSocketResponseAssembler,
                 sentMessageReadStatusService
         );
@@ -100,7 +100,7 @@ class ChatSendServiceTest {
 
         given(chatRoomReader.read(roomId)).willReturn(chatRoom);
         given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
-        given(chatProcessor.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(chatMessageViewAssembler.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
@@ -171,7 +171,7 @@ class ChatSendServiceTest {
 
         given(chatRoomReader.read(roomId)).willReturn(chatRoom);
         given(chatMemberReader.readWithProfile(senderId)).willReturn(sender);
-        given(chatProcessor.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
+        given(chatMessageViewAssembler.generateProfileImageUrl(isNull())).willReturn("https://cdn.example.com/profile");
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(invocation -> {
             ChatMessage savedMessage = invocation.getArgument(0);
             ReflectionTestUtils.setField(savedMessage, "id", 300L);
@@ -185,7 +185,7 @@ class ChatSendServiceTest {
             ReflectionTestUtils.setField(savedMessage, "chatMessageFiles", List.of(secondFile, firstFile));
             return savedMessage;
         });
-        given(chatProcessor.generateFileUrl(any(ChatMessageFile.class))).willAnswer(invocation -> {
+        given(chatMessageViewAssembler.generateFileUrl(any(ChatMessageFile.class))).willAnswer(invocation -> {
             ChatMessageFile file = invocation.getArgument(0);
             return "https://cdn.example.com/" + file.getFileKey();
         });

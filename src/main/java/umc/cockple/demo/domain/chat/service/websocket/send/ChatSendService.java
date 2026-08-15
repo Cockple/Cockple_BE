@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
-import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatMessageFileAppender;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.ChatSendEventPublisher;
 import umc.cockple.demo.domain.chat.service.websocket.send.support.DirectChatRoomActivationService;
@@ -40,7 +40,7 @@ public class ChatSendService {
     private final ActiveChatRoomSubscriberReader activeChatRoomSubscriberReader;
     private final ChatRoomMessageBroadcaster chatRoomMessageBroadcaster;
     private final MessageReadCreationService messageReadCreationService;
-    private final ChatProcessor chatProcessor;
+    private final ChatMessageViewAssembler chatMessageViewAssembler;
     private final ChatWebSocketResponseAssembler chatWebSocketResponseAssembler;
     private final SentMessageReadStatusService sentMessageReadStatusService;
 
@@ -50,7 +50,7 @@ public class ChatSendService {
         ChatRoom chatRoom = chatRoomReader.read(chatRoomId);
         Member sender = chatMemberReader.readWithProfile(senderId);
 
-        String profileImageUrl = chatProcessor.generateProfileImageUrl(sender.getProfileImg());
+        String profileImageUrl = chatMessageViewAssembler.generateProfileImageUrl(sender.getProfileImg());
 
         ChatMessage chatMessage = ChatMessage.create(chatRoom, sender, content, MessageType.TEXT);
         chatMessageFileAppender.append(chatMessage, files);
@@ -108,7 +108,7 @@ public class ChatSendService {
         return savedFiles.stream()
                 .map(file -> ChatCommonDTO.FileInfo.builder()
                         .imageId(file.getId())
-                        .imageUrl(chatProcessor.generateFileUrl(file))
+                        .imageUrl(chatMessageViewAssembler.generateFileUrl(file))
                         .imgOrder(file.getFileOrder())
                         .isEmoji(file.getIsEmoji())
                         .originalFileName(file.getOriginalFileName())

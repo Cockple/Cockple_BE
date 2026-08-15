@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.support.assembler;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,27 +16,27 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class ChatProcessor {
+public class ChatMessageViewAssembler {
 
     private final FileService fileService;
     private final ChatConverter chatConverter;
 
-    public List<ChatCommonDTO.MessageInfo> processMessages(Long memberId, List<ChatMessage> recentMessages) {
+    public List<ChatCommonDTO.MessageInfo> assembleMessages(Long memberId, List<ChatMessage> recentMessages) {
         return recentMessages.stream()
-                .map(message -> processAndConvertMessage(message, memberId))
+                .map(message -> assembleMessageInfo(message, memberId))
                 .toList();
     }
 
-    private ChatCommonDTO.MessageInfo processAndConvertMessage(ChatMessage message, Long memberId) {
+    private ChatCommonDTO.MessageInfo assembleMessageInfo(ChatMessage message, Long memberId) {
         Member sender = message.getSender();
         boolean isSystemMessage = message.getType() == MessageType.SYSTEM;
         boolean isSenderWithdrawn = !isSystemMessage && (sender == null || sender.isWithdrawn());
         String senderProfileImageUrl = sender != null && !isSenderWithdrawn
                 ? generateProfileImageUrl(sender.getProfileImg())
                 : null;
-        List<ChatCommonDTO.FileInfo> processedFiles = processMessageFiles(message);
+        List<ChatCommonDTO.FileInfo> fileInfos = assembleSortedFileInfos(message);
         boolean isMyMessage = sender != null && !isSenderWithdrawn && isMyMessage(sender.getId(), memberId);
-        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, processedFiles, isMyMessage, isSenderWithdrawn);
+        return chatConverter.toCommonMessageInfo(message, senderProfileImageUrl, fileInfos, isMyMessage, isSenderWithdrawn);
     }
 
     public String generateProfileImageUrl(ProfileImg profileImg) {
@@ -46,14 +46,14 @@ public class ChatProcessor {
         return null;
     }
 
-    private List<ChatCommonDTO.FileInfo> processMessageFiles(ChatMessage message) {
+    private List<ChatCommonDTO.FileInfo> assembleSortedFileInfos(ChatMessage message) {
         return message.getChatMessageFiles().stream()
                 .sorted(Comparator.comparing(ChatMessageFile::getFileOrder))
-                .map(this::processSingleFile)
+                .map(this::assembleFileInfo)
                 .toList();
     }
 
-    private ChatCommonDTO.FileInfo processSingleFile(ChatMessageFile file) {
+    private ChatCommonDTO.FileInfo assembleFileInfo(ChatMessageFile file) {
         String imageUrl = generateFileUrl(file);
         return chatConverter.toFileInfo(file, imageUrl);
     }

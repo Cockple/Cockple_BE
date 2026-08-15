@@ -21,7 +21,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -57,7 +57,7 @@ class ChatRoomDetailQueryServiceTest {
     @BeforeEach
     void setUp() {
         ChatConverter chatConverter = new ChatConverter();
-        ChatProcessor chatProcessor = new ChatProcessor(fileService, chatConverter);
+        ChatMessageViewAssembler chatMessageViewAssembler = new ChatMessageViewAssembler(fileService, chatConverter);
         ImageUrlResolver imageUrlResolver = new ImageUrlResolver(fileService);
         chatRoomDetailQueryService = new ChatRoomDetailQueryService(
                 chatRoomRepository,
@@ -65,7 +65,7 @@ class ChatRoomDetailQueryServiceTest {
                 chatMessageRepository,
                 chatConverter,
                 imageUrlResolver,
-                chatProcessor
+                chatMessageViewAssembler
         );
     }
 

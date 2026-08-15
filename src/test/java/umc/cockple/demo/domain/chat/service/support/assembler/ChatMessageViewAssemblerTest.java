@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.support.assembler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,14 +31,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatProcessor")
-class ChatProcessorTest {
+@DisplayName("ChatMessageViewAssembler")
+class ChatMessageViewAssemblerTest {
 
     @Mock
     private FileService fileService;
 
     private ChatConverter chatConverter;
-    private ChatProcessor chatProcessor;
+    private ChatMessageViewAssembler chatMessageViewAssembler;
 
     private Member sender;
     private ChatRoom chatRoom;
@@ -46,7 +46,7 @@ class ChatProcessorTest {
     @BeforeEach
     void setUp() {
         chatConverter = new ChatConverter();
-        chatProcessor = new ChatProcessor(fileService, chatConverter);
+        chatMessageViewAssembler = new ChatMessageViewAssembler(fileService, chatConverter);
 
         sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(sender, "id", 10L);
@@ -66,7 +66,7 @@ class ChatProcessorTest {
         @Test
         @DisplayName("profileImg가 null이면 null을 반환한다")
         void returnsNull_whenProfileImgIsNull() {
-            String result = chatProcessor.generateProfileImageUrl(null);
+            String result = chatMessageViewAssembler.generateProfileImageUrl(null);
 
             assertThat(result).isNull();
             verify(fileService, never()).getUrlFromKey(null);
@@ -79,7 +79,7 @@ class ChatProcessorTest {
                     .imgKey(null)
                     .build();
 
-            String result = chatProcessor.generateProfileImageUrl(profileImg);
+            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
 
             assertThat(result).isNull();
             verify(fileService, never()).getUrlFromKey(null);
@@ -92,7 +92,7 @@ class ChatProcessorTest {
                     .imgKey("   ")
                     .build();
 
-            String result = chatProcessor.generateProfileImageUrl(profileImg);
+            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
 
             assertThat(result).isNull();
             verify(fileService, never()).getUrlFromKey("   ");
@@ -108,7 +108,7 @@ class ChatProcessorTest {
             given(fileService.getUrlFromKey("profile/key123.jpg"))
                     .willReturn("https://cdn.example.com/profile/key123.jpg");
 
-            String result = chatProcessor.generateProfileImageUrl(profileImg);
+            String result = chatMessageViewAssembler.generateProfileImageUrl(profileImg);
 
             assertThat(result).isEqualTo("https://cdn.example.com/profile/key123.jpg");
             verify(fileService).getUrlFromKey("profile/key123.jpg");
@@ -124,7 +124,7 @@ class ChatProcessorTest {
         @Test
         @DisplayName("file이 null이면 null을 반환한다")
         void returnsNull_whenFileIsNull() {
-            String result = chatProcessor.generateFileUrl(null);
+            String result = chatMessageViewAssembler.generateFileUrl(null);
 
             assertThat(result).isNull();
         }
@@ -140,7 +140,7 @@ class ChatProcessorTest {
                     .fileType("image/jpeg")
                     .build();
 
-            String result = chatProcessor.generateFileUrl(img);
+            String result = chatMessageViewAssembler.generateFileUrl(img);
 
             assertThat(result).isNull();
             verify(fileService, never()).getUrlFromKey(null);
@@ -157,7 +157,7 @@ class ChatProcessorTest {
                     .fileType("image/jpeg")
                     .build();
 
-            String result = chatProcessor.generateFileUrl(img);
+            String result = chatMessageViewAssembler.generateFileUrl(img);
 
             assertThat(result).isNull();
             verify(fileService, never()).getUrlFromKey("  ");
@@ -177,23 +177,23 @@ class ChatProcessorTest {
             given(fileService.getUrlFromKey("chat/img456.jpg"))
                     .willReturn("https://cdn.example.com/chat/img456.jpg");
 
-            String result = chatProcessor.generateFileUrl(img);
+            String result = chatMessageViewAssembler.generateFileUrl(img);
 
             assertThat(result).isEqualTo("https://cdn.example.com/chat/img456.jpg");
             verify(fileService).getUrlFromKey("chat/img456.jpg");
         }
     }
 
-    // ========== processMessages ==========
+    // ========== assembleMessages ==========
 
     @Nested
-    @DisplayName("processMessages - 메시지 목록 처리")
+    @DisplayName("assembleMessages - 메시지 목록 처리")
     class ProcessMessages {
 
         @Test
         @DisplayName("빈 메시지 목록을 처리하면 빈 리스트를 반환한다")
         void returnsEmptyList_whenNoMessages() {
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of());
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of());
 
             assertThat(result).isEmpty();
         }
@@ -204,7 +204,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "내 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).isMyMessage()).isTrue();
@@ -219,7 +219,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, other, "상대방 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).isMyMessage()).isFalse();
@@ -231,7 +231,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatMessage.create(chatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT);
             ReflectionTestUtils.setField(message, "id", 999L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
             ChatCommonDTO.MessageInfo messageInfo = result.get(0);
@@ -256,7 +256,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, withdrawn, "탈퇴자 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result).hasSize(1);
             ChatCommonDTO.MessageInfo messageInfo = result.get(0);
@@ -273,7 +273,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "활성 사용자 메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result.get(0).isSenderWithdrawn()).isFalse();
         }
@@ -284,7 +284,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             ChatCommonDTO.MessageInfo info = result.get(0);
             assertThat(info.messageId()).isEqualTo(1L);
@@ -301,7 +301,7 @@ class ChatProcessorTest {
             ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "메시지");
             ReflectionTestUtils.setField(message, "id", 1L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             assertThat(result.get(0).senderProfileImageUrl()).isNull();
             verify(fileService, never()).getUrlFromKey(null);
@@ -320,7 +320,7 @@ class ChatProcessorTest {
             ChatMessage msg3 = ChatFixture.createTextMessage(chatRoom, sender, "세 번째");
             ReflectionTestUtils.setField(msg3, "id", 3L);
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(msg1, msg2, msg3));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(msg1, msg2, msg3));
 
             assertThat(result).hasSize(3);
             assertThat(result.get(0).messageId()).isEqualTo(1L);
@@ -367,7 +367,7 @@ class ChatProcessorTest {
             given(fileService.getUrlFromKey("img/second.jpg")).willReturn("https://cdn.example.com/second.jpg");
             given(fileService.getUrlFromKey("img/third.jpg")).willReturn("https://cdn.example.com/third.jpg");
 
-            List<ChatCommonDTO.MessageInfo> result = chatProcessor.processMessages(sender.getId(), List.of(message));
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
 
             List<ChatCommonDTO.FileInfo> images = result.get(0).images();
             assertThat(images).hasSize(3);
