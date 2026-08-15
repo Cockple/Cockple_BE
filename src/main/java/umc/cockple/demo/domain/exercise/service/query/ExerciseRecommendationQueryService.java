@@ -12,7 +12,7 @@ import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLoo
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationCalendarResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationResult;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseRecommendationResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;

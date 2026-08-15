@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.support;
+package umc.cockple.demo.domain.exercise.service.support.calculator;
 
 import org.springframework.stereotype.Component;
 

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationCalendarResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationResult;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.MemberAddr;

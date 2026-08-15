@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseDistanceCalculator;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseRecommendationResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
