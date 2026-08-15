@@ -3,18 +3,13 @@ package umc.cockple.demo.domain.chat.service.file;
 import com.google.cloud.storage.Blob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.DownloadToken;
 import umc.cockple.demo.domain.chat.dto.ChatDownloadTokenDTO;
+import umc.cockple.demo.domain.chat.dto.ChatFileDownloadDTO;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -23,7 +18,6 @@ import umc.cockple.demo.domain.chat.service.support.reader.ChatFileReader;
 import umc.cockple.demo.domain.chat.service.support.reader.DownloadTokenReader;
 import umc.cockple.demo.domain.file.service.FileService;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 @Service
@@ -53,18 +47,22 @@ public class ChatFileService {
         return chatConverter.toDownloadTokenResponse(downloadToken, TOKEN_VALIDITY_SECONDS);
     }
 
-    public ResponseEntity<Resource> downloadFile(Long fileId, String token) {
+    public ChatFileDownloadDTO.Response downloadFile(Long fileId, String token) {
         log.info("파일 다운로드 시작 - fileId: {}", fileId);
 
         validateToken(fileId, token);
         ChatMessageFile chatFile = chatFileReader.read(fileId);
 
-        //GCS에서 파일 객체 직접 가져오기
         Blob blob = fileService.downloadFile(chatFile.getFileKey());
-        ResponseEntity<Resource> responseEntity = createDownloadResponseEntity(chatFile, blob);
+        ChatFileDownloadDTO.Response response = new ChatFileDownloadDTO.Response(
+                chatFile.getOriginalFileName(),
+                blob.getContentType(),
+                blob.getSize(),
+                blob.getContent()
+        );
 
         log.info("파일 다운로드 완료 - fileName: {}", chatFile.getOriginalFileName());
-        return responseEntity;
+        return response;
     }
 
     private void validateMemberPermission(ChatMessageFile chatFile, Long memberId) {
@@ -83,22 +81,4 @@ public class ChatFileService {
         downloadTokenRepository.delete(token);
     }
 
-    private ResponseEntity<Resource> createDownloadResponseEntity(ChatMessageFile chatFile, Blob blob) {
-        //GCS 객체에서 직접 메타데이터를 가져오기
-        long contentLength = blob.getSize();
-        String contentType = blob.getContentType();
-        Resource resource = new InputStreamResource(new java.io.ByteArrayInputStream(blob.getContent()));
-
-        //헤더 생성
-        ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
-                .filename(chatFile.getOriginalFileName(), StandardCharsets.UTF_8)
-                .build();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(contentDisposition);
-        headers.setContentType(MediaType.parseMediaType(contentType));
-        headers.setContentLength(contentLength);
-
-        return ResponseEntity.ok().headers(headers).body(resource);
-    }
 }

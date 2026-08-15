@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.converter.ChatConverter;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
@@ -17,6 +15,7 @@ import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
 import umc.cockple.demo.domain.chat.domain.ChatRoom;
 import umc.cockple.demo.domain.chat.domain.DownloadToken;
 import umc.cockple.demo.domain.chat.dto.ChatDownloadTokenDTO;
+import umc.cockple.demo.domain.chat.dto.ChatFileDownloadDTO;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
 import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
@@ -129,7 +128,7 @@ class ChatFileServiceTest {
     class DownloadFile {
 
         @Test
-        @DisplayName("유효한 토큰 사용 시 Blob 데이터를 기반으로 정상적으로 ResponseEntity를 반환한다")
+        @DisplayName("유효한 토큰 사용 시 Blob 데이터를 기반으로 다운로드 정보를 반환한다")
         void success() {
             DownloadToken token = DownloadToken.create(100L, 1L, 180);
             ReflectionTestUtils.setField(token, "expiresAt", LocalDateTime.now().plusMinutes(5));
@@ -141,11 +140,12 @@ class ChatFileServiceTest {
             given(mockBlob.getContent()).willReturn(new byte[1024]);
             given(fileService.downloadFile("test/key.webp")).willReturn(mockBlob);
 
-            ResponseEntity<Resource> response = chatFileService.downloadFile(100L, "valid-token");
+            ChatFileDownloadDTO.Response response = chatFileService.downloadFile(100L, "valid-token");
 
-            assertThat(response.getStatusCodeValue()).isEqualTo(200);
-            assertThat(response.getHeaders().getContentLength()).isEqualTo(1024L);
-            assertThat(response.getHeaders().getContentType().toString()).isEqualTo("image/webp");
+            assertThat(response.originalFileName()).isEqualTo("test.webp");
+            assertThat(response.contentLength()).isEqualTo(1024L);
+            assertThat(response.contentType()).isEqualTo("image/webp");
+            assertThat(response.content()).hasSize(1024);
             verify(downloadTokenRepository).delete(token);
         }
 

@@ -4,7 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +19,9 @@ import umc.cockple.demo.domain.chat.service.query.ChatQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequiredArgsConstructor
@@ -143,7 +150,8 @@ public class ChatController {
             @PathVariable Long fileId,
             @RequestParam String token
     ) {
-        return chatFileService.downloadFile(fileId, token);
+        ChatFileDownloadDTO.Response response = chatFileService.downloadFile(fileId, token);
+        return createDownloadResponse(response);
     }
 
     @GetMapping("/parties/{partyId}")
@@ -157,5 +165,19 @@ public class ChatController {
         Long memberId = SecurityUtil.getCurrentMemberId();
         PartyChatRoomIdDTO response = chatQueryService.getChatRoomId(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
+    }
+
+    private ResponseEntity<Resource> createDownloadResponse(ChatFileDownloadDTO.Response response) {
+        Resource resource = new InputStreamResource(new ByteArrayInputStream(response.content()));
+        ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
+                .filename(response.originalFileName(), StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(contentDisposition);
+        headers.setContentType(MediaType.parseMediaType(response.contentType()));
+        headers.setContentLength(response.contentLength());
+
+        return ResponseEntity.ok().headers(headers).body(resource);
     }
 }
