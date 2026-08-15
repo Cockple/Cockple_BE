@@ -22,6 +22,7 @@ import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.chat.repository.MessageReadStatusRepository;
+import umc.cockple.demo.domain.chat.service.support.reader.ChatRoomReader;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.enums.Gender;
@@ -63,6 +64,8 @@ class PartyChatRoomLifecycleServiceTest {
     private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    private ChatRoomReader chatRoomReader;
 
     @Nested
     @DisplayName("createPartyChatRoom")
@@ -109,7 +112,7 @@ class PartyChatRoomLifecycleServiceTest {
             ReflectionTestUtils.setField(party, "id", partyId);
             ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
             ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomReader.readByPartyId(partyId)).willReturn(chatRoom);
 
             partyChatRoomLifecycleService.joinPartyChatRoom(partyId, member);
 
@@ -127,7 +130,8 @@ class PartyChatRoomLifecycleServiceTest {
             Long partyId = 1L;
             Member member = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 1002L);
             ReflectionTestUtils.setField(member, "id", 20L);
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+            given(chatRoomReader.readByPartyId(partyId))
+                    .willThrow(new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
 
             assertThatThrownBy(() -> partyChatRoomLifecycleService.joinPartyChatRoom(partyId, member))
                     .isInstanceOfSatisfying(ChatException.class,
@@ -153,7 +157,7 @@ class PartyChatRoomLifecycleServiceTest {
             Member member = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 1002L);
             ReflectionTestUtils.setField(member, "id", memberId);
             ChatRoomMember chatRoomMember = ChatRoomMember.create(chatRoom, member);
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomReader.readByPartyId(partyId)).willReturn(chatRoom);
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
                     .willReturn(Optional.of(chatRoomMember));
 
@@ -172,7 +176,7 @@ class PartyChatRoomLifecycleServiceTest {
             ReflectionTestUtils.setField(party, "id", partyId);
             ChatRoom chatRoom = ChatFixture.createPartyChatRoom(party);
             ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomReader.readByPartyId(partyId)).willReturn(chatRoom);
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
                     .willReturn(Optional.empty());
 
@@ -186,7 +190,8 @@ class PartyChatRoomLifecycleServiceTest {
         void fail_leavePartyChatRoom_whenRoomMissing() {
             Long partyId = 1L;
             Long memberId = 20L;
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+            given(chatRoomReader.readByPartyId(partyId))
+                    .willThrow(new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
 
             assertThatThrownBy(() -> partyChatRoomLifecycleService.leavePartyChatRoom(partyId, memberId))
                     .isInstanceOfSatisfying(ChatException.class,
@@ -212,7 +217,7 @@ class PartyChatRoomLifecycleServiceTest {
             ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
             List<String> objectKeys = List.of("chat/a.jpg", "chat/b.jpg");
 
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+            given(chatRoomReader.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
             given(chatFileRepository.findObjectKeysByChatRoomId(chatRoomId)).willReturn(objectKeys);
 
             partyChatRoomLifecycleService.deletePartyChatRoom(partyId);
@@ -240,7 +245,7 @@ class PartyChatRoomLifecycleServiceTest {
         @DisplayName("성공 - 채팅방이 없으면 아무것도 삭제하지 않고 종료한다")
         void success_deletePartyChatRoom_whenRoomMissing() {
             Long partyId = 1L;
-            given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+            given(chatRoomReader.findByPartyId(partyId)).willReturn(Optional.empty());
 
             partyChatRoomLifecycleService.deletePartyChatRoom(partyId);
 
