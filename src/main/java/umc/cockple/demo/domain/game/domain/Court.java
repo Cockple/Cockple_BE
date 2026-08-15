@@ -19,19 +19,27 @@ public class Court extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private GameBoard gameBoard;
 
-    @Column(nullable = false)
-    private Integer courtNo; // 코트 번호 (표시/이동 기준)
+    private int courtNo; // 코트 번호 (표시/이동 기준)
 
     private String courtName; // 코트명 (생략 시 서비스에서 courtNo 기반 기본값 부여)
 
-    public static Court create(Integer courtNo, String courtName) {
+    public static Court create(GameBoard gameBoard, int courtNo, String courtName) {
         return Court.builder()
+                .gameBoard(gameBoard)
                 .courtNo(courtNo)
                 .courtName(courtName)
                 .build();
     }
 
     public void updateName(String courtName) {
+        this.courtName = courtName;
+    }
+
+    /**
+     * 코트 관리(순서 재배치 + 이름 변경)에서 courtNo와 이름을 함께 갱신한다.
+     */
+    public void update(int courtNo, String courtName) {
+        this.courtNo = courtNo;
         this.courtName = courtName;
     }
 
