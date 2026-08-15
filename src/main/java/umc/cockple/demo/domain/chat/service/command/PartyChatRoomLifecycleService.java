@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.Optional;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ChatRoomService {
+public class PartyChatRoomLifecycleService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatFileRepository chatFileRepository;

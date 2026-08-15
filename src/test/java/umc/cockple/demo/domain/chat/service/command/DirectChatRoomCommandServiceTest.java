@@ -57,8 +57,8 @@ class DirectChatRoomCommandServiceTest {
         directChatRoomCommandService = new DirectChatRoomCommandService(
                 chatRoomRepository,
                 chatRoomMemberRepository,
-                memberLookupService,
-                new ChatConverter()
+                new ChatConverter(),
+                memberLookupService
         );
 
         member = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);

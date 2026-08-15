@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.chat.service;
+package umc.cockple.demo.domain.chat.service.command;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,11 +43,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ChatRoomService 단위 테스트")
-class ChatRoomServiceTest {
+@DisplayName("PartyChatRoomLifecycleService 단위 테스트")
+class PartyChatRoomLifecycleServiceTest {
 
     @InjectMocks
-    private ChatRoomService chatRoomService;
+    private PartyChatRoomLifecycleService partyChatRoomLifecycleService;
 
     @Mock
     private ChatRoomRepository chatRoomRepository;
@@ -78,7 +78,7 @@ class ChatRoomServiceTest {
             ReflectionTestUtils.setField(party, "id", partyId);
             given(chatRoomRepository.save(any(ChatRoom.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-            chatRoomService.createPartyChatRoom(party, owner);
+            partyChatRoomLifecycleService.createPartyChatRoom(party, owner);
 
             ArgumentCaptor<ChatRoom> chatRoomCaptor = ArgumentCaptor.forClass(ChatRoom.class);
             verify(chatRoomRepository).save(chatRoomCaptor.capture());
@@ -111,7 +111,7 @@ class ChatRoomServiceTest {
             ReflectionTestUtils.setField(chatRoom, "id", chatRoomId);
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
 
-            chatRoomService.joinPartyChatRoom(partyId, member);
+            partyChatRoomLifecycleService.joinPartyChatRoom(partyId, member);
 
             ArgumentCaptor<ChatRoomMember> chatRoomMemberCaptor = ArgumentCaptor.forClass(ChatRoomMember.class);
             verify(chatRoomMemberRepository).save(chatRoomMemberCaptor.capture());
@@ -129,7 +129,7 @@ class ChatRoomServiceTest {
             ReflectionTestUtils.setField(member, "id", 20L);
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> chatRoomService.joinPartyChatRoom(partyId, member))
+            assertThatThrownBy(() -> partyChatRoomLifecycleService.joinPartyChatRoom(partyId, member))
                     .isInstanceOfSatisfying(ChatException.class,
                             exception -> assertThat(exception.getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
             verify(chatRoomMemberRepository, never()).save(any(ChatRoomMember.class));
@@ -157,7 +157,7 @@ class ChatRoomServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
                     .willReturn(Optional.of(chatRoomMember));
 
-            chatRoomService.leavePartyChatRoom(partyId, memberId);
+            partyChatRoomLifecycleService.leavePartyChatRoom(partyId, memberId);
 
             verify(chatRoomMemberRepository).delete(chatRoomMember);
         }
@@ -176,7 +176,7 @@ class ChatRoomServiceTest {
             given(chatRoomMemberRepository.findByChatRoomIdAndMemberId(chatRoomId, memberId))
                     .willReturn(Optional.empty());
 
-            chatRoomService.leavePartyChatRoom(partyId, memberId);
+            partyChatRoomLifecycleService.leavePartyChatRoom(partyId, memberId);
 
             verify(chatRoomMemberRepository, never()).delete(any(ChatRoomMember.class));
         }
@@ -188,7 +188,7 @@ class ChatRoomServiceTest {
             Long memberId = 20L;
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> chatRoomService.leavePartyChatRoom(partyId, memberId))
+            assertThatThrownBy(() -> partyChatRoomLifecycleService.leavePartyChatRoom(partyId, memberId))
                     .isInstanceOfSatisfying(ChatException.class,
                             exception -> assertThat(exception.getCode()).isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
             verify(chatRoomMemberRepository, never()).findByChatRoomIdAndMemberId(anyLong(), anyLong());
@@ -215,7 +215,7 @@ class ChatRoomServiceTest {
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
             given(chatFileRepository.findObjectKeysByChatRoomId(chatRoomId)).willReturn(objectKeys);
 
-            chatRoomService.deletePartyChatRoom(partyId);
+            partyChatRoomLifecycleService.deletePartyChatRoom(partyId);
 
             var inOrder = inOrder(
                     chatFileRepository,
@@ -242,7 +242,7 @@ class ChatRoomServiceTest {
             Long partyId = 1L;
             given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
 
-            chatRoomService.deletePartyChatRoom(partyId);
+            partyChatRoomLifecycleService.deletePartyChatRoom(partyId);
 
             verify(messageReadStatusRepository, never()).deleteByChatRoomId(org.mockito.ArgumentMatchers.anyLong());
             verify(chatFileRepository, never()).findObjectKeysByChatRoomId(org.mockito.ArgumentMatchers.anyLong());

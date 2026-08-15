@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.service.ChatRoomService;
+import umc.cockple.demo.domain.chat.service.command.PartyChatRoomLifecycleService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -73,7 +73,7 @@ class PartyCommandServiceTest {
     @Mock
     private MemberPartyRepository memberPartyRepository;
     @Mock
-    private ChatRoomService chatRoomService;
+    private PartyChatRoomLifecycleService partyChatRoomLifecycleService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
@@ -122,7 +122,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository).delete(memberParty);
-            verify(chatRoomService).leavePartyChatRoom(partyId, memberId);
+            verify(partyChatRoomLifecycleService).leavePartyChatRoom(partyId, memberId);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
@@ -457,7 +457,7 @@ class PartyCommandServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.partyId()).isEqualTo(1L);
             verify(partyRepository, times(1)).save(any(Party.class));
-            verify(chatRoomService, times(1)).createPartyChatRoom(any(Party.class), eq(owner));
+            verify(partyChatRoomLifecycleService, times(1)).createPartyChatRoom(any(Party.class), eq(owner));
         }
 
         @Test
@@ -1034,7 +1034,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(chatRoomService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(partyChatRoomLifecycleService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
         }
 
         @Test
@@ -1068,7 +1068,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(chatRoomService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(partyChatRoomLifecycleService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
         }
 
         @Test
@@ -1227,7 +1227,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(chatRoomService).joinPartyChatRoom(partyId, applicant);
+            verify(partyChatRoomLifecycleService).joinPartyChatRoom(partyId, applicant);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
             verify(applicationEventPublisher).publishEvent(any(PartyJoinRequestApprovedEvent.class));
         }
@@ -1267,7 +1267,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(chatRoomService);
+            verifyNoInteractions(partyChatRoomLifecycleService);
             verifyNoInteractions(applicationEventPublisher);
         }
 
@@ -1640,7 +1640,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(chatRoomService).joinPartyChatRoom(party.getId(), invitee);
+            verify(partyChatRoomLifecycleService).joinPartyChatRoom(party.getId(), invitee);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
             verify(applicationEventPublisher).publishEvent(any(PartyInvitationAcceptedEvent.class));
         }
@@ -1675,7 +1675,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(chatRoomService);
+            verifyNoInteractions(partyChatRoomLifecycleService);
             verifyNoInteractions(applicationEventPublisher);
         }
 
