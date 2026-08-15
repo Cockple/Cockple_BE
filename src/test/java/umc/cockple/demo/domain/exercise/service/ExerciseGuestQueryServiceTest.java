@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
@@ -82,7 +82,7 @@ class ExerciseGuestQueryServiceTest {
         exerciseGuestQueryService = new ExerciseGuestQueryService(
                 new ExerciseReader(exerciseRepository),
                 guestReader,
-                new ExerciseParticipantInfoAssembler(
+                new ExerciseParticipantSnapshotAssembler(
                         memberExerciseReader,
                         guestReader,
                         memberLookupService,

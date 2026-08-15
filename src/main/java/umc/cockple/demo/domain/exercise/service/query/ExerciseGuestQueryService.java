@@ -6,9 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantSnapshot;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMyGuestListResult;
-import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -27,7 +27,7 @@ public class ExerciseGuestQueryService {
 
     private final ExerciseReader exerciseReader;
     private final GuestReader guestReader;
-    private final ExerciseParticipantInfoAssembler participantInfoAssembler;
+    private final ExerciseParticipantSnapshotAssembler participantSnapshotAssembler;
     private final MemberLookupService memberLookupService;
     public ExerciseMyGuestListResult getMyInvitedGuests(Long exerciseId, Long memberId) {
 
@@ -43,7 +43,7 @@ public class ExerciseGuestQueryService {
             return ExerciseMyGuestListResult.empty();
         }
 
-        List<ExerciseDetailResult.ParticipantInfo> allParticipants = participantInfoAssembler.getAllSortedParticipants(
+        List<ExerciseParticipantSnapshot> allParticipants = participantSnapshotAssembler.getAllSortedParticipants(
                 exerciseId, exercise.getParty());
         Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap = createGuestNumberMap(
                 allParticipants, exercise.getMaxCapacity());
@@ -62,15 +62,15 @@ public class ExerciseGuestQueryService {
     }
 
     private Map<Long, ExerciseMyGuestListResult.GuestGroup> createGuestNumberMap(
-            List<ExerciseDetailResult.ParticipantInfo> allParticipants,
+            List<ExerciseParticipantSnapshot> allParticipants,
             Integer maxCapacity) {
 
         Map<Long, ExerciseMyGuestListResult.GuestGroup> guestNumberMap = new HashMap<>();
 
         for (int i = 0; i < allParticipants.size(); i++) {
-            ExerciseDetailResult.ParticipantInfo participant = allParticipants.get(i);
+            ExerciseParticipantSnapshot participant = allParticipants.get(i);
 
-            if ("GUEST".equals(participant.participantType())) {
+            if (participant.isGuest()) {
                 if (i < maxCapacity) {
                     guestNumberMap.put(participant.participantId(),
                             ExerciseMyGuestListResult.GuestGroup.participant(i + 1));

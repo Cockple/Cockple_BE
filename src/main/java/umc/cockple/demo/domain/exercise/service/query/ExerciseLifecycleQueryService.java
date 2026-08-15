@@ -7,9 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantSnapshot;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseEditDetailResult;
-import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -26,7 +27,7 @@ import java.util.*;
 public class ExerciseLifecycleQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantInfoAssembler participantInfoAssembler;
+    private final ExerciseParticipantSnapshotAssembler participantSnapshotAssembler;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseValidator exerciseValidator;
@@ -43,8 +44,8 @@ public class ExerciseLifecycleQueryService {
 
         ExerciseDetailResult.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
 
-        List<ExerciseDetailResult.ParticipantInfo> allParticipants =
-                participantInfoAssembler.getAllSortedParticipants(exerciseId, party);
+        List<ExerciseParticipantSnapshot> allParticipants =
+                participantSnapshotAssembler.getAllSortedParticipants(exerciseId, party);
         ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
 
         ExerciseDetailResult.ParticipantGroup participantGroup =
@@ -90,7 +91,7 @@ public class ExerciseLifecycleQueryService {
     }
 
     private ParticipantGroups splitParticipants(
-            List<ExerciseDetailResult.ParticipantInfo> allParticipants,
+            List<ExerciseParticipantSnapshot> allParticipants,
             int maxCapacity) {
 
         List<ExerciseDetailResult.ParticipantInfo> participantList =
@@ -126,14 +127,14 @@ public class ExerciseLifecycleQueryService {
     }
 
     private List<ExerciseDetailResult.ParticipantInfo> createParticipantList(
-            List<ExerciseDetailResult.ParticipantInfo> allParticipants,
+            List<ExerciseParticipantSnapshot> allParticipants,
             int maxCapacity) {
 
         List<ExerciseDetailResult.ParticipantInfo> participantList = new ArrayList<>();
         int endIndex = Math.min(allParticipants.size(), maxCapacity);
 
         for (int i = 0; i < endIndex; i++) {
-            ExerciseDetailResult.ParticipantInfo original = allParticipants.get(i);
+            ExerciseParticipantSnapshot original = allParticipants.get(i);
             ExerciseDetailResult.ParticipantInfo participant = createParticipantWithNumber(original, i + 1);
             participantList.add(participant);
         }
@@ -142,7 +143,7 @@ public class ExerciseLifecycleQueryService {
     }
 
     private List<ExerciseDetailResult.ParticipantInfo> createWaitingList(
-            List<ExerciseDetailResult.ParticipantInfo> allParticipants,
+            List<ExerciseParticipantSnapshot> allParticipants,
             int maxCapacity) {
 
         List<ExerciseDetailResult.ParticipantInfo> waitingList = new ArrayList<>();
@@ -152,7 +153,7 @@ public class ExerciseLifecycleQueryService {
         }
 
         for (int i = maxCapacity; i < allParticipants.size(); i++) {
-            ExerciseDetailResult.ParticipantInfo original = allParticipants.get(i);
+            ExerciseParticipantSnapshot original = allParticipants.get(i);
             int waitingNumber = (i - maxCapacity) + 1;
             ExerciseDetailResult.ParticipantInfo waiting = createParticipantWithNumber(original, waitingNumber);
             waitingList.add(waiting);
@@ -162,7 +163,7 @@ public class ExerciseLifecycleQueryService {
     }
 
     private ExerciseDetailResult.ParticipantInfo createParticipantWithNumber(
-            ExerciseDetailResult.ParticipantInfo original,
+            ExerciseParticipantSnapshot original,
             int number) {
 
         return new ExerciseDetailResult.ParticipantInfo(
@@ -170,10 +171,10 @@ public class ExerciseLifecycleQueryService {
                 number,
                 original.profileImageUrl(),
                 original.name(),
-                original.gender(),
-                original.level(),
-                original.participantType(),
-                original.partyPosition(),
+                original.gender().name(),
+                original.level().name(),
+                original.membershipStatus().name(),
+                original.partyPosition() != null ? original.partyPosition().name() : null,
                 original.inviterName(),
                 original.joinedAt(),
                 original.withdrawn()

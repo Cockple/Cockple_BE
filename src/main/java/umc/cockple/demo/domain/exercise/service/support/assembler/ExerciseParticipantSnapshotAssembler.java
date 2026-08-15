@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantSnapshot;
 import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.domain.MemberExercise;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class ExerciseParticipantInfoAssembler {
+public class ExerciseParticipantSnapshotAssembler {
 
     private final MemberExerciseReader memberExerciseReader;
     private final GuestReader guestReader;
@@ -35,23 +35,23 @@ public class ExerciseParticipantInfoAssembler {
     private final MemberPartyLookupService memberPartyLookupService;
     private final ImageUrlResolver imageUrlResolver;
 
-    public List<ExerciseDetailResult.ParticipantInfo> getAllSortedParticipants(Long exerciseId, Party party) {
+    public List<ExerciseParticipantSnapshot> getAllSortedParticipants(Long exerciseId, Party party) {
         List<MemberExercise> memberExercises = memberExerciseReader.findMemberExercisesWithMemberAndProfile(exerciseId);
-        List<ExerciseDetailResult.ParticipantInfo> memberParticipants = buildMemberParticipantInfos(memberExercises, party);
+        List<ExerciseParticipantSnapshot> memberParticipants = buildMemberParticipantSnapshots(memberExercises, party);
 
         List<Guest> guests = guestReader.findByExerciseId(exerciseId);
-        List<ExerciseDetailResult.ParticipantInfo> guestParticipants = buildGuestParticipantInfos(guests);
+        List<ExerciseParticipantSnapshot> guestParticipants = buildGuestParticipantSnapshots(guests);
 
-        List<ExerciseDetailResult.ParticipantInfo> allParticipants = new ArrayList<>();
+        List<ExerciseParticipantSnapshot> allParticipants = new ArrayList<>();
         allParticipants.addAll(memberParticipants);
         allParticipants.addAll(guestParticipants);
 
-        allParticipants.sort(Comparator.comparing(ExerciseDetailResult.ParticipantInfo::joinedAt));
+        allParticipants.sort(Comparator.comparing(ExerciseParticipantSnapshot::joinedAt));
 
         return allParticipants;
     }
 
-    private List<ExerciseDetailResult.ParticipantInfo> buildMemberParticipantInfos(
+    private List<ExerciseParticipantSnapshot> buildMemberParticipantSnapshots(
             List<MemberExercise> memberExercises, Party party) {
         if (memberExercises.isEmpty()) {
             return List.of();
@@ -65,13 +65,13 @@ public class ExerciseParticipantInfoAssembler {
                 .findMemberRolesByPartyAndMembers(party.getId(), memberIds);
 
         return memberExercises.stream()
-                .map(memberExercise -> toParticipantInfo(
+                .map(memberExercise -> toParticipantSnapshot(
                         memberExercise,
                         partyMemberRoles.get(memberExercise.getMember().getId())))
                 .toList();
     }
 
-    private List<ExerciseDetailResult.ParticipantInfo> buildGuestParticipantInfos(List<Guest> guests) {
+    private List<ExerciseParticipantSnapshot> buildGuestParticipantSnapshots(List<Guest> guests) {
         if (guests.isEmpty()) {
             return List.of();
         }
@@ -85,39 +85,37 @@ public class ExerciseParticipantInfoAssembler {
         return guests.stream()
                 .map(guest -> {
                     String inviterName = inviterNames.getOrDefault(guest.getInviterId(), "알 수 없음");
-                    return toParticipantInfo(guest, inviterName);
+                    return toParticipantSnapshot(guest, inviterName);
                 })
                 .toList();
     }
 
-    private ExerciseDetailResult.ParticipantInfo toParticipantInfo(
+    private ExerciseParticipantSnapshot toParticipantSnapshot(
             MemberExercise memberExercise, Role role) {
         Member member = memberExercise.getMember();
 
-        return new ExerciseDetailResult.ParticipantInfo(
+        return new ExerciseParticipantSnapshot(
                 member.getId(),
-                0,
                 imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey),
                 member.getMemberName(),
-                member.getGender().name(),
-                member.getLevel().name(),
-                memberExercise.getExerciseMemberShipStatus().name(),
-                role != null ? role.name() : null,
+                member.getGender(),
+                member.getLevel(),
+                memberExercise.getExerciseMemberShipStatus(),
+                role,
                 null,
                 memberExercise.getCreatedAt(),
                 member.getIsActive() == MemberStatus.INACTIVE
         );
     }
 
-    private ExerciseDetailResult.ParticipantInfo toParticipantInfo(Guest guest, String inviterName) {
-        return new ExerciseDetailResult.ParticipantInfo(
+    private ExerciseParticipantSnapshot toParticipantSnapshot(Guest guest, String inviterName) {
+        return new ExerciseParticipantSnapshot(
                 guest.getId(),
-                0,
                 null,
                 guest.getGuestName(),
-                guest.getGender().name(),
-                guest.getLevel().name(),
-                guest.getExerciseMemberShipStatus().name(),
+                guest.getGender(),
+                guest.getLevel(),
+                guest.getExerciseMemberShipStatus(),
                 null,
                 inviterName,
                 guest.getCreatedAt(),
