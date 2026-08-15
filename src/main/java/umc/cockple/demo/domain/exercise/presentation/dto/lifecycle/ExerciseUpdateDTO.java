@@ -1,0 +1,85 @@
+package umc.cockple.demo.domain.exercise.presentation.dto.lifecycle;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
+import lombok.Builder;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+
+public class ExerciseUpdateDTO {
+
+    @Schema(name = "ExerciseUpdateRequest", description = "운동 수정 요청")
+    public record Request(
+
+            @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식: YYYY-MM-DD")
+            String date,
+
+            String buildingName,
+
+            String roadAddress,
+
+            @DecimalMin(value = "33.0") @DecimalMax(value = "43.0")
+            Double latitude,
+
+            @DecimalMin(value = "124.0") @DecimalMax(value = "132.0")
+            Double longitude,
+
+            @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "시간 형식: HH:mm")
+            String startTime,
+
+            @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "시간 형식: HH:mm")
+            String endTime,
+
+            @Min(value = 2, message = "모집 인원은 최소 2명 이상입니다.")
+            @Max(value = 45, message = "모집 인원은 최대 45명 이하입니다.")
+            Integer maxCapacity,
+
+            Boolean allowMemberGuestsInvitation,
+
+            Boolean allowExternalGuests,
+
+            @Size(max = 45, message = "공지사항은 45자를 초과할 수 없습니다")
+            String notice
+    ) {
+        public LocalDate toParsedDate() {
+            if (date == null || date.isEmpty()) return null;
+            try {
+                return LocalDate.parse(date);
+            } catch (DateTimeParseException e) {
+                throw new ExerciseException(ExerciseErrorCode.INVALID_DATE_FORMAT);
+            }
+        }
+
+        public LocalTime toParsedStartTime() {
+            if (startTime == null || startTime.isEmpty()) return null;
+            try {
+                return LocalTime.parse(startTime);
+            } catch (DateTimeParseException e) {
+                throw new ExerciseException(ExerciseErrorCode.INVALID_START_TIME_FORMAT);
+            }
+        }
+
+        public LocalTime toParsedEndTime() {
+            if (endTime == null || endTime.isEmpty()) return null;
+            try {
+                return LocalTime.parse(endTime);
+            } catch (DateTimeParseException e) {
+                throw new ExerciseException(ExerciseErrorCode.INVALID_END_TIME_FORMAT);
+            }
+        }
+    }
+
+    @Builder
+    public record Response(
+            Long exerciseId,
+            LocalDateTime updatedAt
+    ) {
+    }
+
+
+}
