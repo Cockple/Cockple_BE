@@ -9,7 +9,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseEditDetailResult;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantInfoAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;

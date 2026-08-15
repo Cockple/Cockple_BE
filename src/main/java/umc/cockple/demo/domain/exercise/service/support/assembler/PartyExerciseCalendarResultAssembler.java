@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.support;
+package umc.cockple.demo.domain.exercise.service.support.assembler;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.domain.Exercise;

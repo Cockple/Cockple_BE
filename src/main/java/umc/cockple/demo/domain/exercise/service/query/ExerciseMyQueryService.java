@@ -19,7 +19,7 @@ import umc.cockple.demo.domain.exercise.service.query.result.MyExerciseCalendarR
 import umc.cockple.demo.domain.exercise.service.query.result.MyExerciseListResult;
 import umc.cockple.demo.domain.exercise.service.query.result.MyPartyExerciseCalendarResult;
 import umc.cockple.demo.domain.exercise.service.query.result.MyPartyExerciseResult;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseMyResultAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseMyResultAssembler;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;

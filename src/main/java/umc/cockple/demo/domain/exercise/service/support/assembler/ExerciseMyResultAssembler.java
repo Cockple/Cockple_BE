@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.exercise.service.support;
+package umc.cockple.demo.domain.exercise.service.support.assembler;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;

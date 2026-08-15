@@ -5,11 +5,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 import umc.cockple.demo.domain.exercise.controller.api.ExerciseRecommendationApi;
+import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
 import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseRecommendationQueryService;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationCalendarResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationResult;
 import umc.cockple.demo.domain.party.enums.ActivityTime;
 import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.global.enums.Level;
@@ -26,12 +29,15 @@ import java.util.List;
 public class ExerciseRecommendationController implements ExerciseRecommendationApi {
 
     private final ExerciseRecommendationQueryService exerciseRecommendationQueryService;
+    private final ExerciseRecommendationQueryMapper exerciseRecommendationQueryMapper;
 
     @Override
     public ResponseEntity<BaseResponse<ExerciseRecommendationDTO.Response>> getRecommendedExercises() {
         Long memberId = SecurityUtil.getCurrentMemberId();
 
-        ExerciseRecommendationDTO.Response response = exerciseRecommendationQueryService.getRecommendedExercises(memberId);
+        ExerciseRecommendationResult result = exerciseRecommendationQueryService.getRecommendedExercises(memberId);
+        ExerciseRecommendationDTO.Response response =
+                exerciseRecommendationQueryMapper.toExerciseRecommendationResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }
@@ -59,8 +65,10 @@ public class ExerciseRecommendationController implements ExerciseRecommendationA
                         .activityTimes(activityTimes)
                         .build();
 
-        ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService
+        ExerciseRecommendationCalendarResult result = exerciseRecommendationQueryService
                 .getRecommendedExerciseCalendar(memberId, startDate, endDate, isCockpleRecommend, filterCondition, sortType);
+        ExerciseRecommendationCalendarDTO.Response response =
+                exerciseRecommendationQueryMapper.toRecommendationCalendarResponse(result);
 
         return BaseResponse.of(CommonSuccessCode.OK, response);
     }

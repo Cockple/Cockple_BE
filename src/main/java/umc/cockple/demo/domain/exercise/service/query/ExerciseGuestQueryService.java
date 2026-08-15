@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMyGuestListResult;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantInfoAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;

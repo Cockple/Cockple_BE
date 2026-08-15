@@ -9,18 +9,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseRecommendationQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.recommendation.ExerciseRecommendationDTO;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationCalendarResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseRecommendationResult;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
-import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.support.ExerciseDistanceCalculator;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseRecommendationResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseRecommendationFilterCondition;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -84,9 +82,11 @@ class ExerciseRecommendationQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseRecommendationQueryMapper exerciseRecommendationMapper = new ExerciseRecommendationQueryMapper(
-                new ImageUrlResolver(fileService), new ExerciseDistanceCalculator());
-        exerciseRecommendationQueryService = createExerciseRecommendationQueryService(exerciseRecommendationMapper);
+        ExerciseRecommendationResultAssembler exerciseRecommendationResultAssembler =
+                new ExerciseRecommendationResultAssembler(
+                        new ImageUrlResolver(fileService), new ExerciseDistanceCalculator());
+        exerciseRecommendationQueryService =
+                createExerciseRecommendationQueryService(exerciseRecommendationResultAssembler);
 
         member = MemberFixture.createMember("테스트회원", Gender.MALE, Level.A, 1001L, LocalDate.of(1995, 6, 15));
         ReflectionTestUtils.setField(member, "id", 1L);
@@ -107,14 +107,15 @@ class ExerciseRecommendationQueryServiceTest {
         ReflectionTestUtils.setField(exercise, "exerciseAddr", exerciseAddr);
     }
 
-    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(ExerciseRecommendationQueryMapper exerciseRecommendationMapper) {
+    private ExerciseRecommendationQueryService createExerciseRecommendationQueryService(
+            ExerciseRecommendationResultAssembler exerciseRecommendationResultAssembler) {
         return new ExerciseRecommendationQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseDistanceCalculator(),
                 new MemberLookupService(memberRepository),
-                exerciseRecommendationMapper
+                exerciseRecommendationResultAssembler
         );
     }
 
@@ -140,7 +141,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then
@@ -162,18 +163,18 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then
-                ExerciseRecommendationDTO.ExerciseItem item = response.exercises().get(0);
+                ExerciseRecommendationResult.ExerciseItem item = response.exercises().get(0);
                 assertThat(item.exerciseId()).isEqualTo(100L);
                 assertThat(item.partyId()).isEqualTo(10L);
                 assertThat(item.partyName()).isEqualTo("테스트 모임");
                 assertThat(item.date()).isEqualTo(exercise.getDate());
                 assertThat(item.dayOfWeek()).isEqualTo(exercise.getDate().getDayOfWeek().name());
                 assertThat(item.buildingName()).isEqualTo("테스트 체육관");
-                assertThat(item.isBookmarked()).isFalse();
+                assertThat(item.bookmarked()).isFalse();
             }
 
             @Test
@@ -190,11 +191,11 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of(100L));
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then
-                assertThat(response.exercises().get(0).isBookmarked()).isTrue();
+                assertThat(response.exercises().get(0).bookmarked()).isTrue();
             }
 
             @Test
@@ -208,7 +209,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(Collections.emptyList());
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then
@@ -239,7 +240,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then
@@ -282,7 +283,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationDTO.Response response =
+                ExerciseRecommendationResult response =
                         exerciseRecommendationQueryService.getRecommendedExercises(member.getId());
 
                 // then - 가까운 운동이 먼저
@@ -397,7 +398,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
+                ExerciseRecommendationCalendarResult response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), null, null, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
@@ -406,13 +407,13 @@ class ExerciseRecommendationQueryServiceTest {
                 assertThat(response.weeks()).hasSize(5);
                 assertThat(response.weeks().get(weekIndex).days().get(dayIndex).exercises())
                         .extracting(
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::exerciseId,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::partyId,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::partyName,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::buildingName,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::startTime,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::endTime,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::isBookmarked
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::exerciseId,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::partyId,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::partyName,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::buildingName,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::startTime,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::endTime,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::bookmarked
                         )
                         .containsExactly(
                                 tuple(nearExercise.getId(), party.getId(), "테스트 모임", "가까운 체육관",
@@ -468,7 +469,7 @@ class ExerciseRecommendationQueryServiceTest {
                         ));
 
                 // when
-                ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
+                ExerciseRecommendationCalendarResult response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), startDate, endDate, false, filterCondition, MyPartyExerciseOrderType.POPULARITY);
 
                 // then
@@ -476,12 +477,12 @@ class ExerciseRecommendationQueryServiceTest {
                 assertThat(response.endDate()).isEqualTo(endDate);
                 assertThat(response.weeks().get(0).days().get(2).exercises())
                         .extracting(
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::exerciseId,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::partyId,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::partyName,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::buildingName,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::isBookmarked,
-                                ExerciseRecommendationCalendarDTO.ExerciseCalendarItem::distance
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::exerciseId,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::partyId,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::partyName,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::buildingName,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::bookmarked,
+                                ExerciseRecommendationCalendarResult.ExerciseCalendarItem::distance
                         )
                         .containsExactly(
                                 tuple(popularExercise.getId(), filteredParty.getId(), "필터 모임", "인기 체육관", true, null),
@@ -503,7 +504,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
+                ExerciseRecommendationCalendarResult response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), startDate, endDate, true, recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
                 // then
@@ -529,7 +530,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
+                ExerciseRecommendationCalendarResult response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), LocalDate.of(2026, 3, 25), null, true,
                         recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 
@@ -553,7 +554,7 @@ class ExerciseRecommendationQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseRecommendationCalendarDTO.Response response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
+                ExerciseRecommendationCalendarResult response = exerciseRecommendationQueryService.getRecommendedExerciseCalendar(
                         recommendationMember.getId(), reversedStart, reversedEnd, true,
                         recommendationFilter(), MyPartyExerciseOrderType.LATEST);
 

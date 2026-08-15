@@ -1,89 +1,73 @@
 package umc.cockple.demo.domain.exercise.converter.query;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
 import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.file.service.ImageUrlResolver;
-import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.domain.PartyImg;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseBuildingDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMapBuildingsResult;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class ExerciseMapQueryMapper {
 
-    private final ImageUrlResolver imageUrlResolver;
-
-    public ExerciseBuildingDetailDTO.Response toEmptyBuildingDetailResponse(String buildingName, LocalDate date) {
-        return ExerciseBuildingDetailDTO.Response.builder()
-                .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
-                .buildingName(buildingName)
-                .exercises(List.of())
-                .build();
-    }
-
     public ExerciseBuildingDetailDTO.Response toBuildingDetailResponse(
-            List<Exercise> exercises, String buildingName, Map<Long, Boolean> bookmarkStatus, LocalDate date) {
-
-        List<ExerciseBuildingDetailDTO.ExerciseItem> finalExercises = exercises.stream()
-                .map(exercise -> toBuildingDetailItem(exercise, bookmarkStatus))
-                .toList();
-
+            ExerciseBuildingDetailResult result) {
         return ExerciseBuildingDetailDTO.Response.builder()
-                .date(date)
-                .dayOfWeek(date.getDayOfWeek().name())
-                .buildingName(buildingName)
-                .exercises(finalExercises)
+                .date(result.date())
+                .dayOfWeek(result.dayOfWeek())
+                .buildingName(result.buildingName())
+                .exercises(result.exercises().stream().map(this::toBuildingDetailItem).toList())
                 .build();
     }
 
     public ExerciseMapBuildingsDTO.Response toMapCalendarSummaryResponse(
-            Integer year,
-            Integer month,
-            Double latitude,
-            Double longitude,
-            Double radiusKm,
-            Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> buildings) {
-
+            ExerciseMapBuildingsResult result) {
         return ExerciseMapBuildingsDTO.Response.builder()
-                .year(year)
-                .month(month)
-                .centerLatitude(latitude)
-                .centerLongitude(longitude)
-                .radiusKm(radiusKm)
-                .buildings(buildings)
-                .build();
-    }
-
-    public ExerciseMapBuildingsDTO.BuildingInfo toBuildingSummary(
-            String name, String address, Double latitude, Double longitude) {
-        return ExerciseMapBuildingsDTO.BuildingInfo.builder()
-                .buildingName(name)
-                .streetAddr(address)
-                .latitude(latitude)
-                .longitude(longitude)
+                .year(result.year())
+                .month(result.month())
+                .centerLatitude(result.centerLatitude())
+                .centerLongitude(result.centerLongitude())
+                .radiusKm(result.radiusKm())
+                .buildings(toBuildingInfoMap(result.buildings()))
                 .build();
     }
 
     private ExerciseBuildingDetailDTO.ExerciseItem toBuildingDetailItem(
-            Exercise exercise, Map<Long, Boolean> bookmarkStatus) {
-
-        Party party = exercise.getParty();
-
+            ExerciseBuildingDetailResult.ExerciseItem result) {
         return ExerciseBuildingDetailDTO.ExerciseItem.builder()
-                .exerciseId(exercise.getId())
-                .partyId(party.getId())
-                .partyName(party.getPartyName())
-                .profileImageUrl(imageUrlResolver.resolve(party.getPartyImg(), PartyImg::getImgKey))
-                .isBookmarked(bookmarkStatus.getOrDefault(exercise.getId(), false))
-                .startTime(exercise.getStartTime())
-                .endTime(exercise.getEndTime())
+                .exerciseId(result.exerciseId())
+                .partyId(result.partyId())
+                .partyName(result.partyName())
+                .profileImageUrl(result.profileImageUrl())
+                .isBookmarked(result.bookmarked())
+                .startTime(result.startTime())
+                .endTime(result.endTime())
+                .build();
+    }
+
+    private Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> toBuildingInfoMap(
+            Map<LocalDate, List<ExerciseMapBuildingsResult.BuildingInfo>> buildings) {
+        return buildings.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream().map(this::toBuildingInfo).toList(),
+                        (existing, replacement) -> existing,
+                        TreeMap::new
+                ));
+    }
+
+    private ExerciseMapBuildingsDTO.BuildingInfo toBuildingInfo(
+            ExerciseMapBuildingsResult.BuildingInfo result) {
+        return ExerciseMapBuildingsDTO.BuildingInfo.builder()
+                .buildingName(result.buildingName())
+                .streetAddr(result.streetAddr())
+                .latitude(result.latitude())
+                .longitude(result.longitude())
                 .build();
     }
 }
