@@ -8,4 +8,6 @@ import java.util.List;
 public interface CourtRepository extends JpaRepository<Court, Long> {
 
     List<Court> findByGameBoardId(Long gameBoardId);
+
+    List<Court> findByGameBoardIdOrderByCourtNoAsc(Long gameBoardId);
 }
