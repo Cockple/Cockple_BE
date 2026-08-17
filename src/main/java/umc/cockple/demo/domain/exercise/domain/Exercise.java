@@ -39,7 +39,8 @@ public class Exercise extends BaseEntity {
 
     @JoinColumn(name = "game_board_id", nullable = false, unique = true)
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
-    private GameBoard gameBoard;
+    @Builder.Default
+    private GameBoard gameBoard = GameBoard.create();
 
     @Column(nullable = false)
     private LocalDate date; // 운동 날짜
