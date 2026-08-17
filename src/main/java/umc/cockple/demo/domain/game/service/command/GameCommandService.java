@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
@@ -37,8 +38,7 @@ public class GameCommandService {
     private final GameBoardMemberRepository gameBoardMemberRepository;
 
     /**
-     * 게임 대기 생성 (#8). 선택한 명단 멤버들로 대기(WAITING) 게임을 만들어 대기열 맨 뒤에 붙인다.
-     * gameBoardMemberIds 의 순서가 곧 플레이어 순서(playerOrder)가 된다.
+     * 게임 대기 생성
      *
      * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
      * @return 생성된 게임 ID
@@ -94,6 +94,32 @@ public class GameCommandService {
 
         log.info("게임 시작 - gameBoardId: {}, gameId: {}, courtId: {}",
                 gameBoard.getId(), game.getId(), court.getId());
+    }
+
+    /**
+     * 게임 완료 (#5)
+     *
+     * @param memberId 요청자
+     * @return 완료된 게임 ID
+     */
+    public Long completeGame(Long memberId, GameCompleteCommand command) {
+        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+
+        Game game = gameRepository.findById(command.gameId())
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
+        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
+            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
+        }
+        if (game.getStatus() != GameStatus.PLAYING) {
+            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
+        }
+
+        game.complete(LocalDateTime.now());
+        game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
+
+        log.info("게임 완료 - gameBoardId: {}, gameId: {}, 인원: {}",
+                gameBoard.getId(), game.getId(), game.getPlayers().size());
+        return game.getId();
     }
 
     /**

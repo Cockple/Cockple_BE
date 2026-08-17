@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
@@ -254,6 +255,73 @@ class GameCommandServiceTest {
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.GAME_BOARD_ID_REQUIRED);
+        }
+    }
+
+    @Nested
+    @DisplayName("completeGame (#5 게임 완료)")
+    class CompleteGame {
+
+        @Test
+        @DisplayName("진행 게임을 완료해 코트를 비우고, 참여 멤버의 게임횟수를 1 증가시킨다")
+        void completeGame_completesAndIncrementsGameCount() {
+            // given
+            GameBoardMember m1 = GameFixture.member(7L, board, "선수A", Level.A);
+            GameBoardMember m2 = GameFixture.member(8L, board, "선수B", Level.B);
+            Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now(),
+                    GameFixture.player(m1, 0), GameFixture.player(m2, 1));
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
+
+            // when
+            Long completedGameId = gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID));
+
+            // then
+            assertThat(completedGameId).isEqualTo(GAME_ID);
+            assertThat(playing.getStatus()).isEqualTo(GameStatus.COMPLETED);
+            assertThat(playing.getCourt()).isNull();
+            assertThat(playing.getCompletedAt()).isNotNull();
+            assertThat(m1.getGameCount()).isEqualTo(1);
+            assertThat(m2.getGameCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
+        void completeGame_gameNotFound() {
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("다른 게임판의 게임이면 GAME_NOT_FOUND 예외")
+        void completeGame_gameOfOtherBoard() {
+            GameBoard otherBoard = GameFixture.gameBoard(2L);
+            Game gameOfOtherBoard = GameFixture.playingGame(GAME_ID, otherBoard, court, LocalDateTime.now());
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(gameOfOtherBoard));
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("진행 중인 게임이 아니면 GAME_NOT_PLAYING 예외")
+        void completeGame_notPlaying() {
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_PLAYING);
         }
     }
 }

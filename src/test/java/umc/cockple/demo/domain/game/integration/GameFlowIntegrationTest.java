@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.game.repository.GameBoardRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
@@ -47,8 +48,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
     private static final Long ACTOR = 999L;
 
     @Test
-    @DisplayName("대기 생성(#8) → 게임 시작(#4) → 보드 조회(#2) → 코트 이동(#3)이 실제 DB에서 연결된다")
-    void gameFlow_createStartViewMove() {
+    @DisplayName("대기 생성(#8) → 게임 시작(#4) → 보드 조회(#2) → 코트 이동(#3) → 게임 완료(#5)가 실제 DB에서 연결된다")
+    void gameFlow_createStartViewMoveComplete() {
         // --- setup: 게임판 + 코트 2개 + 명단 4명 ---
         GameBoard board = gameBoardRepository.save(GameBoard.create());
         Court court1 = courtRepository.save(Court.create(board, 1, "1번 코트"));
@@ -90,6 +91,18 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         GameBoardResult.CourtView movedCourt = courtOf(afterMove, court2.getId());
         assertThat(movedCourt.status()).isEqualTo(CourtStatus.PLAYING);
         assertThat(movedCourt.game().gameId()).isEqualTo(gameId);
+
+        // --- #5 게임 완료: 2번 코트의 게임 완료 ---
+        Long completedGameId = gameCommandService.completeGame(ACTOR, new GameCompleteCommand(board.getId(), gameId));
+        assertThat(completedGameId).isEqualTo(gameId);
+
+        GameBoardResult afterComplete = gameBoardQueryService.getBoard(ACTOR, board.getId());
+        assertThat(afterComplete.courts())
+                .allSatisfy(court -> assertThat(court.status()).isEqualTo(CourtStatus.EMPTY));
+        assertThat(afterComplete.waitings()).isEmpty();
+        // 참여 멤버 전원의 게임횟수가 1 증가
+        memberIds.forEach(memberId -> assertThat(
+                gameBoardMemberRepository.findById(memberId).orElseThrow().getGameCount()).isEqualTo(1));
     }
 
     private List<Long> saveMembers(GameBoard board, String... names) {

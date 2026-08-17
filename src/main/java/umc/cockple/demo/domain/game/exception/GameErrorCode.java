@@ -21,6 +21,7 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_BOARD_ID_REQUIRED(HttpStatus.BAD_REQUEST, "GAME401", "게임판 ID가 필요합니다."),
     INVALID_REALTIME_PAYLOAD(HttpStatus.BAD_REQUEST, "GAME402", "게임 요청 형식이 올바르지 않습니다."),
     GAME_NOT_WAITING(HttpStatus.BAD_REQUEST, "GAME403", "대기 중인 게임이 아닙니다."),
+    GAME_NOT_PLAYING(HttpStatus.BAD_REQUEST, "GAME409", "진행 중인 게임이 아닙니다."),
     COURT_ALREADY_IN_USE(HttpStatus.BAD_REQUEST, "GAME404", "이미 게임이 진행 중인 코트입니다."),
     DUPLICATE_COURT_ID(HttpStatus.BAD_REQUEST, "GAME405", "코트 ID가 중복되어 요청되었습니다."),
     COURT_HAS_ACTIVE_GAME(HttpStatus.BAD_REQUEST, "GAME406", "진행 중인 게임이 있는 코트는 삭제할 수 없습니다."),
