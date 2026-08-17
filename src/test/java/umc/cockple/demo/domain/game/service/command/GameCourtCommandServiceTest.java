@@ -9,6 +9,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
@@ -17,6 +18,7 @@ import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.events.GameCourtsManagedEvent;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand.CourtCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
@@ -42,6 +44,7 @@ class GameCourtCommandServiceTest {
     @Mock private GameBoardReader gameBoardReader;
     @Mock private CourtRepository courtRepository;
     @Mock private GameRepository gameRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCourtCommandService gameCourtCommandService;
 
@@ -95,6 +98,21 @@ class GameCourtCommandServiceTest {
             // 결과는 최종 코트 2개
             assertThat(result.gameBoardId()).isEqualTo(BOARD_ID);
             assertThat(result.courts()).hasSize(2);
+
+            // 구독자 브로드캐스트용 이벤트가 발행된다
+            then(eventPublisher).should().publishEvent(any(GameCourtsManagedEvent.class));
+        }
+
+        @Test
+        @DisplayName("같은 courtId가 중복되면 command 생성 단계에서 DUPLICATE_COURT_ID 예외")
+        void manageCourts_duplicateCourtId() {
+            assertThatThrownBy(() -> new GameCourtManageCommand(BOARD_ID, List.of(
+                    new CourtCommand(10L, "코트A"),
+                    new CourtCommand(10L, "코트B")
+            )))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.DUPLICATE_COURT_ID);
         }
 
         @Test

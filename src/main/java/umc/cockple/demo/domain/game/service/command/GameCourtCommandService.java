@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.game.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -9,6 +10,7 @@ import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.events.GameCourtsManagedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
@@ -36,6 +38,7 @@ public class GameCourtCommandService {
     private final GameBoardReader gameBoardReader;
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 코트 관리
@@ -60,6 +63,10 @@ public class GameCourtCommandService {
         List<Court> finalCourts = upsertCourtsInOrder(gameBoard, requestedCourts, existingCourtsById);
 
         log.info("게임 코트 관리 완료 - gameBoardId: {}, 코트 수: {}", gameBoard.getId(), finalCourts.size());
+
+        // 커밋 후 같은 게임판 구독자에게 보드 갱신을 브로드캐스트하도록 이벤트 발행
+        eventPublisher.publishEvent(new GameCourtsManagedEvent(gameBoard.getId(), memberId));
+
         return toResult(gameBoard.getId(), finalCourts);
     }
 
