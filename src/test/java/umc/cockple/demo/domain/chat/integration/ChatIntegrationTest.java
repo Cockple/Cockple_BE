@@ -1404,6 +1404,21 @@ class ChatIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("GET /api/chats/parties/{partyId} - 모임 채팅방 ID 조회")
+    class GetPartyChatRoomId {
+
+        @Test
+        @DisplayName("200 - 모임 회원은 연결된 채팅방 ID를 조회한다")
+        void success_getPartyChatRoomId() throws Exception {
+            SecurityContextHelper.setAuthentication(member.getId(), member.getNickname());
+
+            mockMvc.perform(get("/api/chats/parties/{partyId}", party.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.roomId").value(partyChatRoom.getId()));
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/chats/files/{fileId}/download-token - 파일 다운로드 토큰 발급")
     class IssueDownloadToken {
 

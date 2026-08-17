@@ -11,10 +11,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import umc.cockple.demo.domain.chat.dto.ChatDownloadTokenDTO;
 import umc.cockple.demo.domain.chat.dto.ChatFileDownloadDTO;
 import umc.cockple.demo.domain.chat.dto.ChatMessageDTO;
 import umc.cockple.demo.domain.chat.dto.ChatRoomDetailDTO;
 import umc.cockple.demo.domain.chat.dto.ChatUnreadStatusDTO;
+import umc.cockple.demo.domain.chat.dto.DirectChatRoomCreateDTO;
 import umc.cockple.demo.domain.chat.dto.DirectChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomIdDTO;
@@ -119,6 +121,22 @@ class ChatControllerTest {
     }
 
     @Test
+    @DisplayName("개인 채팅방 생성을 command service에 위임한다")
+    void createDirectChatRoom_delegatesToCommandService() {
+        Long targetMemberId = 20L;
+        DirectChatRoomCreateDTO.Response expected = DirectChatRoomCreateDTO.Response.builder()
+                .chatRoomId(100L)
+                .members(Collections.emptyList())
+                .build();
+        given(directChatRoomCommandService.createDirectChatRoom(MEMBER_ID, targetMemberId)).willReturn(expected);
+
+        BaseResponse<DirectChatRoomCreateDTO.Response> response = chatController.createDirectChatRoom(targetMemberId);
+
+        assertThat(response.getData()).isSameAs(expected);
+        verify(directChatRoomCommandService).createDirectChatRoom(MEMBER_ID, targetMemberId);
+    }
+
+    @Test
     @DisplayName("개인 채팅방 목록 조회를 query service에 위임한다")
     void getDirectChatRooms_delegatesToQueryService() {
         DirectChatRoomDTO.Response expected = DirectChatRoomDTO.Response.builder()
@@ -194,6 +212,22 @@ class ChatControllerTest {
 
         assertThat(response.getData()).isSameAs(expected);
         verify(partyChatRoomIdQueryService).getChatRoomId(partyId, MEMBER_ID);
+    }
+
+    @Test
+    @DisplayName("채팅 파일 다운로드 토큰 발급을 file service에 위임한다")
+    void issueDownloadToken_delegatesToFileService() {
+        Long fileId = 1L;
+        ChatDownloadTokenDTO.Response expected = ChatDownloadTokenDTO.Response.builder()
+                .downloadToken("token")
+                .expiresIn(300)
+                .build();
+        given(chatFileService.issueDownloadToken(fileId, MEMBER_ID)).willReturn(expected);
+
+        BaseResponse<ChatDownloadTokenDTO.Response> response = chatController.issueDownloadToken(fileId);
+
+        assertThat(response.getData()).isSameAs(expected);
+        verify(chatFileService).issueDownloadToken(fileId, MEMBER_ID);
     }
 
     @Test
