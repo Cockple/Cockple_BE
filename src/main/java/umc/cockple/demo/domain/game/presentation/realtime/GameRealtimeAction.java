@@ -7,4 +7,5 @@ public enum GameRealtimeAction {
     START_GAME,   // 게임 시작 (대기 게임을 코트에 배치)
     CREATE_GAME,  // 게임 대기 생성 (선택 멤버로 대기 게임 생성)
     COMPLETE_GAME, // 게임 완료 (진행 게임을 완료 처리, 코트 비움)
+    DELETE_GAME,  // 게임 취소/대기 삭제 (restore=true면 복원용 플레이어 반환)
 }

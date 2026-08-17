@@ -19,7 +19,9 @@ import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.global.enums.Gender;
@@ -103,6 +105,35 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         // 참여 멤버 전원의 게임횟수가 1 증가
         memberIds.forEach(memberId -> assertThat(
                 gameBoardMemberRepository.findById(memberId).orElseThrow().getGameCount()).isEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("대기 삭제(#6): 대기 게임을 삭제하면 남은 대기열 순서가 재정렬되고 restore 플레이어를 반환한다")
+    void deleteWaitingGame_resequencesAndRestores() {
+        // --- setup: 게임판 + 대기 게임 2개 ---
+        GameBoard board = gameBoardRepository.save(GameBoard.create());
+        List<Long> members1 = saveMembers(board, "김A", "김B");
+        List<Long> members2 = saveMembers(board, "김C", "김D");
+
+        Long game1 = gameCommandService.createGame(ACTOR, new GameCreateCommand(board.getId(), members1)); // 대기 1번
+        Long game2 = gameCommandService.createGame(ACTOR, new GameCreateCommand(board.getId(), members2)); // 대기 2번
+
+        // --- #6 대기 1번(game1) 삭제 + 복원 ---
+        GameDeleteResult result = gameCommandService.deleteGame(
+                ACTOR, new GameDeleteCommand(board.getId(), game1, true));
+
+        assertThat(result.gameId()).isEqualTo(game1);
+        assertThat(result.players())
+                .extracting(GameDeleteResult.PlayerView::gameBoardMemberId)
+                .containsExactly(members1.get(0), members1.get(1));
+
+        // game1 삭제됨, game2가 대기 1번으로 재정렬
+        assertThat(gameRepository.findById(game1)).isEmpty();
+        GameBoardResult afterDelete = gameBoardQueryService.getBoard(ACTOR, board.getId());
+        assertThat(afterDelete.waitings())
+                .extracting(GameBoardResult.WaitingView::gameId)
+                .containsExactly(game2);
+        assertThat(afterDelete.waitings().get(0).waitingOrder()).isEqualTo(1);
     }
 
     private List<Long> saveMembers(GameBoard board, String... names) {

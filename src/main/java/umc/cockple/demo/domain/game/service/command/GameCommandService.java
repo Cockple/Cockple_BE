@@ -17,7 +17,9 @@ import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
 import java.time.LocalDateTime;
@@ -97,7 +99,7 @@ public class GameCommandService {
     }
 
     /**
-     * 게임 완료 (#5)
+     * 게임 완료
      *
      * @param memberId 요청자
      * @return 완료된 게임 ID
@@ -123,7 +125,52 @@ public class GameCommandService {
     }
 
     /**
-     * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다. (빈 순서 제거)
+     * 게임 취소/대기 삭제
+     *
+     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @return 삭제된 게임 ID + (restore 시) 플레이어 목록
+     */
+    public GameDeleteResult deleteGame(Long memberId, GameDeleteCommand command) {
+        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+
+        Game game = gameRepository.findById(command.gameId())
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
+        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
+            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
+        }
+        if (game.getStatus() == GameStatus.COMPLETED) {
+            throw new GameException(GameErrorCode.GAME_ALREADY_COMPLETED);
+        }
+
+        boolean wasWaiting = game.getStatus() == GameStatus.WAITING;
+        Long deletedGameId = game.getId();
+        List<GameDeleteResult.PlayerView> restorePlayers = command.restore()
+                ? capturePlayers(game)
+                : List.of();
+
+        gameRepository.delete(game);
+        if (wasWaiting) {
+            resequenceWaitingQueue(gameBoard.getId());
+        }
+
+        log.info("게임 삭제 - gameBoardId: {}, gameId: {}, wasWaiting: {}, restore: {}",
+                gameBoard.getId(), deletedGameId, wasWaiting, command.restore());
+        return new GameDeleteResult(deletedGameId, restorePlayers);
+    }
+
+    private List<GameDeleteResult.PlayerView> capturePlayers(Game game) {
+        return game.getPlayers().stream()
+                .sorted(java.util.Comparator.comparingInt(GamePlayer::getPlayerOrder))
+                .map(player -> new GameDeleteResult.PlayerView(
+                        player.getGameBoardMember().getId(),
+                        player.getGameBoardMember().getName(),
+                        player.getGameBoardMember().getLevel(),
+                        player.getPlayerOrder()))
+                .toList();
+    }
+
+    /**
+     * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다
      */
     private void resequenceWaitingQueue(Long gameBoardId) {
         List<Game> waitingGames = gameRepository

@@ -22,7 +22,9 @@ import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameCommandService")
@@ -322,6 +325,105 @@ class GameCommandServiceTest {
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.GAME_NOT_PLAYING);
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteGame (#6 게임 취소/대기 삭제)")
+    class DeleteGame {
+
+        @Test
+        @DisplayName("대기 게임을 삭제하면 삭제 후 남은 대기열 순서를 재정렬한다")
+        void deleteGame_waitingResequences() {
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
+            Game remaining = GameFixture.waitingGame(51L, board, 2);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of(remaining));
+
+            GameDeleteResult result = gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false));
+
+            assertThat(result.gameId()).isEqualTo(GAME_ID);
+            then(gameRepository).should().delete(waiting);
+            assertThat(remaining.getWaitingOrder()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("진행 게임을 취소하면 삭제만 하고 대기열 재정렬은 하지 않는다")
+        void deleteGame_playingNoResequence() {
+            Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now());
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
+
+            gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false));
+
+            then(gameRepository).should().delete(playing);
+            then(gameRepository).should(never())
+                    .findByGameBoardIdAndStatusOrderByWaitingOrderAsc(any(), any());
+        }
+
+        @Test
+        @DisplayName("restore=true면 삭제된 게임의 플레이어를 playerOrder 순서로 반환한다")
+        void deleteGame_restoreReturnsPlayers() {
+            GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
+            GameBoardMember m8 = GameFixture.member(8L, board, "선수8", Level.SEMI_EXPERT);
+            // 입력 순서를 뒤집어 정렬 검증
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1,
+                    GameFixture.player(m8, 1), GameFixture.player(m7, 0));
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of());
+
+            GameDeleteResult result = gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, true));
+
+            assertThat(result.players())
+                    .extracting(GameDeleteResult.PlayerView::gameBoardMemberId, GameDeleteResult.PlayerView::playerOrder)
+                    .containsExactly(tuple(7L, 0), tuple(8L, 1));
+            assertThat(result.players().get(0).name()).isEqualTo("선수7");
+            assertThat(result.players().get(0).level()).isEqualTo(Level.A);
+        }
+
+        @Test
+        @DisplayName("restore=false면 플레이어 목록은 비어 있다")
+        void deleteGame_noRestoreEmptyPlayers() {
+            GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, GameFixture.player(m7, 0));
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of());
+
+            GameDeleteResult result = gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false));
+
+            assertThat(result.players()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
+        void deleteGame_gameNotFound() {
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("이미 완료된 게임은 GAME_ALREADY_COMPLETED 예외")
+        void deleteGame_alreadyCompleted() {
+            Game completed = Game.builder()
+                    .id(GAME_ID).gameBoard(board).status(GameStatus.COMPLETED).build();
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(completed));
+
+            assertThatThrownBy(() -> gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_ALREADY_COMPLETED);
         }
     }
 }

@@ -16,7 +16,9 @@ import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
@@ -26,6 +28,7 @@ import umc.cockple.demo.global.realtime.routing.RealtimeRequestContext;
 import umc.cockple.demo.global.realtime.routing.RealtimeResponder;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -84,6 +87,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case START_GAME -> handleStartGame(context, gamePayload, responder);
                 case CREATE_GAME -> handleCreateGame(context, gamePayload, responder);
                 case COMPLETE_GAME -> handleCompleteGame(context, gamePayload, responder);
+                case DELETE_GAME -> handleDeleteGame(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -157,6 +161,31 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
     }
 
+    private void handleDeleteGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+        requireGameId(payload);
+        boolean restore = Boolean.TRUE.equals(payload.restore());
+
+        GameDeleteCommand command = new GameDeleteCommand(gameBoardId, payload.gameId(), restore);
+        GameDeleteResult result = gameCommandService.deleteGame(context.memberId(), command);
+
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        responder.send(GameRealtimeProtocol.TYPE_GAME_DELETED,
+                new GameDeletedAck(result.gameId(), toDeletedPlayers(result.players()), boardDto));
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
+    private List<DeletedPlayer> toDeletedPlayers(List<GameDeleteResult.PlayerView> players) {
+        return players.stream()
+                .map(player -> new DeletedPlayer(
+                        player.gameBoardMemberId(),
+                        player.name(),
+                        player.level().getKoreanName(),
+                        player.playerOrder()))
+                .toList();
+    }
+
     private void respondAndBroadcastBoard(
             RealtimeRequestContext context, Long gameBoardId, RealtimeResponder responder) {
         GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
@@ -220,5 +249,11 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private record GameCompletedAck(Long completedGameId, GameBoardDTO.Response board) {
+    }
+
+    private record GameDeletedAck(Long gameId, List<DeletedPlayer> players, GameBoardDTO.Response board) {
+    }
+
+    private record DeletedPlayer(Long gameBoardMemberId, String name, String level, int playerOrder) {
     }
 }
