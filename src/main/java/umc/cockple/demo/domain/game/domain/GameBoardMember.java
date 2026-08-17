@@ -10,6 +10,8 @@ import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(uniqueConstraints = {
         @UniqueConstraint(
@@ -76,6 +78,32 @@ public class GameBoardMember extends BaseEntity {
                 .build();
     }
 
+    public static GameBoardMember createFromMember(Member member, LocalDate exerciseDate) {
+        return GameBoardMember.builder()
+                .member(member)
+                .name(member.getMemberName())
+                .gender(member.getGender())
+                .level(member.getLevel())
+                .ageGroup(AgeGroup.fromBirthDate(member.getBirth(), exerciseDate))
+                .shuttlecockSubmitted(false)
+                .participating(true)
+                .gameCount(0)
+                .build();
+    }
+
+    public static GameBoardMember createFromGuest(Guest guest) {
+        return GameBoardMember.builder()
+                .guest(guest)
+                .name(guest.getGuestName())
+                .gender(guest.getGender())
+                .level(guest.getLevel())
+                .ageGroup(null)
+                .shuttlecockSubmitted(false)
+                .participating(true)
+                .gameCount(0)
+                .build();
+    }
+
     public void increaseGameCount() {
         this.gameCount++;
     }
@@ -83,6 +111,26 @@ public class GameBoardMember extends BaseEntity {
     @AssertTrue(message = "게임판 명단은 회원과 게스트를 동시에 참조할 수 없습니다.")
     private boolean isSourceReferenceValid() {
         return member == null || guest == null;
+    }
+
+    boolean originatesFrom(Member sourceMember) {
+        return sameEntity(member, sourceMember);
+    }
+
+    boolean originatesFrom(Guest sourceGuest) {
+        return sameEntity(guest, sourceGuest);
+    }
+
+    private boolean sameEntity(Member source, Member target) {
+        return source == target
+                || source != null && target != null
+                && source.getId() != null && source.getId().equals(target.getId());
+    }
+
+    private boolean sameEntity(Guest source, Guest target) {
+        return source == target
+                || source != null && target != null
+                && source.getId() != null && source.getId().equals(target.getId());
     }
 
     /**

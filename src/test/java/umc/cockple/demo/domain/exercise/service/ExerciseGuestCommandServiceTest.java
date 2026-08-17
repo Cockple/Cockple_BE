@@ -12,6 +12,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
@@ -114,6 +115,15 @@ class ExerciseGuestCommandServiceTest {
 
             assertThat(result.guestId()).isEqualTo(200L);
             assertThat(result.currentParticipants()).isNotNull();
+            assertThat(exercise.getGameBoard().getGameBoardMembers())
+                    .singleElement()
+                    .satisfies(gameBoardMember -> {
+                        assertThat(gameBoardMember.getGuest().getId()).isEqualTo(200L);
+                        assertThat(gameBoardMember.getName()).isEqualTo(command.guestName());
+                        assertThat(gameBoardMember.getGender()).isEqualTo(command.gender());
+                        assertThat(gameBoardMember.getLevel()).isEqualTo(command.level());
+                        assertThat(gameBoardMember.getAgeGroup()).isNull();
+                    });
         }
 
         @Test
@@ -205,6 +215,7 @@ class ExerciseGuestCommandServiceTest {
         @DisplayName("초대자가 본인 게스트를 취소하면 Response를 반환한다")
         void cancelGuestInvitation_success() {
             Guest guest = createGuest(exercise, manager.getId(), 60L);
+            exercise.getGameBoard().addGameBoardMember(GameBoardMember.createFromGuest(guest));
             given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
 
             ExerciseCancelResult result = exerciseGuestCommandService
@@ -213,6 +224,7 @@ class ExerciseGuestCommandServiceTest {
             assertThat(result.memberName()).isEqualTo("게스트");
             assertThat(result.currentParticipants()).isNotNull();
             then(guestRepository).should().delete(guest);
+            assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
         }
 
         @Test

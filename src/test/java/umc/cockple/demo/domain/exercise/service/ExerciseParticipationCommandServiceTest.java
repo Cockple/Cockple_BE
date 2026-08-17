@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
@@ -142,6 +143,14 @@ class ExerciseParticipationCommandServiceTest {
                 assertThat(savedParticipation.getExercise()).isSameAs(exercise);
                 assertThat(savedParticipation.getExerciseMemberShipStatus())
                         .isEqualTo(ExerciseMemberShipStatus.PARTY_MEMBER);
+                assertThat(exercise.getGameBoard().getGameBoardMembers())
+                        .singleElement()
+                        .satisfies(gameBoardMember -> {
+                            assertThat(gameBoardMember.getMember()).isSameAs(participant);
+                            assertThat(gameBoardMember.getName()).isEqualTo(participant.getMemberName());
+                            assertThat(gameBoardMember.getGender()).isEqualTo(participant.getGender());
+                            assertThat(gameBoardMember.getLevel()).isEqualTo(participant.getLevel());
+                        });
             }
 
             @Test
@@ -282,6 +291,8 @@ class ExerciseParticipationCommandServiceTest {
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                exercise.getGameBoard().addGameBoardMember(
+                        GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
@@ -295,6 +306,7 @@ class ExerciseParticipationCommandServiceTest {
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
                 assertThat(response.currentParticipants()).isNotNull();
                 then(memberExerciseRepository).should().delete(memberExercise);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
         }
 
@@ -363,6 +375,8 @@ class ExerciseParticipationCommandServiceTest {
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                exercise.getGameBoard().addGameBoardMember(
+                        GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
@@ -377,6 +391,7 @@ class ExerciseParticipationCommandServiceTest {
                 // then
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
                 then(memberExerciseRepository).should().delete(memberExercise);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
 
             @Test
@@ -418,6 +433,7 @@ class ExerciseParticipationCommandServiceTest {
                 // given
                 Guest guest = GuestFixture.createGuest(exercise, manager.getId());
                 ReflectionTestUtils.setField(guest, "id", 60L);
+                exercise.getGameBoard().addGameBoardMember(GameBoardMember.createFromGuest(guest));
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(true);
 
@@ -430,6 +446,7 @@ class ExerciseParticipationCommandServiceTest {
                 // then
                 assertThat(response.memberName()).isEqualTo("게스트");
                 then(guestRepository).should().delete(guest);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
         }
 

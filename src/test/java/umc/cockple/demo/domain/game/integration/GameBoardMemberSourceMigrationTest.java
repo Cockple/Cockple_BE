@@ -25,7 +25,7 @@ class GameBoardMemberSourceMigrationTest {
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
 
     @Test
-    @DisplayName("회원·게스트 원본 연결의 무결성과 회원 삭제 시 스냅샷 보존을 보장한다")
+    @DisplayName("원본 연결의 무결성과 회원 스냅샷 보존·게스트 명단 정리를 보장한다")
     void addGameBoardMemberSources() throws Exception {
         flyway().migrate();
 
@@ -60,9 +60,13 @@ class GameBoardMemberSourceMigrationTest {
                     """.formatted(firstBoardId)))
                     .isEqualTo("회원 스냅샷");
 
-            assertThatThrownBy(() -> statement.executeUpdate(
-                    "DELETE FROM guest WHERE id = " + guestId))
-                    .isInstanceOf(SQLException.class);
+            statement.executeUpdate("DELETE FROM guest WHERE id = " + guestId);
+
+            assertThat(queryLong(statement, """
+                    SELECT COUNT(*) FROM game_board_member
+                    WHERE name = '게스트 스냅샷'
+                    """))
+                    .isZero();
         }
     }
 
