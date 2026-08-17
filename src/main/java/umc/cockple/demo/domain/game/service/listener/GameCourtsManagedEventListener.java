@@ -35,7 +35,8 @@ public class GameCourtsManagedEventListener {
         try {
             GameBoardResult board = gameBoardQueryService.getBoard(event.actorMemberId(), event.gameBoardId());
             GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
-            gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), boardDto, event.actorMemberId());
+            // REST 요청에는 제외할 WebSocket 세션이 없으므로 구독 세션 전체에 브로드캐스트한다.
+            gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), boardDto, null);
         } catch (Exception e) {
             // 브로드캐스트 실패가 이미 커밋된 코트 관리를 되돌리지 않도록 여기서 흡수한다.
             log.error("코트 관리 브로드캐스트 실패 - gameBoardId: {}", event.gameBoardId(), e);

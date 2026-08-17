@@ -92,20 +92,21 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     private void handleSubscribe(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
-        gameBoardSubscriptionService.subscribe(gameBoardId, context.memberId());
+        gameBoardSubscriptionService.subscribe(gameBoardId, context.memberId(), context.sessionId());
         responder.send(GameRealtimeProtocol.TYPE_SUBSCRIBED, new SubscriptionAck(gameBoardId));
     }
 
     private void handleUnsubscribe(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
-        gameBoardSubscriptionService.unsubscribe(gameBoardId, context.memberId());
+        gameBoardSubscriptionService.unsubscribe(gameBoardId, context.memberId(), context.sessionId());
         responder.send(GameRealtimeProtocol.TYPE_UNSUBSCRIBED, new SubscriptionAck(gameBoardId));
     }
 
     private void handleMoveCourt(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
+        requireMoveCourtPayload(payload);
 
         GameCourtMoveCommand command = new GameCourtMoveCommand(
                 gameBoardId, payload.courtId(), payload.targetCourtNo());
@@ -117,6 +118,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     private void handleStartGame(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
+        requireStartGamePayload(payload);
 
         GameStartCommand command = new GameStartCommand(
                 gameBoardId, payload.gameId(), payload.courtId());
@@ -131,7 +133,8 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.memberId());
+        // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외한다.
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {
@@ -139,6 +142,20 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
             throw new GameException(GameErrorCode.GAME_BOARD_ID_REQUIRED);
         }
         return payload.gameBoardId();
+    }
+
+    private void requireMoveCourtPayload(GameRealtimePayload payload) {
+        // MOVE_COURT: 원본 코트 ID와 목적지 코트 번호가 모두 필요하다.
+        if (payload.courtId() == null || payload.targetCourtNo() == null) {
+            throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
+        }
+    }
+
+    private void requireStartGamePayload(GameRealtimePayload payload) {
+        // START_GAME: 시작할 대기 게임 ID와 목적지 코트 ID가 모두 필요하다.
+        if (payload.gameId() == null || payload.courtId() == null) {
+            throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
+        }
     }
 
     private GameRealtimeAction findAction(String action) {

@@ -17,12 +17,12 @@ public class GameBoardSubscriptionService {
     private final GameBoardReader gameBoardReader;
     private final GameBoardSubscriptionStore subscriptionStore;
 
-    public void subscribe(Long gameBoardId, Long memberId) {
+    public void subscribe(Long gameBoardId, Long memberId, String sessionId) {
         gameBoardReader.read(gameBoardId); // 존재 검증 (없으면 GAME_BOARD_NOT_FOUND)
-        subscriptionStore.addSubscriber(gameBoardId, memberId);
+        subscriptionStore.addSubscriber(gameBoardId, memberId, sessionId);
     }
 
-    public void unsubscribe(Long gameBoardId, Long memberId) {
-        subscriptionStore.removeSubscriber(gameBoardId, memberId);
+    public void unsubscribe(Long gameBoardId, Long memberId, String sessionId) {
+        subscriptionStore.removeSubscriber(gameBoardId, memberId, sessionId);
     }
 }
