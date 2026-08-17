@@ -21,13 +21,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("게임판 명단 원본 연결 마이그레이션")
 class GameBoardMemberSourceMigrationTest {
 
+    private static final String NULLABLE_GAME_BOARD_SCHEMA_VERSION = "2026.08.17.14.30";
+
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
 
     @Test
     @DisplayName("원본 연결의 무결성과 회원 스냅샷 보존·게스트 명단 정리를 보장한다")
     void addGameBoardMemberSources() throws Exception {
-        flyway().migrate();
+        migrateToNullableGameBoardSchema();
 
         try (Connection connection = mysql.createConnection("");
              Statement statement = connection.createStatement()) {
@@ -41,11 +43,21 @@ class GameBoardMemberSourceMigrationTest {
             insertMemberSource(statement, secondBoardId, memberId, "다른 게임판 회원 스냅샷");
             insertGuestSource(statement, firstBoardId, guestId, "게스트 스냅샷");
 
+            migrateToLatestSchema();
+
             assertThatThrownBy(() ->
                     insertMemberSource(statement, firstBoardId, memberId, "중복 회원"))
                     .isInstanceOf(SQLException.class);
             assertThatThrownBy(() ->
                     insertGuestSource(statement, firstBoardId, guestId, "중복 게스트"))
+                    .isInstanceOf(SQLException.class);
+            assertThatThrownBy(() -> insertRosterWithoutGameBoard(statement))
+                    .isInstanceOf(SQLException.class);
+            assertThatThrownBy(() -> statement.executeUpdate("""
+                    UPDATE game_board_member
+                    SET game_board_id = NULL
+                    WHERE name = '회원 스냅샷'
+                    """))
                     .isInstanceOf(SQLException.class);
             statement.executeUpdate("DELETE FROM member WHERE id = " + memberId);
 
@@ -70,11 +82,18 @@ class GameBoardMemberSourceMigrationTest {
         }
     }
 
-    private Flyway flyway() {
+    private void migrateToNullableGameBoardSchema() {
+        flyway().target(NULLABLE_GAME_BOARD_SCHEMA_VERSION).load().migrate();
+    }
+
+    private void migrateToLatestSchema() {
+        flyway().load().migrate();
+    }
+
+    private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {
         return Flyway.configure()
                 .dataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword())
-                .locations("classpath:db/migration")
-                .load();
+                .locations("classpath:db/migration");
     }
 
     private long insertGameBoard(Statement statement) throws SQLException {
@@ -126,6 +145,15 @@ class GameBoardMemberSourceMigrationTest {
                     age_group, shuttlecock_submitted, participating, game_count
                 ) VALUES (%d, %d, '%s', 'FEMALE', 'B', NULL, 0, 1, 0)
                 """.formatted(gameBoardId, guestId, name));
+    }
+
+    private void insertRosterWithoutGameBoard(Statement statement) throws SQLException {
+        statement.executeUpdate("""
+                INSERT INTO game_board_member (
+                    name, gender, level,
+                    shuttlecock_submitted, participating, game_count
+                ) VALUES ('게임판 없는 명단', 'MALE', 'A', 0, 1, 0)
+                """);
     }
 
     private long generatedId(Statement statement) throws SQLException {

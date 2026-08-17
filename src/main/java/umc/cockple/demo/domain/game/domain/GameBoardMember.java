@@ -31,8 +31,8 @@ public class GameBoardMember extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JoinColumn(name = "game_board_id")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "game_board_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private GameBoard gameBoard;
 
     @JoinColumn(name = "member_id")
@@ -108,6 +108,10 @@ public class GameBoardMember extends BaseEntity {
         this.gameCount++;
     }
 
+    /**
+     * member FK의 ON DELETE SET NULL과 guest FK의 ON DELETE CASCADE 때문에
+     * MySQL CHECK 제약으로 같은 규칙을 중복 선언할 수 없어 애플리케이션 경계에서 검증한다.
+     */
     @AssertTrue(message = "게임판 명단은 회원과 게스트를 동시에 참조할 수 없습니다.")
     private boolean isSourceReferenceValid() {
         return member == null || guest == null;
