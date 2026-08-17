@@ -5,10 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.hibernate.exception.ConstraintViolationException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
@@ -46,6 +48,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.sql.SQLException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -126,7 +129,7 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 50L);
@@ -138,7 +141,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().save(participationCaptor.capture());
+                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
 
                 MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(50L);
@@ -173,7 +176,7 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(outsideMember.getId())).willReturn(outsideMember);
                 given(memberExerciseRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
-                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 51L);
@@ -186,7 +189,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().save(participationCaptor.capture());
+                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
 
                 MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(51L);
@@ -201,6 +204,48 @@ class ExerciseParticipationCommandServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
+
+            @Test
+            @DisplayName("동시 참가로 유니크 제약이 충돌하면 이미 참여한 운동 오류로 변환한다")
+            void duplicateConstraint_throwsAlreadyJoinedExercise() {
+                Member participant = MemberFixture.createMember(
+                        "참여자", Gender.MALE, Level.B, 2001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                        .willThrow(uniqueConflict("uk_member_exercise_exercise_member"));
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .joinExercise(exercise.getId(), participant.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                                .isEqualTo(ExerciseErrorCode.ALREADY_JOINED_EXERCISE));
+
+                then(eventPublisher).should(never())
+                        .publishEvent(any(ExerciseAttendanceChangedEvent.class));
+            }
+
+            @Test
+            @DisplayName("참가 중복과 무관한 무결성 위반은 원래 예외를 전파한다")
+            void otherConstraint_rethrowsOriginalException() {
+                Member participant = MemberFixture.createMember(
+                        "참여자", Gender.MALE, Level.B, 2001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(participant, "id", 2L);
+                DataIntegrityViolationException conflict = uniqueConflict("other_constraint");
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                        .willThrow(conflict);
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .joinExercise(exercise.getId(), participant.getId()))
+                        .isSameAs(conflict);
+            }
 
             @Test
             @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_PARTICIPATION)을 던진다")
@@ -581,7 +626,7 @@ class ExerciseParticipationCommandServiceTest {
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
             given(memberExerciseRepository.existsByExerciseAndMember(exercise, normalMember)).willReturn(false);
             given(memberPartyRepository.existsByPartyAndMember(party, normalMember)).willReturn(true);
-            given(memberExerciseRepository.save(any(MemberExercise.class)))
+            given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                     .willAnswer(invocation -> {
                         MemberExercise me = invocation.getArgument(0);
                         ReflectionTestUtils.setField(me, "id", 50L);
@@ -668,5 +713,13 @@ class ExerciseParticipationCommandServiceTest {
             then(eventPublisher).should().publishEvent(captor.capture());
             return captor.getValue();
         }
+    }
+
+    private DataIntegrityViolationException uniqueConflict(String constraintName) {
+        ConstraintViolationException constraintViolation = new ConstraintViolationException(
+                "could not execute statement",
+                new SQLException("Duplicate entry", "23000", 1062),
+                constraintName);
+        return new DataIntegrityViolationException("duplicate", constraintViolation);
     }
 }
