@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("게임판 명단 백필 마이그레이션")
 class GameBoardMemberBackfillMigrationTest {
 
-    private static final String ROSTER_SOURCE_SCHEMA_VERSION = "2026.08.17.14.20";
+    private static final String ROSTER_SOURCE_SCHEMA_VERSION = "2026.08.17.14.10";
 
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");

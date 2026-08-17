@@ -21,15 +21,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("게임판 명단 원본 연결 마이그레이션")
 class GameBoardMemberSourceMigrationTest {
 
-    private static final String NULLABLE_GAME_BOARD_SCHEMA_VERSION = "2026.08.17.14.30";
-
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
 
     @Test
     @DisplayName("원본 연결의 무결성과 회원 스냅샷 보존·게스트 명단 정리를 보장한다")
     void addGameBoardMemberSources() throws Exception {
-        migrateToNullableGameBoardSchema();
+        migrateToLatestSchema();
 
         try (Connection connection = mysql.createConnection("");
              Statement statement = connection.createStatement()) {
@@ -42,8 +40,6 @@ class GameBoardMemberSourceMigrationTest {
             insertMemberSource(statement, firstBoardId, memberId, "회원 스냅샷");
             insertMemberSource(statement, secondBoardId, memberId, "다른 게임판 회원 스냅샷");
             insertGuestSource(statement, firstBoardId, guestId, "게스트 스냅샷");
-
-            migrateToLatestSchema();
 
             assertThatThrownBy(() ->
                     insertMemberSource(statement, firstBoardId, memberId, "중복 회원"))
@@ -80,10 +76,6 @@ class GameBoardMemberSourceMigrationTest {
                     """))
                     .isZero();
         }
-    }
-
-    private void migrateToNullableGameBoardSchema() {
-        flyway().target(NULLABLE_GAME_BOARD_SCHEMA_VERSION).load().migrate();
     }
 
     private void migrateToLatestSchema() {
