@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.presentation.dto.lifecycle.ExerciseCreateDTO;
@@ -121,15 +122,25 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("201 - 모임장이 운동을 생성하면 exerciseId를 반환한다")
+            @DisplayName("201 - 모임장이 운동을 생성하면 게임판이 함께 생성된다")
             void owner_createExercise() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                mockMvc.perform(post("/api/parties/{partyId}/exercises", party.getId())
+                MvcResult mvcResult = mockMvc.perform(post("/api/parties/{partyId}/exercises", party.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.data.exerciseId").isNumber());
+                        .andExpect(jsonPath("$.data.exerciseId").isNumber())
+                        .andReturn();
+
+                long exerciseId = objectMapper.readTree(mvcResult.getResponse().getContentAsString())
+                        .path("data")
+                        .path("exerciseId")
+                        .asLong();
+                Exercise createdExercise = exerciseRepository.findById(exerciseId).orElseThrow();
+
+                assertThat(createdExercise.getGameBoard()).isNotNull();
+                assertThat(createdExercise.getGameBoard().getId()).isNotNull();
             }
 
             @Test

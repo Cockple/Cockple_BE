@@ -2,6 +2,7 @@ package umc.cockple.demo.support.fixture;
 
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
+import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.party.domain.Party;
 
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class ExerciseFixture {
                 .outsideGuestAccept(outsideGuestAccept)
                 .exerciseAddr(exerciseAddr)
                 .notice(notice)
+                .gameBoard(GameBoard.create())
                 .build();
     }
 
