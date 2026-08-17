@@ -10,12 +10,15 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameCompletedGameResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +55,12 @@ public class GameCompletedGameQueryService {
         boolean hasNext = pagedIds.size() > size;
         List<Long> resultIds = hasNext ? pagedIds.subList(0, size) : pagedIds;
 
-        // 2단계: 코트/플레이어/멤버 fetch 후 페이징 순서(완료 시각 오름차순) 복원
+        // 완료 게임이 없으면 빈 IN 절(id in ()) fetch를 생략하고 조기 반환
+        if (resultIds.isEmpty()) {
+            return new GameCompletedGameResult(List.of(), null, false);
+        }
+
+        // 2단계: 플레이어/멤버 fetch 후 페이징 순서(완료 시각 오름차순) 복원
         Map<Long, Game> gamesById = gameRepository.findByIdInWithPlayers(resultIds).stream()
                 .collect(Collectors.toMap(Game::getId, Function.identity()));
         List<GameCompletedGameResult.CompletedGameView> views = resultIds.stream()
@@ -73,10 +81,18 @@ public class GameCompletedGameQueryService {
         if (!StringUtils.hasText(cursor)) {
             return new Cursor(null, null);
         }
+        // 조작된 커서(구분자 없음/날짜·id 파싱 실패)는 500이 아닌 400으로 감싼다.
         int separatorIndex = cursor.lastIndexOf('_');
-        LocalDateTime completedAt = LocalDateTime.parse(cursor.substring(0, separatorIndex));
-        Long gameId = Long.parseLong(cursor.substring(separatorIndex + 1));
-        return new Cursor(completedAt, gameId);
+        if (separatorIndex <= 0 || separatorIndex == cursor.length() - 1) {
+            throw new GameException(GameErrorCode.INVALID_CURSOR);
+        }
+        try {
+            LocalDateTime completedAt = LocalDateTime.parse(cursor.substring(0, separatorIndex));
+            Long gameId = Long.parseLong(cursor.substring(separatorIndex + 1));
+            return new Cursor(completedAt, gameId);
+        } catch (DateTimeParseException | NumberFormatException e) {
+            throw new GameException(GameErrorCode.INVALID_CURSOR);
+        }
     }
 
     private String toCursor(Game game) {

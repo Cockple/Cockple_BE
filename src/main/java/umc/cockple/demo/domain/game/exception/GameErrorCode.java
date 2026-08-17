@@ -28,6 +28,7 @@ public enum GameErrorCode implements BaseErrorCode {
     INVALID_GAME_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "GAME407", "게임 인원은 1명 이상 4명 이하여야 합니다."),
     DUPLICATE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME408", "같은 플레이어를 중복으로 넣을 수 없습니다."),
     GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME410", "이미 완료된 게임은 취소할 수 없습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME411", "커서 형식이 올바르지 않습니다."),
 
     ;
 

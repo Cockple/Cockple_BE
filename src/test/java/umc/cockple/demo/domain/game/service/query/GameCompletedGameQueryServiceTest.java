@@ -13,6 +13,8 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameCompletedGameResult;
 import umc.cockple.demo.domain.game.service.query.result.GameCompletedGameResult.CompletedGameView;
@@ -25,11 +27,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameCompletedGameQueryService")
@@ -122,11 +127,45 @@ class GameCompletedGameQueryServiceTest {
         given(gameRepository.findCompletedGameIds(
                 eq(BOARD_ID), eq(GameStatus.COMPLETED), eq(3), eq(cursorTime), eq(100L), any(Pageable.class)))
                 .willReturn(List.of());
-        given(gameRepository.findByIdInWithPlayers(List.of())).willReturn(List.of());
 
         gameCompletedGameQueryService.getCompletedGames(MEMBER_ID, BOARD_ID, 3, cursor, 20);
 
         then(gameRepository).should().findCompletedGameIds(
                 eq(BOARD_ID), eq(GameStatus.COMPLETED), eq(3), eq(cursorTime), eq(100L), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("완료 게임이 없으면 빈 IN 절 fetch를 건너뛰고 빈 결과를 반환한다")
+    void getCompletedGames_emptyResultSkipsFetch() {
+        given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+        given(gameRepository.findCompletedGameIds(
+                eq(BOARD_ID), eq(GameStatus.COMPLETED), isNull(), isNull(), isNull(), any(Pageable.class)))
+                .willReturn(List.of());
+
+        GameCompletedGameResult result = gameCompletedGameQueryService
+                .getCompletedGames(MEMBER_ID, BOARD_ID, null, null, 2);
+
+        assertThat(result.games()).isEmpty();
+        assertThat(result.nextCursor()).isNull();
+        assertThat(result.hasNext()).isFalse();
+        then(gameRepository).should(never()).findByIdInWithPlayers(anyCollection());
+    }
+
+    @Test
+    @DisplayName("잘못된 커서는 INVALID_CURSOR(400)로 감싸고 조회를 시도하지 않는다")
+    void getCompletedGames_invalidCursor() {
+        given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+
+        // 구분자 없음 / 날짜 포맷 깨짐 / id 비숫자
+        List<String> brokenCursors = List.of("no-separator", "not-a-date_100", "2026-08-17T22:30:00_abc");
+        for (String cursor : brokenCursors) {
+            assertThatThrownBy(() -> gameCompletedGameQueryService
+                    .getCompletedGames(MEMBER_ID, BOARD_ID, null, cursor, 20))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INVALID_CURSOR);
+        }
+        then(gameRepository).should(never()).findCompletedGameIds(
+                any(), any(), any(), any(), any(), any(Pageable.class));
     }
 }
