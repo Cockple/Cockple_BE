@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,11 @@ public class MemberPartyLookupService {
 
     public boolean hasRole(Long partyId, Long memberId, Role role) {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(partyId, memberId, role);
+    }
+
+    public boolean hasAnyActiveRole(Long partyId, Long memberId, Collection<Role> roles) {
+        return memberPartyRepository.existsByPartyIdAndMemberIdAndStatusAndRoleIn(
+                partyId, memberId, MemberPartyStatus.ACTIVE, roles);
     }
 
     public List<Long> findPartyIdsByMemberId(Long memberId) {

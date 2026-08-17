@@ -92,7 +92,7 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
                 normalMember, Role.PARTY_MEMBER, MemberPartyStatus.ACTIVE,
                 LocalDateTime.of(2026, 1, 1, 10, 0)));
         memberPartyRepository.save(memberParty(
-                bannedMember, Role.PARTY_MEMBER, MemberPartyStatus.BANNED,
+                bannedMember, Role.PARTY_SUBMANAGER, MemberPartyStatus.BANNED,
                 LocalDateTime.of(2025, 12, 31, 10, 0)));
 
         exercise = ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2099, 12, 31));
@@ -176,6 +176,17 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("403 - BANNED 부모임장은 게임 진행자 후보를 조회할 수 없다")
+        void bannedSubManagerCannotGetGameHostCandidates() throws Exception {
+            SecurityContextHelper.setAuthentication(bannedMember.getId(), bannedMember.getNickname());
+
+            mockMvc.perform(get("/api/exercises/{exerciseId}/game-host", exercise.getId()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code")
+                            .value(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED.getCode()));
+        }
+
+        @Test
         @DisplayName("404 - 존재하지 않는 운동은 조회할 수 없다")
         void exerciseNotFound() throws Exception {
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
@@ -246,6 +257,24 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
         @DisplayName("403 - 일반 멤버는 게임 진행자를 변경할 수 없다")
         void normalMemberCannotChangeGameHost() throws Exception {
             SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(manager.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code")
+                            .value(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED.getCode()));
+
+            assertThat(exerciseRepository.findById(exercise.getId()).orElseThrow().getGameHostId())
+                    .isEqualTo(normalMember.getId());
+        }
+
+        @Test
+        @DisplayName("403 - BANNED 부모임장은 게임 진행자를 변경할 수 없다")
+        void bannedSubManagerCannotChangeGameHost() throws Exception {
+            SecurityContextHelper.setAuthentication(bannedMember.getId(), bannedMember.getNickname());
             ExerciseGameHostDTO.ChangeRequest request =
                     new ExerciseGameHostDTO.ChangeRequest(manager.getId());
 

@@ -13,12 +13,19 @@ import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> {
 
     boolean existsByPartyIdAndMemberIdAndRole(Long partyId, Long memberId, Role role);
+
+    boolean existsByPartyIdAndMemberIdAndStatusAndRoleIn(
+            Long partyId,
+            Long memberId,
+            MemberPartyStatus status,
+            Collection<Role> roles);
 
     boolean existsByPartyAndMember(Party party, Member member);
 

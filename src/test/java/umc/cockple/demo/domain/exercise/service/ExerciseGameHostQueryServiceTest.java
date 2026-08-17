@@ -42,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -105,6 +106,7 @@ class ExerciseGameHostQueryServiceTest {
             ReflectionTestUtils.setField(exercise, "gameHostId", earlierMember.getId());
 
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
             given(memberPartyRepository.findAllByPartyIdAndStatusWithMemberAndProfile(
                     party.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(List.of(
@@ -147,10 +149,7 @@ class ExerciseGameHostQueryServiceTest {
             Member subManager = member(2L, "부모임장", "부모임장", Gender.FEMALE, Level.B);
 
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                    party.getId(), subManager.getId(), Role.PARTY_MANAGER)).willReturn(false);
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                    party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER)).willReturn(true);
+            givenManagementPermission(subManager);
             given(memberPartyRepository.findAllByPartyIdAndStatusWithMemberAndProfile(
                     party.getId(), MemberPartyStatus.ACTIVE)).willReturn(List.of());
 
@@ -210,5 +209,15 @@ class ExerciseGameHostQueryServiceTest {
                 .joinedAt(joinedAt)
                 .status(MemberPartyStatus.ACTIVE)
                 .build();
+    }
+
+    private void givenManagementPermission(Member member) {
+        given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatusAndRoleIn(
+                eq(party.getId()),
+                eq(member.getId()),
+                eq(MemberPartyStatus.ACTIVE),
+                argThat(roles -> roles.contains(Role.PARTY_MANAGER)
+                        && roles.contains(Role.PARTY_SUBMANAGER))))
+                .willReturn(true);
     }
 }

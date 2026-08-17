@@ -35,6 +35,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,6 +85,7 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("모임장은 활성 일반 멤버를 게임 진행자로 변경할 수 있다")
         void managerChangesGameHostToActiveMember() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
             given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
                     party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(Optional.of(activeMembership(normalMember)));
@@ -101,10 +104,7 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("부모임장도 게임 진행자를 변경할 수 있다")
         void subManagerChangesGameHost() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                    party.getId(), subManager.getId(), Role.PARTY_MANAGER)).willReturn(false);
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
-                    party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER)).willReturn(true);
+            givenManagementPermission(subManager);
             given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
                     party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(Optional.of(activeMembership(normalMember)));
@@ -122,6 +122,7 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("현재 게임 진행자를 다시 지정해도 성공한다")
         void sameGameHostSucceeds() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
             given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
                     party.getId(), manager.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(Optional.of(activeMembership(manager)));
@@ -158,6 +159,7 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("비활성 모임원은 게임 진행자로 지정할 수 없다")
         void inactivePartyMemberCannotBecomeGameHost() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
             given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
                     party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(Optional.empty());
@@ -196,5 +198,15 @@ class ExerciseGameHostCommandServiceTest {
 
     private MemberParty activeMembership(Member member) {
         return MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
+    }
+
+    private void givenManagementPermission(Member member) {
+        given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatusAndRoleIn(
+                eq(party.getId()),
+                eq(member.getId()),
+                eq(MemberPartyStatus.ACTIVE),
+                argThat(roles -> roles.contains(Role.PARTY_MANAGER)
+                        && roles.contains(Role.PARTY_SUBMANAGER))))
+                .willReturn(true);
     }
 }
