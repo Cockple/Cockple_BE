@@ -14,6 +14,8 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
     Optional<Game> findByCourtIdAndStatus(Long courtId, GameStatus status);
 
+    boolean existsByCourtIdInAndStatus(Collection<Long> courtIds, GameStatus status);
+
     List<Game> findByGameBoardIdAndStatusOrderByWaitingOrderAsc(Long gameBoardId, GameStatus status);
 
     @Query("select distinct g from Game g " +

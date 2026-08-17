@@ -13,7 +13,14 @@ public record GameCourtManageCommand(
         List<CourtCommand> courts
 ) {
     public GameCourtManageCommand {
+        validateGameBoardId(gameBoardId);
         validateNoDuplicateCourtIds(courts);
+    }
+
+    private static void validateGameBoardId(Long gameBoardId) {
+        if (gameBoardId == null) {
+            throw new GameException(GameErrorCode.GAME_BOARD_ID_REQUIRED);
+        }
     }
 
     /**

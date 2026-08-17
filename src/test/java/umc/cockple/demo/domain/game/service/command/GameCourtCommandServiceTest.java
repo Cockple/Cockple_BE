@@ -23,6 +23,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand
 import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand.CourtCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult;
+import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +44,7 @@ import static org.mockito.Mockito.times;
 class GameCourtCommandServiceTest {
 
     @Mock private GameBoardReader gameBoardReader;
+    @Mock private CourtReader courtReader;
     @Mock private CourtRepository courtRepository;
     @Mock private GameRepository gameRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -68,7 +71,7 @@ class GameCourtCommandServiceTest {
             Court kept = GameFixture.court(10L, board, 1, "기존코트");
             Court removed = GameFixture.court(11L, board, 2, "삭제될코트");
             given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-            given(courtRepository.findByGameBoardId(BOARD_ID)).willReturn(List.of(kept, removed));
+            given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of(kept, removed));
             given(courtRepository.save(any(Court.class))).willAnswer(inv -> inv.getArgument(0));
 
             GameCourtManageCommand command = new GameCourtManageCommand(BOARD_ID, List.of(
@@ -120,7 +123,7 @@ class GameCourtCommandServiceTest {
         void manageCourts_defaultCourtName() {
             // given
             given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-            given(courtRepository.findByGameBoardId(BOARD_ID)).willReturn(List.of());
+            given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of());
             given(courtRepository.save(any(Court.class))).willAnswer(inv -> inv.getArgument(0));
 
             GameCourtManageCommand command = new GameCourtManageCommand(BOARD_ID, List.of(
@@ -140,21 +143,42 @@ class GameCourtCommandServiceTest {
         }
 
         @Test
-        @DisplayName("gameBoardId가 null이면 GAME_BOARD_ID_REQUIRED 예외")
+        @DisplayName("gameBoardId가 null이면 command 생성 단계에서 GAME_BOARD_ID_REQUIRED 예외")
         void manageCourts_nullBoardId() {
-            GameCourtManageCommand command = new GameCourtManageCommand(null, List.of());
-
-            assertThatThrownBy(() -> gameCourtCommandService.manageCourts(MEMBER_ID, command))
+            assertThatThrownBy(() -> new GameCourtManageCommand(null, List.of()))
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.GAME_BOARD_ID_REQUIRED);
         }
 
         @Test
+        @DisplayName("삭제 대상 코트에 진행 중인 게임이 있으면 COURT_HAS_ACTIVE_GAME 예외")
+        void manageCourts_deleteCourtWithActiveGame() {
+            // given - 목록에서 빠져 삭제 대상이 되는 코트(11L)에 PLAYING 게임이 있음
+            Court kept = GameFixture.court(10L, board, 1, "유지코트");
+            Court removed = GameFixture.court(11L, board, 2, "진행중코트");
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of(kept, removed));
+            given(gameRepository.existsByCourtIdInAndStatus(List.of(11L), GameStatus.PLAYING))
+                    .willReturn(true);
+
+            GameCourtManageCommand command = new GameCourtManageCommand(BOARD_ID, List.of(
+                    new CourtCommand(10L, "유지코트")
+            ));
+
+            // when & then
+            assertThatThrownBy(() -> gameCourtCommandService.manageCourts(MEMBER_ID, command))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.COURT_HAS_ACTIVE_GAME);
+            then(courtRepository).should(never()).deleteAll(any());
+        }
+
+        @Test
         @DisplayName("요청 courtId가 해당 게임판에 없으면 COURT_NOT_FOUND 예외")
         void manageCourts_foreignCourtId() {
             given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-            given(courtRepository.findByGameBoardId(BOARD_ID))
+            given(courtReader.readAllByGameBoard(BOARD_ID))
                     .willReturn(List.of(GameFixture.court(10L, board, 1, "코트")));
 
             GameCourtManageCommand command = new GameCourtManageCommand(BOARD_ID, List.of(

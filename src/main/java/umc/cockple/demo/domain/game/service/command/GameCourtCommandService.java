@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtManageCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult;
+import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class GameCourtCommandService {
 
     private final GameBoardReader gameBoardReader;
+    private final CourtReader courtReader;
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -47,14 +49,10 @@ public class GameCourtCommandService {
      * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
      */
     public GameCourtManageResult manageCourts(Long memberId, GameCourtManageCommand command) {
-        if (command.gameBoardId() == null) {
-            throw new GameException(GameErrorCode.GAME_BOARD_ID_REQUIRED);
-        }
-
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
         List<GameCourtManageCommand.CourtCommand> requestedCourts = command.courts();
 
-        Map<Long, Court> existingCourtsById = courtRepository.findByGameBoardId(gameBoard.getId()).stream()
+        Map<Long, Court> existingCourtsById = courtReader.readAllByGameBoard(gameBoard.getId()).stream()
                 .collect(Collectors.toMap(Court::getId, Function.identity()));
 
         validateRequestedCourtsBelongToBoard(requestedCourts, existingCourtsById);
@@ -126,8 +124,24 @@ public class GameCourtCommandService {
         List<Court> removedCourts = existingCourtsById.values().stream()
                 .filter(court -> !keepCourtIds.contains(court.getId()))
                 .toList();
-        if (!removedCourts.isEmpty()) {
-            courtRepository.deleteAll(removedCourts);
+        if (removedCourts.isEmpty()) {
+            return;
+        }
+
+        validateNoActiveGameOnCourts(removedCourts);
+        courtRepository.deleteAll(removedCourts);
+    }
+
+    /**
+     * 진행 중(PLAYING)인 게임이 배정된 코트는 삭제할 수 없다.
+     * 삭제하면 코트 위에서 진행되던 게임이 유실되므로 사전에 차단한다.
+     */
+    private void validateNoActiveGameOnCourts(List<Court> removedCourts) {
+        List<Long> removedCourtIds = removedCourts.stream()
+                .map(Court::getId)
+                .toList();
+        if (gameRepository.existsByCourtIdInAndStatus(removedCourtIds, GameStatus.PLAYING)) {
+            throw new GameException(GameErrorCode.COURT_HAS_ACTIVE_GAME);
         }
     }
 
