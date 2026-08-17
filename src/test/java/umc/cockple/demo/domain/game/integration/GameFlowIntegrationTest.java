@@ -16,11 +16,11 @@ import umc.cockple.demo.domain.game.repository.GameBoardRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
-import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
@@ -50,8 +50,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
     private static final Long ACTOR = 999L;
 
     @Test
-    @DisplayName("대기 생성(#8) → 게임 시작(#4) → 보드 조회(#2) → 코트 이동(#3) → 게임 완료(#5)가 실제 DB에서 연결된다")
-    void gameFlow_createStartViewMoveComplete() {
+    @DisplayName("대기 생성(#8) → 게임 시작(#4) → 보드 조회(#2) → 코트 이동(#3)이 실제 DB에서 연결된다")
+    void gameFlow_createStartViewMove() {
         // --- setup: 게임판 + 코트 2개 + 명단 4명 ---
         GameBoard board = gameBoardRepository.save(GameBoard.create());
         Court court1 = courtRepository.save(Court.create(board, 1, "1번 코트"));
@@ -93,18 +93,6 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         GameBoardResult.CourtView movedCourt = courtOf(afterMove, court2.getId());
         assertThat(movedCourt.status()).isEqualTo(CourtStatus.PLAYING);
         assertThat(movedCourt.game().gameId()).isEqualTo(gameId);
-
-        // --- #5 게임 완료: 2번 코트의 게임 완료 ---
-        Long completedGameId = gameCommandService.completeGame(ACTOR, new GameCompleteCommand(board.getId(), gameId));
-        assertThat(completedGameId).isEqualTo(gameId);
-
-        GameBoardResult afterComplete = gameBoardQueryService.getBoard(ACTOR, board.getId());
-        assertThat(afterComplete.courts())
-                .allSatisfy(court -> assertThat(court.status()).isEqualTo(CourtStatus.EMPTY));
-        assertThat(afterComplete.waitings()).isEmpty();
-        // 참여 멤버 전원의 게임횟수가 1 증가
-        memberIds.forEach(memberId -> assertThat(
-                gameBoardMemberRepository.findById(memberId).orElseThrow().getGameCount()).isEqualTo(1));
     }
 
     @Test
@@ -134,6 +122,47 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
                 .extracting(GameBoardResult.WaitingView::gameId)
                 .containsExactly(game2);
         assertThat(afterDelete.waitings().get(0).waitingOrder()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("대기열 이동(#7): 진행 게임을 완료 처리하고 같은 팀으로 새 대기 게임을 맨 앞에 만든다 (완료 흡수)")
+    void moveToWaiting_completesAndRequeuesSameTeamAtFront() {
+        // --- setup: 게임판 + 코트 1개 + 대기 게임 B, 진행 게임 A ---
+        GameBoard board = gameBoardRepository.save(GameBoard.create());
+        Court court1 = courtRepository.save(Court.create(board, 1, "1번 코트"));
+        List<Long> membersB = saveMembers(board, "김B1", "김B2");
+        List<Long> membersA = saveMembers(board, "김A1", "김A2");
+
+        Long gameB = gameCommandService.createGame(ACTOR, new GameCreateCommand(board.getId(), membersB)); // 대기 1번
+        Long gameA = gameCommandService.createGame(ACTOR, new GameCreateCommand(board.getId(), membersA)); // 대기 2번
+        gameCommandService.startGame(ACTOR, new GameStartCommand(board.getId(), gameA, court1.getId()));   // A 진행 (B는 대기 1번)
+
+        // --- #7 대기열 이동: A 완료 + 같은 팀 새 대기 게임 ---
+        gameCommandService.moveGameToWaiting(ACTOR, new GameToWaitingCommand(board.getId(), gameA));
+
+        // 원 게임 A는 완료 처리됨
+        assertThat(gameRepository.findById(gameA).orElseThrow().getStatus()).isEqualTo(GameStatus.COMPLETED);
+
+        GameBoardResult result = gameBoardQueryService.getBoard(ACTOR, board.getId());
+        // 코트 비워짐
+        assertThat(courtOf(result, court1.getId()).status()).isEqualTo(CourtStatus.EMPTY);
+        // 대기열: 맨 앞 = A팀 새 게임(gameA 아님), 2번 = B
+        assertThat(result.waitings()).hasSize(2);
+        GameBoardResult.WaitingView front = result.waitings().get(0);
+        assertThat(front.waitingOrder()).isEqualTo(1);
+        assertThat(front.gameId()).isNotEqualTo(gameA); // 완료된 원 게임이 아니라 새로 만든 게임
+        assertThat(front.players())
+                .extracting(GameBoardResult.PlayerView::gameBoardMemberId)
+                .containsExactlyElementsOf(membersA);
+        GameBoardResult.WaitingView second = result.waitings().get(1);
+        assertThat(second.gameId()).isEqualTo(gameB);
+        assertThat(second.waitingOrder()).isEqualTo(2);
+
+        // A 참여 멤버 게임횟수 +1 (완료), B는 아직 0
+        membersA.forEach(memberId -> assertThat(
+                gameBoardMemberRepository.findById(memberId).orElseThrow().getGameCount()).isEqualTo(1));
+        membersB.forEach(memberId -> assertThat(
+                gameBoardMemberRepository.findById(memberId).orElseThrow().getGameCount()).isZero());
     }
 
     private List<Long> saveMembers(GameBoard board, String... names) {

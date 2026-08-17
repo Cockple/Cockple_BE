@@ -13,11 +13,11 @@ import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
-import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
@@ -86,8 +86,8 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case MOVE_COURT -> handleMoveCourt(context, gamePayload, responder);
                 case START_GAME -> handleStartGame(context, gamePayload, responder);
                 case CREATE_GAME -> handleCreateGame(context, gamePayload, responder);
-                case COMPLETE_GAME -> handleCompleteGame(context, gamePayload, responder);
                 case DELETE_GAME -> handleDeleteGame(context, gamePayload, responder);
+                case MOVE_TO_WAITING -> handleMoveToWaiting(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -148,17 +148,15 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
     }
 
-    private void handleCompleteGame(
+    private void handleMoveToWaiting(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
         requireGameId(payload);
 
-        GameCompleteCommand command = new GameCompleteCommand(gameBoardId, payload.gameId());
-        Long completedGameId = gameCommandService.completeGame(context.memberId(), command);
+        GameToWaitingCommand command = new GameToWaitingCommand(gameBoardId, payload.gameId());
+        gameCommandService.moveGameToWaiting(context.memberId(), command);
 
-        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
-        responder.send(GameRealtimeProtocol.TYPE_GAME_COMPLETED, new GameCompletedAck(completedGameId, boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+        respondAndBroadcastBoard(context, gameBoardId, responder);
     }
 
     private void handleDeleteGame(
@@ -222,7 +220,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private void requireGameId(GameRealtimePayload payload) {
-        // COMPLETE_GAME: 완료할 게임 ID가 필요하다.
+        // MOVE_TO_WAITING: 대상 게임 ID가 필요하다.
         if (payload.gameId() == null) {
             throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
         }
@@ -246,9 +244,6 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private record GameCreatedAck(Long gameId, GameBoardDTO.Response board) {
-    }
-
-    private record GameCompletedAck(Long completedGameId, GameBoardDTO.Response board) {
     }
 
     private record GameDeletedAck(Long gameId, List<DeletedPlayer> players, GameBoardDTO.Response board) {

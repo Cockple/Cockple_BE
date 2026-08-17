@@ -15,10 +15,10 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
-import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
@@ -98,30 +98,9 @@ public class GameCommandService {
                 gameBoard.getId(), game.getId(), court.getId());
     }
 
-    /**
-     * 게임 완료
-     *
-     * @param memberId 요청자
-     * @return 완료된 게임 ID
-     */
-    public Long completeGame(Long memberId, GameCompleteCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
-
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
-        }
-
+    private void completeInternal(Game game) {
         game.complete(LocalDateTime.now());
         game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
-
-        log.info("게임 완료 - gameBoardId: {}, gameId: {}, 인원: {}",
-                gameBoard.getId(), game.getId(), game.getPlayers().size());
-        return game.getId();
     }
 
     /**
@@ -156,6 +135,45 @@ public class GameCommandService {
         log.info("게임 삭제 - gameBoardId: {}, gameId: {}, wasWaiting: {}, restore: {}",
                 gameBoard.getId(), deletedGameId, wasWaiting, command.restore());
         return new GameDeleteResult(deletedGameId, restorePlayers);
+    }
+
+    /**
+     * 대기열 이동
+     *
+     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     */
+    public void moveGameToWaiting(Long memberId, GameToWaitingCommand command) {
+        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+
+        Game game = gameRepository.findById(command.gameId())
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
+        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
+            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
+        }
+        if (game.getStatus() != GameStatus.PLAYING) {
+            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
+        }
+
+        // 같은 팀으로 새 대기 게임을 만들기 위해 멤버를 순서대로 확보한다.
+        List<GameBoardMember> members = game.getPlayers().stream()
+                .sorted(java.util.Comparator.comparingInt(GamePlayer::getPlayerOrder))
+                .map(GamePlayer::getGameBoardMember)
+                .toList();
+
+        // 현재 게임을 완료 처리 (COMPLETED + 게임횟수 +1)
+        completeInternal(game);
+
+        // 같은 팀으로 대기열 맨 앞에 새 게임 생성 (임시순서 0 → 재정렬로 1번)
+        Game requeuedGame = Game.createWaiting(gameBoard, 0);
+        int playerOrder = 0;
+        for (GameBoardMember member : members) {
+            requeuedGame.addPlayer(GamePlayer.create(member, playerOrder++));
+        }
+        gameRepository.save(requeuedGame);
+        resequenceWaitingQueue(gameBoard.getId());
+
+        log.info("대기열 이동(완료+재대기) - gameBoardId: {}, completedGameId: {}, requeuedGameId: {}, 인원: {}",
+                gameBoard.getId(), game.getId(), requeuedGame.getId(), members.size());
     }
 
     private List<GameDeleteResult.PlayerView> capturePlayers(Game game) {

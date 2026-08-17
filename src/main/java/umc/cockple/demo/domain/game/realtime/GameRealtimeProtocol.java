@@ -13,7 +13,6 @@ public final class GameRealtimeProtocol {
     public static final String TYPE_UNSUBSCRIBED = "UNSUBSCRIBED";
     public static final String TYPE_BOARD_UPDATED = "BOARD_UPDATED";
     public static final String TYPE_GAME_CREATED = "GAME_CREATED";
-    public static final String TYPE_GAME_COMPLETED = "GAME_COMPLETED";
     public static final String TYPE_GAME_DELETED = "GAME_DELETED";
 
     private GameRealtimeProtocol() {
