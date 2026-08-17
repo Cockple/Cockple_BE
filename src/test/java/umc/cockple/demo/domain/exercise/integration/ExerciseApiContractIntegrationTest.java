@@ -97,6 +97,7 @@ class ExerciseApiContractIntegrationTest extends IntegrationTestBase {
         endpoints.put("/api/parties/{partyId}/exercises/calender", List.of("get"));
         endpoints.put("/api/exercises/{exerciseId}", List.of("get", "patch", "delete"));
         endpoints.put("/api/exercises/{exerciseId}/for-edit", List.of("get"));
+        endpoints.put("/api/exercises/{exerciseId}/game-host", List.of("get"));
         endpoints.put("/api/exercises/{exerciseId}/participants", List.of("post"));
         endpoints.put("/api/exercises/{exerciseId}/participants/my", List.of("delete"));
         endpoints.put("/api/exercises/{exerciseId}/participants/{participantId}", List.of("delete"));

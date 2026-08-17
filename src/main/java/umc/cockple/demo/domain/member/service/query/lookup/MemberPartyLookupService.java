@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
@@ -34,6 +35,11 @@ public class MemberPartyLookupService {
 
     public List<Long> findPartyIdsByMemberId(Long memberId) {
         return memberPartyRepository.findPartyIdsByMemberId(memberId);
+    }
+
+    public List<MemberParty> findActiveMembersWithProfile(Long partyId) {
+        return memberPartyRepository.findAllByPartyIdAndStatusWithMemberAndProfile(
+                partyId, MemberPartyStatus.ACTIVE);
     }
 
     public Map<Long, Role> findMemberRolesByPartyAndMembers(Long partyId, List<Long> memberIds) {

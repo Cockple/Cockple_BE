@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Role;
 
@@ -55,6 +56,17 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
        WHERE mp.party.id = :partyId
        """)
     List<MemberParty> findAllByPartyIdWithMember(@Param("partyId") Long partyId);
+
+    @Query("""
+            SELECT mp FROM MemberParty mp
+            JOIN FETCH mp.member m
+            LEFT JOIN FETCH m.profileImg
+            WHERE mp.party.id = :partyId
+            AND mp.status = :status
+            """)
+    List<MemberParty> findAllByPartyIdAndStatusWithMemberAndProfile(
+            @Param("partyId") Long partyId,
+            @Param("status") MemberPartyStatus status);
 
     Optional<MemberParty> findByPartyIdAndRole(Long partyId, Role role);
 

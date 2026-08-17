@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,21 @@ public class MemberExerciseReader {
 
     public List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
         return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId);
+    }
+
+    public Map<Long, LocalDate> findLastExerciseDates(
+            List<Long> memberIds, Long partyId) {
+        if (memberIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return memberExerciseRepository
+                .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (LocalDate) row[1]
+                ));
     }
 
     public Map<Long, Boolean> getParticipatingStatus(Long memberId, List<Long> exerciseIds) {
