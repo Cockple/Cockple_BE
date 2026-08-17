@@ -96,13 +96,6 @@ public class ExerciseValidator {
         }
     }
 
-    public void validateGameHostCandidate(Exercise exercise, Long participantId) {
-        if (!memberPartyLookupService.isActivePartyMember(
-                exercise.getParty().getId(), participantId)) {
-            throw new ExerciseException(ExerciseErrorCode.INVALID_GAME_HOST_CANDIDATE);
-        }
-    }
-
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {

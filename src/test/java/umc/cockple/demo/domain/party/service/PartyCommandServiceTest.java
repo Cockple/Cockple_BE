@@ -113,7 +113,8 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberPartyRepository.findByPartyAndMember(party, member)).willReturn(Optional.of(memberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, memberId))
+                    .willReturn(Optional.of(memberParty));
 
             // when
             partyCommandService.leaveParty(partyId, memberId);
@@ -226,7 +227,8 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberPartyRepository.findByPartyAndMember(party, member)).willReturn(Optional.empty());
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, memberId))
+                    .willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.leaveParty(partyId, memberId))
@@ -1028,7 +1030,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.of(targetMemberParty));
 
             // when
             partyCommandService.removeMember(partyId, targetMemberId, ownerId);
@@ -1062,7 +1065,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, subManager)).willReturn(Optional.of(subManagerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.of(targetMemberParty));
 
             // when
             partyCommandService.removeMember(partyId, targetMemberId, subManagerId);
@@ -1096,7 +1100,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
             given(memberRepository.findById(targetOwnerId)).willReturn(Optional.of(owner));
             given(memberPartyRepository.findByPartyAndMember(party, subManager)).willReturn(Optional.of(subManagerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetOwnerId))
+                    .willReturn(Optional.of(ownerParty));
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -1122,6 +1127,8 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, ownerId))
+                    .willReturn(Optional.of(ownerParty));
             given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
 
             // when & then
@@ -1152,7 +1159,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
 
             // 타겟 멤버가 모임 소속이 아님 -> findMemberPartyOrThrow 에서 NOT_MEMBER 발생
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.empty());
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.empty());
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,

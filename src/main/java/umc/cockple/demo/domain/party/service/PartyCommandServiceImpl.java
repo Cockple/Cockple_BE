@@ -142,7 +142,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         //부모임장인 경우, 탈퇴가 불가능하도록 검증
         validateIsNotSubOwner(party, memberId);
         //해당 모임의 멤버인지 검증 및 조회
-        MemberParty memberParty = findMemberPartyOrThrow(party, member);
+        MemberParty memberParty = findMemberPartyForUpdateOrThrow(party, member);
 
         //모임 탈퇴 로직 수행
         memberPartyRepository.delete(memberParty);
@@ -160,7 +160,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         Party party = findPartyOrThrow(partyId);
         Member remover = findMemberOrThrow(currentMemberId); //삭제를 요청한 사용자
         Member memberToRemove = findMemberOrThrow(memberIdToRemove); // 삭제될 사용자
-        MemberParty memberPartyToRemove = findMemberPartyOrThrow(party, memberToRemove);
+        MemberParty memberPartyToRemove = findMemberPartyForUpdateOrThrow(party, memberToRemove);
 
         //모임 활성화 검증
         validatePartyIsActive(party);
@@ -382,6 +382,12 @@ public class PartyCommandServiceImpl implements PartyCommandService {
     //모임 멤버 조회
     private MemberParty findMemberPartyOrThrow(Party party, Member member) {
         return memberPartyRepository.findByPartyAndMember(party, member)
+                .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
+    }
+
+    private MemberParty findMemberPartyForUpdateOrThrow(Party party, Member member) {
+        return memberPartyRepository.findByPartyIdAndMemberIdForUpdate(
+                        party.getId(), member.getId())
                 .orElseThrow(() -> new PartyException(PartyErrorCode.NOT_MEMBER));
     }
 

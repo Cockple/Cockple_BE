@@ -12,6 +12,7 @@ import umc.cockple.demo.global.enums.Role;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,13 +34,14 @@ public class MemberPartyLookupService {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(partyId, memberId, role);
     }
 
-    public boolean isActivePartyMember(Long partyId, Long memberId) {
-        return memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
-                partyId, memberId, MemberPartyStatus.ACTIVE);
-    }
-
     public List<Long> findPartyIdsByMemberId(Long memberId) {
         return memberPartyRepository.findPartyIdsByMemberId(memberId);
+    }
+
+    @Transactional
+    public Optional<MemberParty> findActiveMemberForUpdate(Long partyId, Long memberId) {
+        return memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                partyId, memberId, MemberPartyStatus.ACTIVE);
     }
 
     public List<MemberParty> findActiveMembersWithProfile(Long partyId) {

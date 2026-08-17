@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGameHostCh
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGameHostChangeResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -60,7 +61,8 @@ class ExerciseGameHostCommandServiceTest {
                 new MemberPartyLookupService(memberPartyRepository);
         exerciseGameHostCommandService = new ExerciseGameHostCommandService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository)
+                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
+                memberPartyLookupService
         );
 
         manager = member(1L, "모임장", Gender.MALE, Level.A);
@@ -81,8 +83,9 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("모임장은 활성 일반 멤버를 게임 진행자로 변경할 수 있다")
         void managerChangesGameHostToActiveMember() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
-                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE)).willReturn(true);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.of(activeMembership(normalMember)));
 
             ExerciseGameHostChangeResult result = exerciseGameHostCommandService.changeGameHost(
                     exercise.getId(),
@@ -102,8 +105,9 @@ class ExerciseGameHostCommandServiceTest {
                     party.getId(), subManager.getId(), Role.PARTY_MANAGER)).willReturn(false);
             given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
                     party.getId(), subManager.getId(), Role.PARTY_SUBMANAGER)).willReturn(true);
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
-                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE)).willReturn(true);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.of(activeMembership(normalMember)));
 
             ExerciseGameHostChangeResult result = exerciseGameHostCommandService.changeGameHost(
                     exercise.getId(),
@@ -118,8 +122,9 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("현재 게임 진행자를 다시 지정해도 성공한다")
         void sameGameHostSucceeds() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
-                    party.getId(), manager.getId(), MemberPartyStatus.ACTIVE)).willReturn(true);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), manager.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.of(activeMembership(manager)));
 
             ExerciseGameHostChangeResult result = exerciseGameHostCommandService.changeGameHost(
                     exercise.getId(),
@@ -143,7 +148,7 @@ class ExerciseGameHostCommandServiceTest {
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED));
 
-            verify(memberPartyRepository, never()).existsByPartyIdAndMemberIdAndStatus(
+            verify(memberPartyRepository, never()).findByPartyIdAndMemberIdAndStatusForUpdate(
                     org.mockito.ArgumentMatchers.anyLong(),
                     org.mockito.ArgumentMatchers.anyLong(),
                     org.mockito.ArgumentMatchers.any());
@@ -153,8 +158,9 @@ class ExerciseGameHostCommandServiceTest {
         @DisplayName("비활성 모임원은 게임 진행자로 지정할 수 없다")
         void inactivePartyMemberCannotBecomeGameHost() {
             given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
-            given(memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
-                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE)).willReturn(false);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.empty());
 
             assertThatThrownBy(() -> exerciseGameHostCommandService.changeGameHost(
                     exercise.getId(),
@@ -186,5 +192,9 @@ class ExerciseGameHostCommandServiceTest {
         Member member = MemberFixture.createMember(name, gender, level, 1000L + id);
         ReflectionTestUtils.setField(member, "id", id);
         return member;
+    }
+
+    private MemberParty activeMembership(Member member) {
+        return MemberFixture.createMemberParty(party, member, Role.PARTY_MEMBER);
     }
 }
