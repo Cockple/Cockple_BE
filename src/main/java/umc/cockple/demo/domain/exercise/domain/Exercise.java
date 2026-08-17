@@ -83,7 +83,6 @@ public class Exercise extends BaseEntity {
                 .partyGuestAccept(command.partyGuestAccept())
                 .outsideGuestAccept(command.outsideGuestAccept())
                 .notice(command.notice())
-                .gameBoard(GameBoard.create())
                 .build();
     }
 
