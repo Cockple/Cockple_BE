@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
+import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,12 @@ import java.time.LocalDateTime;
 public class GameBoardRosterCleanupService {
 
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final GamePlayerRepository gamePlayerRepository;
+
+    public boolean hasActiveFutureAssignment(Long memberId, LocalDateTime referenceTime) {
+        return gamePlayerRepository.countActiveFutureAssignmentsByMemberId(
+                memberId, referenceTime.toLocalDate(), referenceTime.toLocalTime()) > 0;
+    }
 
     public int removeFutureMemberRosters(Long memberId, LocalDateTime referenceTime) {
         int removedCount = gameBoardMemberRepository.deleteFutureByMemberId(

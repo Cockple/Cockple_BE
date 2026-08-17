@@ -11,8 +11,18 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.domain.Game;
+import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
+import umc.cockple.demo.domain.game.repository.GameBoardRepository;
+import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.MemberCommandService;
@@ -32,6 +42,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("회원 탈퇴 시 게임판 명단 정리")
 class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase {
@@ -43,6 +54,9 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
     @Autowired PartyRepository partyRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired GameBoardRepository gameBoardRepository;
+    @Autowired GameBoardMemberRepository gameBoardMemberRepository;
+    @Autowired GameRepository gameRepository;
     @Autowired JdbcTemplate jdbcTemplate;
 
     @MockitoBean KakaoOauthService kakaoOauthService;
@@ -75,6 +89,7 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
 
     @AfterEach
     void tearDown() {
+        gameRepository.deleteAll();
         jdbcTemplate.update("DELETE FROM game_board_member");
         memberExerciseRepository.deleteAll();
         exerciseRepository.deleteAll();
@@ -100,6 +115,50 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
         assertThat(countRosters(false)).isEqualTo(1);
         assertThat(memberRepository.findById(member.getId()).orElseThrow().getIsActive())
                 .isEqualTo(MemberStatus.INACTIVE);
+    }
+
+    @Test
+    @DisplayName("미래 게임에 편성된 회원은 탈퇴를 차단하고 참가와 명단을 유지한다")
+    void assignedFuturePlayer_cannotWithdraw() {
+        assignFutureRosterToWaitingGame();
+
+        assertThatThrownBy(() -> memberCommandService.withdrawMember(member.getId()))
+                .isInstanceOf(MemberException.class)
+                .hasFieldOrPropertyWithValue(
+                        "code", MemberErrorCode.ASSIGNED_PLAYER_CANNOT_WITHDRAW);
+
+        assertThat(countMemberExercises(true)).isEqualTo(1);
+        assertThat(countRosters(true)).isEqualTo(1);
+        assertThat(memberRepository.findById(member.getId()).orElseThrow().getIsActive())
+                .isEqualTo(MemberStatus.ACTIVE);
+    }
+
+    private void assignFutureRosterToWaitingGame() {
+        FutureRoster futureRoster = jdbcTemplate.queryForObject("""
+                SELECT game_board_member.id, game_board_member.game_board_id
+                FROM game_board_member
+                INNER JOIN exercise
+                    ON exercise.game_board_id = game_board_member.game_board_id
+                WHERE game_board_member.member_id = ?
+                  AND exercise.date > CURRENT_DATE
+                """, (resultSet, rowNum) -> new FutureRoster(
+                resultSet.getLong("id"),
+                resultSet.getLong("game_board_id")),
+                member.getId());
+
+        GameBoardMember roster = gameBoardMemberRepository
+                .findById(futureRoster.rosterId())
+                .orElseThrow();
+        GameBoard gameBoard = gameBoardRepository
+                .findById(futureRoster.gameBoardId())
+                .orElseThrow();
+        Game waitingGame = Game.builder()
+                .gameBoard(gameBoard)
+                .status(GameStatus.WAITING)
+                .waitingOrder(1)
+                .build();
+        waitingGame.addPlayer(GamePlayer.create(roster, 0));
+        gameRepository.saveAndFlush(waitingGame);
     }
 
     private int countMemberExercises(boolean future) {
@@ -129,5 +188,8 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
                 Integer.class,
                 member.getId());
         return count == null ? 0 : count;
+    }
+
+    private record FutureRoster(Long rosterId, Long gameBoardId) {
     }
 }

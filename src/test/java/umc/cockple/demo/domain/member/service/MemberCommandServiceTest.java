@@ -172,6 +172,28 @@ class MemberCommandServiceTest {
         class Failure {
 
             @Test
+            @DisplayName("미래 게임에 편성된 회원은 탈퇴할 수 없다")
+            void assignedPlayer_cannotWithdraw() {
+                given(memberRepository.findById(normalMember.getId()))
+                        .willReturn(Optional.of(normalMember));
+                given(gameBoardRosterCleanupService.hasActiveFutureAssignment(
+                        eq(normalMember.getId()), any()))
+                        .willReturn(true);
+
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue(
+                                "code", MemberErrorCode.ASSIGNED_PLAYER_CANNOT_WITHDRAW);
+
+                then(gameBoardRosterCleanupService).should(never())
+                        .removeFutureMemberRosters(eq(normalMember.getId()), any());
+                then(memberExerciseRepository).should(never())
+                        .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(kakaoOauthService).should(never()).unlinkAccess(normalMember);
+                assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
+            }
+
+            @Test
             @DisplayName("존재하지_않는_회원이면_MEMBER_NOT_FOUND_예외를_던진다")
             void 존재하지_않는_회원이면_MEMBER_NOT_FOUND_예외를_던진다() {
                 // given

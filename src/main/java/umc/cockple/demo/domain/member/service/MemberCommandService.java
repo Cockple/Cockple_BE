@@ -89,8 +89,12 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 미래 운동과 연결된 게임판 명단을 동일한 기준 시각으로 함께 정리
         LocalDateTime withdrawalTime = LocalDateTime.now();
+        if (gameBoardRosterCleanupService.hasActiveFutureAssignment(member.getId(), withdrawalTime)) {
+            throw new MemberException(MemberErrorCode.ASSIGNED_PLAYER_CANNOT_WITHDRAW);
+        }
+
+        // 참여중인 미래 운동과 연결된 게임판 명단을 동일한 기준 시각으로 함께 정리
         gameBoardRosterCleanupService.removeFutureMemberRosters(member.getId(), withdrawalTime);
         memberExerciseRepository.deleteFutureExercisesByMember(
                 member, withdrawalTime.toLocalDate(), withdrawalTime.toLocalTime());
