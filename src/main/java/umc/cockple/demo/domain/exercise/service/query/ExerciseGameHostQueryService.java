@@ -33,7 +33,7 @@ public class ExerciseGameHostQueryService {
 
     public ExerciseGameHostResult getGameHost(Long exerciseId, Long memberId) {
         Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
-        exerciseValidator.validateExerciseManagementPermission(exercise, memberId);
+        exerciseValidator.validateGameHostManagementPermission(exercise, memberId);
 
         Long partyId = exercise.getParty().getId();
         List<MemberParty> memberParties = memberPartyLookupService

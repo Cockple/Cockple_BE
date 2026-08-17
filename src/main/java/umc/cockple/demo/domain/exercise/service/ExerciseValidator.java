@@ -83,6 +83,26 @@ public class ExerciseValidator {
         validateSubManagerPermission(memberId, exercise.getParty());
     }
 
+    public void validateGameHostManagementPermission(Exercise exercise, Long memberId) {
+        Party party = exercise.getParty();
+        boolean isOwner = party.getOwnerId().equals(memberId);
+        boolean isManager = memberPartyLookupService.hasRole(
+                party.getId(), memberId, Role.PARTY_MANAGER);
+        boolean isSubManager = memberPartyLookupService.hasRole(
+                party.getId(), memberId, Role.PARTY_SUBMANAGER);
+
+        if (!isOwner && !isManager && !isSubManager) {
+            throw new ExerciseException(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED);
+        }
+    }
+
+    public void validateGameHostCandidate(Exercise exercise, Long participantId) {
+        if (!memberPartyLookupService.isActivePartyMember(
+                exercise.getParty().getId(), participantId)) {
+            throw new ExerciseException(ExerciseErrorCode.INVALID_GAME_HOST_CANDIDATE);
+        }
+    }
+
     // ========== 세부 검증 메서드들 ==========
 
     private void validatePartyIsActive(Party party) {

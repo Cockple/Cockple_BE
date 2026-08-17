@@ -19,6 +19,9 @@ public interface MemberPartyRepository extends JpaRepository<MemberParty, Long> 
 
     boolean existsByPartyIdAndMemberIdAndRole(Long partyId, Long memberId, Role role);
 
+    boolean existsByPartyIdAndMemberIdAndStatus(
+            Long partyId, Long memberId, MemberPartyStatus status);
+
     boolean existsByPartyAndMember(Party party, Member member);
 
     boolean existsByPartyIdAndMemberId(Long partyId, Long memberId);

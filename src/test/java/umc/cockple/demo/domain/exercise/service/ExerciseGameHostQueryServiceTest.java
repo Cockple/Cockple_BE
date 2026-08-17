@@ -175,7 +175,7 @@ class ExerciseGameHostQueryServiceTest {
                     .getGameHost(exercise.getId(), normalMember.getId()))
                     .isInstanceOf(ExerciseException.class)
                     .extracting(exception -> ((ExerciseException) exception).getCode())
-                    .isEqualTo(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
+                    .isEqualTo(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED);
 
             verify(memberPartyRepository, never())
                     .findAllByPartyIdAndStatusWithMemberAndProfile(

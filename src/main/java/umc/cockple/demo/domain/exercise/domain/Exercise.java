@@ -123,6 +123,10 @@ public class Exercise extends BaseEntity {
         }
     }
 
+    public void changeGameHost(Long gameHostId) {
+        this.gameHostId = gameHostId;
+    }
+
     public Integer getNowCapacity() {
         return memberExercises.size() + guests.size();
     }

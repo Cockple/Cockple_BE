@@ -33,6 +33,11 @@ public class MemberPartyLookupService {
         return memberPartyRepository.existsByPartyIdAndMemberIdAndRole(partyId, memberId, role);
     }
 
+    public boolean isActivePartyMember(Long partyId, Long memberId) {
+        return memberPartyRepository.existsByPartyIdAndMemberIdAndStatus(
+                partyId, memberId, MemberPartyStatus.ACTIVE);
+    }
+
     public List<Long> findPartyIdsByMemberId(Long memberId) {
         return memberPartyRepository.findPartyIdsByMemberId(memberId);
     }

@@ -1,15 +1,18 @@
 package umc.cockple.demo.domain.exercise.integration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.presentation.dto.gamehost.ExerciseGameHostDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -35,14 +38,17 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
 
     @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
     @Autowired MemberRepository memberRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired PartyAddrRepository partyAddrRepository;
@@ -166,7 +172,7 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/exercises/{exerciseId}/game-host", exercise.getId()))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code")
-                            .value(ExerciseErrorCode.INSUFFICIENT_PERMISSION.getCode()));
+                            .value(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED.getCode()));
         }
 
         @Test
@@ -175,6 +181,124 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
             SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
             mockMvc.perform(get("/api/exercises/{exerciseId}/game-host", 999999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/exercises/{exerciseId}/game-host")
+    class ChangeGameHost {
+
+        @Test
+        @DisplayName("200 - 모임장이 활성 일반 멤버를 게임 진행자로 변경한다")
+        void managerChangesGameHostToNormalMember() throws Exception {
+            ReflectionTestUtils.setField(exercise, "gameHostId", manager.getId());
+            exerciseRepository.save(exercise);
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(normalMember.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()))
+                    .andExpect(jsonPath("$.data.participantId").value(normalMember.getId()));
+
+            assertThat(exerciseRepository.findById(exercise.getId()).orElseThrow().getGameHostId())
+                    .isEqualTo(normalMember.getId());
+        }
+
+        @Test
+        @DisplayName("200 - 부모임장도 게임 진행자를 변경할 수 있다")
+        void subManagerChangesGameHost() throws Exception {
+            SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(manager.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.participantId").value(manager.getId()));
+
+            assertThat(exerciseRepository.findById(exercise.getId()).orElseThrow().getGameHostId())
+                    .isEqualTo(manager.getId());
+        }
+
+        @Test
+        @DisplayName("200 - 현재 게임 진행자를 다시 지정해도 성공한다")
+        void sameGameHostSucceeds() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(normalMember.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.participantId").value(normalMember.getId()));
+        }
+
+        @Test
+        @DisplayName("403 - 일반 멤버는 게임 진행자를 변경할 수 없다")
+        void normalMemberCannotChangeGameHost() throws Exception {
+            SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(manager.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code")
+                            .value(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED.getCode()));
+
+            assertThat(exerciseRepository.findById(exercise.getId()).orElseThrow().getGameHostId())
+                    .isEqualTo(normalMember.getId());
+        }
+
+        @Test
+        @DisplayName("400 - 강퇴된 모임원은 게임 진행자로 지정할 수 없다")
+        void bannedMemberCannotBecomeGameHost() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(bannedMember.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code")
+                            .value(ExerciseErrorCode.INVALID_GAME_HOST_CANDIDATE.getCode()));
+
+            assertThat(exerciseRepository.findById(exercise.getId()).orElseThrow().getGameHostId())
+                    .isEqualTo(normalMember.getId());
+        }
+
+        @Test
+        @DisplayName("400 - participantId가 없으면 요청 검증에 실패한다")
+        void participantIdIsRequired() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", exercise.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("404 - 존재하지 않는 운동은 게임 진행자를 변경할 수 없다")
+        void exerciseNotFound() throws Exception {
+            SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+            ExerciseGameHostDTO.ChangeRequest request =
+                    new ExerciseGameHostDTO.ChangeRequest(normalMember.getId());
+
+            mockMvc.perform(patch("/api/exercises/{exerciseId}/game-host", 999999L)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_NOT_FOUND.getCode()));
         }
