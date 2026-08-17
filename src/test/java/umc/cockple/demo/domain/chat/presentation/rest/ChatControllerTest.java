@@ -20,7 +20,12 @@ import umc.cockple.demo.domain.chat.dto.PartyChatRoomDTO;
 import umc.cockple.demo.domain.chat.dto.PartyChatRoomIdDTO;
 import umc.cockple.demo.domain.chat.service.command.DirectChatRoomCommandService;
 import umc.cockple.demo.domain.chat.service.file.ChatFileService;
-import umc.cockple.demo.domain.chat.service.query.ChatQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatMessageHistoryQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatRoomDetailQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.query.DirectChatRoomQueryService;
+import umc.cockple.demo.domain.chat.service.query.PartyChatRoomIdQueryService;
+import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.support.SecurityContextHelper;
 
@@ -40,7 +45,17 @@ class ChatControllerTest {
     private ChatController chatController;
 
     @Mock
-    private ChatQueryService chatQueryService;
+    private PartyChatRoomQueryService partyChatRoomQueryService;
+    @Mock
+    private DirectChatRoomQueryService directChatRoomQueryService;
+    @Mock
+    private ChatUnreadQueryService chatUnreadQueryService;
+    @Mock
+    private ChatRoomDetailQueryService chatRoomDetailQueryService;
+    @Mock
+    private ChatMessageHistoryQueryService chatMessageHistoryQueryService;
+    @Mock
+    private PartyChatRoomIdQueryService partyChatRoomIdQueryService;
     @Mock
     private DirectChatRoomCommandService directChatRoomCommandService;
     @Mock
@@ -64,12 +79,12 @@ class ChatControllerTest {
                 .hasPartyUnread(true)
                 .hasDirectUnread(false)
                 .build();
-        given(chatQueryService.getUnreadStatus(MEMBER_ID)).willReturn(expected);
+        given(chatUnreadQueryService.getUnreadStatus(MEMBER_ID)).willReturn(expected);
 
         BaseResponse<ChatUnreadStatusDTO.Response> response = chatController.getUnreadStatus();
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getUnreadStatus(MEMBER_ID);
+        verify(chatUnreadQueryService).getUnreadStatus(MEMBER_ID);
     }
 
     @Test
@@ -79,12 +94,12 @@ class ChatControllerTest {
                 .content(Collections.emptyList())
                 .hasNext(false)
                 .build();
-        given(chatQueryService.getPartyChatRooms(MEMBER_ID, 1, 5)).willReturn(expected);
+        given(partyChatRoomQueryService.getPartyChatRooms(MEMBER_ID, 1, 5)).willReturn(expected);
 
         BaseResponse<PartyChatRoomDTO.Response> response = chatController.getPartyChatRooms(1, 5);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getPartyChatRooms(MEMBER_ID, 1, 5);
+        verify(partyChatRoomQueryService).getPartyChatRooms(MEMBER_ID, 1, 5);
     }
 
     @Test
@@ -95,12 +110,12 @@ class ChatControllerTest {
                 .content(Collections.emptyList())
                 .hasNext(false)
                 .build();
-        given(chatQueryService.searchPartyChatRoomsByName(MEMBER_ID, name, 2, 10)).willReturn(expected);
+        given(partyChatRoomQueryService.searchPartyChatRoomsByName(MEMBER_ID, name, 2, 10)).willReturn(expected);
 
         BaseResponse<PartyChatRoomDTO.Response> response = chatController.searchPartyChatRooms(name, 2, 10);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).searchPartyChatRoomsByName(MEMBER_ID, name, 2, 10);
+        verify(partyChatRoomQueryService).searchPartyChatRoomsByName(MEMBER_ID, name, 2, 10);
     }
 
     @Test
@@ -110,12 +125,12 @@ class ChatControllerTest {
                 .content(Collections.emptyList())
                 .hasNext(false)
                 .build();
-        given(chatQueryService.getDirectChatRooms(MEMBER_ID, 1, 5)).willReturn(expected);
+        given(directChatRoomQueryService.getDirectChatRooms(MEMBER_ID, 1, 5)).willReturn(expected);
 
         BaseResponse<DirectChatRoomDTO.Response> response = chatController.getDirectChatRooms(1, 5);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getDirectChatRooms(MEMBER_ID, 1, 5);
+        verify(directChatRoomQueryService).getDirectChatRooms(MEMBER_ID, 1, 5);
     }
 
     @Test
@@ -126,12 +141,12 @@ class ChatControllerTest {
                 .content(Collections.emptyList())
                 .hasNext(false)
                 .build();
-        given(chatQueryService.searchDirectChatRoomsByName(MEMBER_ID, name, 2, 10)).willReturn(expected);
+        given(directChatRoomQueryService.searchDirectChatRoomsByName(MEMBER_ID, name, 2, 10)).willReturn(expected);
 
         BaseResponse<DirectChatRoomDTO.Response> response = chatController.searchDirectChatRooms(name, 2, 10);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).searchDirectChatRoomsByName(MEMBER_ID, name, 2, 10);
+        verify(directChatRoomQueryService).searchDirectChatRoomsByName(MEMBER_ID, name, 2, 10);
     }
 
     @Test
@@ -142,12 +157,12 @@ class ChatControllerTest {
                 .messages(Collections.emptyList())
                 .participants(Collections.emptyList())
                 .build();
-        given(chatQueryService.getChatRoomDetail(roomId, MEMBER_ID)).willReturn(expected);
+        given(chatRoomDetailQueryService.getChatRoomDetail(roomId, MEMBER_ID)).willReturn(expected);
 
         BaseResponse<ChatRoomDetailDTO.Response> response = chatController.getChatRoomDetail(roomId);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getChatRoomDetail(roomId, MEMBER_ID);
+        verify(chatRoomDetailQueryService).getChatRoomDetail(roomId, MEMBER_ID);
     }
 
     @Test
@@ -160,12 +175,12 @@ class ChatControllerTest {
                 .hasNext(false)
                 .totalElements(0)
                 .build();
-        given(chatQueryService.getChatMessages(roomId, MEMBER_ID, cursor, 20)).willReturn(expected);
+        given(chatMessageHistoryQueryService.getChatMessages(roomId, MEMBER_ID, cursor, 20)).willReturn(expected);
 
         BaseResponse<ChatMessageDTO.Response> response = chatController.getChatMessages(roomId, cursor, 20);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getChatMessages(roomId, MEMBER_ID, cursor, 20);
+        verify(chatMessageHistoryQueryService).getChatMessages(roomId, MEMBER_ID, cursor, 20);
     }
 
     @Test
@@ -173,12 +188,12 @@ class ChatControllerTest {
     void getChatRoomId_delegatesToQueryService() {
         Long partyId = 1L;
         PartyChatRoomIdDTO expected = PartyChatRoomIdDTO.builder().roomId(100L).build();
-        given(chatQueryService.getChatRoomId(partyId, MEMBER_ID)).willReturn(expected);
+        given(partyChatRoomIdQueryService.getChatRoomId(partyId, MEMBER_ID)).willReturn(expected);
 
         BaseResponse<PartyChatRoomIdDTO> response = chatController.getChatRoomId(partyId);
 
         assertThat(response.getData()).isSameAs(expected);
-        verify(chatQueryService).getChatRoomId(partyId, MEMBER_ID);
+        verify(partyChatRoomIdQueryService).getChatRoomId(partyId, MEMBER_ID);
     }
 
     @Test

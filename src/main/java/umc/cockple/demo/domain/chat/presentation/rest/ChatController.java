@@ -15,7 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import umc.cockple.demo.domain.chat.dto.*;
 import umc.cockple.demo.domain.chat.service.command.DirectChatRoomCommandService;
 import umc.cockple.demo.domain.chat.service.file.ChatFileService;
-import umc.cockple.demo.domain.chat.service.query.ChatQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatMessageHistoryQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatRoomDetailQueryService;
+import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
+import umc.cockple.demo.domain.chat.service.query.DirectChatRoomQueryService;
+import umc.cockple.demo.domain.chat.service.query.PartyChatRoomIdQueryService;
+import umc.cockple.demo.domain.chat.service.query.PartyChatRoomQueryService;
 import umc.cockple.demo.global.response.BaseResponse;
 import umc.cockple.demo.global.response.code.status.CommonSuccessCode;
 import umc.cockple.demo.global.security.utils.SecurityUtil;
@@ -30,7 +35,12 @@ import java.nio.charset.StandardCharsets;
 @Tag(name = "Chat", description = "채팅 관리 API")
 public class ChatController {
 
-    private final ChatQueryService chatQueryService;
+    private final PartyChatRoomQueryService partyChatRoomQueryService;
+    private final DirectChatRoomQueryService directChatRoomQueryService;
+    private final ChatUnreadQueryService chatUnreadQueryService;
+    private final ChatRoomDetailQueryService chatRoomDetailQueryService;
+    private final ChatMessageHistoryQueryService chatMessageHistoryQueryService;
+    private final PartyChatRoomIdQueryService partyChatRoomIdQueryService;
     private final DirectChatRoomCommandService directChatRoomCommandService;
     private final ChatFileService chatFileService;
 
@@ -39,7 +49,7 @@ public class ChatController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     public BaseResponse<ChatUnreadStatusDTO.Response> getUnreadStatus() {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatUnreadStatusDTO.Response response = chatQueryService.getUnreadStatus(memberId);
+        ChatUnreadStatusDTO.Response response = chatUnreadQueryService.getUnreadStatus(memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -51,7 +61,7 @@ public class ChatController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        PartyChatRoomDTO.Response response = chatQueryService.getPartyChatRooms(memberId, page, size);
+        PartyChatRoomDTO.Response response = partyChatRoomQueryService.getPartyChatRooms(memberId, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -64,7 +74,7 @@ public class ChatController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        PartyChatRoomDTO.Response response = chatQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
+        PartyChatRoomDTO.Response response = partyChatRoomQueryService.searchPartyChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -87,7 +97,7 @@ public class ChatController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomDTO.Response response = chatQueryService.getDirectChatRooms(memberId, page, size);
+        DirectChatRoomDTO.Response response = directChatRoomQueryService.getDirectChatRooms(memberId, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -100,7 +110,7 @@ public class ChatController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        DirectChatRoomDTO.Response response = chatQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
+        DirectChatRoomDTO.Response response = directChatRoomQueryService.searchDirectChatRoomsByName(memberId, name, page, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -111,7 +121,7 @@ public class ChatController {
             @PathVariable Long roomId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatRoomDetailDTO.Response response = chatQueryService.getChatRoomDetail(roomId, memberId);
+        ChatRoomDetailDTO.Response response = chatRoomDetailQueryService.getChatRoomDetail(roomId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -124,7 +134,7 @@ public class ChatController {
             @RequestParam(defaultValue = "50") int size
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        ChatMessageDTO.Response response = chatQueryService.getChatMessages(roomId, memberId, cursor, size);
+        ChatMessageDTO.Response response = chatMessageHistoryQueryService.getChatMessages(roomId, memberId, cursor, size);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
@@ -163,7 +173,7 @@ public class ChatController {
             @PathVariable Long partyId
     ) {
         Long memberId = SecurityUtil.getCurrentMemberId();
-        PartyChatRoomIdDTO response = chatQueryService.getChatRoomId(partyId, memberId);
+        PartyChatRoomIdDTO response = partyChatRoomIdQueryService.getChatRoomId(partyId, memberId);
         return BaseResponse.success(CommonSuccessCode.OK, response);
     }
 
