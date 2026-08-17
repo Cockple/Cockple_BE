@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
@@ -15,6 +17,14 @@ import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCom
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGuestInviteResult;
+import umc.cockple.demo.domain.game.domain.Game;
+import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
+import umc.cockple.demo.domain.game.repository.GameBoardRepository;
+import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
@@ -33,6 +43,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("운동 참가자-게임판 명단 동기화")
 class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
@@ -46,6 +57,9 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MemberExerciseRepository memberExerciseRepository;
     @Autowired GuestRepository guestRepository;
+    @Autowired GameBoardRepository gameBoardRepository;
+    @Autowired GameBoardMemberRepository gameBoardMemberRepository;
+    @Autowired GameRepository gameRepository;
     @Autowired JdbcTemplate jdbcTemplate;
 
     private Member manager;
@@ -76,6 +90,7 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
+        gameRepository.deleteAll();
         jdbcTemplate.update("DELETE FROM game_board_member");
         guestRepository.deleteAll();
         memberExerciseRepository.deleteAll();
@@ -137,6 +152,72 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
         assertThat(rosterCount()).isZero();
     }
 
+    @Test
+    @DisplayName("게임에 편성된 회원은 본인 참여를 취소할 수 없다")
+    void assignedMemberSelfCancel_isRejected() {
+        participationCommandService.joinExercise(exercise.getId(), participant.getId());
+        assignOnlyRosterToWaitingGame();
+
+        assertThatThrownBy(() -> participationCommandService
+                .cancelParticipation(exercise.getId(), participant.getId()))
+                .isInstanceOf(ExerciseException.class)
+                .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                        .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+        assertThat(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
+        assertThat(rosterCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("게임에 편성된 회원은 관리자도 참여를 취소할 수 없다")
+    void assignedMemberManagerCancel_isRejected() {
+        participationCommandService.joinExercise(exercise.getId(), participant.getId());
+        assignOnlyRosterToWaitingGame();
+
+        assertThatThrownBy(() -> participationCommandService.cancelParticipationByManager(
+                exercise.getId(), participant.getId(), manager.getId(),
+                new ExerciseCancelByManagerCommand(false)))
+                .isInstanceOf(ExerciseException.class)
+                .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                        .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+        assertThat(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
+        assertThat(rosterCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("게임에 편성된 게스트는 초대자가 취소할 수 없다")
+    void assignedGuestInviterCancel_isRejected() {
+        ExerciseGuestInviteResult invited = inviteGuest();
+        assignOnlyRosterToWaitingGame();
+
+        assertThatThrownBy(() -> guestCommandService.cancelGuestInvitation(
+                exercise.getId(), invited.guestId(), manager.getId()))
+                .isInstanceOf(ExerciseException.class)
+                .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                        .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+        assertThat(guestRepository.existsById(invited.guestId())).isTrue();
+        assertThat(rosterCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("게임에 편성된 게스트는 관리자도 참여를 취소할 수 없다")
+    void assignedGuestManagerCancel_isRejected() {
+        ExerciseGuestInviteResult invited = inviteGuest();
+        assignOnlyRosterToWaitingGame();
+
+        assertThatThrownBy(() -> participationCommandService.cancelParticipationByManager(
+                exercise.getId(), invited.guestId(), manager.getId(),
+                new ExerciseCancelByManagerCommand(true)))
+                .isInstanceOf(ExerciseException.class)
+                .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                        .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+        assertThat(guestRepository.existsById(invited.guestId())).isTrue();
+        assertThat(rosterCount()).isEqualTo(1);
+    }
+
     private ExerciseGuestInviteResult inviteGuest() {
         return guestCommandService.inviteGuest(
                 exercise.getId(),
@@ -146,6 +227,23 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
                         .level(Level.C)
                         .inviterId(manager.getId())
                         .build());
+    }
+
+    private void assignOnlyRosterToWaitingGame() {
+        Long rosterId = jdbcTemplate.queryForObject(
+                "SELECT id FROM game_board_member WHERE game_board_id = ?",
+                Long.class,
+                exercise.getGameBoard().getId());
+        GameBoardMember roster = gameBoardMemberRepository.findById(rosterId).orElseThrow();
+        GameBoard gameBoard = gameBoardRepository.findById(exercise.getGameBoard().getId()).orElseThrow();
+
+        Game waitingGame = Game.builder()
+                .gameBoard(gameBoard)
+                .status(GameStatus.WAITING)
+                .waitingOrder(1)
+                .build();
+        waitingGame.addPlayer(GamePlayer.create(roster, 0));
+        gameRepository.saveAndFlush(waitingGame);
     }
 
     private void assertMemberRoster(RosterRow roster) {

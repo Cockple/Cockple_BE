@@ -17,6 +17,7 @@ import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
@@ -65,6 +66,7 @@ class ExerciseParticipationCommandServiceTest {
     @Mock private MemberExerciseReader memberExerciseReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private GamePlayerRepository gamePlayerRepository;
 
     private ExerciseParticipationCommandService exerciseParticipationCommandService;
 
@@ -86,7 +88,8 @@ class ExerciseParticipationCommandServiceTest {
                 memberLookupService,
                 memberPartyLookupService,
                 eventPublisher,
-                exerciseValidator);
+                exerciseValidator,
+                new ExerciseGameAssignmentValidator(gamePlayerRepository));
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -98,6 +101,7 @@ class ExerciseParticipationCommandServiceTest {
         exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
                 LocalTime.of(12, 0), true, false);
         ReflectionTestUtils.setField(exercise, "id", 100L);
+        ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 1000L);
 
         lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
         lenient().when(exerciseReader.findByIdWithPartyLevelsOrThrow(exercise.getId())).thenReturn(exercise);
@@ -354,6 +358,29 @@ class ExerciseParticipationCommandServiceTest {
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+            }
+
+            @Test
+            @DisplayName("게임에 편성된 참여자는 본인 참여를 취소할 수 없다")
+            void assignedPlayer_throwsException() {
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
+                        .willReturn(memberExercise);
+                given(gamePlayerRepository.existsByMemberSource(
+                        exercise.getGameBoard().getId(), participant.getId()))
+                        .willReturn(true);
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .cancelParticipation(exercise.getId(), participant.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                                .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+                then(memberExerciseRepository).should(never()).delete(any(MemberExercise.class));
             }
         }
     }

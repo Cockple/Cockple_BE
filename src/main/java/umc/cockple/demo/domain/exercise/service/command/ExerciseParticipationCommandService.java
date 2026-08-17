@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
@@ -43,6 +44,7 @@ public class ExerciseParticipationCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
+    private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
 
     public ExerciseJoinResult joinExercise(Long exerciseId, Long memberId) {
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
@@ -75,6 +77,8 @@ public class ExerciseParticipationCommandService {
         Member member = memberLookupService.findByIdOrThrow(memberId);
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
+        exerciseGameAssignmentValidator.validateMemberCancellation(
+                exercise.getGameBoard().getId(), member.getId());
 
         exercise.removeParticipation(memberExercise);
 
@@ -121,6 +125,8 @@ public class ExerciseParticipationCommandService {
     private ExerciseCancelResult cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = guestReader.findByIdOrThrow(participantId);
         exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
+        exerciseGameAssignmentValidator.validateGuestCancellation(
+                exercise.getGameBoard().getId(), guest.getId());
 
         exercise.removeGuest(guest);
 
@@ -132,6 +138,8 @@ public class ExerciseParticipationCommandService {
     private ExerciseCancelResult cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
+        exerciseGameAssignmentValidator.validateMemberCancellation(
+                exercise.getGameBoard().getId(), participant.getId());
 
         exercise.removeParticipation(memberExercise);
 
