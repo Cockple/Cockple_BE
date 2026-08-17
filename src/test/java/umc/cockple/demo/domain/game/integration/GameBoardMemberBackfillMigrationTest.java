@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("integration")
 @Testcontainers
@@ -50,6 +51,7 @@ class GameBoardMemberBackfillMigrationTest {
             oldMemberId = insertMember(statement, "고령 회원", "MALE", "C", "1940-01-01", 93003L);
 
             insertMemberExercise(statement, firstExerciseId, firstMemberId, "2035-01-01 10:00:00.000000");
+            insertMemberExercise(statement, firstExerciseId, firstMemberId, "2035-02-01 10:00:00.000000");
             insertMemberExercise(statement, secondExerciseId, existingMemberId, "2029-01-01 10:00:00.000000");
             insertMemberExercise(statement, secondExerciseId, oldMemberId, "2029-02-01 10:00:00.000000");
 
@@ -68,6 +70,11 @@ class GameBoardMemberBackfillMigrationTest {
                     WHERE member_id IS NOT NULL OR guest_id IS NOT NULL
                     """))
                     .isEqualTo(5);
+            assertThat(queryLong(statement, """
+                    SELECT COUNT(*) FROM member_exercise
+                    WHERE exercise_id = %d AND member_id = %d
+                    """.formatted(firstExerciseId, firstMemberId)))
+                    .isEqualTo(1);
             assertThat(queryLong(statement, "SELECT COUNT(*) FROM game_board_member"))
                     .isEqualTo(6);
 
@@ -126,6 +133,10 @@ class GameBoardMemberBackfillMigrationTest {
                       AND guest_id IS NULL
                     """))
                     .isEqualTo(1);
+
+            assertThatThrownBy(() -> insertMemberExercise(
+                    statement, firstExerciseId, firstMemberId, "2035-03-01 10:00:00.000000"))
+                    .isInstanceOf(SQLException.class);
         }
     }
 
