@@ -84,10 +84,11 @@ public class GameFixture {
 
     public static Game completedGame(Long id, GameBoard gameBoard, Court court,
                                      LocalDateTime startedAt, LocalDateTime completedAt, GamePlayer... players) {
+        // 완료 게임은 라이브 코트 FK를 끊고 코트 번호 스냅샷만 보유한다.
         return Game.builder()
                 .id(id)
                 .gameBoard(gameBoard)
-                .court(court)
+                .courtNo(court.getCourtNo())
                 .status(GameStatus.COMPLETED)
                 .startedAt(startedAt)
                 .completedAt(completedAt)

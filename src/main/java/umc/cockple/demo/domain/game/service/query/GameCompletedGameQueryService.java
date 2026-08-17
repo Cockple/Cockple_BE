@@ -85,7 +85,7 @@ public class GameCompletedGameQueryService {
 
     private GameCompletedGameResult.CompletedGameView toView(Game game) {
         int durationMin = (int) Duration.between(game.getStartedAt(), game.getCompletedAt()).toMinutes();
-        int courtNo = game.getCourt() != null ? game.getCourt().getCourtNo() : 0;
+        int courtNo = game.getCourtNo() != null ? game.getCourtNo() : 0;
         List<GameCompletedGameResult.PlayerView> players = game.getPlayers().stream()
                 .sorted(Comparator.comparingInt(GamePlayer::getPlayerOrder))
                 .map(player -> new GameCompletedGameResult.PlayerView(

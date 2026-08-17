@@ -28,6 +28,9 @@ public class Game extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Court court; // 대기 상태이거나 완료되어 코트에서 내려간 경우 null
 
+    // 완료 이력에서 코트가 삭제되어도 코트 번호를 보여주기 위한 스냅샷
+    private Integer courtNo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GameStatus status;
@@ -52,17 +55,25 @@ public class Game extends BaseEntity {
 
     public void changeCourt(Court court) {
         this.court = court;
+        if (court != null) {
+            this.courtNo = court.getCourtNo();
+        }
     }
 
     public void start(Court court, LocalDateTime startedAt) {
         this.status = GameStatus.PLAYING;
         this.court = court;
+        this.courtNo = court.getCourtNo();
         this.startedAt = startedAt;
         this.waitingOrder = null;
     }
 
     public void complete(LocalDateTime completedAt) {
         this.status = GameStatus.COMPLETED;
+        if (this.court != null) {
+            this.courtNo = this.court.getCourtNo();
+        }
+        this.court = null;
         this.completedAt = completedAt;
     }
 

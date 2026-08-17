@@ -33,9 +33,8 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
 
     @Query("select g.id from Game g " +
-            "left join g.court c " +
             "where g.gameBoard.id = :gameBoardId and g.status = :status " +
-            "and (:courtNo is null or c.courtNo = :courtNo) " +
+            "and (:courtNo is null or g.courtNo = :courtNo) " +
             "and (:cursorTime is null " +
             "     or g.completedAt > :cursorTime " +
             "     or (g.completedAt = :cursorTime and g.id > :cursorId)) " +
@@ -48,8 +47,8 @@ public interface GameRepository extends JpaRepository<Game, Long> {
             @Param("cursorId") Long cursorId,
             Pageable pageable);
 
+    // 완료 게임 전용: 완료 게임은 court FK를 끊고 courtNo 스냅샷만 가지므로 court fetch 불필요
     @Query("select distinct g from Game g " +
-            "left join fetch g.court " +
             "left join fetch g.players p " +
             "left join fetch p.gameBoardMember " +
             "where g.id in :ids")
