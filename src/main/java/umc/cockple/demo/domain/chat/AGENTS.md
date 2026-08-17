@@ -8,6 +8,11 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
+| REST API contracts | `presentation/rest/api/` | owns request mappings, parameter bindings, and OpenAPI metadata for chat REST APIs |
+| Party chat REST | `presentation/rest/PartyChatController.java` | handles party room lists, search, and party room ID lookup |
+| Direct chat REST | `presentation/rest/DirectChatController.java` | handles direct-room creation, lists, and search |
+| Chat room REST | `presentation/rest/ChatRoomController.java` | handles unread status, room detail, and message history |
+| Chat file REST | `presentation/rest/ChatFileController.java` | handles download-token issuance and file responses |
 | WebSocket ingress | `presentation/websocket/ChatWebSocketHandler.java` | handles connect/message/close/error |
 | Auth for sockets | `global/realtime/auth/` | Shared JWT handshake auth is enforced before handler logic |
 | WebSocket dispatch | `presentation/websocket/ChatWebSocketRequestDispatcher.java` | parses socket payloads and delegates authenticated requests |
@@ -27,6 +32,9 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 | DTO conversion | `converter/ChatConverter.java` | shapes REST/API and common message payloads |
 
 ## CONVENTIONS
+- Interfaces under `presentation/rest/api/` own REST mappings, parameter annotations, and Swagger documentation.
+- Concrete REST controllers only resolve caller context when required, delegate to their use-case services, and shape the response.
+- `presentation/rest/api/ChatApiTag.java` keeps the split REST APIs under the shared `Chat` Swagger tag.
 - `presentation/websocket/ChatWebSocketConfig` registers `/ws/chats` and wires the shared JWT handshake interceptor.
 - Request `type()` drives socket branching: send, subscribe, unsubscribe, and chat-list variants.
 - Party chat and direct chat share the slice but differ in display-name/image/read-status logic.
@@ -36,5 +44,7 @@ Chat mixes REST queries with WebSocket transport, Redis-backed subscription/cach
 ## ANTI-PATTERNS
 - Do not treat chat as HTTP-only; transport, cache, and event flow are part of the slice.
 - Do not bypass membership/access validation before room or message operations.
+- Do not collapse party, direct, room, and file REST responsibilities back into one catch-all controller.
+- Do not duplicate REST mappings or Swagger annotations in concrete controllers; keep the API interfaces authoritative.
 - Do not reintroduce a catch-all query facade over the use-case query services.
 - Do not mix socket session bookkeeping into controllers or converters.
