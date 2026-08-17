@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.service.command.GameBoardRosterCleanupService;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
@@ -20,8 +21,7 @@ import umc.cockple.demo.domain.member.enums.MemberStatus;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.global.auth.TokenVersionRepository;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import umc.cockple.demo.global.oauth2.service.KakaoOauthService;
 
@@ -40,6 +40,7 @@ public class MemberCommandService {
     private final MemberPartyRepository memberPartyRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final GameBoardRosterCleanupService gameBoardRosterCleanupService;
 
     private final KakaoOauthService kakaoOauthService;
     private final ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
@@ -88,8 +89,11 @@ public class MemberCommandService {
         // 탈퇴 가능여부 검증
         validateCanWithdraw(member);
 
-        // 참여중인 미래 운동, 모임에서 나가기, keyword 삭제
-        memberExerciseRepository.deleteFutureExercisesByMember(member, LocalDate.now(), LocalTime.now());
+        // 참여중인 미래 운동과 연결된 게임판 명단을 동일한 기준 시각으로 함께 정리
+        LocalDateTime withdrawalTime = LocalDateTime.now();
+        gameBoardRosterCleanupService.removeFutureMemberRosters(member.getId(), withdrawalTime);
+        memberExerciseRepository.deleteFutureExercisesByMember(
+                member, withdrawalTime.toLocalDate(), withdrawalTime.toLocalTime());
         memberPartyRepository.deleteAllByMember(member);
         memberKeywordRepository.deleteAllByMember(member);
 

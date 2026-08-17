@@ -14,6 +14,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.service.command.GameBoardRosterCleanupService;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -69,6 +70,7 @@ class MemberCommandServiceTest {
     @Mock private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock private KakaoOauthService kakaoOauthService;
     @Mock private TokenVersionRepository tokenVersionRepository;
+    @Mock private GameBoardRosterCleanupService gameBoardRosterCleanupService;
 
     private Member normalMember;
 
@@ -616,6 +618,8 @@ class MemberCommandServiceTest {
             // then
             then(memberExerciseRepository).should()
                     .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+            then(gameBoardRosterCleanupService).should()
+                    .removeFutureMemberRosters(eq(normalMember.getId()), any());
             then(memberExerciseRepository).should(never())
                     .deleteAll();
         }
@@ -637,6 +641,8 @@ class MemberCommandServiceTest {
                 // then
                 then(memberExerciseRepository).should()
                         .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(gameBoardRosterCleanupService).should()
+                        .removeFutureMemberRosters(eq(normalMember.getId()), any());
                 then(memberExerciseRepository).should(never()).deleteAll();
                 then(memberPartyRepository).should().deleteAllByMember(normalMember);
                 then(memberKeywordRepository).should().deleteAllByMember(normalMember);
