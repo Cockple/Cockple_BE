@@ -5,19 +5,25 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
+import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
 import java.time.LocalDateTime;
@@ -26,7 +32,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameCommandService")
@@ -35,6 +44,7 @@ class GameCommandServiceTest {
     @Mock private GameBoardReader gameBoardReader;
     @Mock private GameRepository gameRepository;
     @Mock private CourtRepository courtRepository;
+    @Mock private GameBoardMemberRepository gameBoardMemberRepository;
 
     @InjectMocks private GameCommandService gameCommandService;
 
@@ -167,6 +177,83 @@ class GameCommandServiceTest {
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.COURT_ALREADY_IN_USE);
+        }
+    }
+
+    @Nested
+    @DisplayName("createGame (#8 게임 대기 생성)")
+    class CreateGame {
+
+        @Test
+        @DisplayName("선택 멤버로 대기 게임을 만들고, 배열 순서를 playerOrder로 대기열 맨 뒤에 붙인다")
+        void createGame_createsWaitingGameWithOrderedPlayers() {
+            // given - 이미 대기 게임이 2개 있으므로 새 게임의 waitingOrder는 3
+            GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
+            GameBoardMember m8 = GameFixture.member(8L, board, "선수8", Level.B);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(8L, 7L)))
+                    .willReturn(List.of(m7, m8));
+            given(gameRepository.countByGameBoardIdAndStatus(BOARD_ID, GameStatus.WAITING)).willReturn(2L);
+            given(gameRepository.save(any(Game.class))).willAnswer(inv -> inv.getArgument(0));
+
+            // when - 입력 순서 8, 7
+            gameCommandService.createGame(MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(8L, 7L)));
+
+            // then
+            ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
+            then(gameRepository).should().save(captor.capture());
+            Game saved = captor.getValue();
+            assertThat(saved.getStatus()).isEqualTo(GameStatus.WAITING);
+            assertThat(saved.getWaitingOrder()).isEqualTo(3);
+            assertThat(saved.getPlayers())
+                    .extracting(p -> p.getGameBoardMember().getId(), GamePlayer::getPlayerOrder)
+                    .containsExactly(tuple(8L, 0), tuple(7L, 1));
+        }
+
+        @Test
+        @DisplayName("명단에 없는 멤버가 포함되면 GAME_BOARD_MEMBER_NOT_FOUND 예외")
+        void createGame_memberNotOnBoard() {
+            GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L, 999L)))
+                    .willReturn(List.of(m7)); // 999는 조회되지 않음
+
+            assertThatThrownBy(() -> gameCommandService.createGame(MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L, 999L))))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("인원이 없거나 4명을 초과하면 INVALID_GAME_PLAYER_COUNT 예외 (command 검증)")
+        void createGame_invalidPlayerCount() {
+            assertThatThrownBy(() -> new GameCreateCommand(BOARD_ID, List.of()))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INVALID_GAME_PLAYER_COUNT);
+
+            assertThatThrownBy(() -> new GameCreateCommand(BOARD_ID, List.of(1L, 2L, 3L, 4L, 5L)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INVALID_GAME_PLAYER_COUNT);
+        }
+
+        @Test
+        @DisplayName("같은 멤버가 중복되면 DUPLICATE_GAME_PLAYER 예외 (command 검증)")
+        void createGame_duplicatePlayer() {
+            assertThatThrownBy(() -> new GameCreateCommand(BOARD_ID, List.of(7L, 7L)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.DUPLICATE_GAME_PLAYER);
+        }
+
+        @Test
+        @DisplayName("gameBoardId가 null이면 GAME_BOARD_ID_REQUIRED 예외 (command 검증)")
+        void createGame_nullBoardId() {
+            assertThatThrownBy(() -> new GameCreateCommand(null, List.of(7L)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_BOARD_ID_REQUIRED);
         }
     }
 }

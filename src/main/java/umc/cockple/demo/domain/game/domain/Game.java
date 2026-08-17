@@ -42,8 +42,9 @@ public class Game extends BaseEntity {
     @Builder.Default
     private List<GamePlayer> players = new ArrayList<>();
 
-    public static Game createWaiting(Integer waitingOrder) {
+    public static Game createWaiting(GameBoard gameBoard, int waitingOrder) {
         return Game.builder()
+                .gameBoard(gameBoard)
                 .status(GameStatus.WAITING)
                 .waitingOrder(waitingOrder)
                 .build();

@@ -7,16 +7,23 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
+import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -27,6 +34,39 @@ public class GameCommandService {
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
+    private final GameBoardMemberRepository gameBoardMemberRepository;
+
+    /**
+     * 게임 대기 생성 (#8). 선택한 명단 멤버들로 대기(WAITING) 게임을 만들어 대기열 맨 뒤에 붙인다.
+     * gameBoardMemberIds 의 순서가 곧 플레이어 순서(playerOrder)가 된다.
+     *
+     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @return 생성된 게임 ID
+     */
+    public Long createGame(Long memberId, GameCreateCommand command) {
+        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+
+        Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
+                .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
+                .collect(Collectors.toMap(GameBoardMember::getId, Function.identity()));
+        if (membersById.size() != command.gameBoardMemberIds().size()) {
+            throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
+        }
+
+        int nextWaitingOrder = (int) gameRepository
+                .countByGameBoardIdAndStatus(gameBoard.getId(), GameStatus.WAITING) + 1;
+        Game game = Game.createWaiting(gameBoard, nextWaitingOrder);
+
+        int playerOrder = 0;
+        for (Long gameBoardMemberId : command.gameBoardMemberIds()) {
+            game.addPlayer(GamePlayer.create(membersById.get(gameBoardMemberId), playerOrder++));
+        }
+
+        Game savedGame = gameRepository.save(game);
+        log.info("게임 대기 생성 - gameBoardId: {}, gameId: {}, 인원: {}",
+                gameBoard.getId(), savedGame.getId(), command.gameBoardMemberIds().size());
+        return savedGame.getId();
+    }
 
     /**
      * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)

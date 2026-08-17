@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
@@ -80,6 +81,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case UNSUBSCRIBE -> handleUnsubscribe(context, gamePayload, responder);
                 case MOVE_COURT -> handleMoveCourt(context, gamePayload, responder);
                 case START_GAME -> handleStartGame(context, gamePayload, responder);
+                case CREATE_GAME -> handleCreateGame(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -127,14 +129,31 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         respondAndBroadcastBoard(context, gameBoardId, responder);
     }
 
+    private void handleCreateGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+
+        GameCreateCommand command = new GameCreateCommand(gameBoardId, payload.gameBoardMemberIds());
+        Long gameId = gameCommandService.createGame(context.memberId(), command);
+
+        // 호출자에게는 생성된 gameId + 최신 보드를, 나머지 구독자에게는 보드 갱신을 전달한다.
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(gameId, boardDto));
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
     private void respondAndBroadcastBoard(
             RealtimeRequestContext context, Long gameBoardId, RealtimeResponder responder) {
-        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
-        GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
         // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외한다.
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
+    private GameBoardDTO.Response loadBoardDto(RealtimeRequestContext context, Long gameBoardId) {
+        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
+        return gameBoardMapper.toResponse(board);
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {
@@ -173,5 +192,8 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private record SubscriptionAck(Long gameBoardId) {
+    }
+
+    private record GameCreatedAck(Long gameId, GameBoardDTO.Response board) {
     }
 }
