@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import umc.cockple.demo.domain.game.presentation.dto.GameCompletedGameDTO;
 import umc.cockple.demo.domain.game.presentation.dto.GameDuplicateCheckDTO;
 import umc.cockple.demo.global.response.BaseResponse;
 
@@ -30,5 +31,24 @@ public interface GameApi {
     ResponseEntity<BaseResponse<GameDuplicateCheckDTO.Response>> checkDuplicates(
             @PathVariable Long gameBoardId,
             @RequestParam("gameBoardMemberId") List<Long> gameBoardMemberIds
+    );
+
+    @GetMapping("/{gameBoardId}/games/completed")
+    @Operation(summary = "완료된 게임 조회", description = """
+            게임판에서 완료된 게임을 커서 기반으로 조회합니다.
+
+            - `courtNo`(선택): 특정 코트에서 진행된 게임만 필터. 생략 시 전체.
+            - `cursor`(선택): 이전 응답의 `nextCursor`. 생략 시 첫 페이지.
+            - `size`: 페이지 크기.
+            - 각 게임: `gameId`, `courtNo`, `durationMin`(완료-시작, 분), `players[]`.
+            - `nextCursor`(다음 페이지 없으면 null), `hasNext`.
+            """)
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "404", description = "게임판을 찾을 수 없음")
+    ResponseEntity<BaseResponse<GameCompletedGameDTO.Response>> getCompletedGames(
+            @PathVariable Long gameBoardId,
+            @RequestParam(value = "courtNo", required = false) Integer courtNo,
+            @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "size", defaultValue = "20") int size
     );
 }

@@ -382,9 +382,9 @@ class GameCommandServiceTest {
             // when
             gameCommandService.moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(BOARD_ID, GAME_ID));
 
-            // then - 원 게임은 완료 처리(코트 비움 + 게임횟수 +1)
+            // then - 원 게임은 완료 처리(게임횟수 +1). 코트 FK는 완료 이력용으로 유지된다.
             assertThat(playing.getStatus()).isEqualTo(GameStatus.COMPLETED);
-            assertThat(playing.getCourt()).isNull();
+            assertThat(playing.getCourt()).isEqualTo(court);
             assertThat(playing.getCompletedAt()).isNotNull();
             assertThat(m1.getGameCount()).isEqualTo(1);
             assertThat(m2.getGameCount()).isEqualTo(1);

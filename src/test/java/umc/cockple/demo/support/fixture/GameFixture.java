@@ -81,4 +81,17 @@ public class GameFixture {
                 .players(new ArrayList<>(List.of(players)))
                 .build();
     }
+
+    public static Game completedGame(Long id, GameBoard gameBoard, Court court,
+                                     LocalDateTime startedAt, LocalDateTime completedAt, GamePlayer... players) {
+        return Game.builder()
+                .id(id)
+                .gameBoard(gameBoard)
+                .court(court)
+                .status(GameStatus.COMPLETED)
+                .startedAt(startedAt)
+                .completedAt(completedAt)
+                .players(new ArrayList<>(List.of(players)))
+                .build();
+    }
 }
