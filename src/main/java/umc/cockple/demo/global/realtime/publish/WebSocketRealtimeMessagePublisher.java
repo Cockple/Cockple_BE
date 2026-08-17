@@ -41,49 +41,85 @@ public class WebSocketRealtimeMessagePublisher implements RealtimeMessagePublish
                     memberId,
                     RealtimeWebSocketEndpoint.SESSION_ENDPOINT
             );
-            if (targetSessions.isEmpty()) {
-                log.debug("공용 실시간 메시지 발행 대상 세션 없음 - domain: {}, type: {}", normalizedDomain, normalizedType);
-                return RealtimePublishResult.noTarget();
-            }
-
-            RealtimeOutboundEnvelope envelope = RealtimeOutboundEnvelope.success(
-                    normalizedDomain,
-                    normalizedType,
-                    null,
-                    data
-            );
-            EncodedRealtimeMessage encodedMessage = messageEncoder.encode(envelope).orElse(null);
-            if (encodedMessage == null) {
-                log.error("공용 실시간 메시지 직렬화 실패 - domain: {}, type: {}", normalizedDomain, normalizedType);
-                return RealtimePublishResult.failed(targetSessions.size());
-            }
-
-            int successCount = 0;
-            for (RealtimeSession targetSession : targetSessions) {
-                if (messageSender.send(targetSession.webSocketSession(), encodedMessage)) {
-                    successCount++;
-                    continue;
-                }
-
-                if (!targetSession.isOpen()) {
-                    sessionRegistry.remove(memberId, targetSession.webSocketSession());
-                }
-            }
-
-            RealtimePublishResult result = new RealtimePublishResult(
-                    targetSessions.size(),
-                    successCount
-            );
-            log.debug(
-                    "공용 실시간 메시지 발행 완료 - domain: {}, type: {}, 대상: {}, 성공: {}, 실패: {}",
-                    normalizedDomain,
-                    normalizedType,
-                    result.targetSessionCount(),
-                    result.successCount(),
-                    result.failureCount()
-            );
-            return result;
+            return deliver(memberId, targetSessions, normalizedDomain, normalizedType, data);
         }
+    }
+
+    @Override
+    public RealtimePublishResult publishToSession(
+            Long memberId,
+            String sessionId,
+            String domain,
+            String type,
+            Object data
+    ) {
+        Objects.requireNonNull(memberId, "memberId는 null일 수 없습니다.");
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("sessionId는 비어 있을 수 없습니다.");
+        }
+        String normalizedDomain = normalize(domain, "domain");
+        String normalizedType = normalize(type, "type");
+
+        try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(memberId)) {
+            List<RealtimeSession> targetSessions = sessionRegistry.findOpenSessions(
+                            memberId,
+                            RealtimeWebSocketEndpoint.SESSION_ENDPOINT
+                    ).stream()
+                    .filter(session -> sessionId.equals(session.sessionId()))
+                    .toList();
+            return deliver(memberId, targetSessions, normalizedDomain, normalizedType, data);
+        }
+    }
+
+    private RealtimePublishResult deliver(
+            Long memberId,
+            List<RealtimeSession> targetSessions,
+            String normalizedDomain,
+            String normalizedType,
+            Object data
+    ) {
+        if (targetSessions.isEmpty()) {
+            log.debug("공용 실시간 메시지 발행 대상 세션 없음 - domain: {}, type: {}", normalizedDomain, normalizedType);
+            return RealtimePublishResult.noTarget();
+        }
+
+        RealtimeOutboundEnvelope envelope = RealtimeOutboundEnvelope.success(
+                normalizedDomain,
+                normalizedType,
+                null,
+                data
+        );
+        EncodedRealtimeMessage encodedMessage = messageEncoder.encode(envelope).orElse(null);
+        if (encodedMessage == null) {
+            log.error("공용 실시간 메시지 직렬화 실패 - domain: {}, type: {}", normalizedDomain, normalizedType);
+            return RealtimePublishResult.failed(targetSessions.size());
+        }
+
+        int successCount = 0;
+        for (RealtimeSession targetSession : targetSessions) {
+            if (messageSender.send(targetSession.webSocketSession(), encodedMessage)) {
+                successCount++;
+                continue;
+            }
+
+            if (!targetSession.isOpen()) {
+                sessionRegistry.remove(memberId, targetSession.webSocketSession());
+            }
+        }
+
+        RealtimePublishResult result = new RealtimePublishResult(
+                targetSessions.size(),
+                successCount
+        );
+        log.debug(
+                "공용 실시간 메시지 발행 완료 - domain: {}, type: {}, 대상: {}, 성공: {}, 실패: {}",
+                normalizedDomain,
+                normalizedType,
+                result.targetSessionCount(),
+                result.successCount(),
+                result.failureCount()
+        );
+        return result;
     }
 
     private String normalize(String value, String fieldName) {

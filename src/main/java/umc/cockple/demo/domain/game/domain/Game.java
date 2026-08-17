@@ -49,9 +49,21 @@ public class Game extends BaseEntity {
                 .build();
     }
 
-    /**
-     * 연관관계 매핑 메서드
-     */
+    public void changeCourt(Court court) {
+        this.court = court;
+    }
+
+    public void start(Court court, LocalDateTime startedAt) {
+        this.status = GameStatus.PLAYING;
+        this.court = court;
+        this.startedAt = startedAt;
+        this.waitingOrder = null;
+    }
+
+    public void changeWaitingOrder(int waitingOrder) {
+        this.waitingOrder = waitingOrder;
+    }
+
     public void addPlayer(GamePlayer player) {
         this.players.add(player);
         player.setGame(this);

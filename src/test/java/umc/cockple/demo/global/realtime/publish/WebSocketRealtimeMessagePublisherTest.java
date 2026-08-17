@@ -142,6 +142,59 @@ class WebSocketRealtimeMessagePublisherTest {
     }
 
     @Test
+    @DisplayName("publishToSession은 회원의 여러 세션 중 지정한 세션에만 전송한다")
+    void publishToSpecificSessionOnly() {
+        Long memberId = 10L;
+        WebSocketSession targetWebSocketSession = session("session-1", true);
+        WebSocketSession otherWebSocketSession = session("session-2", true);
+        List<RealtimeSession> sessions = List.of(
+                realtimeSession(memberId, targetWebSocketSession, 2L),
+                realtimeSession(memberId, otherWebSocketSession, 1L)
+        );
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("encoded");
+        given(sessionRegistry.findOpenSessions(memberId, RealtimeWebSocketEndpoint.SESSION_ENDPOINT))
+                .willReturn(sessions);
+        given(messageEncoder.encode(any(RealtimeOutboundEnvelope.class)))
+                .willReturn(Optional.of(encodedMessage));
+        given(messageSender.send(targetWebSocketSession, encodedMessage)).willReturn(true);
+
+        RealtimePublishResult result = publisher.publishToSession(
+                memberId, "session-1", "GAME", "BOARD_UPDATED", "data");
+
+        assertThat(result.targetSessionCount()).isEqualTo(1);
+        assertThat(result.successCount()).isEqualTo(1);
+        then(messageSender).should().send(targetWebSocketSession, encodedMessage);
+        then(messageSender).should(org.mockito.Mockito.never()).send(otherWebSocketSession, encodedMessage);
+    }
+
+    @Test
+    @DisplayName("publishToSession 대상 세션이 열려 있지 않으면 발행하지 않는다")
+    void publishToSessionSkipsWhenSessionAbsent() {
+        Long memberId = 10L;
+        WebSocketSession otherWebSocketSession = session("session-2", true);
+        List<RealtimeSession> sessions = List.of(realtimeSession(memberId, otherWebSocketSession, 1L));
+        given(sessionRegistry.findOpenSessions(memberId, RealtimeWebSocketEndpoint.SESSION_ENDPOINT))
+                .willReturn(sessions);
+
+        RealtimePublishResult result = publisher.publishToSession(
+                memberId, "session-1", "GAME", "BOARD_UPDATED", "data");
+
+        assertThat(result).isEqualTo(RealtimePublishResult.noTarget());
+        then(messageEncoder).shouldHaveNoInteractions();
+        then(messageSender).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("publishToSession은 sessionId가 비어 있으면 거부한다")
+    void publishToSessionRejectsBlankSessionId() {
+        assertThatThrownBy(() -> publisher.publishToSession(10L, " ", "GAME", "BOARD_UPDATED", "data"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sessionId");
+
+        then(sessionRegistry).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("domain이나 type이 비어 있으면 세션을 조회하기 전에 거부한다")
     void rejectsBlankMessageIdentifier() {
         assertThatThrownBy(() -> publisher.publish(10L, " ", "MESSAGE_RECEIVED", "data"))
