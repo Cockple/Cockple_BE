@@ -130,7 +130,8 @@ class GameBoardMemberCreateIntegrationTest extends IntegrationTestBase {
         List<String> invalidRequests = List.of(
                 "{\"name\":\"   \",\"gender\":\"남성\",\"level\":\"D조\"}",
                 "{\"name\":\"선수\",\"level\":\"D조\"}",
-                "{\"name\":\"선수\",\"gender\":\"남성\"}");
+                "{\"name\":\"선수\",\"gender\":\"남성\"}",
+                "{\"name\":\"" + "가".repeat(256) + "\",\"gender\":\"남성\",\"level\":\"D조\"}");
 
         for (String request : invalidRequests) {
             mockMvc.perform(post("/api/game-boards/{gameBoardId}/gameBoardMembers", exercise.getGameBoard().getId())

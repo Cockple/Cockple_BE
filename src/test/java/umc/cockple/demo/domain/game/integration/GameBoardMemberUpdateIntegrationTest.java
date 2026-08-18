@@ -33,6 +33,7 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -168,11 +169,17 @@ class GameBoardMemberUpdateIntegrationTest extends IntegrationTestBase {
     void updateMember_rejectsInvalidInput() throws Exception {
         authenticate(gameHost);
 
-        mockMvc.perform(patch("/api/game-boards/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}",
-                        exercise.getGameBoard().getId(), gameBoardMember.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"   \",\"gender\":\"기타\",\"level\":\"프로\"}"))
-                .andExpect(status().isBadRequest());
+        List<String> invalidRequests = List.of(
+                "{\"name\":\"   \",\"gender\":\"기타\",\"level\":\"프로\"}",
+                "{\"name\":\"" + "가".repeat(256) + "\",\"gender\":\"여성\",\"level\":\"A조\"}");
+
+        for (String request : invalidRequests) {
+            mockMvc.perform(patch("/api/game-boards/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}",
+                            exercise.getGameBoard().getId(), gameBoardMember.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isBadRequest());
+        }
 
         assertThat(gameBoardMember.getName()).isEqualTo("수정 전");
     }
