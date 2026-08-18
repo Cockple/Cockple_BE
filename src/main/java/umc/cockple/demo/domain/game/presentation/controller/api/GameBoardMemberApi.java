@@ -2,9 +2,12 @@ package umc.cockple.demo.domain.game.presentation.controller.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardMemberDTO;
@@ -15,6 +18,23 @@ import java.util.List;
 @RequestMapping("/api/game-boards")
 @GameApiTag
 public interface GameBoardMemberApi {
+
+    @PostMapping("/{gameBoardId}/gameBoardMembers")
+    @Operation(summary = "게임판 명단 추가", description = """
+            게임 진행자가 수동 명단을 추가합니다.
+
+            - `name`, `gender`, `level`은 필수입니다.
+            - `gender`, `level`, `ageGroup`은 한글 표시값으로 입력합니다.
+            - 수동 명단은 회원과 연결되지 않으며 참여 상태로 생성됩니다.
+            """)
+    @ApiResponse(responseCode = "200", description = "추가 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류")
+    @ApiResponse(responseCode = "403", description = "게임판 관리 권한 없음")
+    @ApiResponse(responseCode = "404", description = "게임판을 찾을 수 없음")
+    ResponseEntity<BaseResponse<GameBoardMemberDTO.CreateResponse>> createMember(
+            @PathVariable Long gameBoardId,
+            @Valid @RequestBody GameBoardMemberDTO.CreateRequest request
+    );
 
     @GetMapping("/{gameBoardId}/gameBoardMembers")
     @Operation(summary = "게임판 명단 조회", description = """
