@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardMemberDTO;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.global.enums.Gender;
@@ -29,6 +30,22 @@ public class GameBoardMemberMapper {
 
     public GameBoardMemberDTO.CreateResponse toCreateResponse(Long gameBoardMemberId) {
         return new GameBoardMemberDTO.CreateResponse(gameBoardMemberId);
+    }
+
+    public GameBoardMemberUpdateCommand toUpdateCommand(
+            Long gameBoardId,
+            Long gameBoardMemberId,
+            GameBoardMemberDTO.UpdateRequest request) {
+        AgeGroup ageGroup = request.ageGroup() == null
+                ? null
+                : AgeGroup.fromKorean(request.ageGroup());
+        return new GameBoardMemberUpdateCommand(
+                gameBoardId,
+                gameBoardMemberId,
+                request.name().trim(),
+                Gender.fromKorean(request.gender()),
+                Level.fromKorean(request.level()),
+                ageGroup);
     }
 
     public GameBoardMemberSearchQuery toSearchQuery(

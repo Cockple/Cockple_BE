@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,24 @@ import java.util.List;
 @RequestMapping("/api/game-boards")
 @GameApiTag
 public interface GameBoardMemberApi {
+
+    @PatchMapping("/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}")
+    @Operation(summary = "게임판 명단 정보 수정", description = """
+            게임 진행자가 명단의 이름, 성별, 급수, 연령대를 수정합니다.
+
+            - `name`, `gender`, `level`은 필수입니다.
+            - `ageGroup`을 null로 전달하거나 생략하면 기존 연령대를 제거합니다.
+            - 진행 또는 대기 중인 게임에 포함된 선수도 정보를 수정할 수 있습니다.
+            """)
+    @ApiResponse(responseCode = "200", description = "수정 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류")
+    @ApiResponse(responseCode = "403", description = "게임판 관리 권한 없음")
+    @ApiResponse(responseCode = "404", description = "게임판 또는 명단을 찾을 수 없음")
+    ResponseEntity<BaseResponse<Void>> updateMember(
+            @PathVariable Long gameBoardId,
+            @PathVariable Long gameBoardMemberId,
+            @Valid @RequestBody GameBoardMemberDTO.UpdateRequest request
+    );
 
     @PostMapping("/{gameBoardId}/gameBoardMembers")
     @Operation(summary = "게임판 명단 추가", description = """

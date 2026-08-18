@@ -17,6 +17,8 @@ import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.global.enums.Gender;
@@ -41,6 +43,7 @@ class GameBoardMemberCommandServiceTest {
 
     @InjectMocks private GameBoardMemberCommandService gameBoardMemberCommandService;
     @Mock private GameBoardReader gameBoardReader;
+    @Mock private GameBoardMemberReader gameBoardMemberReader;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -95,5 +98,26 @@ class GameBoardMemberCommandServiceTest {
         then(gameBoardReader).should(never()).read(any());
         then(gameBoardMemberRepository).should(never()).save(any());
         then(eventPublisher).should(never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("게임 진행자가 명단 정보를 수정하고 연령대를 제거한 뒤 변경 이벤트를 발행한다")
+    void updateMember_updatesInfoAndPublishesEvent() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "수정 전", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberUpdateCommand updateCommand = new GameBoardMemberUpdateCommand(
+                GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, "수정 후", Gender.FEMALE, Level.A, null);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+
+        gameBoardMemberCommandService.updateMember(MEMBER_ID, updateCommand);
+
+        then(gameBoardAccessValidator).should().validateGameHost(GAME_BOARD_ID, MEMBER_ID);
+        assertThat(gameBoardMember.getName()).isEqualTo("수정 후");
+        assertThat(gameBoardMember.getGender()).isEqualTo(Gender.FEMALE);
+        assertThat(gameBoardMember.getLevel()).isEqualTo(Level.A);
+        assertThat(gameBoardMember.getAgeGroup()).isNull();
+        then(eventPublisher).should()
+                .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
     }
 }

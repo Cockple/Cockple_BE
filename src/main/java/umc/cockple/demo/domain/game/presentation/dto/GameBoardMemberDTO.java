@@ -22,6 +22,17 @@ public class GameBoardMemberDTO {
     ) {
     }
 
+    public record UpdateRequest(
+            @NotBlank(message = "이름은 필수입니다.")
+            String name,
+            @NotBlank(message = "성별은 필수입니다.")
+            String gender,
+            @NotBlank(message = "급수는 필수입니다.")
+            String level,
+            String ageGroup
+    ) {
+    }
+
     public record Response(
             int totalCount,
             List<MemberInfo> gameBoardMembers

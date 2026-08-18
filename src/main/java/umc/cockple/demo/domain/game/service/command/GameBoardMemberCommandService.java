@@ -9,6 +9,8 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
@@ -18,6 +20,7 @@ import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessVal
 public class GameBoardMemberCommandService {
 
     private final GameBoardReader gameBoardReader;
+    private final GameBoardMemberReader gameBoardMemberReader;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -33,5 +36,16 @@ public class GameBoardMemberCommandService {
 
         eventPublisher.publishEvent(new GameBoardMembersChangedEvent(gameBoard.getId(), memberId));
         return savedMember.getId();
+    }
+
+    public void updateMember(Long memberId, GameBoardMemberUpdateCommand command) {
+        gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
+        GameBoardMember gameBoardMember = gameBoardMemberReader.read(
+                command.gameBoardId(), command.gameBoardMemberId());
+
+        gameBoardMember.updateInfo(
+                command.name(), command.gender(), command.level(), command.ageGroup());
+
+        eventPublisher.publishEvent(new GameBoardMembersChangedEvent(command.gameBoardId(), memberId));
     }
 }
