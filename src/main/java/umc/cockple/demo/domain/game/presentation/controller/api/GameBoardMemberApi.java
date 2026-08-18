@@ -20,6 +20,24 @@ import java.util.List;
 @GameApiTag
 public interface GameBoardMemberApi {
 
+    @PatchMapping("/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}/participation")
+    @Operation(summary = "게임판 명단 참여 상태 변경", description = """
+            게임 진행자가 명단의 참여/불참 상태를 변경합니다.
+
+            - `participating`은 필수 Boolean입니다.
+            - PLAYING 또는 WAITING 게임에 포함된 선수는 참여 해제할 수 없습니다.
+            - 현재 값과 같은 요청은 성공하는 멱등 동작입니다.
+            """)
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 활성 게임 선수 참여 해제")
+    @ApiResponse(responseCode = "403", description = "게임판 관리 권한 없음")
+    @ApiResponse(responseCode = "404", description = "게임판 또는 명단을 찾을 수 없음")
+    ResponseEntity<BaseResponse<Void>> changeParticipation(
+            @PathVariable Long gameBoardId,
+            @PathVariable Long gameBoardMemberId,
+            @Valid @RequestBody GameBoardMemberDTO.ParticipationRequest request
+    );
+
     @PatchMapping("/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}")
     @Operation(summary = "게임판 명단 정보 수정", description = """
             게임 진행자가 명단의 이름, 성별, 급수, 연령대를 수정합니다.

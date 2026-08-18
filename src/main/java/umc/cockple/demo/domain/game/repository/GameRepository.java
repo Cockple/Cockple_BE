@@ -22,6 +22,13 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
     long countByGameBoardIdAndStatus(Long gameBoardId, GameStatus status);
 
+    @Query("select (count(g) > 0) from Game g " +
+            "join g.players p " +
+            "where p.gameBoardMember.id = :gameBoardMemberId and g.status in :statuses")
+    boolean existsByGameBoardMemberIdAndStatusIn(
+            @Param("gameBoardMemberId") Long gameBoardMemberId,
+            @Param("statuses") Collection<GameStatus> statuses);
+
     @Query("select distinct g from Game g " +
             "left join fetch g.court " +
             "left join fetch g.players p " +

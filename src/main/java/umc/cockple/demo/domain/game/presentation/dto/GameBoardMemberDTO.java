@@ -1,6 +1,7 @@
 package umc.cockple.demo.domain.game.presentation.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
@@ -30,6 +31,12 @@ public class GameBoardMemberDTO {
             @NotBlank(message = "급수는 필수입니다.")
             String level,
             String ageGroup
+    ) {
+    }
+
+    public record ParticipationRequest(
+            @NotNull(message = "참여 상태는 필수입니다.")
+            Boolean participating
     ) {
     }
 

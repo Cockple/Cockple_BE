@@ -17,9 +17,11 @@ import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -28,6 +30,7 @@ import umc.cockple.demo.support.fixture.GameFixture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
@@ -44,6 +47,7 @@ class GameBoardMemberCommandServiceTest {
     @InjectMocks private GameBoardMemberCommandService gameBoardMemberCommandService;
     @Mock private GameBoardReader gameBoardReader;
     @Mock private GameBoardMemberReader gameBoardMemberReader;
+    @Mock private GameReader gameReader;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -119,5 +123,63 @@ class GameBoardMemberCommandServiceTest {
         assertThat(gameBoardMember.getAgeGroup()).isNull();
         then(eventPublisher).should()
                 .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
+    }
+
+    @Test
+    @DisplayName("활성 게임에 포함되지 않은 선수를 참여 해제하고 이벤트를 발행한다")
+    void changeParticipation_deactivatesIdleMemberAndPublishesEvent() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberParticipationCommand participationCommand =
+                new GameBoardMemberParticipationCommand(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, false);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+        given(gameReader.existsByGameBoardMemberAndStatuses(
+                eq(GAME_BOARD_MEMBER_ID), any()))
+                .willReturn(false);
+
+        gameBoardMemberCommandService.changeParticipation(MEMBER_ID, participationCommand);
+
+        assertThat(gameBoardMember.getParticipating()).isFalse();
+        then(eventPublisher).should()
+                .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
+    }
+
+    @Test
+    @DisplayName("활성 게임 선수는 참여 해제할 수 없다")
+    void changeParticipation_rejectsActiveMemberDeactivation() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberParticipationCommand participationCommand =
+                new GameBoardMemberParticipationCommand(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, false);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+        given(gameReader.existsByGameBoardMemberAndStatuses(
+                eq(GAME_BOARD_MEMBER_ID), any()))
+                .willReturn(true);
+
+        assertThatThrownBy(() -> gameBoardMemberCommandService.changeParticipation(MEMBER_ID, participationCommand))
+                .isInstanceOfSatisfying(GameException.class, exception ->
+                        assertThat(exception.getCode())
+                                .isEqualTo(GameErrorCode.ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE));
+        assertThat(gameBoardMember.getParticipating()).isTrue();
+        then(eventPublisher).should(never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("현재 값과 같은 참여 상태 요청은 조회와 이벤트 없이 성공한다")
+    void changeParticipation_sameValueIsIdempotent() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberParticipationCommand participationCommand =
+                new GameBoardMemberParticipationCommand(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, true);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+
+        gameBoardMemberCommandService.changeParticipation(MEMBER_ID, participationCommand);
+
+        assertThat(gameBoardMember.getParticipating()).isTrue();
+        then(gameReader).shouldHaveNoInteractions();
+        then(eventPublisher).should(never()).publishEvent(any());
     }
 }

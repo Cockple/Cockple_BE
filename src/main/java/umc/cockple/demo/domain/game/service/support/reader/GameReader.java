@@ -21,4 +21,9 @@ public class GameReader {
             Long gameBoardId, Collection<GameStatus> statuses) {
         return gameRepository.findByGameBoardIdAndStatusInWithPlayers(gameBoardId, statuses);
     }
+
+    public boolean existsByGameBoardMemberAndStatuses(
+            Long gameBoardMemberId, Collection<GameStatus> statuses) {
+        return gameRepository.existsByGameBoardMemberIdAndStatusIn(gameBoardMemberId, statuses);
+    }
 }

@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.game.presentation.dto.GameBoardMemberDTO;
 import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMemberMapper;
 import umc.cockple.demo.domain.game.service.command.GameBoardMemberCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.query.GameBoardMemberQueryService;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
@@ -25,6 +26,20 @@ public class GameBoardMemberController implements GameBoardMemberApi {
     private final GameBoardMemberCommandService gameBoardMemberCommandService;
     private final GameBoardMemberQueryService gameBoardMemberQueryService;
     private final GameBoardMemberMapper gameBoardMemberMapper;
+
+    @Override
+    public ResponseEntity<BaseResponse<Void>> changeParticipation(
+            Long gameBoardId,
+            Long gameBoardMemberId,
+            GameBoardMemberDTO.ParticipationRequest request) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        GameBoardMemberParticipationCommand command = gameBoardMemberMapper.toParticipationCommand(
+                gameBoardId, gameBoardMemberId, request);
+
+        gameBoardMemberCommandService.changeParticipation(memberId, command);
+
+        return BaseResponse.of(CommonSuccessCode.OK);
+    }
 
     @Override
     public ResponseEntity<BaseResponse<Void>> updateMember(

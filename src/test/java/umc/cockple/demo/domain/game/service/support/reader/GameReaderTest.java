@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameReader")
@@ -34,5 +35,18 @@ class GameReaderTest {
 
         assertThat(gameReader.readAllByGameBoardAndStatuses(GAME_BOARD_ID, statuses))
                 .containsExactly(game);
+    }
+
+    @Test
+    @DisplayName("명단이 주어진 상태의 게임에 포함됐는지 조회한다")
+    void existsByGameBoardMemberAndStatuses_delegatesToRepository() {
+        Long gameBoardMemberId = 2L;
+        List<GameStatus> statuses = List.of(GameStatus.PLAYING, GameStatus.WAITING);
+        given(gameRepository.existsByGameBoardMemberIdAndStatusIn(gameBoardMemberId, statuses))
+                .willReturn(true);
+
+        assertThat(gameReader.existsByGameBoardMemberAndStatuses(gameBoardMemberId, statuses)).isTrue();
+        then(gameRepository).should()
+                .existsByGameBoardMemberIdAndStatusIn(gameBoardMemberId, statuses);
     }
 }
