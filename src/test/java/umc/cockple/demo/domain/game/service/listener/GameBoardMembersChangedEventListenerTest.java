@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameBoardMembersChangedEventListener")
@@ -48,7 +50,7 @@ class GameBoardMembersChangedEventListenerTest {
 
     @BeforeEach
     void setUp() {
-        event = new GameBoardMembersChangedEvent(GAME_BOARD_ID, ACTOR_MEMBER_ID);
+        event = GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID);
         GameBoardMemberResult members = new GameBoardMemberResult(0, List.of());
         membersDto = new GameBoardMemberDTO.Response(0, List.of());
         GameBoardResult board = new GameBoardResult(0, List.of(), List.of());
@@ -56,8 +58,8 @@ class GameBoardMembersChangedEventListenerTest {
 
         given(gameBoardMemberQueryService.getMembers(GAME_BOARD_ID, NO_FILTERS)).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
-        given(gameBoardQueryService.getBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).willReturn(board);
-        given(gameBoardMapper.toResponse(board)).willReturn(boardDto);
+        lenient().when(gameBoardQueryService.getBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
+        lenient().when(gameBoardMapper.toResponse(board)).thenReturn(boardDto);
     }
 
     @Test
@@ -80,6 +82,20 @@ class GameBoardMembersChangedEventListenerTest {
         assertThatCode(() -> listener.handleMembersChanged(event)).doesNotThrowAnyException();
 
         then(gameBoardBroadcaster).should()
+                .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
+    }
+
+    @Test
+    @DisplayName("게임/운동 상태 변경은 명단 snapshot만 전파한다")
+    void handleMembersChanged_membersOnlySkipsBoardSnapshot() {
+        event = GameBoardMembersChangedEvent.membersOnly(GAME_BOARD_ID, ACTOR_MEMBER_ID);
+
+        listener.handleMembersChanged(event);
+
+        then(gameBoardBroadcaster).should()
+                .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
+        then(gameBoardQueryService).shouldHaveNoInteractions();
+        then(gameBoardBroadcaster).should(never())
                 .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
     }
 }

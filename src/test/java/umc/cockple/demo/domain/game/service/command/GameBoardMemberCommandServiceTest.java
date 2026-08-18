@@ -87,7 +87,7 @@ class GameBoardMemberCommandServiceTest {
         assertThat(createdMember.getParticipating()).isTrue();
         assertThat(createdMember.getGameCount()).isZero();
         then(eventPublisher).should()
-                .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
+                .publishEvent(GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, MEMBER_ID));
     }
 
     @Test
@@ -122,7 +122,7 @@ class GameBoardMemberCommandServiceTest {
         assertThat(gameBoardMember.getLevel()).isEqualTo(Level.A);
         assertThat(gameBoardMember.getAgeGroup()).isNull();
         then(eventPublisher).should()
-                .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
+                .publishEvent(GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, MEMBER_ID));
     }
 
     @Test
@@ -141,8 +141,9 @@ class GameBoardMemberCommandServiceTest {
         gameBoardMemberCommandService.changeParticipation(MEMBER_ID, participationCommand);
 
         assertThat(gameBoardMember.getParticipating()).isFalse();
+        then(gameBoardReader).should().readForUpdate(GAME_BOARD_ID);
         then(eventPublisher).should()
-                .publishEvent(new GameBoardMembersChangedEvent(GAME_BOARD_ID, MEMBER_ID));
+                .publishEvent(GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, MEMBER_ID));
     }
 
     @Test

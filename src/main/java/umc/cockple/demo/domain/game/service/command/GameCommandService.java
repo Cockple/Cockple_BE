@@ -50,13 +50,17 @@ public class GameCommandService {
      * @return 생성된 게임 ID
      */
     public Long createGame(Long memberId, GameCreateCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
 
         Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
                 .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
                 .collect(Collectors.toMap(GameBoardMember::getId, Function.identity()));
         if (membersById.size() != command.gameBoardMemberIds().size()) {
             throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
+        }
+        if (membersById.values().stream()
+                .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
+            throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
         }
 
         int nextWaitingOrder = (int) gameRepository

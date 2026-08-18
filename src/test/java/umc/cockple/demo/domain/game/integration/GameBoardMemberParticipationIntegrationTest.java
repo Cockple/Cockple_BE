@@ -16,8 +16,11 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.GameCommandService;
+import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -33,8 +36,10 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +55,7 @@ class GameBoardMemberParticipationIntegrationTest extends IntegrationTestBase {
     @Autowired private ExerciseRepository exerciseRepository;
     @Autowired private GameBoardMemberRepository gameBoardMemberRepository;
     @Autowired private GameRepository gameRepository;
+    @Autowired private GameCommandService gameCommandService;
 
     private Member gameHost;
     private Member otherMember;
@@ -118,6 +124,17 @@ class GameBoardMemberParticipationIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         assertThat(idleInactiveMember.getParticipating()).isFalse();
+    }
+
+    @Test
+    @DisplayName("불참 상태의 선수는 새 대기 게임에 추가할 수 없다")
+    void createGame_rejectsInactiveMember() {
+        assertThatThrownBy(() -> gameCommandService.createGame(
+                gameHost.getId(),
+                new GameCreateCommand(
+                        exercise.getGameBoard().getId(), List.of(idleInactiveMember.getId()))))
+                .isInstanceOfSatisfying(GameException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(GameErrorCode.INACTIVE_GAME_PLAYER));
     }
 
     @Test

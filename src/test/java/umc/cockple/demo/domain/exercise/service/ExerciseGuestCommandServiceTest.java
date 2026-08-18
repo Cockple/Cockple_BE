@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
@@ -58,6 +60,7 @@ class ExerciseGuestCommandServiceTest {
     @Mock private GuestReader guestReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private GamePlayerRepository gamePlayerRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ExerciseGuestCommandService exerciseGuestCommandService;
 
@@ -74,6 +77,7 @@ class ExerciseGuestCommandServiceTest {
                 exerciseReader,
                 guestReader,
                 memberLookupService,
+                eventPublisher,
                 exerciseValidator,
                 new ExerciseGameAssignmentValidator(gamePlayerRepository));
 
@@ -129,6 +133,9 @@ class ExerciseGuestCommandServiceTest {
                         assertThat(gameBoardMember.getLevel()).isEqualTo(command.level());
                         assertThat(gameBoardMember.getAgeGroup()).isNull();
                     });
+            then(eventPublisher).should().publishEvent(
+                    GameBoardMembersChangedEvent.membersOnly(
+                            exercise.getGameBoard().getId(), command.inviterId()));
         }
 
         @Test
@@ -230,6 +237,9 @@ class ExerciseGuestCommandServiceTest {
             assertThat(result.currentParticipants()).isNotNull();
             then(guestRepository).should().delete(guest);
             assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
+            then(eventPublisher).should().publishEvent(
+                    GameBoardMembersChangedEvent.membersOnly(
+                            exercise.getGameBoard().getId(), manager.getId()));
         }
 
         @Test

@@ -80,7 +80,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
     void committedEvent_broadcastsMembersAndBoard() {
         transactionTemplate.executeWithoutResult(status ->
                 eventPublisher.publishEvent(
-                        new GameBoardMembersChangedEvent(GAME_BOARD_ID, ACTOR_MEMBER_ID)));
+                        GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID)));
 
         then(gameBoardBroadcaster).should(timeout(3000))
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
@@ -93,7 +93,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
     void rolledBackEvent_doesNotBroadcast() {
         transactionTemplate.executeWithoutResult(status -> {
             eventPublisher.publishEvent(
-                    new GameBoardMembersChangedEvent(GAME_BOARD_ID, ACTOR_MEMBER_ID));
+                    GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID));
             status.setRollbackOnly();
         });
 
@@ -115,7 +115,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         Long savedGameBoardId = transactionTemplate.execute(status -> {
             GameBoard saved = gameBoardRepository.save(GameBoard.create());
             eventPublisher.publishEvent(
-                    new GameBoardMembersChangedEvent(saved.getId(), ACTOR_MEMBER_ID));
+                    GameBoardMembersChangedEvent.membersAndBoard(saved.getId(), ACTOR_MEMBER_ID));
             return saved.getId();
         });
 

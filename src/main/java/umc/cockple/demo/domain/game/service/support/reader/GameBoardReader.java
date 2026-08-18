@@ -19,4 +19,10 @@ public class GameBoardReader {
         return gameBoardRepository.findById(gameBoardId)
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
     }
+
+    @Transactional
+    public GameBoard readForUpdate(Long gameBoardId) {
+        return gameBoardRepository.findByIdForUpdate(gameBoardId)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
+    }
 }
