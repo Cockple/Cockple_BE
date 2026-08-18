@@ -12,11 +12,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface GameBoardMemberRepository extends JpaRepository<GameBoardMember, Long> {
+public interface GameBoardMemberRepository extends JpaRepository<GameBoardMember, Long>, GameBoardMemberRepositoryCustom {
 
     Optional<GameBoardMember> findByIdAndGameBoardId(Long id, Long gameBoardId);
 
     List<GameBoardMember> findByGameBoardIdAndIdIn(Long gameBoardId, Collection<Long> ids);
+
+    long countByGameBoardId(Long gameBoardId);
 
     @Modifying(flushAutomatically = true)
     @Query(value = """

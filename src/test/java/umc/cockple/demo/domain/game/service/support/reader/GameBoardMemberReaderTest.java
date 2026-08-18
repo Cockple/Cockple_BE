@@ -10,12 +10,16 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameBoardMemberReader")
@@ -47,5 +51,26 @@ class GameBoardMemberReaderTest {
         assertThatThrownBy(() -> gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
                 .isInstanceOfSatisfying(GameException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("게임판 전체 명단 수를 repository에서 조회한다")
+    void countByGameBoard_delegatesToRepository() {
+        given(gameBoardMemberRepository.countByGameBoardId(GAME_BOARD_ID)).willReturn(3L);
+
+        assertThat(gameBoardMemberReader.countByGameBoard(GAME_BOARD_ID)).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("게임판 명단 필터 조건을 repository에 전달한다")
+    void readAllByFilters_delegatesToRepository() {
+        List<Level> levels = List.of(Level.A, Level.B);
+        given(gameBoardMemberRepository.findAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true))
+                .containsExactly(gameBoardMember);
+        then(gameBoardMemberRepository).should()
+                .findAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true);
     }
 }
