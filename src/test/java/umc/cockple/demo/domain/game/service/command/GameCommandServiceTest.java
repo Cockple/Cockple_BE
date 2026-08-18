@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
@@ -365,39 +366,35 @@ class GameCommandServiceTest {
     class MoveGameToWaiting {
 
         @Test
-        @DisplayName("진행 게임을 완료(COMPLETED, 게임횟수 +1)하고 같은 팀으로 새 대기 게임을 만든다")
-        void moveGameToWaiting_completesAndRequeuesSameTeam() {
+        @DisplayName("진행 게임을 기록 없이 같은 게임 그대로 대기열 맨 앞으로 되돌린다 (완료 아님, 게임횟수 불변)")
+        void moveGameToWaiting_returnsSameGameToFrontWithoutRecording() {
             // given
             GameBoardMember m1 = GameFixture.member(7L, board, "선수A", Level.A);
             GameBoardMember m2 = GameFixture.member(8L, board, "선수B", Level.B);
             Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now(),
                     GameFixture.player(m1, 0), GameFixture.player(m2, 1));
+            Game otherWaiting = GameFixture.waitingGame(60L, board, 1);
             given(gameBoardReader.read(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
-            given(gameRepository.save(any(Game.class))).willAnswer(inv -> inv.getArgument(0));
-            // 재정렬 no-op (대기열 순서 확정은 통합 테스트에서 검증)
+            // 재정렬: 되돌린 게임(임시순서 0) → 1번, 기존 대기 게임 → 2번
             given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
-                    .willReturn(List.of());
+                    .willReturn(List.of(playing, otherWaiting));
 
             // when
             gameCommandService.moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(BOARD_ID, GAME_ID));
 
-            // then - 원 게임은 완료 처리(게임횟수 +1). 코트 FK는 끊고 코트 번호만 스냅샷으로 보존한다.
-            assertThat(playing.getStatus()).isEqualTo(GameStatus.COMPLETED);
+            // then - 같은 게임이 WAITING으로 되돌아가고 코트가 빈다. 완료/게임횟수 증가는 없다.
+            assertThat(playing.getStatus()).isEqualTo(GameStatus.WAITING);
             assertThat(playing.getCourt()).isNull();
-            assertThat(playing.getCourtNo()).isEqualTo(court.getCourtNo());
-            assertThat(playing.getCompletedAt()).isNotNull();
-            assertThat(m1.getGameCount()).isEqualTo(1);
-            assertThat(m2.getGameCount()).isEqualTo(1);
+            assertThat(playing.getStartedAt()).isNull();
+            assertThat(playing.getCompletedAt()).isNull();
+            assertThat(playing.getWaitingOrder()).isEqualTo(1);
+            assertThat(otherWaiting.getWaitingOrder()).isEqualTo(2);
+            assertThat(m1.getGameCount()).isZero();
+            assertThat(m2.getGameCount()).isZero();
 
-            // 같은 팀으로 새 대기 게임이 생성된다 (배열 순서 유지)
-            ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
-            then(gameRepository).should().save(captor.capture());
-            Game requeued = captor.getValue();
-            assertThat(requeued.getStatus()).isEqualTo(GameStatus.WAITING);
-            assertThat(requeued.getPlayers())
-                    .extracting(p -> p.getGameBoardMember().getId(), GamePlayer::getPlayerOrder)
-                    .containsExactly(tuple(7L, 0), tuple(8L, 1));
+            // 새 게임을 만들지 않는다 (같은 게임을 재사용)
+            then(gameRepository).should(never()).save(any(Game.class));
         }
 
         @Test
@@ -420,6 +417,76 @@ class GameCommandServiceTest {
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
 
             assertThatThrownBy(() -> gameCommandService.moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_PLAYING);
+        }
+    }
+
+    @Nested
+    @DisplayName("completeGame (게임 완료)")
+    class CompleteGame {
+
+        @Test
+        @DisplayName("진행 게임을 완료 처리하고 참여자 게임횟수를 +1 하며 코트를 비운다 (시작시각 보존)")
+        void completeGame_completesAndIncrementsCount() {
+            // given
+            GameBoardMember m1 = GameFixture.member(7L, board, "선수A", Level.A);
+            GameBoardMember m2 = GameFixture.member(8L, board, "선수B", Level.B);
+            LocalDateTime startedAt = LocalDateTime.now().minusMinutes(15);
+            Game playing = GameFixture.playingGame(GAME_ID, board, court, startedAt,
+                    GameFixture.player(m1, 0), GameFixture.player(m2, 1));
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
+
+            // when
+            gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID));
+
+            // then - 완료 상태 + 완료시각 저장, 코트는 비우되 코트 번호는 스냅샷으로 보존
+            assertThat(playing.getStatus()).isEqualTo(GameStatus.COMPLETED);
+            assertThat(playing.getCourt()).isNull();
+            assertThat(playing.getCourtNo()).isEqualTo(court.getCourtNo());
+            assertThat(playing.getCompletedAt()).isNotNull();
+            // 경과시각 계산용으로 시작시각은 유지된다
+            assertThat(playing.getStartedAt()).isEqualTo(startedAt);
+            assertThat(m1.getGameCount()).isEqualTo(1);
+            assertThat(m2.getGameCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
+        void completeGame_gameNotFound() {
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("다른 게임판의 게임이면 GAME_NOT_FOUND 예외")
+        void completeGame_gameOfOtherBoard() {
+            GameBoard otherBoard = GameFixture.gameBoard(2L);
+            Game playingOfOther = GameFixture.playingGame(GAME_ID, otherBoard, court, LocalDateTime.now());
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playingOfOther));
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("진행 중인 게임이 아니면 GAME_NOT_PLAYING 예외")
+        void completeGame_notPlaying() {
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+
+            assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.GAME_NOT_PLAYING);

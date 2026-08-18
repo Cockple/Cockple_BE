@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
@@ -88,6 +89,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case CREATE_GAME -> handleCreateGame(context, gamePayload, responder);
                 case DELETE_GAME -> handleDeleteGame(context, gamePayload, responder);
                 case MOVE_TO_WAITING -> handleMoveToWaiting(context, gamePayload, responder);
+                case COMPLETE_GAME -> handleCompleteGame(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -159,6 +161,17 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         respondAndBroadcastBoard(context, gameBoardId, responder);
     }
 
+    private void handleCompleteGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+        requireGameId(payload);
+
+        GameCompleteCommand command = new GameCompleteCommand(gameBoardId, payload.gameId());
+        gameCommandService.completeGame(context.memberId(), command);
+
+        respondAndBroadcastBoard(context, gameBoardId, responder);
+    }
+
     private void handleDeleteGame(
             RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
         Long gameBoardId = requireGameBoardId(payload);
@@ -220,7 +233,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private void requireGameId(GameRealtimePayload payload) {
-        // MOVE_TO_WAITING: 대상 게임 ID가 필요하다.
+        // DELETE_GAME/MOVE_TO_WAITING/COMPLETE_GAME: 대상 게임 ID가 필요하다.
         if (payload.gameId() == null) {
             throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
         }

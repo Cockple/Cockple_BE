@@ -77,6 +77,13 @@ public class Game extends BaseEntity {
         this.completedAt = completedAt;
     }
 
+    public void returnToWaiting(int waitingOrder) {
+        this.status = GameStatus.WAITING;
+        this.court = null;
+        this.startedAt = null;
+        this.waitingOrder = waitingOrder;
+    }
+
     public void changeWaitingOrder(int waitingOrder) {
         this.waitingOrder = waitingOrder;
     }
