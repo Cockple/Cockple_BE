@@ -25,9 +25,29 @@ public class GameBoardBroadcaster {
     private final RealtimeMessagePublisher realtimeMessagePublisher;
 
     public void broadcastBoardUpdate(Long gameBoardId, Object boardData, String excludedSessionId) {
+        broadcastUpdate(
+                gameBoardId,
+                GameRealtimeProtocol.TYPE_BOARD_UPDATED,
+                boardData,
+                excludedSessionId);
+    }
+
+    public void broadcastMembersUpdate(Long gameBoardId, Object membersData, String excludedSessionId) {
+        broadcastUpdate(
+                gameBoardId,
+                GameRealtimeProtocol.TYPE_MEMBERS_UPDATED,
+                membersData,
+                excludedSessionId);
+    }
+
+    private void broadcastUpdate(
+            Long gameBoardId,
+            String type,
+            Object data,
+            String excludedSessionId) {
         Set<GameBoardSubscriber> subscribers = subscriptionStore.getSubscribers(gameBoardId);
         if (subscribers.isEmpty()) {
-            log.info("게임판 {} 구독자가 없어 브로드캐스트를 생략합니다.", gameBoardId);
+            log.info("게임판 {} 구독자가 없어 {} 브로드캐스트를 생략합니다.", gameBoardId, type);
             return;
         }
 
@@ -40,14 +60,14 @@ public class GameBoardBroadcaster {
                     subscriber.memberId(),
                     subscriber.sessionId(),
                     GameRealtimeProtocol.DOMAIN,
-                    GameRealtimeProtocol.TYPE_BOARD_UPDATED,
-                    boardData);
+                    type,
+                    data);
             if (result.deliveredToAnySession()) {
                 deliveredCount++;
             }
         }
 
-        log.info("게임판 브로드캐스트 완료 - gameBoardId: {}, 구독 세션: {}개, 전달: {}개",
-                gameBoardId, subscribers.size(), deliveredCount);
+        log.info("게임판 {} 브로드캐스트 완료 - gameBoardId: {}, 구독 세션: {}개, 전달: {}개",
+                type, gameBoardId, subscribers.size(), deliveredCount);
     }
 }
