@@ -21,13 +21,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("게임판 명단 원본 연결 마이그레이션")
 class GameBoardMemberSourceMigrationTest {
 
+    private static final String TARGET_SCHEMA_VERSION = "2026.08.17.14.10";
+
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
 
     @Test
     @DisplayName("원본 연결의 무결성과 회원 스냅샷 보존·게스트 명단 정리를 보장한다")
     void addGameBoardMemberSources() throws Exception {
-        migrateToLatestSchema();
+        migrateToTargetSchema();
 
         try (Connection connection = mysql.createConnection("");
              Statement statement = connection.createStatement()) {
@@ -78,8 +80,8 @@ class GameBoardMemberSourceMigrationTest {
         }
     }
 
-    private void migrateToLatestSchema() {
-        flyway().load().migrate();
+    private void migrateToTargetSchema() {
+        flyway().target(TARGET_SCHEMA_VERSION).load().migrate();
     }
 
     private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {

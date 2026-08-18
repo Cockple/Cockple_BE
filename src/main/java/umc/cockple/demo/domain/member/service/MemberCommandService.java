@@ -98,6 +98,7 @@ public class MemberCommandService {
         gameBoardRosterCleanupService.removeFutureMemberRosters(member.getId(), withdrawalTime);
         memberExerciseRepository.deleteFutureExercisesByMember(
                 member, withdrawalTime.toLocalDate(), withdrawalTime.toLocalTime());
+        memberPartyRepository.findAllByMemberIdForUpdate(member.getId());
         memberPartyRepository.deleteAllByMember(member);
         memberKeywordRepository.deleteAllByMember(member);
 

@@ -146,6 +146,7 @@ class ExerciseLifecycleCommandServiceTest {
                 ArgumentCaptor<Exercise> exerciseCaptor = ArgumentCaptor.forClass(Exercise.class);
                 then(exerciseRepository).should().save(exerciseCaptor.capture());
                 assertThat(exerciseCaptor.getValue().getGameBoard()).isNotNull();
+                assertThat(exerciseCaptor.getValue().getGameHostId()).isEqualTo(manager.getId());
             }
 
             @Test

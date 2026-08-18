@@ -21,7 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("운동 게임판 백필 마이그레이션")
 class ExerciseGameBoardMigrationTest {
 
-    private static final String GAME_BOARD_SCHEMA_VERSION = "2026.08.15.00.00";
+    private static final String PREVIOUS_SCHEMA_VERSION = "2026.08.15.00.00";
+    private static final String TARGET_SCHEMA_VERSION = "2026.08.17.14.00";
 
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
@@ -29,7 +30,7 @@ class ExerciseGameBoardMigrationTest {
     @Test
     @DisplayName("기존 운동에 게임판을 연결하고 필수 1:1 관계를 보장한다")
     void backfillExerciseGameBoards() throws Exception {
-        migrateToGameBoardSchema();
+        migrateToPreviousSchema();
 
         long existingGameBoardId;
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
@@ -41,7 +42,7 @@ class ExerciseGameBoardMigrationTest {
             insertExercise(statement, null);
         }
 
-        migrateToLatestSchema();
+        migrateToTargetSchema();
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(queryLong(statement,
@@ -65,12 +66,12 @@ class ExerciseGameBoardMigrationTest {
         }
     }
 
-    private void migrateToGameBoardSchema() {
-        flyway().target(GAME_BOARD_SCHEMA_VERSION).load().migrate();
+    private void migrateToPreviousSchema() {
+        flyway().target(PREVIOUS_SCHEMA_VERSION).load().migrate();
     }
 
-    private void migrateToLatestSchema() {
-        flyway().load().migrate();
+    private void migrateToTargetSchema() {
+        flyway().target(TARGET_SCHEMA_VERSION).load().migrate();
     }
 
     private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {

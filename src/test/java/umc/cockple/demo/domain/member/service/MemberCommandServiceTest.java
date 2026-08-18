@@ -666,6 +666,8 @@ class MemberCommandServiceTest {
                 then(gameBoardRosterCleanupService).should()
                         .removeFutureMemberRosters(eq(normalMember.getId()), any());
                 then(memberExerciseRepository).should(never()).deleteAll();
+                then(memberPartyRepository).should()
+                        .findAllByMemberIdForUpdate(normalMember.getId());
                 then(memberPartyRepository).should().deleteAllByMember(normalMember);
                 then(memberKeywordRepository).should().deleteAllByMember(normalMember);
             }

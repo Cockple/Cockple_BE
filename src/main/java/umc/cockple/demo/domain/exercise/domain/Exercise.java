@@ -42,6 +42,9 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private GameBoard gameBoard = GameBoard.create();
 
+    @Column(name = "game_host_id", nullable = false)
+    private Long gameHostId;
+
     @Column(nullable = false)
     private LocalDate date; // 운동 날짜
 
@@ -73,7 +76,10 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<Guest> guests = new ArrayList<>();
 
-    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
+    public static Exercise create(
+            ExerciseAddr exerciseAddr,
+            ExerciseCreateCommand command,
+            Long gameHostId) {
         return Exercise.builder()
                 .exerciseAddr(exerciseAddr)
                 .date(command.date())
@@ -83,6 +89,7 @@ public class Exercise extends BaseEntity {
                 .partyGuestAccept(command.partyGuestAccept())
                 .outsideGuestAccept(command.outsideGuestAccept())
                 .notice(command.notice())
+                .gameHostId(gameHostId)
                 .build();
     }
 
@@ -114,6 +121,10 @@ public class Exercise extends BaseEntity {
         if (this.exerciseAddr != null && command != null) {
             this.exerciseAddr.updateAddress(command);
         }
+    }
+
+    public void changeGameHost(Long gameHostId) {
+        this.gameHostId = gameHostId;
     }
 
     public Integer getNowCapacity() {
