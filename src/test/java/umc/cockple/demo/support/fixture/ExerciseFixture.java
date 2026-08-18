@@ -43,6 +43,7 @@ public class ExerciseFixture {
                 .outsideGuestAccept(outsideGuestAccept)
                 .exerciseAddr(exerciseAddr)
                 .notice(notice)
+                .gameHostId(party != null ? party.getOwnerId() : null)
                 .build();
     }
 

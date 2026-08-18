@@ -5,10 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.hibernate.exception.ConstraintViolationException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
@@ -16,6 +18,8 @@ import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
@@ -44,6 +48,7 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.sql.SQLException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,6 +69,7 @@ class ExerciseParticipationCommandServiceTest {
     @Mock private MemberExerciseReader memberExerciseReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private GamePlayerRepository gamePlayerRepository;
 
     private ExerciseParticipationCommandService exerciseParticipationCommandService;
 
@@ -85,7 +91,8 @@ class ExerciseParticipationCommandServiceTest {
                 memberLookupService,
                 memberPartyLookupService,
                 eventPublisher,
-                exerciseValidator);
+                exerciseValidator,
+                new ExerciseGameAssignmentValidator(gamePlayerRepository));
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -97,6 +104,7 @@ class ExerciseParticipationCommandServiceTest {
         exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
                 LocalTime.of(12, 0), true, false);
         ReflectionTestUtils.setField(exercise, "id", 100L);
+        ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 1000L);
 
         lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
         lenient().when(exerciseReader.findByIdWithPartyLevelsOrThrow(exercise.getId())).thenReturn(exercise);
@@ -121,7 +129,7 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 50L);
@@ -133,7 +141,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().save(participationCaptor.capture());
+                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
 
                 MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(50L);
@@ -142,6 +150,14 @@ class ExerciseParticipationCommandServiceTest {
                 assertThat(savedParticipation.getExercise()).isSameAs(exercise);
                 assertThat(savedParticipation.getExerciseMemberShipStatus())
                         .isEqualTo(ExerciseMemberShipStatus.PARTY_MEMBER);
+                assertThat(exercise.getGameBoard().getGameBoardMembers())
+                        .singleElement()
+                        .satisfies(gameBoardMember -> {
+                            assertThat(gameBoardMember.getMember()).isSameAs(participant);
+                            assertThat(gameBoardMember.getName()).isEqualTo(participant.getMemberName());
+                            assertThat(gameBoardMember.getGender()).isEqualTo(participant.getGender());
+                            assertThat(gameBoardMember.getLevel()).isEqualTo(participant.getLevel());
+                        });
             }
 
             @Test
@@ -160,7 +176,7 @@ class ExerciseParticipationCommandServiceTest {
                 given(memberLookupService.findByIdOrThrow(outsideMember.getId())).willReturn(outsideMember);
                 given(memberExerciseRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
-                given(memberExerciseRepository.save(any(MemberExercise.class)))
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                         .willAnswer(invocation -> {
                             MemberExercise me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 51L);
@@ -173,7 +189,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().save(participationCaptor.capture());
+                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
 
                 MemberExercise savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(51L);
@@ -188,6 +204,48 @@ class ExerciseParticipationCommandServiceTest {
         @Nested
         @DisplayName("실패 케이스")
         class Failure {
+
+            @Test
+            @DisplayName("동시 참가로 유니크 제약이 충돌하면 이미 참여한 운동 오류로 변환한다")
+            void duplicateConstraint_throwsAlreadyJoinedExercise() {
+                Member participant = MemberFixture.createMember(
+                        "참여자", Gender.MALE, Level.B, 2001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(participant, "id", 2L);
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                        .willThrow(uniqueConflict("uk_member_exercise_exercise_member"));
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .joinExercise(exercise.getId(), participant.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                                .isEqualTo(ExerciseErrorCode.ALREADY_JOINED_EXERCISE));
+
+                then(eventPublisher).should(never())
+                        .publishEvent(any(ExerciseAttendanceChangedEvent.class));
+            }
+
+            @Test
+            @DisplayName("참가 중복과 무관한 무결성 위반은 원래 예외를 전파한다")
+            void otherConstraint_rethrowsOriginalException() {
+                Member participant = MemberFixture.createMember(
+                        "참여자", Gender.MALE, Level.B, 2001L, LocalDate.of(2000, 1, 1));
+                ReflectionTestUtils.setField(participant, "id", 2L);
+                DataIntegrityViolationException conflict = uniqueConflict("other_constraint");
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
+                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                        .willThrow(conflict);
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .joinExercise(exercise.getId(), participant.getId()))
+                        .isSameAs(conflict);
+            }
 
             @Test
             @DisplayName("이미 시작된 운동이면 ExerciseException(EXERCISE_ALREADY_STARTED_PARTICIPATION)을 던진다")
@@ -282,6 +340,8 @@ class ExerciseParticipationCommandServiceTest {
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                exercise.getGameBoard().addGameBoardMember(
+                        GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
@@ -295,6 +355,7 @@ class ExerciseParticipationCommandServiceTest {
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
                 assertThat(response.currentParticipants()).isNotNull();
                 then(memberExerciseRepository).should().delete(memberExercise);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
         }
 
@@ -343,6 +404,29 @@ class ExerciseParticipationCommandServiceTest {
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
                                 .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
             }
+
+            @Test
+            @DisplayName("게임에 편성된 참여자는 본인 참여를 취소할 수 없다")
+            void assignedPlayer_throwsException() {
+                Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(participant, "id", 2L);
+                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
+
+                given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
+                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
+                        .willReturn(memberExercise);
+                given(gamePlayerRepository.existsByMemberSource(
+                        exercise.getGameBoard().getId(), participant.getId()))
+                        .willReturn(true);
+
+                assertThatThrownBy(() -> exerciseParticipationCommandService
+                        .cancelParticipation(exercise.getId(), participant.getId()))
+                        .isInstanceOf(ExerciseException.class)
+                        .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                                .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+                then(memberExerciseRepository).should(never()).delete(any(MemberExercise.class));
+            }
         }
     }
 
@@ -363,6 +447,8 @@ class ExerciseParticipationCommandServiceTest {
 
                 MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
                 ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                exercise.getGameBoard().addGameBoardMember(
+                        GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
@@ -377,6 +463,7 @@ class ExerciseParticipationCommandServiceTest {
                 // then
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
                 then(memberExerciseRepository).should().delete(memberExercise);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
 
             @Test
@@ -418,6 +505,7 @@ class ExerciseParticipationCommandServiceTest {
                 // given
                 Guest guest = GuestFixture.createGuest(exercise, manager.getId());
                 ReflectionTestUtils.setField(guest, "id", 60L);
+                exercise.getGameBoard().addGameBoardMember(GameBoardMember.createFromGuest(guest));
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(true);
 
@@ -430,6 +518,7 @@ class ExerciseParticipationCommandServiceTest {
                 // then
                 assertThat(response.memberName()).isEqualTo("게스트");
                 then(guestRepository).should().delete(guest);
+                assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
         }
 
@@ -537,7 +626,7 @@ class ExerciseParticipationCommandServiceTest {
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
             given(memberExerciseRepository.existsByExerciseAndMember(exercise, normalMember)).willReturn(false);
             given(memberPartyRepository.existsByPartyAndMember(party, normalMember)).willReturn(true);
-            given(memberExerciseRepository.save(any(MemberExercise.class)))
+            given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
                     .willAnswer(invocation -> {
                         MemberExercise me = invocation.getArgument(0);
                         ReflectionTestUtils.setField(me, "id", 50L);
@@ -624,5 +713,13 @@ class ExerciseParticipationCommandServiceTest {
             then(eventPublisher).should().publishEvent(captor.capture());
             return captor.getValue();
         }
+    }
+
+    private DataIntegrityViolationException uniqueConflict(String constraintName) {
+        ConstraintViolationException constraintViolation = new ConstraintViolationException(
+                "could not execute statement",
+                new SQLException("Duplicate entry", "23000", 1062),
+                constraintName);
+        return new DataIntegrityViolationException("duplicate", constraintViolation);
     }
 }

@@ -144,7 +144,7 @@ public class Party extends BaseEntity {
 
     public Exercise createExercise(ExerciseCreateCommand command, ExerciseCreateAddressCommand addrCommand) {
         ExerciseAddr exerciseAddr = ExerciseAddr.create(addrCommand);
-        return Exercise.create(exerciseAddr, command);
+        return Exercise.create(exerciseAddr, command, ownerId);
     }
 
     public boolean isAgeValid(Member member){

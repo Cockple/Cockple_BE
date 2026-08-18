@@ -21,11 +21,15 @@ import umc.cockple.demo.global.enums.Role;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ExerciseValidator {
+
+    private static final Set<Role> GAME_HOST_MANAGEMENT_ROLES = Set.of(
+            Role.PARTY_MANAGER, Role.PARTY_SUBMANAGER);
 
     private final MemberPartyLookupService memberPartyLookupService;
     private final MemberExerciseRepository memberExerciseRepository;
@@ -81,6 +85,14 @@ public class ExerciseValidator {
 
     public void validateExerciseManagementPermission(Exercise exercise, Long memberId) {
         validateSubManagerPermission(memberId, exercise.getParty());
+    }
+
+    public void validateGameHostManagementPermission(Exercise exercise, Long memberId) {
+        Party party = exercise.getParty();
+        if (!memberPartyLookupService.hasAnyActiveRole(
+                party.getId(), memberId, GAME_HOST_MANAGEMENT_ROLES)) {
+            throw new ExerciseException(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED);
+        }
     }
 
     // ========== 세부 검증 메서드들 ==========

@@ -2,6 +2,8 @@ package umc.cockple.demo.domain.game.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ public class GameBoard extends BaseEntity {
     @Builder.Default
     private List<Game> games = new ArrayList<>();
 
-    @OneToMany(mappedBy = "gameBoard", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "gameBoard", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<GameBoardMember> gameBoardMembers = new ArrayList<>();
 
@@ -50,5 +52,27 @@ public class GameBoard extends BaseEntity {
     public void addGameBoardMember(GameBoardMember gameBoardMember) {
         this.gameBoardMembers.add(gameBoardMember);
         gameBoardMember.setGameBoard(this);
+    }
+
+    public void removeGameBoardMember(Member member) {
+        removeGameBoardMember(gameBoardMembers.stream()
+                .filter(gameBoardMember -> gameBoardMember.originatesFrom(member))
+                .findFirst()
+                .orElse(null));
+    }
+
+    public void removeGameBoardMember(Guest guest) {
+        removeGameBoardMember(gameBoardMembers.stream()
+                .filter(gameBoardMember -> gameBoardMember.originatesFrom(guest))
+                .findFirst()
+                .orElse(null));
+    }
+
+    private void removeGameBoardMember(GameBoardMember gameBoardMember) {
+        if (gameBoardMember == null) {
+            return;
+        }
+        this.gameBoardMembers.remove(gameBoardMember);
+        gameBoardMember.setGameBoard(null);
     }
 }

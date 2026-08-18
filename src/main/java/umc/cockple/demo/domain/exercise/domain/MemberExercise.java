@@ -7,6 +7,9 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_member_exercise_exercise_member",
+        columnNames = {"exercise_id", "member_id"}))
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

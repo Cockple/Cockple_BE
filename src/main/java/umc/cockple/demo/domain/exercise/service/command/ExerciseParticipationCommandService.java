@@ -2,7 +2,9 @@ package umc.cockple.demo.domain.exercise.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -10,6 +12,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
@@ -19,6 +22,8 @@ import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
+import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
+import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -33,6 +38,11 @@ import java.util.List;
 @Slf4j
 public class ExerciseParticipationCommandService {
 
+    private static final String MEMBER_EXERCISE_UNIQUE_CONSTRAINT =
+            "uk_member_exercise_exercise_member";
+    private static final String GAME_BOARD_MEMBER_UNIQUE_CONSTRAINT =
+            "uk_game_board_member_board_member";
+
     private final MemberExerciseRepository memberExerciseRepository;
     private final GuestRepository guestRepository;
     private final ExerciseReader exerciseReader;
@@ -43,6 +53,7 @@ public class ExerciseParticipationCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
+    private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
 
     public ExerciseJoinResult joinExercise(Long exerciseId, Long memberId) {
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
@@ -58,7 +69,7 @@ public class ExerciseParticipationCommandService {
                 : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
         MemberExercise memberExercise = exercise.addParticipation(member, membershipStatus);
 
-        MemberExercise savedMemberExercise = memberExerciseRepository.save(memberExercise);
+        MemberExercise savedMemberExercise = saveParticipation(memberExercise);
         publishAttendanceChangedEvent(exercise, member.getId());
 
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
@@ -68,6 +79,42 @@ public class ExerciseParticipationCommandService {
                 savedMemberExercise.getId(), savedMemberExercise.getCreatedAt(), exercise.getNowCapacity());
     }
 
+    private MemberExercise saveParticipation(MemberExercise memberExercise) {
+        try {
+            return memberExerciseRepository.saveAndFlush(memberExercise);
+        } catch (DataIntegrityViolationException exception) {
+            if (isDuplicateParticipation(exception)) {
+                throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
+            }
+            throw exception;
+        }
+    }
+
+    private boolean isDuplicateParticipation(Throwable exception) {
+        for (Throwable cause = exception;
+             cause != null && cause != cause.getCause();
+             cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException constraintViolation
+                    && isParticipationConstraint(constraintViolation.getConstraintName())) {
+                return true;
+            }
+
+            if (isParticipationConstraint(cause.getMessage())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isParticipationConstraint(String value) {
+        if (value == null) {
+            return false;
+        }
+        String normalized = value.toLowerCase();
+        return normalized.contains(MEMBER_EXERCISE_UNIQUE_CONSTRAINT)
+                || normalized.contains(GAME_BOARD_MEMBER_UNIQUE_CONSTRAINT);
+    }
+
     public ExerciseCancelResult cancelParticipation(Long exerciseId, Long memberId) {
         log.info("운동 참여 취소 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
 
@@ -75,6 +122,8 @@ public class ExerciseParticipationCommandService {
         Member member = memberLookupService.findByIdOrThrow(memberId);
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
+        exerciseGameAssignmentValidator.validateMemberCancellation(
+                exercise.getGameBoard().getId(), member.getId());
 
         exercise.removeParticipation(memberExercise);
 
@@ -121,6 +170,8 @@ public class ExerciseParticipationCommandService {
     private ExerciseCancelResult cancelGuestParticipation(Exercise exercise, Long participantId) {
         Guest guest = guestReader.findByIdOrThrow(participantId);
         exerciseValidator.validateCancelGuestParticipationByManager(guest, exercise);
+        exerciseGameAssignmentValidator.validateGuestCancellation(
+                exercise.getGameBoard().getId(), guest.getId());
 
         exercise.removeGuest(guest);
 
@@ -132,6 +183,8 @@ public class ExerciseParticipationCommandService {
     private ExerciseCancelResult cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
         MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
+        exerciseGameAssignmentValidator.validateMemberCancellation(
+                exercise.getGameBoard().getId(), participant.getId());
 
         exercise.removeParticipation(memberExercise);
 

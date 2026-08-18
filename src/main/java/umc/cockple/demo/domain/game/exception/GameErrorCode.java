@@ -27,8 +27,9 @@ public enum GameErrorCode implements BaseErrorCode {
     COURT_HAS_ACTIVE_GAME(HttpStatus.BAD_REQUEST, "GAME406", "진행 중인 게임이 있는 코트는 삭제할 수 없습니다."),
     INVALID_GAME_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "GAME407", "게임 인원은 1명 이상 4명 이하여야 합니다."),
     DUPLICATE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME408", "같은 플레이어를 중복으로 넣을 수 없습니다."),
+    INVALID_AGE_GROUP_FORMAT(HttpStatus.BAD_REQUEST, "GAME409", "올바른 연령대를 입력해주세요. (10대, 20대, 30대, 40대, 50대, 60대, 70대)"),
     GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME410", "이미 완료된 게임은 취소할 수 없습니다."),
-    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME411", "커서 형식이 올바르지 않습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME411", "커서 형식이 올바르지 않습니다.")
 
     ;
 
