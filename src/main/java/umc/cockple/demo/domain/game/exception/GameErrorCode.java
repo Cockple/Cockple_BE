@@ -21,15 +21,15 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_BOARD_ID_REQUIRED(HttpStatus.BAD_REQUEST, "GAME401", "게임판 ID가 필요합니다."),
     INVALID_REALTIME_PAYLOAD(HttpStatus.BAD_REQUEST, "GAME402", "게임 요청 형식이 올바르지 않습니다."),
     GAME_NOT_WAITING(HttpStatus.BAD_REQUEST, "GAME403", "대기 중인 게임이 아닙니다."),
-    GAME_NOT_PLAYING(HttpStatus.BAD_REQUEST, "GAME409", "진행 중인 게임이 아닙니다."),
-    COURT_ALREADY_IN_USE(HttpStatus.BAD_REQUEST, "GAME404", "이미 게임이 진행 중인 코트입니다."),
-    DUPLICATE_COURT_ID(HttpStatus.BAD_REQUEST, "GAME405", "코트 ID가 중복되어 요청되었습니다."),
-    COURT_HAS_ACTIVE_GAME(HttpStatus.BAD_REQUEST, "GAME406", "진행 중인 게임이 있는 코트는 삭제할 수 없습니다."),
-    INVALID_GAME_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "GAME407", "게임 인원은 1명 이상 4명 이하여야 합니다."),
-    DUPLICATE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME408", "같은 플레이어를 중복으로 넣을 수 없습니다."),
-    INVALID_AGE_GROUP_FORMAT(HttpStatus.BAD_REQUEST, "GAME409", "올바른 연령대를 입력해주세요. (10대, 20대, 30대, 40대, 50대, 60대, 70대)"),
-    GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME410", "이미 완료된 게임은 취소할 수 없습니다."),
-    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME411", "커서 형식이 올바르지 않습니다.")
+    GAME_NOT_PLAYING(HttpStatus.BAD_REQUEST, "GAME404", "진행 중인 게임이 아닙니다."),
+    COURT_ALREADY_IN_USE(HttpStatus.BAD_REQUEST, "GAME405", "이미 게임이 진행 중인 코트입니다."),
+    DUPLICATE_COURT_ID(HttpStatus.BAD_REQUEST, "GAME406", "코트 ID가 중복되어 요청되었습니다."),
+    COURT_HAS_ACTIVE_GAME(HttpStatus.BAD_REQUEST, "GAME407", "진행 중인 게임이 있는 코트는 삭제할 수 없습니다."),
+    INVALID_GAME_PLAYER_COUNT(HttpStatus.BAD_REQUEST, "GAME408", "게임 인원은 1명 이상 4명 이하여야 합니다."),
+    DUPLICATE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME409", "같은 플레이어를 중복으로 넣을 수 없습니다."),
+    INVALID_AGE_GROUP_FORMAT(HttpStatus.BAD_REQUEST, "GAME410", "올바른 연령대를 입력해주세요. (10대, 20대, 30대, 40대, 50대, 60대, 70대)"),
+    GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME411", "이미 완료된 게임은 취소할 수 없습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME412", "커서 형식이 올바르지 않습니다.")
 
     ;
 
