@@ -82,6 +82,7 @@ public interface GameBoardMemberApi {
             - `shuttlecockSubmitted`: 셔틀콕 제출 여부입니다.
             - 서로 다른 종류의 필터는 AND 조건입니다.
             - `totalCount`는 필터와 무관한 전체 명단 수입니다.
+            - 명단의 `gender`, `level`, `ageGroup`은 한글 표시값으로 반환합니다.
             """)
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @ApiResponse(responseCode = "401", description = "인증 필요")

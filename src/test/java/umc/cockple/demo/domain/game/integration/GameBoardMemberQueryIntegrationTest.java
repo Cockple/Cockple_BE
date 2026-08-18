@@ -101,7 +101,7 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.data.gameBoardMembers[0].ageGroup").value("20대"))
                 .andExpect(jsonPath("$.data.gameBoardMembers[2].ageGroup").value(nullValue()))
                 .andExpect(jsonPath("$.data.gameBoardMembers[0].level").value("A조"))
-                .andExpect(jsonPath("$.data.gameBoardMembers[0].gender").doesNotExist());
+                .andExpect(jsonPath("$.data.gameBoardMembers[0].gender").value("여성"));
     }
 
     @Test

@@ -81,6 +81,7 @@ public class GameBoardMemberMapper {
                 member.gameCount(),
                 member.profileImageUrl(),
                 member.name(),
+                member.gender().getKoreanName(),
                 member.ageGroup() == null ? null : member.ageGroup().getKoreanName(),
                 member.level().getKoreanName(),
                 member.shuttlecockSubmitted());

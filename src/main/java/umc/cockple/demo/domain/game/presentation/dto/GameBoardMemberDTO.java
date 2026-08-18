@@ -54,6 +54,7 @@ public class GameBoardMemberDTO {
             int gameCount,
             String profileImageUrl,
             String name,
+            String gender,
             String ageGroup,
             String level,
             boolean shuttlecockSubmitted

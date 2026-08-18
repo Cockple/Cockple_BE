@@ -81,6 +81,7 @@ public class GameBoardMemberQueryService {
                 gameBoardMember.getGameCount(),
                 profileImageUrl,
                 gameBoardMember.getName(),
+                gameBoardMember.getGender(),
                 gameBoardMember.getAgeGroup(),
                 gameBoardMember.getLevel(),
                 gameBoardMember.getShuttlecockSubmitted());
