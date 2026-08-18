@@ -12,6 +12,8 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
@@ -43,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseGuestCommandService")
@@ -54,6 +57,7 @@ class ExerciseGuestCommandServiceTest {
     @Mock private ExerciseReader exerciseReader;
     @Mock private GuestReader guestReader;
     @Mock private MemberLookupService memberLookupService;
+    @Mock private GamePlayerRepository gamePlayerRepository;
 
     private ExerciseGuestCommandService exerciseGuestCommandService;
 
@@ -70,7 +74,8 @@ class ExerciseGuestCommandServiceTest {
                 exerciseReader,
                 guestReader,
                 memberLookupService,
-                exerciseValidator);
+                exerciseValidator,
+                new ExerciseGameAssignmentValidator(gamePlayerRepository));
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -82,6 +87,7 @@ class ExerciseGuestCommandServiceTest {
         exercise = ExerciseFixture.createExercise(party, LocalDate.of(2099, 12, 31),
                 LocalTime.of(12, 0), true, false);
         ReflectionTestUtils.setField(exercise, "id", 100L);
+        ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 1000L);
 
         lenient().when(exerciseReader.findByIdOrThrow(exercise.getId())).thenReturn(exercise);
         lenient().when(memberLookupService.findByIdOrThrow(manager.getId())).thenReturn(manager);
@@ -114,6 +120,15 @@ class ExerciseGuestCommandServiceTest {
 
             assertThat(result.guestId()).isEqualTo(200L);
             assertThat(result.currentParticipants()).isNotNull();
+            assertThat(exercise.getGameBoard().getGameBoardMembers())
+                    .singleElement()
+                    .satisfies(gameBoardMember -> {
+                        assertThat(gameBoardMember.getGuest().getId()).isEqualTo(200L);
+                        assertThat(gameBoardMember.getName()).isEqualTo(command.guestName());
+                        assertThat(gameBoardMember.getGender()).isEqualTo(command.gender());
+                        assertThat(gameBoardMember.getLevel()).isEqualTo(command.level());
+                        assertThat(gameBoardMember.getAgeGroup()).isNull();
+                    });
         }
 
         @Test
@@ -205,6 +220,7 @@ class ExerciseGuestCommandServiceTest {
         @DisplayName("초대자가 본인 게스트를 취소하면 Response를 반환한다")
         void cancelGuestInvitation_success() {
             Guest guest = createGuest(exercise, manager.getId(), 60L);
+            exercise.getGameBoard().addGameBoardMember(GameBoardMember.createFromGuest(guest));
             given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
 
             ExerciseCancelResult result = exerciseGuestCommandService
@@ -213,6 +229,7 @@ class ExerciseGuestCommandServiceTest {
             assertThat(result.memberName()).isEqualTo("게스트");
             assertThat(result.currentParticipants()).isNotNull();
             then(guestRepository).should().delete(guest);
+            assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
         }
 
         @Test
@@ -298,6 +315,24 @@ class ExerciseGuestCommandServiceTest {
                     .isInstanceOf(ExerciseException.class)
                     .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                             .isEqualTo(ExerciseErrorCode.GUEST_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("게임에 편성된 게스트는 초대를 취소할 수 없다")
+        void assignedGuest_throwsException() {
+            Guest guest = createGuest(exercise, manager.getId(), 60L);
+            given(guestReader.findByIdOrThrow(guest.getId())).willReturn(guest);
+            given(gamePlayerRepository.existsByGuestSource(
+                    exercise.getGameBoard().getId(), guest.getId()))
+                    .willReturn(true);
+
+            assertThatThrownBy(() -> exerciseGuestCommandService
+                    .cancelGuestInvitation(exercise.getId(), guest.getId(), manager.getId()))
+                    .isInstanceOf(ExerciseException.class)
+                    .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
+                            .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
+
+            then(guestRepository).should(never()).delete(guest);
         }
 
         private Guest createGuest(Exercise guestExercise, Long inviterId, Long guestId) {

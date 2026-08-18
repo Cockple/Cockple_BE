@@ -7,6 +7,7 @@ import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateComm
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
 import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
@@ -36,9 +37,10 @@ public class Exercise extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Party party;
 
-    @JoinColumn(name = "game_board_id")
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private GameBoard gameBoard;
+    @JoinColumn(name = "game_board_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
+    @Builder.Default
+    private GameBoard gameBoard = GameBoard.create();
 
     @Column(nullable = false)
     private LocalDate date; // 운동 날짜
@@ -133,26 +135,26 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public void assignGameBoard(GameBoard gameBoard) {
-        this.gameBoard = gameBoard;
-    }
-
     public MemberExercise addParticipation(Member member, ExerciseMemberShipStatus status) {
         MemberExercise memberExercise = MemberExercise.create(member, this, status);
         this.memberExercises.add(memberExercise);
+        this.gameBoard.addGameBoardMember(GameBoardMember.createFromMember(member, date));
         return memberExercise;
     }
 
     public void addGuest(Guest guest) {
         this.guests.add(guest);
         guest.setExercise(this);
+        this.gameBoard.addGameBoardMember(GameBoardMember.createFromGuest(guest));
     }
 
     public void removeParticipation(MemberExercise memberExercise) {
         this.memberExercises.remove(memberExercise);
+        this.gameBoard.removeGameBoardMember(memberExercise.getMember());
     }
 
     public void removeGuest(Guest guest) {
         this.guests.remove(guest);
+        this.gameBoard.removeGameBoardMember(guest);
     }
 }

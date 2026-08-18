@@ -45,7 +45,8 @@ public enum ExerciseErrorCode implements BaseErrorCode {
     GUEST_IS_NOT_PARTICIPATED_IN_EXERCISE(HttpStatus.BAD_REQUEST, "EXERCISE407", "게스트가 이 운동에 참여해있지 않습니다."),
     MEMBER_LEVEL_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE408", "해당 급수로는 이 운동에 참여할 수 없습니다."),
     MEMBER_AGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "EXERCISE409", "해당 나이로는 이 운동에 참여할 수 없습니다."),
-    MAIN_ADDRESS_NULL(HttpStatus.BAD_REQUEST, "EXERCISE410", "대표 주소가 존재하지 않습니다.");
+    MAIN_ADDRESS_NULL(HttpStatus.BAD_REQUEST, "EXERCISE410", "대표 주소가 존재하지 않습니다."),
+    ASSIGNED_PLAYER_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "EXERCISE411", "게임에 편성된 참가자는 운동 참여를 취소할 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

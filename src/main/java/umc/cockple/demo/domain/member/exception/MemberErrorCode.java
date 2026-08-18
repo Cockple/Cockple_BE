@@ -25,6 +25,7 @@ public enum MemberErrorCode implements BaseErrorCode {
     MANAGER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "MEMBER401", "모임장은 탈퇴할 수 없습니다. 모임 삭제를 먼저 해주세요."),
     SUBMANAGER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "MEMBER402", "부모임장은 탈퇴할 수 없습니다. 모임 삭제를 먼저 해주세요."),
     PROFILE_UPDATE_CONFLICT(HttpStatus.CONFLICT, "MEMBER403", "프로필 수정 요청이 동시에 처리되었습니다. 잠시 후 다시 시도해주세요."),
+    ASSIGNED_PLAYER_CANNOT_WITHDRAW(HttpStatus.BAD_REQUEST, "MEMBER404", "게임에 편성된 상태에서는 탈퇴할 수 없습니다. 게임 편성을 먼저 해제해주세요."),
 
     // 회원 주소 관련
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "MEM_ADDR201", "해당 주소를 찾을 수 없습니다."),

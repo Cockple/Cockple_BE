@@ -23,6 +23,7 @@ public enum GameErrorCode implements BaseErrorCode {
     COURT_ALREADY_IN_USE(HttpStatus.BAD_REQUEST, "GAME404", "이미 게임이 진행 중인 코트입니다."),
     DUPLICATE_COURT_ID(HttpStatus.BAD_REQUEST, "GAME405", "코트 ID가 중복되어 요청되었습니다."),
     COURT_HAS_ACTIVE_GAME(HttpStatus.BAD_REQUEST, "GAME406", "진행 중인 게임이 있는 코트는 삭제할 수 없습니다."),
+    INVALID_AGE_GROUP_FORMAT(HttpStatus.BAD_REQUEST, "GAME407", "올바른 연령대를 입력해주세요. (10대, 20대, 30대, 40대, 50대, 60대, 70대)"),
 
     ;
 

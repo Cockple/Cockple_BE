@@ -8,6 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGuestInviteResult;
@@ -28,6 +29,7 @@ public class ExerciseGuestCommandService {
     private final MemberLookupService memberLookupService;
 
     private final ExerciseValidator exerciseValidator;
+    private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
 
     public ExerciseGuestInviteResult inviteGuest(Long exerciseId, ExerciseGuestInviteCommand command) {
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}",
@@ -57,6 +59,8 @@ public class ExerciseGuestCommandService {
         Guest guest = guestReader.findByIdOrThrow(guestId);
 
         exerciseValidator.validateCancelGuestInvitation(exercise, guest, member);
+        exerciseGameAssignmentValidator.validateGuestCancellation(
+                exercise.getGameBoard().getId(), guest.getId());
 
         exercise.removeGuest(guest);
         guestRepository.delete(guest);

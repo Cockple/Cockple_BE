@@ -143,7 +143,9 @@ class ExerciseLifecycleCommandServiceTest {
 
                 // then
                 assertThat(result.exerciseId()).isEqualTo(100L);
-                then(exerciseRepository).should().save(any(Exercise.class));
+                ArgumentCaptor<Exercise> exerciseCaptor = ArgumentCaptor.forClass(Exercise.class);
+                then(exerciseRepository).should().save(exerciseCaptor.capture());
+                assertThat(exerciseCaptor.getValue().getGameBoard()).isNotNull();
             }
 
             @Test

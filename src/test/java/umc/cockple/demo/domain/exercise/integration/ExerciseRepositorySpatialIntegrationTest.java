@@ -111,16 +111,30 @@ class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
     }
 
     private void insertExercise(Long addrId, LocalDate date, String startTime) {
+        Long gameBoardId = insertGameBoard();
         jdbcTemplate.update("""
                 INSERT INTO exercise (
                     addr_id, date, start_time, max_capacity,
-                    party_guest_accept, outside_guest_accept, notice
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, addrId, date, startTime, 12, true, true, "spatial-explain-test");
+                    party_guest_accept, outside_guest_accept, notice, game_board_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, addrId, date, startTime, 12, true, true, "spatial-explain-test", gameBoardId);
+    }
+
+    private Long insertGameBoard() {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> connection.prepareStatement(
+                "INSERT INTO game_board (created_at, updated_at) VALUES (NOW(6), NOW(6))",
+                Statement.RETURN_GENERATED_KEYS), keyHolder);
+        return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
 
     private void deleteSpatialExplainData() {
+        List<Long> gameBoardIds = jdbcTemplate.queryForList(
+                "SELECT game_board_id FROM exercise WHERE notice = 'spatial-explain-test'",
+                Long.class);
         jdbcTemplate.update("DELETE FROM exercise WHERE notice = 'spatial-explain-test'");
+        gameBoardIds.forEach(gameBoardId ->
+                jdbcTemplate.update("DELETE FROM game_board WHERE id = ?", gameBoardId));
         jdbcTemplate.update("DELETE FROM exercise_addr WHERE building_name LIKE '공간인덱스테스트%'");
     }
 }
