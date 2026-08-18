@@ -108,6 +108,17 @@ public class GameBoardMember extends BaseEntity {
         this.gameCount++;
     }
 
+    public void updateInfo(String name, Gender gender, Level level, AgeGroup ageGroup) {
+        this.name = name;
+        this.gender = gender;
+        this.level = level;
+        this.ageGroup = ageGroup;
+    }
+
+    public void changeParticipation(boolean participating) {
+        this.participating = participating;
+    }
+
     /**
      * member FK의 ON DELETE SET NULL과 guest FK의 ON DELETE CASCADE 때문에
      * MySQL CHECK 제약으로 같은 규칙을 중복 선언할 수 없어 애플리케이션 경계에서 검증한다.

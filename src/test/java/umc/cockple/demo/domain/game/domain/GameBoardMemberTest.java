@@ -65,6 +65,32 @@ class GameBoardMemberTest {
     }
 
     @Test
+    @DisplayName("명단 표시 정보를 수정하고 연령대를 제거할 수 있다")
+    void updateInfo_changesEditableSnapshotFields() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "수정 전", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+
+        gameBoardMember.updateInfo("수정 후", Gender.FEMALE, Level.B, null);
+
+        assertThat(gameBoardMember.getName()).isEqualTo("수정 후");
+        assertThat(gameBoardMember.getGender()).isEqualTo(Gender.FEMALE);
+        assertThat(gameBoardMember.getLevel()).isEqualTo(Level.B);
+        assertThat(gameBoardMember.getAgeGroup()).isNull();
+    }
+
+    @Test
+    @DisplayName("참여 상태를 변경하며 같은 값 요청은 멱등적으로 처리한다")
+    void changeParticipation_updatesIdempotently() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.TWENTIES);
+
+        gameBoardMember.changeParticipation(false);
+        gameBoardMember.changeParticipation(false);
+
+        assertThat(gameBoardMember.getParticipating()).isFalse();
+    }
+
+    @Test
     @DisplayName("회원과 게스트 원본을 동시에 연결할 수 없다")
     void validateSourceReference_rejectsMemberAndGuestTogether() {
         GameBoardMember gameBoardMember = GameBoardMember.builder()
