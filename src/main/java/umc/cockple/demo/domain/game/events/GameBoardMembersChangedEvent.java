@@ -6,9 +6,18 @@ package umc.cockple.demo.domain.game.events;
  *
  * @param gameBoardId   변경된 게임판
  * @param actorMemberId REST 요청자
+ * @param includeBoardSnapshot 명단과 함께 게임판 snapshot도 전파할지 여부
  */
 public record GameBoardMembersChangedEvent(
         Long gameBoardId,
-        Long actorMemberId
+        Long actorMemberId,
+        boolean includeBoardSnapshot
 ) {
+    public static GameBoardMembersChangedEvent membersAndBoard(Long gameBoardId, Long actorMemberId) {
+        return new GameBoardMembersChangedEvent(gameBoardId, actorMemberId, true);
+    }
+
+    public static GameBoardMembersChangedEvent membersOnly(Long gameBoardId, Long actorMemberId) {
+        return new GameBoardMembersChangedEvent(gameBoardId, actorMemberId, false);
+    }
 }

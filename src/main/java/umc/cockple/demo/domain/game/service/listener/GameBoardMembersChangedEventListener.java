@@ -39,17 +39,12 @@ public class GameBoardMembersChangedEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMembersChanged(GameBoardMembersChangedEvent event) {
         GameBoardMemberDTO.Response membersDto;
-        GameBoardDTO.Response boardDto;
         try {
             GameBoardMemberResult members = gameBoardMemberQueryService.getMembers(
                     event.gameBoardId(), NO_FILTERS);
             membersDto = gameBoardMemberMapper.toResponse(members);
-
-            GameBoardResult board = gameBoardQueryService.getBoard(
-                    event.actorMemberId(), event.gameBoardId());
-            boardDto = gameBoardMapper.toResponse(board);
         } catch (Exception e) {
-            log.error("게임판 명단 변경 snapshot 조회 실패 - gameBoardId: {}", event.gameBoardId(), e);
+            log.error("게임판 명단 snapshot 조회 실패 - gameBoardId: {}", event.gameBoardId(), e);
             return;
         }
 
@@ -58,6 +53,21 @@ public class GameBoardMembersChangedEventListener {
                 event,
                 GameRealtimeProtocol.TYPE_MEMBERS_UPDATED,
                 () -> gameBoardBroadcaster.broadcastMembersUpdate(event.gameBoardId(), membersDto, null));
+
+        if (!event.includeBoardSnapshot()) {
+            return;
+        }
+
+        GameBoardDTO.Response boardDto;
+        try {
+            GameBoardResult board = gameBoardQueryService.getBoard(
+                    event.actorMemberId(), event.gameBoardId());
+            boardDto = gameBoardMapper.toResponse(board);
+        } catch (Exception e) {
+            log.error("게임판 snapshot 조회 실패 - gameBoardId: {}", event.gameBoardId(), e);
+            return;
+        }
+
         broadcastSafely(
                 event,
                 GameRealtimeProtocol.TYPE_BOARD_UPDATED,

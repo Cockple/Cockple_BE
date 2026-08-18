@@ -45,7 +45,7 @@ public class GameBoardMemberCommandService {
         gameBoard.addGameBoardMember(gameBoardMember);
         GameBoardMember savedMember = gameBoardMemberRepository.save(gameBoardMember);
 
-        eventPublisher.publishEvent(new GameBoardMembersChangedEvent(gameBoard.getId(), memberId));
+        eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(gameBoard.getId(), memberId));
         return savedMember.getId();
     }
 
@@ -57,7 +57,7 @@ public class GameBoardMemberCommandService {
         gameBoardMember.updateInfo(
                 command.name(), command.gender(), command.level(), command.ageGroup());
 
-        eventPublisher.publishEvent(new GameBoardMembersChangedEvent(command.gameBoardId(), memberId));
+        eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(command.gameBoardId(), memberId));
     }
 
     public void changeParticipation(Long memberId, GameBoardMemberParticipationCommand command) {
@@ -75,6 +75,6 @@ public class GameBoardMemberCommandService {
         }
 
         gameBoardMember.changeParticipation(command.participating());
-        eventPublisher.publishEvent(new GameBoardMembersChangedEvent(command.gameBoardId(), memberId));
+        eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(command.gameBoardId(), memberId));
     }
 }
