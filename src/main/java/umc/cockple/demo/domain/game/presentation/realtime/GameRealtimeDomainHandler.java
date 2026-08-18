@@ -13,8 +13,13 @@ import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
+import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
@@ -24,6 +29,7 @@ import umc.cockple.demo.global.realtime.routing.RealtimeRequestContext;
 import umc.cockple.demo.global.realtime.routing.RealtimeResponder;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,6 +86,10 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 case UNSUBSCRIBE -> handleUnsubscribe(context, gamePayload, responder);
                 case MOVE_COURT -> handleMoveCourt(context, gamePayload, responder);
                 case START_GAME -> handleStartGame(context, gamePayload, responder);
+                case CREATE_GAME -> handleCreateGame(context, gamePayload, responder);
+                case DELETE_GAME -> handleDeleteGame(context, gamePayload, responder);
+                case MOVE_TO_WAITING -> handleMoveToWaiting(context, gamePayload, responder);
+                case COMPLETE_GAME -> handleCompleteGame(context, gamePayload, responder);
             }
         } catch (GameException e) {
             log.warn("게임 실시간 처리 실패 - action: {}, memberId: {}, 이유: {}",
@@ -127,14 +137,78 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         respondAndBroadcastBoard(context, gameBoardId, responder);
     }
 
+    private void handleCreateGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+
+        GameCreateCommand command = new GameCreateCommand(gameBoardId, payload.gameBoardMemberIds());
+        Long gameId = gameCommandService.createGame(context.memberId(), command);
+
+        // 호출자에게는 생성된 gameId + 최신 보드를, 나머지 구독자에게는 보드 갱신을 전달한다.
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(gameId, boardDto));
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
+    private void handleMoveToWaiting(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+        requireGameId(payload);
+
+        GameToWaitingCommand command = new GameToWaitingCommand(gameBoardId, payload.gameId());
+        gameCommandService.moveGameToWaiting(context.memberId(), command);
+
+        respondAndBroadcastBoard(context, gameBoardId, responder);
+    }
+
+    private void handleCompleteGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+        requireGameId(payload);
+
+        GameCompleteCommand command = new GameCompleteCommand(gameBoardId, payload.gameId());
+        gameCommandService.completeGame(context.memberId(), command);
+
+        respondAndBroadcastBoard(context, gameBoardId, responder);
+    }
+
+    private void handleDeleteGame(
+            RealtimeRequestContext context, GameRealtimePayload payload, RealtimeResponder responder) {
+        Long gameBoardId = requireGameBoardId(payload);
+        requireGameId(payload);
+        boolean restore = Boolean.TRUE.equals(payload.restore());
+
+        GameDeleteCommand command = new GameDeleteCommand(gameBoardId, payload.gameId(), restore);
+        GameDeleteResult result = gameCommandService.deleteGame(context.memberId(), command);
+
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        responder.send(GameRealtimeProtocol.TYPE_GAME_DELETED,
+                new GameDeletedAck(result.gameId(), toDeletedPlayers(result.players()), boardDto));
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
+    private List<DeletedPlayer> toDeletedPlayers(List<GameDeleteResult.PlayerView> players) {
+        return players.stream()
+                .map(player -> new DeletedPlayer(
+                        player.gameBoardMemberId(),
+                        player.name(),
+                        player.level().getKoreanName(),
+                        player.playerOrder()))
+                .toList();
+    }
+
     private void respondAndBroadcastBoard(
             RealtimeRequestContext context, Long gameBoardId, RealtimeResponder responder) {
-        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
-        GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
+        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
         // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외한다.
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+    }
+
+    private GameBoardDTO.Response loadBoardDto(RealtimeRequestContext context, Long gameBoardId) {
+        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
+        return gameBoardMapper.toResponse(board);
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {
@@ -158,6 +232,13 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         }
     }
 
+    private void requireGameId(GameRealtimePayload payload) {
+        // DELETE_GAME/MOVE_TO_WAITING/COMPLETE_GAME: 대상 게임 ID가 필요하다.
+        if (payload.gameId() == null) {
+            throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
+        }
+    }
+
     private GameRealtimeAction findAction(String action) {
         try {
             return GameRealtimeAction.valueOf(action);
@@ -173,5 +254,14 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private record SubscriptionAck(Long gameBoardId) {
+    }
+
+    private record GameCreatedAck(Long gameId, GameBoardDTO.Response board) {
+    }
+
+    private record GameDeletedAck(Long gameId, List<DeletedPlayer> players, GameBoardDTO.Response board) {
+    }
+
+    private record DeletedPlayer(Long gameBoardMemberId, String name, String level, int playerOrder) {
     }
 }

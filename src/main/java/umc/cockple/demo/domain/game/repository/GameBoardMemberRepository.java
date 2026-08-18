@@ -8,8 +8,12 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
+import java.util.List;
 
 public interface GameBoardMemberRepository extends JpaRepository<GameBoardMember, Long> {
+  
+    List<GameBoardMember> findByGameBoardIdAndIdIn(Long gameBoardId, Collection<Long> ids);
 
     @Modifying(flushAutomatically = true)
     @Query(value = """
