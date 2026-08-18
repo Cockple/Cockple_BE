@@ -121,7 +121,7 @@ class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
                 INSERT INTO exercise (
                     addr_id, date, start_time, max_capacity,
                     party_guest_accept, outside_guest_accept, notice, game_host_id, game_board_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, addrId, date, startTime, 12, true, true, "spatial-explain-test", gameHostId, gameBoardId);
     }
 

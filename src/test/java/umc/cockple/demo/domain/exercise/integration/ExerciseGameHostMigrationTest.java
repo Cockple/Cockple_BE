@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ExerciseGameHostMigrationTest {
 
     private static final String PREVIOUS_SCHEMA_VERSION = "2026.08.15.00.00";
+    private static final String TARGET_SCHEMA_VERSION = "2026.08.17.15.00";
 
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
@@ -39,7 +40,7 @@ class ExerciseGameHostMigrationTest {
             insertExercise(statement, partyId);
         }
 
-        migrateToLatestSchema();
+        migrateToTargetSchema();
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(queryLong(statement,
@@ -70,8 +71,8 @@ class ExerciseGameHostMigrationTest {
         flyway().target(PREVIOUS_SCHEMA_VERSION).load().migrate();
     }
 
-    private void migrateToLatestSchema() {
-        flyway().load().migrate();
+    private void migrateToTargetSchema() {
+        flyway().target(TARGET_SCHEMA_VERSION).load().migrate();
     }
 
     private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {

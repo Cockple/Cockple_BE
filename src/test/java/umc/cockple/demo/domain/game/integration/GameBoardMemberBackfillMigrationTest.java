@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class GameBoardMemberBackfillMigrationTest {
 
     private static final String ROSTER_SOURCE_SCHEMA_VERSION = "2026.08.17.14.10";
+    private static final String TARGET_SCHEMA_VERSION = "2026.08.17.14.20";
 
     @Container
     private static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.36");
@@ -62,7 +63,7 @@ class GameBoardMemberBackfillMigrationTest {
             insertManualRoster(statement, firstBoardId);
         }
 
-        migrateToLatestSchema();
+        migrateToTargetSchema();
 
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertThat(queryLong(statement, """
@@ -144,8 +145,8 @@ class GameBoardMemberBackfillMigrationTest {
         flyway().target(ROSTER_SOURCE_SCHEMA_VERSION).load().migrate();
     }
 
-    private void migrateToLatestSchema() {
-        flyway().load().migrate();
+    private void migrateToTargetSchema() {
+        flyway().target(TARGET_SCHEMA_VERSION).load().migrate();
     }
 
     private org.flywaydb.core.api.configuration.FluentConfiguration flyway() {
