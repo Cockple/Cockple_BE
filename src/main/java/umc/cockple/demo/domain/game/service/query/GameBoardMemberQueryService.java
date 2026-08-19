@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 
@@ -31,11 +32,26 @@ public class GameBoardMemberQueryService {
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
     private final GameReader gameReader;
+    private final GameBoardAccessValidator gameBoardAccessValidator;
     private final ImageUrlResolver imageUrlResolver;
 
-    public GameBoardMemberResult getMembers(Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
+    public GameBoardMemberResult getMembers(
+            Long memberId, Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
+        gameBoardReader.read(gameBoardId);
+        gameBoardAccessValidator.validateViewer(gameBoardId, memberId);
+
+        return loadMembers(gameBoardId, searchQuery);
+    }
+
+    public GameBoardMemberResult getMembersSnapshot(
+            Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
         gameBoardReader.read(gameBoardId);
 
+        return loadMembers(gameBoardId, searchQuery);
+    }
+
+    private GameBoardMemberResult loadMembers(
+            Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
         int totalCount = Math.toIntExact(gameBoardMemberReader.countByGameBoard(gameBoardId));
         List<GameBoardMember> members = gameBoardMemberReader.readAllByFilters(
                 gameBoardId,

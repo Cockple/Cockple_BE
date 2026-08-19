@@ -7,24 +7,33 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
-import umc.cockple.demo.domain.game.repository.GameBoardRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.domain.party.domain.PartyAddr;
+import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
+import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.SecurityContextHelper;
+import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
+import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.nullValue;
@@ -37,12 +46,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
 
     @Autowired private MockMvc mockMvc;
-    @Autowired private GameBoardRepository gameBoardRepository;
     @Autowired private GameBoardMemberRepository gameBoardMemberRepository;
     @Autowired private GameRepository gameRepository;
     @Autowired private MemberRepository memberRepository;
+    @Autowired private PartyAddrRepository partyAddrRepository;
+    @Autowired private PartyRepository partyRepository;
+    @Autowired private ExerciseRepository exerciseRepository;
 
     private GameBoard gameBoard;
+    private Member participant;
+    private Member gameHost;
+    private Member nonParticipant;
     private GameBoardMember playingMember;
     private GameBoardMember waitingMember;
     private GameBoardMember completedMember;
@@ -50,14 +64,24 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        gameBoard = gameBoardRepository.save(GameBoard.create());
-
-        Member profileMember = MemberFixture.createMemberWithName(
+        participant = MemberFixture.createMemberWithName(
                 "프로필 선수", "프로필 닉네임", Gender.FEMALE, Level.A, 71001L);
-        profileMember.updateProfileImg(ProfileImg.builder().imgKey("profiles/game-player.jpg").build());
-        profileMember = memberRepository.save(profileMember);
+        participant.updateProfileImg(ProfileImg.builder().imgKey("profiles/game-player.jpg").build());
+        participant = memberRepository.save(participant);
+        gameHost = memberRepository.save(MemberFixture.createMemberWithName(
+                "게임 진행자", "진행자 닉네임", Gender.FEMALE, Level.A, 71003L));
+        nonParticipant = memberRepository.save(MemberFixture.createMemberWithName(
+                "비참가 회원", "비참가 닉네임", Gender.MALE, Level.B, 71002L));
 
-        playingMember = saveMember(profileMember, "가 선수", Gender.FEMALE, Level.A,
+        PartyAddr partyAddr = partyAddrRepository.save(
+                PartyFixture.createPartyAddr("서울특별시", "명단조회구"));
+        Party party = partyRepository.save(
+                PartyFixture.createParty("명단 조회 테스트 모임", gameHost.getId(), partyAddr));
+        Exercise exercise = exerciseRepository.save(
+                ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2099, 12, 31)));
+        gameBoard = exercise.getGameBoard();
+
+        playingMember = saveMember(participant, "가 선수", Gender.FEMALE, Level.A,
                 AgeGroup.TWENTIES, true, true, 3);
         waitingMember = saveMember(null, "나 선수", Gender.MALE, Level.B,
                 AgeGroup.THIRTIES, false, true, 1);
@@ -156,6 +180,26 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("운동에 참여하지 않은 게임 진행자도 명단을 조회할 수 있다")
+    void getMembers_allowsGameHost() throws Exception {
+        SecurityContextHelper.setAuthentication(gameHost.getId(), gameHost.getMemberName());
+
+        mockMvc.perform(get("/api/game-boards/{gameBoardId}/gameBoardMembers", gameBoard.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("운동 참가자와 게임 진행자가 아닌 회원은 명단을 조회할 수 없다")
+    void getMembers_forbidsUnauthorizedMember() throws Exception {
+        SecurityContextHelper.setAuthentication(nonParticipant.getId(), nonParticipant.getMemberName());
+
+        mockMvc.perform(get("/api/game-boards/{gameBoardId}/gameBoardMembers", gameBoard.getId()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                        .value(GameErrorCode.GAME_BOARD_VIEW_ACCESS_DENIED.getCode()));
+    }
+
+    @Test
     @DisplayName("미인증 사용자는 명단을 조회할 수 없다")
     void getMembers_requiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/game-boards/{gameBoardId}/gameBoardMembers", gameBoard.getId()))
@@ -197,6 +241,6 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
     }
 
     private void authenticate() {
-        SecurityContextHelper.setAuthentication(999L, "명단 조회자");
+        SecurityContextHelper.setAuthentication(participant.getId(), participant.getMemberName());
     }
 }

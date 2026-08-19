@@ -71,11 +71,12 @@ public class GameBoardMemberController implements GameBoardMemberApi {
     @Override
     public ResponseEntity<BaseResponse<GameBoardMemberDTO.Response>> getMembers(
             Long gameBoardId, List<String> levels, String gender, Boolean shuttlecockSubmitted) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
         GameBoardMemberSearchQuery searchQuery = gameBoardMemberMapper.toSearchQuery(
                 levels, gender, shuttlecockSubmitted);
 
         GameBoardMemberResult result = gameBoardMemberQueryService.getMembers(
-                gameBoardId, searchQuery);
+                memberId, gameBoardId, searchQuery);
 
         return BaseResponse.of(CommonSuccessCode.OK, gameBoardMemberMapper.toResponse(result));
     }

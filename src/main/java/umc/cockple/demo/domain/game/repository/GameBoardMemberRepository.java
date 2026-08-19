@@ -20,6 +20,8 @@ public interface GameBoardMemberRepository extends JpaRepository<GameBoardMember
 
     long countByGameBoardId(Long gameBoardId);
 
+    boolean existsByGameBoardIdAndMemberId(Long gameBoardId, Long memberId);
+
     @Modifying(flushAutomatically = true)
     @Query(value = """
             DELETE game_board_member

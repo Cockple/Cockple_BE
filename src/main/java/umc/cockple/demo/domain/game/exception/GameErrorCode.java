@@ -17,6 +17,7 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_BOARD_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "GAME205", "게임판 명단에 없는 멤버가 포함되어 있습니다."),
 
     GAME_BOARD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "GAME301", "게임판을 관리할 권한이 없습니다."),
+    GAME_BOARD_VIEW_ACCESS_DENIED(HttpStatus.FORBIDDEN, "GAME302", "해당 운동 참가자 또는 게임 진행자만 게임판 명단을 조회할 수 있습니다."),
 
     GAME_BOARD_ID_REQUIRED(HttpStatus.BAD_REQUEST, "GAME401", "게임판 ID가 필요합니다."),
     INVALID_REALTIME_PAYLOAD(HttpStatus.BAD_REQUEST, "GAME402", "게임 요청 형식이 올바르지 않습니다."),
