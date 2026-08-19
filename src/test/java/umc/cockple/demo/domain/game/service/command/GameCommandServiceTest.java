@@ -483,6 +483,8 @@ class GameCommandServiceTest {
             assertThat(playing.getStartedAt()).isEqualTo(startedAt);
             assertThat(m1.getGameCount()).isEqualTo(1);
             assertThat(m2.getGameCount()).isEqualTo(1);
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test

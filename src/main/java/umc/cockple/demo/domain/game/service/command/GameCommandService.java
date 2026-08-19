@@ -126,6 +126,7 @@ public class GameCommandService {
         }
 
         completeInternal(game);
+        publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
     }
