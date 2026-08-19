@@ -6,6 +6,7 @@ import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,7 +53,9 @@ class AgeGroupTest {
     @Test
     @DisplayName("한글 연령대 문자열을 enum으로 변환한다")
     void fromKorean_convertsKoreanName() {
-        assertThat(AgeGroup.fromKorean(" 30대 ")).isEqualTo(AgeGroup.THIRTIES);
+        assertThat(Arrays.stream(AgeGroup.values())
+                .map(ageGroup -> AgeGroup.fromKorean(" " + ageGroup.getKoreanName() + " ")))
+                .containsExactly(AgeGroup.values());
     }
 
     @Test

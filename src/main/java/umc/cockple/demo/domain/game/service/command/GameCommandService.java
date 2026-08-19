@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.game.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Court;
@@ -10,6 +11,7 @@ import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
@@ -39,6 +41,7 @@ public class GameCommandService {
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 대기 생성
@@ -47,13 +50,17 @@ public class GameCommandService {
      * @return 생성된 게임 ID
      */
     public Long createGame(Long memberId, GameCreateCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
 
         Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
                 .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
                 .collect(Collectors.toMap(GameBoardMember::getId, Function.identity()));
         if (membersById.size() != command.gameBoardMemberIds().size()) {
             throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
+        }
+        if (membersById.values().stream()
+                .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
+            throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
         }
 
         int nextWaitingOrder = (int) gameRepository
@@ -66,6 +73,7 @@ public class GameCommandService {
         }
 
         Game savedGame = gameRepository.save(game);
+        publishMembersChanged(gameBoard.getId(), memberId);
         log.info("게임 대기 생성 - gameBoardId: {}, gameId: {}, 인원: {}",
                 gameBoard.getId(), savedGame.getId(), command.gameBoardMemberIds().size());
         return savedGame.getId();
@@ -94,6 +102,7 @@ public class GameCommandService {
 
         game.start(court, LocalDateTime.now());
         resequenceWaitingQueue(gameBoard.getId());
+        publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 시작 - gameBoardId: {}, gameId: {}, courtId: {}",
                 gameBoard.getId(), game.getId(), court.getId());
@@ -117,6 +126,7 @@ public class GameCommandService {
         }
 
         completeInternal(game);
+        publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
     }
@@ -154,6 +164,7 @@ public class GameCommandService {
         if (wasWaiting) {
             resequenceWaitingQueue(gameBoard.getId());
         }
+        publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 삭제 - gameBoardId: {}, gameId: {}, wasWaiting: {}, restore: {}",
                 gameBoard.getId(), deletedGameId, wasWaiting, command.restore());
@@ -181,6 +192,7 @@ public class GameCommandService {
 
         game.returnToWaiting(0);
         resequenceWaitingQueue(gameBoard.getId());
+        publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("대기열 이동 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
     }
@@ -206,5 +218,9 @@ public class GameCommandService {
         for (Game waitingGame : waitingGames) {
             waitingGame.changeWaitingOrder(order++);
         }
+    }
+
+    private void publishMembersChanged(Long gameBoardId, Long memberId) {
+        eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersOnly(gameBoardId, memberId));
     }
 }

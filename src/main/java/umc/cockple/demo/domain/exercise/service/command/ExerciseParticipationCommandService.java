@@ -25,6 +25,7 @@ import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -71,6 +72,7 @@ public class ExerciseParticipationCommandService {
 
         MemberExercise savedMemberExercise = saveParticipation(memberExercise);
         publishAttendanceChangedEvent(exercise, member.getId());
+        publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
                 , savedMemberExercise.getId(), isPartyMember);
@@ -129,6 +131,7 @@ public class ExerciseParticipationCommandService {
 
         memberExerciseRepository.delete(memberExercise);
         publishAttendanceChangedEvent(exercise, member.getId());
+        publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
@@ -147,6 +150,7 @@ public class ExerciseParticipationCommandService {
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
         ExerciseCancelResult result = executeParticipantCancellation(exercise, participantId, command);
+        publishGameBoardMembersChanged(exercise, managerId);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
                 exercise.getId(), participantId, exercise.getNowCapacity());
@@ -213,5 +217,10 @@ public class ExerciseParticipationCommandService {
                 subjectMemberId,
                 recipientMemberIds
         ));
+    }
+
+    private void publishGameBoardMembersChanged(Exercise exercise, Long actorMemberId) {
+        eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersOnly(
+                exercise.getGameBoard().getId(), actorMemberId));
     }
 }

@@ -18,6 +18,8 @@ import java.util.Optional;
 
 public interface ExerciseRepository extends JpaRepository<Exercise, Long>, ExerciseRepositoryCustom {
 
+    Optional<Exercise> findByGameBoardId(Long gameBoardId);
+
     @Modifying(flushAutomatically = true)
     @Query(value = """
             UPDATE exercise e

@@ -1,5 +1,6 @@
 package umc.cockple.demo.global.enums;
 
+import lombok.Getter;
 import umc.cockple.demo.global.exception.GeneralException;
 import umc.cockple.demo.global.response.code.status.CommonErrorCode;
 
@@ -9,6 +10,7 @@ public enum Gender {
     MALE("남성"),
     FEMALE("여성");
 
+    @Getter
     private final String koreanName;
 
     Gender(String koreanName) {

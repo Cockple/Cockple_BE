@@ -9,12 +9,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
@@ -50,6 +52,7 @@ class GameCommandServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private CourtRepository courtRepository;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCommandService gameCommandService;
 
@@ -91,6 +94,8 @@ class GameCommandServiceTest {
             assertThat(waiting.getCourt()).isEqualTo(court);
             assertThat(waiting.getStartedAt()).isNotNull();
             assertThat(waiting.getWaitingOrder()).isNull();
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test
@@ -195,7 +200,7 @@ class GameCommandServiceTest {
             // given - 이미 대기 게임이 2개 있으므로 새 게임의 waitingOrder는 3
             GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
             GameBoardMember m8 = GameFixture.member(8L, board, "선수8", Level.B);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(8L, 7L)))
                     .willReturn(List.of(m7, m8));
             given(gameRepository.countByGameBoardIdAndStatus(BOARD_ID, GameStatus.WAITING)).willReturn(2L);
@@ -213,13 +218,15 @@ class GameCommandServiceTest {
             assertThat(saved.getPlayers())
                     .extracting(p -> p.getGameBoardMember().getId(), GamePlayer::getPlayerOrder)
                     .containsExactly(tuple(8L, 0), tuple(7L, 1));
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test
         @DisplayName("명단에 없는 멤버가 포함되면 GAME_BOARD_MEMBER_NOT_FOUND 예외")
         void createGame_memberNotOnBoard() {
             GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L, 999L)))
                     .willReturn(List.of(m7)); // 999는 조회되지 않음
 
@@ -227,6 +234,24 @@ class GameCommandServiceTest {
                     .isInstanceOf(GameException.class)
                     .extracting(e -> ((GameException) e).getCode())
                     .isEqualTo(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("불참 상태의 선수가 포함되면 INACTIVE_GAME_PLAYER 예외")
+        void createGame_inactivePlayer() {
+            GameBoardMember inactiveMember = GameFixture.member(7L, board, "불참 선수", Level.A);
+            inactiveMember.changeParticipation(false);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
+                    .willReturn(List.of(inactiveMember));
+
+            assertThatThrownBy(() -> gameCommandService.createGame(
+                    MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INACTIVE_GAME_PLAYER);
+            then(gameRepository).should(never()).save(any());
+            then(eventPublisher).should(never()).publishEvent(any());
         }
 
         @Test
@@ -281,6 +306,8 @@ class GameCommandServiceTest {
             assertThat(result.gameId()).isEqualTo(GAME_ID);
             then(gameRepository).should().delete(waiting);
             assertThat(remaining.getWaitingOrder()).isEqualTo(1);
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test
@@ -392,9 +419,14 @@ class GameCommandServiceTest {
             assertThat(otherWaiting.getWaitingOrder()).isEqualTo(2);
             assertThat(m1.getGameCount()).isZero();
             assertThat(m2.getGameCount()).isZero();
+            assertThat(playing.getPlayers())
+                    .extracting(p -> p.getGameBoardMember().getId(), GamePlayer::getPlayerOrder)
+                    .containsExactly(tuple(7L, 0), tuple(8L, 1));
 
             // 새 게임을 만들지 않는다 (같은 게임을 재사용)
             then(gameRepository).should(never()).save(any(Game.class));
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test
@@ -451,6 +483,8 @@ class GameCommandServiceTest {
             assertThat(playing.getStartedAt()).isEqualTo(startedAt);
             assertThat(m1.getGameCount()).isEqualTo(1);
             assertThat(m2.getGameCount()).isEqualTo(1);
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
         }
 
         @Test

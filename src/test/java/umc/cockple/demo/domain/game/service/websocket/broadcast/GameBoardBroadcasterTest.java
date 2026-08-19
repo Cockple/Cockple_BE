@@ -31,6 +31,7 @@ class GameBoardBroadcasterTest {
 
     private static final Long BOARD_ID = 1L;
     private static final Object BOARD_DATA = new Object();
+    private static final Object MEMBERS_DATA = new Object();
 
     @Test
     @DisplayName("변경을 일으킨 세션은 제외하고, 나머지 구독 세션 각각에 세션 단위로 발행한다")
@@ -82,5 +83,24 @@ class GameBoardBroadcasterTest {
                 eq(10L), eq("session-1"), any(), any(), eq(BOARD_DATA));
         then(realtimeMessagePublisher).should().publishToSession(
                 eq(20L), eq("session-2"), any(), any(), eq(BOARD_DATA));
+    }
+
+    @Test
+    @DisplayName("REST 명단 변경은 요청자를 포함한 모든 구독 세션에 MEMBERS_UPDATED를 발행한다")
+    void membersUpdateBroadcastsToAllSessions() {
+        GameBoardSubscriber s1 = new GameBoardSubscriber(10L, "session-1");
+        GameBoardSubscriber s2 = new GameBoardSubscriber(20L, "session-2");
+        given(subscriptionStore.getSubscribers(BOARD_ID)).willReturn(Set.of(s1, s2));
+        given(realtimeMessagePublisher.publishToSession(any(), any(), any(), any(), any()))
+                .willReturn(new RealtimePublishResult(1, 1));
+
+        gameBoardBroadcaster.broadcastMembersUpdate(BOARD_ID, MEMBERS_DATA, null);
+
+        then(realtimeMessagePublisher).should().publishToSession(
+                eq(10L), eq("session-1"), eq(GameRealtimeProtocol.DOMAIN),
+                eq(GameRealtimeProtocol.TYPE_MEMBERS_UPDATED), eq(MEMBERS_DATA));
+        then(realtimeMessagePublisher).should().publishToSession(
+                eq(20L), eq("session-2"), eq(GameRealtimeProtocol.DOMAIN),
+                eq(GameRealtimeProtocol.TYPE_MEMBERS_UPDATED), eq(MEMBERS_DATA));
     }
 }

@@ -34,6 +34,7 @@ import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -56,6 +57,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.atLeastOnce;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseParticipationCommandService")
@@ -158,6 +160,9 @@ class ExerciseParticipationCommandServiceTest {
                             assertThat(gameBoardMember.getGender()).isEqualTo(participant.getGender());
                             assertThat(gameBoardMember.getLevel()).isEqualTo(participant.getLevel());
                         });
+                then(eventPublisher).should().publishEvent(
+                        GameBoardMembersChangedEvent.membersOnly(
+                                exercise.getGameBoard().getId(), participant.getId()));
             }
 
             @Test
@@ -699,6 +704,9 @@ class ExerciseParticipationCommandServiceTest {
 
             // then: 게스트 취소는 참석 변경 알림 대상이 아니므로 이벤트 미발행
             then(eventPublisher).should(never()).publishEvent(any(ExerciseAttendanceChangedEvent.class));
+            then(eventPublisher).should().publishEvent(
+                    GameBoardMembersChangedEvent.membersOnly(
+                            exercise.getGameBoard().getId(), manager.getId()));
         }
 
         private void addPartyMember(Member member, Role role) {
@@ -708,10 +716,13 @@ class ExerciseParticipationCommandServiceTest {
         }
 
         private ExerciseAttendanceChangedEvent captureAttendanceEvent() {
-            ArgumentCaptor<ExerciseAttendanceChangedEvent> captor =
-                    ArgumentCaptor.forClass(ExerciseAttendanceChangedEvent.class);
-            then(eventPublisher).should().publishEvent(captor.capture());
-            return captor.getValue();
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(eventPublisher).should(atLeastOnce()).publishEvent(captor.capture());
+            return captor.getAllValues().stream()
+                    .filter(ExerciseAttendanceChangedEvent.class::isInstance)
+                    .map(ExerciseAttendanceChangedEvent.class::cast)
+                    .findFirst()
+                    .orElseThrow();
         }
     }
 
