@@ -147,6 +147,24 @@ class GameBoardMemberCommandServiceTest {
     }
 
     @Test
+    @DisplayName("게임 진행자가 아니면 게임판 락을 획득하지 않는다")
+    void changeParticipation_deniesNonGameHostBeforeLock() {
+        GameBoardMemberParticipationCommand participationCommand =
+                new GameBoardMemberParticipationCommand(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, false);
+        willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
+                .given(gameBoardAccessValidator).validateGameHost(GAME_BOARD_ID, MEMBER_ID);
+
+        assertThatThrownBy(() -> gameBoardMemberCommandService.changeParticipation(
+                MEMBER_ID, participationCommand))
+                .isInstanceOfSatisfying(GameException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED));
+
+        then(gameBoardReader).should(never()).readForUpdate(any());
+        then(gameBoardMemberReader).shouldHaveNoInteractions();
+        then(eventPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("활성 게임 선수는 참여 해제할 수 없다")
     void changeParticipation_rejectsActiveMemberDeactivation() {
         GameBoardMember gameBoardMember = GameBoardMember.create(
