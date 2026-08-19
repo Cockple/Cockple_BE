@@ -61,8 +61,8 @@ public class GameBoardMemberCommandService {
     }
 
     public void changeParticipation(Long memberId, GameBoardMemberParticipationCommand command) {
-        gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
         gameBoardReader.readForUpdate(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
         GameBoardMember gameBoardMember = gameBoardMemberReader.read(
                 command.gameBoardId(), command.gameBoardMemberId());
 

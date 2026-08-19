@@ -147,8 +147,8 @@ class GameBoardMemberCommandServiceTest {
     }
 
     @Test
-    @DisplayName("게임 진행자가 아니면 게임판 락을 획득하지 않는다")
-    void changeParticipation_deniesNonGameHostBeforeLock() {
+    @DisplayName("게임판 락 획득 후 게임 진행자가 아니면 명단을 조회하지 않는다")
+    void changeParticipation_deniesNonGameHostAfterLock() {
         GameBoardMemberParticipationCommand participationCommand =
                 new GameBoardMemberParticipationCommand(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, false);
         willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
@@ -159,7 +159,7 @@ class GameBoardMemberCommandServiceTest {
                 .isInstanceOfSatisfying(GameException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED));
 
-        then(gameBoardReader).should(never()).readForUpdate(any());
+        then(gameBoardReader).should().readForUpdate(GAME_BOARD_ID);
         then(gameBoardMemberReader).shouldHaveNoInteractions();
         then(eventPublisher).shouldHaveNoInteractions();
     }
