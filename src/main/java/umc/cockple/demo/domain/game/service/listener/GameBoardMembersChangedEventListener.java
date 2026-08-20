@@ -40,7 +40,7 @@ public class GameBoardMembersChangedEventListener {
     public void handleMembersChanged(GameBoardMembersChangedEvent event) {
         GameBoardMemberDTO.Response membersDto;
         try {
-            GameBoardMemberResult members = gameBoardMemberQueryService.getMembersSnapshot(
+            GameBoardMemberResult members = gameBoardMemberQueryService.getMembers(
                     event.gameBoardId(), NO_FILTERS);
             membersDto = gameBoardMemberMapper.toResponse(members);
         } catch (Exception e) {
