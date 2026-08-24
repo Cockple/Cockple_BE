@@ -5,10 +5,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import umc.cockple.demo.domain.game.presentation.dto.GameCompletedGameDTO;
 import umc.cockple.demo.domain.game.presentation.dto.GameDuplicateCheckDTO;
+import umc.cockple.demo.domain.game.presentation.dto.GameRandomMatchDTO;
 import umc.cockple.demo.global.response.BaseResponse;
 
 import java.util.List;
@@ -16,6 +18,25 @@ import java.util.List;
 @RequestMapping("/api/game-boards")
 @GameApiTag
 public interface GameApi {
+
+    @PostMapping("/{gameBoardId}/games/random-match")
+    @Operation(summary = "게임 랜덤 매칭", description = """
+            현재 게임판 명단에서 바로 게임에 참여할 수 있는 선수 4명을 추천합니다.
+
+            - 게임 진행자만 호출할 수 있습니다.
+            - 불참, 대기 중, 경기 시작 후 10분 미만인 선수와 급수없는 선수는 후보에서 제외합니다.
+            - 혼복·남복·여복 중 가능한 타입 하나를 내부에서 무작위로 선택합니다.
+            - 응답 ID는 팀 구분 없이 오름차순이며 매치 타입은 노출하지 않습니다.
+            - 추천 결과는 저장하지 않습니다. 확정 시 기존 WebSocket `CREATE_GAME`을 호출해야 합니다.
+            """)
+    @ApiResponse(responseCode = "200", description = "랜덤 매칭 성공")
+    @ApiResponse(responseCode = "400", description = "가용 인원·성별 구성 부족 또는 조합 생성 실패")
+    @ApiResponse(responseCode = "401", description = "인증 필요")
+    @ApiResponse(responseCode = "403", description = "게임 진행자가 아닌 회원")
+    @ApiResponse(responseCode = "404", description = "게임판을 찾을 수 없음")
+    ResponseEntity<BaseResponse<GameRandomMatchDTO.Response>> randomMatch(
+            @PathVariable Long gameBoardId
+    );
 
     @GetMapping("/{gameBoardId}/games/duplicate-check")
     @Operation(summary = "게임 중복 체크", description = """

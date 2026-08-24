@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
@@ -38,11 +39,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GameCommandService {
 
+    private static final List<GameStatus> ACTIVE_STATUSES =
+            List.of(GameStatus.WAITING, GameStatus.PLAYING);
+
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
+    private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -64,6 +69,12 @@ public class GameCommandService {
         if (membersById.values().stream()
                 .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
             throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
+        }
+        List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+                gameBoard.getId(), ACTIVE_STATUSES);
+        if (availabilityPolicy.hasBlockedMember(
+                List.copyOf(membersById.values()), activeGames, LocalDateTime.now())) {
+            throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
         }
 
         int nextWaitingOrder = (int) gameRepository

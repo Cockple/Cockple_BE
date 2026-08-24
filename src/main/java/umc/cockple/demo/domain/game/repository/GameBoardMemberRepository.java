@@ -18,6 +18,8 @@ public interface GameBoardMemberRepository extends JpaRepository<GameBoardMember
 
     List<GameBoardMember> findByGameBoardIdAndIdIn(Long gameBoardId, Collection<Long> ids);
 
+    List<GameBoardMember> findByGameBoardIdOrderByIdAsc(Long gameBoardId);
+
     long countByGameBoardId(Long gameBoardId);
 
     @Modifying(flushAutomatically = true)

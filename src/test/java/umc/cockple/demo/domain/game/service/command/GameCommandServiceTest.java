@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
@@ -41,9 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +54,7 @@ class GameCommandServiceTest {
     @Mock private CourtRepository courtRepository;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
+    @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCommandService gameCommandService;
@@ -271,6 +271,40 @@ class GameCommandServiceTest {
                     .isEqualTo(GameErrorCode.INACTIVE_GAME_PLAYER);
             then(gameRepository).should(never()).save(any());
             then(eventPublisher).should(never()).publishEvent(any());
+        }
+
+        @Test
+        @DisplayName("WAITING 또는 10분 미만 PLAYING 선수가 포함되면 UNAVAILABLE_GAME_PLAYER 예외")
+        void createGame_unavailablePlayer() {
+            GameBoardMember member = GameFixture.member(7L, board, "선택 불가", Level.A);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
+                    .willReturn(List.of(member));
+            given(availabilityPolicy.hasBlockedMember(any(), any(), any())).willReturn(true);
+
+            assertThatThrownBy(() -> gameCommandService.createGame(
+                    MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
+                    .isInstanceOfSatisfying(GameException.class, exception ->
+                            assertThat(exception.getCode())
+                                    .isEqualTo(GameErrorCode.UNAVAILABLE_GAME_PLAYER));
+
+            then(gameRepository).should(never()).save(any());
+            then(eventPublisher).should(never()).publishEvent(any());
+        }
+
+        @Test
+        @DisplayName("급수없음 선수도 수동 선택에서는 게임에 추가할 수 있다")
+        void createGame_allowsPlayerWithoutLevelWhenManuallySelected() {
+            GameBoardMember member = GameFixture.member(7L, board, "급수없음", Level.NONE);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
+                    .willReturn(List.of(member));
+            given(gameRepository.save(any(Game.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            gameCommandService.createGame(
+                    MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L)));
+
+            then(gameRepository).should().save(any(Game.class));
         }
 
         @Test

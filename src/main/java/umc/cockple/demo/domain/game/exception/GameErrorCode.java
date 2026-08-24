@@ -32,7 +32,11 @@ public enum GameErrorCode implements BaseErrorCode {
     INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME412", "커서 형식이 올바르지 않습니다."),
     ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE(HttpStatus.BAD_REQUEST, "GAME413", "진행 또는 대기 중인 게임에 포함된 선수는 참여 해제할 수 없습니다."),
     INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다."),
-    INVALID_COURT_COUNT(HttpStatus.BAD_REQUEST, "GAME415", "코트는 최소 1개, 최대 10개까지 관리할 수 있습니다.")
+    INVALID_COURT_COUNT(HttpStatus.BAD_REQUEST, "GAME415", "코트는 최소 1개, 최대 10개까지 관리할 수 있습니다."),
+    INSUFFICIENT_GENDER_COMPOSITION(HttpStatus.BAD_REQUEST, "GAME416", "매칭 가능한 성별 구성이 부족합니다."),
+    RANDOM_MATCH_NOT_FOUND(HttpStatus.BAD_REQUEST, "GAME417", "매칭할 조합을 찾지 못했습니다."),
+    UNAVAILABLE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME418", "현재 선택할 수 없는 선수가 포함되어 있습니다."),
+    INSUFFICIENT_AVAILABLE_PLAYERS(HttpStatus.BAD_REQUEST, "GAME419", "대기 중인 인원이 부족합니다.")
 
     ;
 
