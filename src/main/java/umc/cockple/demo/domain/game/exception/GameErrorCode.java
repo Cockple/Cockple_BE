@@ -34,6 +34,7 @@ public enum GameErrorCode implements BaseErrorCode {
     INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다."),
     INVALID_COURT_COUNT(HttpStatus.BAD_REQUEST, "GAME415", "코트는 최소 1개, 최대 10개까지 관리할 수 있습니다."),
     INSUFFICIENT_GENDER_COMPOSITION(HttpStatus.BAD_REQUEST, "GAME416", "매칭 가능한 성별 구성이 부족합니다."),
+    RANDOM_MATCH_NOT_FOUND(HttpStatus.BAD_REQUEST, "GAME417", "매칭할 조합을 찾지 못했습니다."),
     UNAVAILABLE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME418", "현재 선택할 수 없는 선수가 포함되어 있습니다.")
 
     ;
