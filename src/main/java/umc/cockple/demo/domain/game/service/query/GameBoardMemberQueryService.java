@@ -33,19 +33,7 @@ public class GameBoardMemberQueryService {
     private final GameReader gameReader;
     private final ImageUrlResolver imageUrlResolver;
 
-    /**
-     * 명단 조회는 인증된 회원이면 누구나 가능
-     *
-     * @param memberId 요청자
-     */
     public GameBoardMemberResult getMembers(
-            Long memberId, Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
-        gameBoardReader.read(gameBoardId);
-
-        return loadMembers(gameBoardId, searchQuery);
-    }
-
-    public GameBoardMemberResult getMembersSnapshot(
             Long gameBoardId, GameBoardMemberSearchQuery searchQuery) {
         gameBoardReader.read(gameBoardId);
 

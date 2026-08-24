@@ -64,7 +64,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         GameBoardResult board = new GameBoardResult(false, 0, List.of(), List.of());
         boardDto = new GameBoardDTO.Response(false, 0, List.of(), List.of());
 
-        given(gameBoardMemberQueryService.getMembersSnapshot(anyLong(), eq(NO_FILTERS))).willReturn(members);
+        given(gameBoardMemberQueryService.getMembers(anyLong(), eq(NO_FILTERS))).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
         given(gameBoardQueryService.getBoard(eq(ACTOR_MEMBER_ID), anyLong())).willReturn(board);
         given(gameBoardMapper.toResponse(board)).willReturn(boardDto);
@@ -98,7 +98,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         });
 
         then(gameBoardMemberQueryService).should(after(700).never())
-                .getMembersSnapshot(anyLong(), eq(NO_FILTERS));
+                .getMembers(anyLong(), eq(NO_FILTERS));
         then(gameBoardBroadcaster).should(never())
                 .broadcastMembersUpdate(anyLong(), eq(membersDto), isNull());
         then(gameBoardBroadcaster).should(never())

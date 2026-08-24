@@ -188,12 +188,13 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("운동 참가자도 게임 진행자도 아닌 인증 회원도 명단을 조회할 수 있다")
-    void getMembers_allowsAnyAuthenticatedMember() throws Exception {
+    @DisplayName("운동 참가자와 게임 진행자가 아닌 인증 회원도 명단을 조회할 수 있다")
+    void getMembers_allowsNonParticipant() throws Exception {
         SecurityContextHelper.setAuthentication(nonParticipant.getId(), nonParticipant.getMemberName());
 
         mockMvc.perform(get("/api/game-boards/{gameBoardId}/gameBoardMembers", gameBoard.getId()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalCount").value(4));
     }
 
     @Test
