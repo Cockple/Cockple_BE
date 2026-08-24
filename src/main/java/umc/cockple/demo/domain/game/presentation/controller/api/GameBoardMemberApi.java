@@ -83,11 +83,9 @@ public interface GameBoardMemberApi {
             - 서로 다른 종류의 필터는 AND 조건입니다.
             - `totalCount`는 필터와 무관한 전체 명단 수입니다.
             - 명단의 `gender`, `level`, `ageGroup`은 한글 표시값으로 반환합니다.
-            - 해당 운동에 참여 중인 회원 또는 게임 진행자만 조회할 수 있습니다.
             """)
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @ApiResponse(responseCode = "401", description = "인증 필요")
-    @ApiResponse(responseCode = "403", description = "운동 참가자 또는 게임 진행자가 아닌 회원")
     @ApiResponse(responseCode = "404", description = "게임판을 찾을 수 없음")
     ResponseEntity<BaseResponse<GameBoardMemberDTO.Response>> getMembers(
             @PathVariable Long gameBoardId,

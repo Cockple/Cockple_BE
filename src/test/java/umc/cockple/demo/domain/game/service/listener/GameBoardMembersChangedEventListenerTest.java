@@ -56,7 +56,7 @@ class GameBoardMembersChangedEventListenerTest {
         GameBoardResult board = new GameBoardResult(0, List.of(), List.of());
         boardDto = new GameBoardDTO.Response(0, List.of(), List.of());
 
-        given(gameBoardMemberQueryService.getMembersSnapshot(GAME_BOARD_ID, NO_FILTERS)).willReturn(members);
+        given(gameBoardMemberQueryService.getMembers(GAME_BOARD_ID, NO_FILTERS)).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
         lenient().when(gameBoardQueryService.getBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
         lenient().when(gameBoardMapper.toResponse(board)).thenReturn(boardDto);
