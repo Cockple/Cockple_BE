@@ -11,12 +11,12 @@ import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
-import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameRandomMatchResult;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.domain.service.matching.GameBestMatchSelector;
 import umc.cockple.demo.domain.game.domain.service.matching.GameCandidatePoolSelector;
 import umc.cockple.demo.domain.game.domain.service.matching.GameMatchTypeSelector;
@@ -39,8 +39,8 @@ public class GameRandomMatchQueryService {
             List.of(GameStatus.WAITING, GameStatus.PLAYING);
 
     private final GameBoardReader gameBoardReader;
-    private final GameBoardMemberRepository gameBoardMemberRepository;
-    private final GameRepository gameRepository;
+    private final GameBoardMemberReader gameBoardMemberReader;
+    private final GameReader gameReader;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
     private final GameMatchTypeSelector matchTypeSelector;
@@ -53,10 +53,8 @@ public class GameRandomMatchQueryService {
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);
         LocalDateTime now = LocalDateTime.now();
 
-        List<GameBoardMember> members = gameBoardMemberRepository
-                .findByGameBoardIdOrderByIdAsc(gameBoard.getId());
-        List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                gameBoard.getId(), ACTIVE_STATUSES);
+        List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
+        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
         List<GameBoardMember> candidates = availabilityPolicy
                 .filterAvailable(members, activeGames, now).stream()
                 .filter(member -> member.getLevel() != Level.NONE)
@@ -84,7 +82,7 @@ public class GameRandomMatchQueryService {
         List<Long> candidatePoolIds = candidatePool.stream()
                 .map(GameBoardMember::getId)
                 .toList();
-        List<GamePairCount> pairCounts = gameRepository.countCompletedGamePairs(
+        List<GamePairCount> pairCounts = gameReader.readCompletedPairCounts(
                 gameBoard.getId(), candidatePoolIds);
         GamePairHistory pairHistory = pairHistoryCalculator.fromCounts(pairCounts, List.of());
         List<Long> matchedMemberIds = bestMatchSelector.select(

@@ -62,6 +62,29 @@ class GameBoardMemberReaderTest {
     }
 
     @Test
+    @DisplayName("게임판 전체 명단을 ID 오름차순으로 조회한다")
+    void readAllByGameBoard_delegatesToRepository() {
+        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(GAME_BOARD_ID))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByGameBoard(GAME_BOARD_ID))
+                .containsExactly(gameBoardMember);
+    }
+
+    @Test
+    @DisplayName("게임판과 명단 ID 목록으로 명단을 조회한다")
+    void readAllByGameBoardAndIds_delegatesToRepository() {
+        List<Long> gameBoardMemberIds = List.of(2L, 3L);
+        given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(
+                GAME_BOARD_ID, gameBoardMemberIds))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByGameBoardAndIds(
+                GAME_BOARD_ID, gameBoardMemberIds))
+                .containsExactly(gameBoardMember);
+    }
+
+    @Test
     @DisplayName("게임판 명단 필터 조건을 repository에 전달한다")
     void readAllByFilters_delegatesToRepository() {
         List<Level> levels = List.of(Level.A, Level.B);

@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.game.domain.Game;
+import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 
@@ -48,5 +49,28 @@ class GameReaderTest {
         assertThat(gameReader.existsByGameBoardMemberAndStatuses(gameBoardMemberId, statuses)).isTrue();
         then(gameRepository).should()
                 .existsByGameBoardMemberIdAndStatusIn(gameBoardMemberId, statuses);
+    }
+
+    @Test
+    @DisplayName("완료 경기의 대상 멤버 페어 집계를 조회한다")
+    void readCompletedPairCounts_delegatesToRepository() {
+        List<Long> gameBoardMemberIds = List.of(10L, 20L);
+        List<GamePairCount> pairCounts = List.of(new GamePairCount(10L, 20L, 3));
+        given(gameRepository.countCompletedGamePairs(GAME_BOARD_ID, gameBoardMemberIds))
+                .willReturn(pairCounts);
+
+        assertThat(gameReader.readCompletedPairCounts(GAME_BOARD_ID, gameBoardMemberIds))
+                .containsExactlyElementsOf(pairCounts);
+    }
+
+    @Test
+    @DisplayName("가장 최근 완료 경기의 멤버 ID를 조회한다")
+    void readLatestCompletedGameMemberIds_delegatesToRepository() {
+        List<Long> memberIds = List.of(10L, 20L, 30L, 40L);
+        given(gameRepository.findLatestCompletedGameMemberIds(GAME_BOARD_ID))
+                .willReturn(memberIds);
+
+        assertThat(gameReader.readLatestCompletedGameMemberIds(GAME_BOARD_ID))
+                .containsExactlyElementsOf(memberIds);
     }
 }

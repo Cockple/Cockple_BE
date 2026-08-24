@@ -11,12 +11,12 @@ import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
-import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult.PairView;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -31,8 +31,8 @@ import static org.mockito.BDDMockito.given;
 class GameDuplicateCheckQueryServiceTest {
 
     @Mock private GameBoardReader gameBoardReader;
-    @Mock private GameRepository gameRepository;
-    @Mock private GameBoardMemberRepository gameBoardMemberRepository;
+    @Mock private GameReader gameReader;
+    @Mock private GameBoardMemberReader gameBoardMemberReader;
 
     private GameDuplicateCheckQueryService gameDuplicateCheckQueryService;
 
@@ -45,8 +45,8 @@ class GameDuplicateCheckQueryServiceTest {
         board = GameFixture.gameBoard(BOARD_ID);
         gameDuplicateCheckQueryService = new GameDuplicateCheckQueryService(
                 gameBoardReader,
-                gameRepository,
-                gameBoardMemberRepository,
+                gameReader,
+                gameBoardMemberReader,
                 new GamePairHistoryCalculator());
     }
 
@@ -60,16 +60,16 @@ class GameDuplicateCheckQueryServiceTest {
         GameBoardMember m10 = GameFixture.member(10L, board, "10", Level.A);
         List<Long> selected = List.of(7L, 8L, 9L, 10L);
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, selected))
+        given(gameBoardMemberReader.readAllByGameBoardAndIds(BOARD_ID, selected))
                 .willReturn(List.of(m7, m8, m9, m10));
-        given(gameRepository.countCompletedGamePairs(BOARD_ID, selected)).willReturn(List.of(
+        given(gameReader.readCompletedPairCounts(BOARD_ID, selected)).willReturn(List.of(
                 new GamePairCount(7L, 8L, 2),
                 new GamePairCount(7L, 9L, 1),
                 new GamePairCount(7L, 10L, 1),
                 new GamePairCount(8L, 9L, 1),
                 new GamePairCount(8L, 10L, 1),
                 new GamePairCount(9L, 10L, 1)));
-        given(gameRepository.findLatestCompletedGameMemberIds(BOARD_ID))
+        given(gameReader.readLatestCompletedGameMemberIds(BOARD_ID))
                 .willReturn(List.of(7L, 8L, 11L, 12L));
 
         // when
@@ -98,9 +98,10 @@ class GameDuplicateCheckQueryServiceTest {
         GameBoardMember m8 = GameFixture.member(8L, board, "8", Level.A);
         List<Long> selected = List.of(7L, 8L);
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, selected)).willReturn(List.of(m7, m8));
-        given(gameRepository.countCompletedGamePairs(BOARD_ID, selected)).willReturn(List.of());
-        given(gameRepository.findLatestCompletedGameMemberIds(BOARD_ID)).willReturn(List.of());
+        given(gameBoardMemberReader.readAllByGameBoardAndIds(BOARD_ID, selected))
+                .willReturn(List.of(m7, m8));
+        given(gameReader.readCompletedPairCounts(BOARD_ID, selected)).willReturn(List.of());
+        given(gameReader.readLatestCompletedGameMemberIds(BOARD_ID)).willReturn(List.of());
 
         GameDuplicateCheckResult result = gameDuplicateCheckQueryService.checkDuplicates(MEMBER_ID, BOARD_ID, selected);
 
@@ -115,7 +116,8 @@ class GameDuplicateCheckQueryServiceTest {
         GameBoardMember m7 = GameFixture.member(7L, board, "7", Level.A);
         List<Long> selected = List.of(7L, 999L);
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, selected)).willReturn(List.of(m7));
+        given(gameBoardMemberReader.readAllByGameBoardAndIds(BOARD_ID, selected))
+                .willReturn(List.of(m7));
 
         assertThatThrownBy(() -> gameDuplicateCheckQueryService.checkDuplicates(MEMBER_ID, BOARD_ID, selected))
                 .isInstanceOf(GameException.class)

@@ -15,12 +15,12 @@ import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
-import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameRandomMatchResult;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.domain.service.matching.GameBestMatchSelector;
 import umc.cockple.demo.domain.game.domain.service.matching.GameCandidatePoolSelector;
 import umc.cockple.demo.domain.game.domain.service.matching.GameMatchTypeSelector;
@@ -53,8 +53,8 @@ class GameRandomMatchQueryServiceTest {
             List.of(GameStatus.WAITING, GameStatus.PLAYING);
 
     @Mock private GameBoardReader gameBoardReader;
-    @Mock private GameBoardMemberRepository gameBoardMemberRepository;
-    @Mock private GameRepository gameRepository;
+    @Mock private GameBoardMemberReader gameBoardMemberReader;
+    @Mock private GameReader gameReader;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
     @Mock private GameMatchTypeSelector matchTypeSelector;
@@ -70,8 +70,8 @@ class GameRandomMatchQueryServiceTest {
         board = GameFixture.gameBoard(BOARD_ID);
         service = new GameRandomMatchQueryService(
                 gameBoardReader,
-                gameBoardMemberRepository,
-                gameRepository,
+                gameBoardMemberReader,
+                gameReader,
                 gameBoardAccessValidator,
                 availabilityPolicy,
                 matchTypeSelector,
@@ -96,9 +96,9 @@ class GameRandomMatchQueryServiceTest {
         GamePairHistory pairHistory = new GamePairHistoryCalculator().calculate(List.of());
 
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(BOARD_ID))
+        given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+        given(gameReader.readAllByGameBoardAndStatuses(
                 BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
@@ -108,7 +108,7 @@ class GameRandomMatchQueryServiceTest {
                 .willReturn(Optional.of(candidatePool));
         given(matchTypeSelector.selectFrom(List.of(GameMatchType.MEN_DOUBLES)))
                 .willReturn(GameMatchType.MEN_DOUBLES);
-        given(gameRepository.countCompletedGamePairs(
+        given(gameReader.readCompletedPairCounts(
                 BOARD_ID, List.of(2L, 3L, 4L, 5L))).willReturn(pairCounts);
         given(pairHistoryCalculator.fromCounts(pairCounts, List.of())).willReturn(pairHistory);
         given(bestMatchSelector.select(
@@ -125,13 +125,11 @@ class GameRandomMatchQueryServiceTest {
         then(candidatePoolSelector).should()
                 .find(candidates, GameMatchType.MEN_DOUBLES);
         then(matchTypeSelector).should().selectFrom(List.of(GameMatchType.MEN_DOUBLES));
-        then(gameRepository).should().countCompletedGamePairs(
+        then(gameReader).should().readCompletedPairCounts(
                 BOARD_ID, List.of(2L, 3L, 4L, 5L));
         then(pairHistoryCalculator).should().fromCounts(pairCounts, List.of());
         then(bestMatchSelector).should()
                 .select(candidatePool, GameMatchType.MEN_DOUBLES, pairHistory);
-        then(gameRepository).should(never()).save(any(Game.class));
-        then(gameBoardMemberRepository).should(never()).save(any(GameBoardMember.class));
     }
 
     @Test
@@ -145,9 +143,9 @@ class GameRandomMatchQueryServiceTest {
         List<Game> activeGames = List.of();
 
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(BOARD_ID))
+        given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+        given(gameReader.readAllByGameBoardAndStatuses(
                 BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
@@ -161,7 +159,7 @@ class GameRandomMatchQueryServiceTest {
         then(candidatePoolSelector).shouldHaveNoInteractions();
         then(pairHistoryCalculator).shouldHaveNoInteractions();
         then(bestMatchSelector).shouldHaveNoInteractions();
-        then(gameRepository).should(never()).countCompletedGamePairs(eq(BOARD_ID), anyList());
+        then(gameReader).should(never()).readCompletedPairCounts(eq(BOARD_ID), anyList());
     }
 
     @Test
@@ -180,8 +178,8 @@ class GameRandomMatchQueryServiceTest {
         GamePairHistory pairHistory = new GamePairHistoryCalculator().calculate(List.of());
         GameRandomMatchQueryService serviceWithRealSelectors = new GameRandomMatchQueryService(
                 gameBoardReader,
-                gameBoardMemberRepository,
-                gameRepository,
+                gameBoardMemberReader,
+                gameReader,
                 gameBoardAccessValidator,
                 availabilityPolicy,
                 new GameMatchTypeSelector(),
@@ -190,13 +188,13 @@ class GameRandomMatchQueryServiceTest {
                 bestMatchSelector);
 
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
-        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(BOARD_ID))
+        given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+        given(gameReader.readAllByGameBoardAndStatuses(
                 BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
-        given(gameRepository.countCompletedGamePairs(
+        given(gameReader.readCompletedPairCounts(
                 BOARD_ID, List.of(1L, 2L, 3L, 4L))).willReturn(pairCounts);
         given(pairHistoryCalculator.fromCounts(pairCounts, List.of())).willReturn(pairHistory);
         given(bestMatchSelector.select(

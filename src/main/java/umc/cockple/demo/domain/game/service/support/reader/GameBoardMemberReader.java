@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -26,6 +27,17 @@ public class GameBoardMemberReader {
 
     public long countByGameBoard(Long gameBoardId) {
         return gameBoardMemberRepository.countByGameBoardId(gameBoardId);
+    }
+
+    public List<GameBoardMember> readAllByGameBoard(Long gameBoardId) {
+        return gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(gameBoardId);
+    }
+
+    public List<GameBoardMember> readAllByGameBoardAndIds(
+            Long gameBoardId,
+            Collection<Long> gameBoardMemberIds) {
+        return gameBoardMemberRepository.findByGameBoardIdAndIdIn(
+                gameBoardId, gameBoardMemberIds);
     }
 
     public List<GameBoardMember> readAllByFilters(

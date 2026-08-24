@@ -7,12 +7,12 @@ import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
-import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +26,8 @@ import java.util.List;
 public class GameDuplicateCheckQueryService {
 
     private final GameBoardReader gameBoardReader;
-    private final GameRepository gameRepository;
-    private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final GameReader gameReader;
+    private final GameBoardMemberReader gameBoardMemberReader;
     private final GamePairHistoryCalculator gamePairHistoryCalculator;
 
     /**
@@ -39,10 +39,10 @@ public class GameDuplicateCheckQueryService {
         List<Long> targetMemberIds = gameBoardMemberIds.stream().distinct().toList();
         validateMembersBelongToBoard(gameBoard.getId(), targetMemberIds);
 
-        List<GamePairCount> pairCounts = gameRepository.countCompletedGamePairs(
+        List<GamePairCount> pairCounts = gameReader.readCompletedPairCounts(
                 gameBoard.getId(), targetMemberIds);
-        List<Long> lastGameMemberIds = gameRepository
-                .findLatestCompletedGameMemberIds(gameBoard.getId());
+        List<Long> lastGameMemberIds = gameReader
+                .readLatestCompletedGameMemberIds(gameBoard.getId());
         GamePairHistory pairHistory = gamePairHistoryCalculator.fromCounts(
                 pairCounts, lastGameMemberIds);
 
@@ -60,7 +60,9 @@ public class GameDuplicateCheckQueryService {
     }
 
     private void validateMembersBelongToBoard(Long gameBoardId, List<Long> memberIds) {
-        long foundCount = gameBoardMemberRepository.findByGameBoardIdAndIdIn(gameBoardId, memberIds).size();
+        long foundCount = gameBoardMemberReader
+                .readAllByGameBoardAndIds(gameBoardId, memberIds)
+                .size();
         if (foundCount != memberIds.size()) {
             throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
         }
