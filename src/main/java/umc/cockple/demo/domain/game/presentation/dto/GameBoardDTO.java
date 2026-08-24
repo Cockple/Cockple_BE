@@ -8,6 +8,7 @@ import java.util.List;
 public class GameBoardDTO {
 
     public record Response(
+            boolean isGameHost,
             int courtCount,
             List<CourtInfo> courts,
             List<WaitingInfo> waitings

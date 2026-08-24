@@ -11,7 +11,6 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 
 import java.util.Optional;
 
@@ -29,7 +28,6 @@ class GameBoardAccessValidatorTest {
 
     @InjectMocks private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ExerciseRepository exerciseRepository;
-    @Mock private GameBoardMemberRepository gameBoardMemberRepository;
 
     private Exercise exercise;
 
@@ -68,39 +66,26 @@ class GameBoardAccessValidatorTest {
     }
 
     @Test
-    @DisplayName("게임판 명단에 연결된 회원은 운동 참가자로 조회 권한이 있다")
-    void validateViewer_allowsExerciseParticipant() {
-        given(gameBoardMemberRepository.existsByGameBoardIdAndMemberId(GAME_BOARD_ID, GAME_HOST_ID))
-                .willReturn(true);
+    @DisplayName("isGameHost: 게임 진행자면 true 를 반환한다")
+    void isGameHost_returnsTrueForGameHost() {
+        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.of(exercise));
 
-        assertThatCode(() -> gameBoardAccessValidator.validateViewer(GAME_BOARD_ID, GAME_HOST_ID))
-                .doesNotThrowAnyException();
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, GAME_HOST_ID)).isTrue();
     }
 
     @Test
-    @DisplayName("운동 참가자가 아니어도 게임 진행자는 조회 권한이 있다")
-    void validateViewer_allowsGameHost() {
-        given(gameBoardMemberRepository.existsByGameBoardIdAndMemberId(GAME_BOARD_ID, GAME_HOST_ID))
-                .willReturn(false);
+    @DisplayName("isGameHost: 게임 진행자가 아니면 false 를 반환한다 (예외 없음)")
+    void isGameHost_returnsFalseForOtherMember() {
         given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.of(exercise));
 
-        assertThatCode(() -> gameBoardAccessValidator.validateViewer(GAME_BOARD_ID, GAME_HOST_ID))
-                .doesNotThrowAnyException();
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, 999L)).isFalse();
     }
 
     @Test
-    @DisplayName("운동 참가자와 게임 진행자가 아니면 GAME_BOARD_VIEW_ACCESS_DENIED 예외를 던진다")
-    void validateViewer_deniesUnauthorizedMember() {
-        Long unauthorizedMemberId = 999L;
-        given(gameBoardMemberRepository.existsByGameBoardIdAndMemberId(
-                GAME_BOARD_ID, unauthorizedMemberId))
-                .willReturn(false);
-        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.of(exercise));
+    @DisplayName("isGameHost: 연결된 운동이 없으면 false 를 반환한다 (예외 없음)")
+    void isGameHost_returnsFalseWhenExerciseAbsent() {
+        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> gameBoardAccessValidator.validateViewer(
-                GAME_BOARD_ID, unauthorizedMemberId))
-                .isInstanceOfSatisfying(GameException.class, exception ->
-                        assertThat(exception.getCode())
-                                .isEqualTo(GameErrorCode.GAME_BOARD_VIEW_ACCESS_DENIED));
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, GAME_HOST_ID)).isFalse();
     }
 }

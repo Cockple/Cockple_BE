@@ -16,6 +16,7 @@ import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -34,6 +35,7 @@ class GameBoardQueryServiceTest {
     @Mock private GameBoardReader gameBoardReader;
     @Mock private CourtRepository courtRepository;
     @Mock private GameRepository gameRepository;
+    @Mock private GameBoardAccessValidator gameBoardAccessValidator;
 
     @InjectMocks private GameBoardQueryService gameBoardQueryService;
 
@@ -57,6 +59,7 @@ class GameBoardQueryServiceTest {
                 GameFixture.player(member, 0));
 
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+        given(gameBoardAccessValidator.isGameHost(BOARD_ID, MEMBER_ID)).willReturn(true);
         given(courtRepository.findByGameBoardIdOrderByCourtNoAsc(BOARD_ID)).willReturn(List.of(court1, court2));
         given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
                 .willReturn(List.of(playing));
@@ -65,6 +68,7 @@ class GameBoardQueryServiceTest {
         GameBoardResult result = gameBoardQueryService.getBoard(MEMBER_ID, BOARD_ID);
 
         // then
+        assertThat(result.isGameHost()).isTrue();
         assertThat(result.courtCount()).isEqualTo(2);
         assertThat(result.courts()).extracting(GameBoardResult.CourtView::status)
                 .containsExactly(CourtStatus.PLAYING, CourtStatus.EMPTY);

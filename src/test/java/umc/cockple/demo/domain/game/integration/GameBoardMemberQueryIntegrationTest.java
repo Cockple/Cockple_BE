@@ -15,7 +15,6 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.enums.GameStatus;
-import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -189,14 +188,12 @@ class GameBoardMemberQueryIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("운동 참가자와 게임 진행자가 아닌 회원은 명단을 조회할 수 없다")
-    void getMembers_forbidsUnauthorizedMember() throws Exception {
+    @DisplayName("운동 참가자도 게임 진행자도 아닌 인증 회원도 명단을 조회할 수 있다")
+    void getMembers_allowsAnyAuthenticatedMember() throws Exception {
         SecurityContextHelper.setAuthentication(nonParticipant.getId(), nonParticipant.getMemberName());
 
         mockMvc.perform(get("/api/game-boards/{gameBoardId}/gameBoardMembers", gameBoard.getId()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code")
-                        .value(GameErrorCode.GAME_BOARD_VIEW_ACCESS_DENIED.getCode()));
+                .andExpect(status().isOk());
     }
 
     @Test

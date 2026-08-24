@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,14 +31,16 @@ public class GameBoardQueryService {
     private final GameBoardReader gameBoardReader;
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
+    private final GameBoardAccessValidator gameBoardAccessValidator;
 
     /**
-     * 코트 보드 조회 
+     * 코트 보드 조회. 조회 자체는 인증된 회원이면 누구나 가능
      *
-     * @param memberId 요청자(추후 게임판 접근 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public GameBoardResult getBoard(Long memberId, Long gameBoardId) {
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);
+        boolean isGameHost = gameBoardAccessValidator.isGameHost(gameBoard.getId(), memberId);
 
         List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoard.getId());
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
@@ -58,7 +61,7 @@ public class GameBoardQueryService {
                 .map(this::toWaitingView)
                 .toList();
 
-        return new GameBoardResult(courts.size(), courtViews, waitingViews);
+        return new GameBoardResult(isGameHost, courts.size(), courtViews, waitingViews);
     }
 
     private GameBoardResult.CourtView toCourtView(Court court, Game playingGame) {
