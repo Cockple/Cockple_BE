@@ -96,6 +96,7 @@ class ExerciseLifecycleQueryServiceTest {
 
         exercise = ExerciseFixture.createExercise(party, LocalDate.now().minusDays(1));
         ReflectionTestUtils.setField(exercise, "id", 100L);
+        ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 300L);
 
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
@@ -151,6 +152,7 @@ class ExerciseLifecycleQueryServiceTest {
 
                 // then
                 assertThat(response.isManager()).isTrue();
+                assertThat(response.gameBoardId()).isEqualTo(300L);
             }
 
             @Test

@@ -134,6 +134,7 @@ class ExerciseLifecycleCommandServiceTest {
                         .outsideGuestAccept(false)
                         .build();
                 ReflectionTestUtils.setField(savedExercise, "id", 100L);
+                ReflectionTestUtils.setField(savedExercise.getGameBoard(), "id", 500L);
 
                 given(exerciseRepository.save(any(Exercise.class))).willReturn(savedExercise);
 
@@ -143,6 +144,7 @@ class ExerciseLifecycleCommandServiceTest {
 
                 // then
                 assertThat(result.exerciseId()).isEqualTo(100L);
+                assertThat(result.gameBoardId()).isEqualTo(500L);
                 ArgumentCaptor<Exercise> exerciseCaptor = ArgumentCaptor.forClass(Exercise.class);
                 then(exerciseRepository).should().save(exerciseCaptor.capture());
                 assertThat(exerciseCaptor.getValue().getGameBoard()).isNotNull();

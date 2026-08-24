@@ -10,6 +10,7 @@ import java.util.List;
 
 public record ExerciseDetailResult(
         boolean isManager,
+        Long gameBoardId,
         ExerciseInfo info,
         ParticipantGroup participants,
         WaitingGroup waiting
