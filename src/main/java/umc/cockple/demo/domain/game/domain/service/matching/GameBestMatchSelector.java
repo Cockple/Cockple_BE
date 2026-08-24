@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.support.selector;
+package umc.cockple.demo.domain.game.domain.service.matching;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -6,8 +6,7 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.service.support.calculator.GameAbilityScoreCalculator;
-import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator.GamePairHistory;
+import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.global.enums.Gender;
 
 import java.util.List;

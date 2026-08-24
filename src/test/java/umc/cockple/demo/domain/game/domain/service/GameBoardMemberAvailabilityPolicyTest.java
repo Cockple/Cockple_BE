@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.support.validator;
+package umc.cockple.demo.domain.game.domain.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

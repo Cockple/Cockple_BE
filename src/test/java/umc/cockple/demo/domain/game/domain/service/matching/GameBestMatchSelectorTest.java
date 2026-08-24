@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.support.selector;
+package umc.cockple.demo.domain.game.domain.service.matching;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,9 +10,8 @@ import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
-import umc.cockple.demo.domain.game.service.support.calculator.GameAbilityScoreCalculator;
-import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator;
-import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator.GamePairHistory;
+import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
+import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;

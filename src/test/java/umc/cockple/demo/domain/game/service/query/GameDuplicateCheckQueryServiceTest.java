@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult.PairView;
-import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator;
+import umc.cockple.demo.domain.game.domain.service.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;

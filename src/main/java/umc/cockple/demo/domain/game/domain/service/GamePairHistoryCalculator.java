@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.support.calculator;
+package umc.cockple.demo.domain.game.domain.service;
 
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.game.domain.Game;

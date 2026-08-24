@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.support.selector;
+package umc.cockple.demo.domain.game.domain.service.matching;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
