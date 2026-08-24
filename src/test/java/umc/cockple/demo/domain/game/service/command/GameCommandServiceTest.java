@@ -29,6 +29,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,7 @@ class GameCommandServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private CourtRepository courtRepository;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
+    @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCommandService gameCommandService;
@@ -220,6 +223,22 @@ class GameCommandServiceTest {
                     .containsExactly(tuple(8L, 0), tuple(7L, 1));
             then(eventPublisher).should()
                     .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
+        }
+
+        @Test
+        @DisplayName("게임 진행자가 아니면 GAME_BOARD_ACCESS_DENIED 예외로 게임을 만들지 않는다")
+        void createGame_deniesNonHost() {
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
+            willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
+                    .given(gameBoardAccessValidator).validateGameHost(BOARD_ID, MEMBER_ID);
+
+            assertThatThrownBy(() -> gameCommandService.createGame(
+                    MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED);
+            then(gameRepository).should(never()).save(any());
+            then(eventPublisher).should(never()).publishEvent(any());
         }
 
         @Test
