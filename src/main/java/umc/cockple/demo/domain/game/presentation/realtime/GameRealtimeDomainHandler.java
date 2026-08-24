@@ -147,7 +147,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         // 호출자에게는 생성된 gameId + 최신 보드를, 나머지 구독자에게는 보드 갱신을 전달한다.
         GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
         responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(gameId, boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
     private void handleMoveToWaiting(
@@ -184,7 +184,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
         responder.send(GameRealtimeProtocol.TYPE_GAME_DELETED,
                 new GameDeletedAck(result.gameId(), toDeletedPlayers(result.players()), boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
     private List<DeletedPlayer> toDeletedPlayers(List<GameDeleteResult.PlayerView> players) {
@@ -203,12 +203,23 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
         // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외한다.
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
     private GameBoardDTO.Response loadBoardDto(RealtimeRequestContext context, Long gameBoardId) {
         GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
         return gameBoardMapper.toResponse(board);
+    }
+
+    /**
+     * isGameHost 는 "요청자 자신이 게임 진행자인지"를 뜻하는 개인 값이다.
+     * 보드 DTO 는 변경을 일으킨 요청자 기준으로 조회되므로, 그대로 브로드캐스트하면
+     * 진행자가 일으킨 변경 때 다른 구독자에게도 isGameHost=true 가 새어나간다.
+     * 따라서 브로드캐스트 본문에서는 항상 false 로 내리고, 각 클라이언트는
+     * 자신의 구독 응답으로 받은 값을 유지하도록 한다.
+     */
+    private GameBoardDTO.Response toBroadcastBoard(GameBoardDTO.Response board) {
+        return new GameBoardDTO.Response(false, board.courtCount(), board.courts(), board.waitings());
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {
