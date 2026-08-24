@@ -10,6 +10,7 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
@@ -25,7 +26,6 @@ import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
-import umc.cockple.demo.domain.game.service.support.validator.GameBoardMemberAvailabilityPolicy;
 
 import java.time.LocalDateTime;
 import java.util.List;
