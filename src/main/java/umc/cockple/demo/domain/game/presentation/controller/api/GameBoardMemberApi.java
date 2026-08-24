@@ -84,6 +84,7 @@ public interface GameBoardMemberApi {
             - `totalCount`는 필터와 무관한 전체 명단 수입니다.
             - 명단의 `gender`, `level`, `ageGroup`은 한글 표시값으로 반환합니다.
             - 인증된 회원이면 누구나 조회할 수 있습니다. (운동 참가 여부와 무관)
+               
             """)
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @ApiResponse(responseCode = "401", description = "인증 필요")
