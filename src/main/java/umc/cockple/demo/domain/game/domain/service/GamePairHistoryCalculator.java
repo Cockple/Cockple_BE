@@ -31,6 +31,20 @@ public class GamePairHistoryCalculator {
         return new GamePairHistory(Map.copyOf(completedGameCounts), lastGamePairs);
     }
 
+    public GamePairHistory fromCounts(
+            List<GamePairCount> pairCounts,
+            List<Long> lastGameMemberIds) {
+        Map<MemberPair, Integer> completedGameCounts = new HashMap<>();
+        pairCounts.forEach(pairCount -> completedGameCounts.put(
+                MemberPair.of(pairCount.memberIdA(), pairCount.memberIdB()),
+                Math.toIntExact(pairCount.count())));
+
+        List<MemberPair> lastGamePairs = pairsOf(lastGameMemberIds);
+        return new GamePairHistory(
+                Map.copyOf(completedGameCounts),
+                Set.copyOf(lastGamePairs));
+    }
+
     private List<MemberPair> pairsOf(Game game) {
         List<Long> memberIds = game.getPlayers().stream()
                 .map(GamePlayer::getGameBoardMember)
@@ -39,6 +53,10 @@ public class GamePairHistoryCalculator {
                 .sorted()
                 .toList();
 
+        return pairsOf(memberIds);
+    }
+
+    private List<MemberPair> pairsOf(List<Long> memberIds) {
         List<MemberPair> pairs = new ArrayList<>();
         for (int i = 0; i < memberIds.size(); i++) {
             for (int j = i + 1; j < memberIds.size(); j++) {

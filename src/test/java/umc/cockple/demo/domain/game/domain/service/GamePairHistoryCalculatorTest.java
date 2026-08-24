@@ -78,4 +78,20 @@ class GamePairHistoryCalculatorTest {
         assertThat(history.count(1L, 2L)).isZero();
         assertThat(history.playedInLastGame(1L, 2L)).isFalse();
     }
+
+    @Test
+    @DisplayName("집계된 쌍별 횟수와 직전 경기 멤버 ID로 이력을 복원한다")
+    void fromCounts_restoresPairHistory() {
+        GamePairHistory history = calculator.fromCounts(
+                List.of(
+                        new GamePairCount(1L, 2L, 3),
+                        new GamePairCount(1L, 3L, 1)),
+                List.of(1L, 2L, 4L, 5L));
+
+        assertThat(history.count(2L, 1L)).isEqualTo(3);
+        assertThat(history.count(1L, 3L)).isEqualTo(1);
+        assertThat(history.count(2L, 3L)).isZero();
+        assertThat(history.playedInLastGame(1L, 2L)).isTrue();
+        assertThat(history.playedInLastGame(1L, 3L)).isFalse();
+    }
 }

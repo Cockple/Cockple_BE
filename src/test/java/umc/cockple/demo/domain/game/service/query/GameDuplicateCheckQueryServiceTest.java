@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
@@ -19,13 +20,10 @@ import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,27 +53,24 @@ class GameDuplicateCheckQueryServiceTest {
     @Test
     @DisplayName("선택 멤버의 쌍별로 함께 완료한 게임 수와 직전 게임 동반 여부를 계산한다")
     void checkDuplicates_computesPairCountsAndLastGame() {
-        // given - 멤버 7,8,9,10,11,12
+        // given - 멤버 7,8,9,10
         GameBoardMember m7 = GameFixture.member(7L, board, "7", Level.A);
         GameBoardMember m8 = GameFixture.member(8L, board, "8", Level.A);
         GameBoardMember m9 = GameFixture.member(9L, board, "9", Level.A);
         GameBoardMember m10 = GameFixture.member(10L, board, "10", Level.A);
-        GameBoardMember m11 = GameFixture.member(11L, board, "11", Level.A);
-        GameBoardMember m12 = GameFixture.member(12L, board, "12", Level.A);
-
-        // 완료 게임 1(먼저): {7,8,9,10}
-        var earlier = GameFixture.completedGame(50L, board, LocalDateTime.now().minusMinutes(10),
-                GameFixture.player(m7, 0), GameFixture.player(m8, 1), GameFixture.player(m9, 2), GameFixture.player(m10, 3));
-        // 완료 게임 2(직전=가장 최근): {7,8,11,12}
-        var last = GameFixture.completedGame(51L, board, LocalDateTime.now().minusMinutes(1),
-                GameFixture.player(m7, 0), GameFixture.player(m8, 1), GameFixture.player(m11, 2), GameFixture.player(m12, 3));
-
         List<Long> selected = List.of(7L, 8L, 9L, 10L);
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
         given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, selected))
                 .willReturn(List.of(m7, m8, m9, m10));
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
-                .willReturn(List.of(earlier, last));
+        given(gameRepository.countCompletedGamePairs(BOARD_ID, selected)).willReturn(List.of(
+                new GamePairCount(7L, 8L, 2),
+                new GamePairCount(7L, 9L, 1),
+                new GamePairCount(7L, 10L, 1),
+                new GamePairCount(8L, 9L, 1),
+                new GamePairCount(8L, 10L, 1),
+                new GamePairCount(9L, 10L, 1)));
+        given(gameRepository.findLatestCompletedGameMemberIds(BOARD_ID))
+                .willReturn(List.of(7L, 8L, 11L, 12L));
 
         // when
         GameDuplicateCheckResult result = gameDuplicateCheckQueryService.checkDuplicates(MEMBER_ID, BOARD_ID, selected);
@@ -104,7 +99,8 @@ class GameDuplicateCheckQueryServiceTest {
         List<Long> selected = List.of(7L, 8L);
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
         given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, selected)).willReturn(List.of(m7, m8));
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList())).willReturn(List.of());
+        given(gameRepository.countCompletedGamePairs(BOARD_ID, selected)).willReturn(List.of());
+        given(gameRepository.findLatestCompletedGameMemberIds(BOARD_ID)).willReturn(List.of());
 
         GameDuplicateCheckResult result = gameDuplicateCheckQueryService.checkDuplicates(MEMBER_ID, BOARD_ID, selected);
 

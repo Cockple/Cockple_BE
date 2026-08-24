@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
@@ -36,7 +37,6 @@ public class GameRandomMatchQueryService {
 
     private static final List<GameStatus> ACTIVE_STATUSES =
             List.of(GameStatus.WAITING, GameStatus.PLAYING);
-    private static final List<GameStatus> COMPLETED_ONLY = List.of(GameStatus.COMPLETED);
 
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberRepository gameBoardMemberRepository;
@@ -81,9 +81,12 @@ public class GameRandomMatchQueryService {
 
         GameMatchType matchType = matchTypeSelector.selectFrom(feasibleTypes);
         List<GameBoardMember> candidatePool = candidatePools.get(matchType);
-        List<Game> completedGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                gameBoard.getId(), COMPLETED_ONLY);
-        GamePairHistory pairHistory = pairHistoryCalculator.calculate(completedGames);
+        List<Long> candidatePoolIds = candidatePool.stream()
+                .map(GameBoardMember::getId)
+                .toList();
+        List<GamePairCount> pairCounts = gameRepository.countCompletedGamePairs(
+                gameBoard.getId(), candidatePoolIds);
+        GamePairHistory pairHistory = pairHistoryCalculator.fromCounts(pairCounts, List.of());
         List<Long> matchedMemberIds = bestMatchSelector.select(
                 candidatePool, matchType, pairHistory);
 

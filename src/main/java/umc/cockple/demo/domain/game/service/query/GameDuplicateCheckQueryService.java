@@ -3,9 +3,8 @@ package umc.cockple.demo.domain.game.service.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
-import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
@@ -26,8 +25,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GameDuplicateCheckQueryService {
 
-    private static final List<GameStatus> COMPLETED_ONLY = List.of(GameStatus.COMPLETED);
-
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
@@ -42,9 +39,12 @@ public class GameDuplicateCheckQueryService {
         List<Long> targetMemberIds = gameBoardMemberIds.stream().distinct().toList();
         validateMembersBelongToBoard(gameBoard.getId(), targetMemberIds);
 
-        List<Game> completedGames = gameRepository
-                .findByGameBoardIdAndStatusInWithPlayers(gameBoard.getId(), COMPLETED_ONLY);
-        GamePairHistory pairHistory = gamePairHistoryCalculator.calculate(completedGames);
+        List<GamePairCount> pairCounts = gameRepository.countCompletedGamePairs(
+                gameBoard.getId(), targetMemberIds);
+        List<Long> lastGameMemberIds = gameRepository
+                .findLatestCompletedGameMemberIds(gameBoard.getId());
+        GamePairHistory pairHistory = gamePairHistoryCalculator.fromCounts(
+                pairCounts, lastGameMemberIds);
 
         List<GameDuplicateCheckResult.PairView> pairs = new ArrayList<>();
         for (int i = 0; i < targetMemberIds.size(); i++) {

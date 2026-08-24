@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.enums.GameMatchType;
 import umc.cockple.demo.domain.game.enums.GameStatus;
@@ -50,7 +51,6 @@ class GameRandomMatchQueryServiceTest {
     private static final Long BOARD_ID = 1L;
     private static final List<GameStatus> ACTIVE_STATUSES =
             List.of(GameStatus.WAITING, GameStatus.PLAYING);
-    private static final List<GameStatus> COMPLETED_ONLY = List.of(GameStatus.COMPLETED);
 
     @Mock private GameBoardReader gameBoardReader;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
@@ -92,7 +92,7 @@ class GameRandomMatchQueryServiceTest {
         List<GameBoardMember> candidates = members.subList(1, 5);
         List<GameBoardMember> candidatePool = List.copyOf(candidates);
         List<Game> activeGames = List.of();
-        List<Game> completedGames = List.of();
+        List<GamePairCount> pairCounts = List.of();
         GamePairHistory pairHistory = new GamePairHistoryCalculator().calculate(List.of());
 
         given(gameBoardReader.read(BOARD_ID)).willReturn(board);
@@ -108,9 +108,9 @@ class GameRandomMatchQueryServiceTest {
                 .willReturn(Optional.of(candidatePool));
         given(matchTypeSelector.selectFrom(List.of(GameMatchType.MEN_DOUBLES)))
                 .willReturn(GameMatchType.MEN_DOUBLES);
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                BOARD_ID, COMPLETED_ONLY)).willReturn(completedGames);
-        given(pairHistoryCalculator.calculate(completedGames)).willReturn(pairHistory);
+        given(gameRepository.countCompletedGamePairs(
+                BOARD_ID, List.of(2L, 3L, 4L, 5L))).willReturn(pairCounts);
+        given(pairHistoryCalculator.fromCounts(pairCounts, List.of())).willReturn(pairHistory);
         given(bestMatchSelector.select(
                 candidatePool, GameMatchType.MEN_DOUBLES, pairHistory))
                 .willReturn(List.of(2L, 3L, 4L, 5L));
@@ -125,7 +125,9 @@ class GameRandomMatchQueryServiceTest {
         then(candidatePoolSelector).should()
                 .find(candidates, GameMatchType.MEN_DOUBLES);
         then(matchTypeSelector).should().selectFrom(List.of(GameMatchType.MEN_DOUBLES));
-        then(pairHistoryCalculator).should().calculate(completedGames);
+        then(gameRepository).should().countCompletedGamePairs(
+                BOARD_ID, List.of(2L, 3L, 4L, 5L));
+        then(pairHistoryCalculator).should().fromCounts(pairCounts, List.of());
         then(bestMatchSelector).should()
                 .select(candidatePool, GameMatchType.MEN_DOUBLES, pairHistory);
         then(gameRepository).should(never()).save(any(Game.class));
@@ -159,8 +161,7 @@ class GameRandomMatchQueryServiceTest {
         then(candidatePoolSelector).shouldHaveNoInteractions();
         then(pairHistoryCalculator).shouldHaveNoInteractions();
         then(bestMatchSelector).shouldHaveNoInteractions();
-        then(gameRepository).should(never()).findByGameBoardIdAndStatusInWithPlayers(
-                BOARD_ID, COMPLETED_ONLY);
+        then(gameRepository).should(never()).countCompletedGamePairs(eq(BOARD_ID), anyList());
     }
 
     @Test
@@ -175,7 +176,7 @@ class GameRandomMatchQueryServiceTest {
                 member(6L, Gender.FEMALE, Level.A, 6));
         List<GameBoardMember> malePool = members.subList(0, 4);
         List<Game> activeGames = List.of();
-        List<Game> completedGames = List.of();
+        List<GamePairCount> pairCounts = List.of();
         GamePairHistory pairHistory = new GamePairHistoryCalculator().calculate(List.of());
         GameRandomMatchQueryService serviceWithRealSelectors = new GameRandomMatchQueryService(
                 gameBoardReader,
@@ -195,9 +196,9 @@ class GameRandomMatchQueryServiceTest {
                 BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
-        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                BOARD_ID, COMPLETED_ONLY)).willReturn(completedGames);
-        given(pairHistoryCalculator.calculate(completedGames)).willReturn(pairHistory);
+        given(gameRepository.countCompletedGamePairs(
+                BOARD_ID, List.of(1L, 2L, 3L, 4L))).willReturn(pairCounts);
+        given(pairHistoryCalculator.fromCounts(pairCounts, List.of())).willReturn(pairHistory);
         given(bestMatchSelector.select(
                 malePool, GameMatchType.MEN_DOUBLES, pairHistory))
                 .willReturn(List.of(1L, 2L, 3L, 4L));
