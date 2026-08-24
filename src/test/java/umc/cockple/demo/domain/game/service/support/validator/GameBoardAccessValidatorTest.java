@@ -64,4 +64,28 @@ class GameBoardAccessValidatorTest {
                 .isInstanceOfSatisfying(GameException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_NOT_FOUND));
     }
+
+    @Test
+    @DisplayName("isGameHost: 게임 진행자면 true 를 반환한다")
+    void isGameHost_returnsTrueForGameHost() {
+        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.of(exercise));
+
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, GAME_HOST_ID)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isGameHost: 게임 진행자가 아니면 false 를 반환한다 (예외 없음)")
+    void isGameHost_returnsFalseForOtherMember() {
+        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.of(exercise));
+
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, 999L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("isGameHost: 연결된 운동이 없으면 false 를 반환한다 (예외 없음)")
+    void isGameHost_returnsFalseWhenExerciseAbsent() {
+        given(exerciseRepository.findByGameBoardId(GAME_BOARD_ID)).willReturn(Optional.empty());
+
+        assertThat(gameBoardAccessValidator.isGameHost(GAME_BOARD_ID, GAME_HOST_ID)).isFalse();
+    }
 }

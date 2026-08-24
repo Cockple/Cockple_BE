@@ -34,7 +34,7 @@ public class GameDuplicateCheckQueryService {
     private final GameBoardMemberRepository gameBoardMemberRepository;
 
     /**
-     * @param memberId 요청자(추후 게임판 접근 권한 검증에 사용 예정)
+     * @param memberId 요청자(조회는 인증된 회원이면 누구나 가능 — 권한 제한 없음)
      */
     public GameDuplicateCheckResult checkDuplicates(Long memberId, Long gameBoardId, List<Long> gameBoardMemberIds) {
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);

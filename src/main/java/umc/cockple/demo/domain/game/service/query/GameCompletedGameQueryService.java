@@ -37,7 +37,7 @@ public class GameCompletedGameQueryService {
     private final GameRepository gameRepository;
 
     /**
-     * @param memberId 요청자(추후 게임판 접근 권한 검증에 사용 예정)
+     * @param memberId 요청자(조회는 인증된 회원이면 누구나 가능 — 권한 제한 없음)
      * @param courtNo  코트 번호 필터(null 이면 전체)
      * @param cursor   이전 응답의 nextCursor(null/빈값이면 첫 페이지)
      */

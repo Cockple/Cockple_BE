@@ -9,8 +9,8 @@ public class GameCourtDTO {
 
     @Schema(name = "GameCourtManageRequest", description = "게임 코트 관리 요청")
     public record Request(
-            @NotNull(message = "코트 목록은 필수입니다. (전체 삭제 시 빈 배열)")
-            List<CourtRequest> courts
+            @NotNull(message = "코트 목록은 필수입니다. (최소 1개 이상, 빈 배열 불가)")
+            List<@NotNull(message = "코트 항목은 null일 수 없습니다.") CourtRequest> courts
     ) {
     }
 

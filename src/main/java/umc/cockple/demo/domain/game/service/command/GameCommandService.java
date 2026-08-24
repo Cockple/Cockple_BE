@@ -24,6 +24,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,16 +42,18 @@ public class GameCommandService {
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final GameBoardAccessValidator gameBoardAccessValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 대기 생성
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      * @return 생성된 게임 ID
      */
     public Long createGame(Long memberId, GameCreateCommand command) {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
                 .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
@@ -80,10 +83,11 @@ public class GameCommandService {
     }
 
     /**
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public void startGame(Long memberId, GameStartCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
@@ -111,10 +115,11 @@ public class GameCommandService {
     /**
      * 게임 완료
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public void completeGame(Long memberId, GameCompleteCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
@@ -139,11 +144,12 @@ public class GameCommandService {
     /**
      * 게임 취소/대기 삭제
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      * @return 삭제된 게임 ID + (restore 시) 플레이어 목록
      */
     public GameDeleteResult deleteGame(Long memberId, GameDeleteCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
@@ -176,10 +182,11 @@ public class GameCommandService {
      * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비운다.
      * 경기 기록으로 남지 않으며 게임횟수도 증가시키지 않는다.
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public void moveGameToWaiting(Long memberId, GameToWaitingCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));

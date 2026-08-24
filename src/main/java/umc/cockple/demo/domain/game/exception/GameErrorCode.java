@@ -31,7 +31,8 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME411", "이미 완료된 게임은 취소할 수 없습니다."),
     INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME412", "커서 형식이 올바르지 않습니다."),
     ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE(HttpStatus.BAD_REQUEST, "GAME413", "진행 또는 대기 중인 게임에 포함된 선수는 참여 해제할 수 없습니다."),
-    INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다.")
+    INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다."),
+    INVALID_COURT_COUNT(HttpStatus.BAD_REQUEST, "GAME415", "코트는 최소 1개, 최대 10개까지 관리할 수 있습니다.")
 
     ;
 

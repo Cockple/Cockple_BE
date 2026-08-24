@@ -25,4 +25,13 @@ public class GameBoardAccessValidator {
             throw new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED);
         }
     }
+
+    /**
+     * 요청자가 해당 게임판(운동)의 게임 진행자인지 여부 판단
+     */
+    public boolean isGameHost(Long gameBoardId, Long memberId) {
+        return exerciseRepository.findByGameBoardId(gameBoardId)
+                .map(exercise -> Objects.equals(exercise.getGameHostId(), memberId))
+                .orElse(false);
+    }
 }

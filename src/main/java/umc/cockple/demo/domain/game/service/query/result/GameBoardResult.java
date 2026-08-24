@@ -10,6 +10,7 @@ import java.util.List;
  * 코트 보드 조회(#2) 내부 result 모델. (명단 제외한 코트/대기열)
  */
 public record GameBoardResult(
+        boolean isGameHost,
         int courtCount,
         List<CourtView> courts,
         List<WaitingView> waitings

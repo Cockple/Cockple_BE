@@ -25,6 +25,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult;
 import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.support.fixture.GameFixture;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -47,6 +49,7 @@ class GameCourtCommandServiceTest {
     @Mock private CourtReader courtReader;
     @Mock private CourtRepository courtRepository;
     @Mock private GameRepository gameRepository;
+    @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCourtCommandService gameCourtCommandService;
@@ -175,6 +178,39 @@ class GameCourtCommandServiceTest {
         }
 
         @Test
+        @DisplayName("코트가 0개이거나 10개를 초과하면 command 생성 단계에서 INVALID_COURT_COUNT 예외")
+        void manageCourts_invalidCourtCount() {
+            assertThatThrownBy(() -> new GameCourtManageCommand(BOARD_ID, List.of()))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INVALID_COURT_COUNT);
+
+            List<CourtCommand> elevenCourts = java.util.Collections.nCopies(11, new CourtCommand(null, "코트"));
+            assertThatThrownBy(() -> new GameCourtManageCommand(BOARD_ID, elevenCourts))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.INVALID_COURT_COUNT);
+        }
+
+        @Test
+        @DisplayName("게임 진행자가 아니면 GAME_BOARD_ACCESS_DENIED 예외로 코트를 변경하지 않는다")
+        void manageCourts_deniesNonHost() {
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
+                    .given(gameBoardAccessValidator).validateGameHost(BOARD_ID, MEMBER_ID);
+
+            GameCourtManageCommand command = new GameCourtManageCommand(BOARD_ID, List.of(
+                    new CourtCommand(null, "신규코트")));
+
+            assertThatThrownBy(() -> gameCourtCommandService.manageCourts(MEMBER_ID, command))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED);
+            then(courtRepository).should(never()).save(any());
+            then(courtRepository).should(never()).deleteAll(any());
+        }
+
+        @Test
         @DisplayName("요청 courtId가 해당 게임판에 없으면 COURT_NOT_FOUND 예외")
         void manageCourts_foreignCourtId() {
             given(gameBoardReader.read(BOARD_ID)).willReturn(board);
@@ -236,6 +272,21 @@ class GameCourtCommandServiceTest {
             // then
             assertThat(sourceGame.getCourt()).isEqualTo(target);
             assertThat(targetGame.getCourt()).isEqualTo(source);
+        }
+
+        @Test
+        @DisplayName("게임 진행자가 아니면 GAME_BOARD_ACCESS_DENIED 예외로 코트를 이동하지 않는다")
+        void moveCourt_deniesNonHost() {
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
+                    .given(gameBoardAccessValidator).validateGameHost(BOARD_ID, MEMBER_ID);
+
+            assertThatThrownBy(() -> gameCourtCommandService.moveCourt(
+                    MEMBER_ID, new GameCourtMoveCommand(BOARD_ID, 10L, 2)))
+                    .isInstanceOf(GameException.class)
+                    .extracting(e -> ((GameException) e).getCode())
+                    .isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED);
+            then(gameRepository).should(never()).findByCourtIdAndStatus(any(), any());
         }
 
         @Test

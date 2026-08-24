@@ -20,6 +20,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameCourtMoveCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult;
 import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,16 +41,18 @@ public class GameCourtCommandService {
     private final CourtReader courtReader;
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
+    private final GameBoardAccessValidator gameBoardAccessValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 코트 관리
      * 전달된 courts 목록을 "관리 후 최종 상태"로 간주
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public GameCourtManageResult manageCourts(Long memberId, GameCourtManageCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
         List<GameCourtManageCommand.CourtCommand> requestedCourts = command.courts();
 
         Map<Long, Court> existingCourtsById = courtReader.readAllByGameBoard(gameBoard.getId()).stream()
@@ -72,10 +75,11 @@ public class GameCourtCommandService {
      * 코트 위치 변경
      * 목적지 코트에 이미 게임이 있으면 두 게임의 코트를 SWAP
      *
-     * @param memberId 요청자(추후 게임판 관리 권한 검증에 사용 예정)
+     * @param memberId 요청자
      */
     public void moveCourt(Long memberId, GameCourtMoveCommand command) {
         GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game sourceGame = gameRepository.findByCourtIdAndStatus(command.courtId(), GameStatus.PLAYING)
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_ON_COURT));

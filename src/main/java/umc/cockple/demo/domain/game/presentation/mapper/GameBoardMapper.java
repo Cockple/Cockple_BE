@@ -4,14 +4,12 @@ import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 
-/**
- * 코트 보드 조회: 내부 result → 응답 DTO 변환.
- */
 @Component
 public class GameBoardMapper {
 
     public GameBoardDTO.Response toResponse(GameBoardResult result) {
         return new GameBoardDTO.Response(
+                result.isGameHost(),
                 result.courtCount(),
                 result.courts().stream().map(this::toCourtInfo).toList(),
                 result.waitings().stream().map(this::toWaitingInfo).toList());

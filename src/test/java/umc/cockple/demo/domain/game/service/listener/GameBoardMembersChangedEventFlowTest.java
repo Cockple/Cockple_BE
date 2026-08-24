@@ -61,8 +61,8 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
     void setUp() {
         GameBoardMemberResult members = new GameBoardMemberResult(0, List.of());
         membersDto = new GameBoardMemberDTO.Response(0, List.of());
-        GameBoardResult board = new GameBoardResult(0, List.of(), List.of());
-        boardDto = new GameBoardDTO.Response(0, List.of(), List.of());
+        GameBoardResult board = new GameBoardResult(false, 0, List.of(), List.of());
+        boardDto = new GameBoardDTO.Response(false, 0, List.of(), List.of());
 
         given(gameBoardMemberQueryService.getMembers(anyLong(), eq(NO_FILTERS))).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
