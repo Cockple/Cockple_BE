@@ -25,6 +25,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameBoardMemberAvailabilityPolicy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,11 +39,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GameCommandService {
 
+    private static final List<GameStatus> ACTIVE_STATUSES =
+            List.of(GameStatus.WAITING, GameStatus.PLAYING);
+
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
+    private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -64,6 +69,12 @@ public class GameCommandService {
         if (membersById.values().stream()
                 .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
             throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
+        }
+        List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+                gameBoard.getId(), ACTIVE_STATUSES);
+        if (availabilityPolicy.hasBlockedMember(
+                List.copyOf(membersById.values()), activeGames, LocalDateTime.now())) {
+            throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
         }
 
         int nextWaitingOrder = (int) gameRepository
