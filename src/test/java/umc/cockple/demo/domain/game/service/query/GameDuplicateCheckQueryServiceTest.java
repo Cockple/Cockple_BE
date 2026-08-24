@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.game.domain.GameBoard;
@@ -15,6 +14,7 @@ import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult.PairView;
+import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
@@ -36,7 +36,7 @@ class GameDuplicateCheckQueryServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
 
-    @InjectMocks private GameDuplicateCheckQueryService gameDuplicateCheckQueryService;
+    private GameDuplicateCheckQueryService gameDuplicateCheckQueryService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -45,6 +45,11 @@ class GameDuplicateCheckQueryServiceTest {
     @BeforeEach
     void setUp() {
         board = GameFixture.gameBoard(BOARD_ID);
+        gameDuplicateCheckQueryService = new GameDuplicateCheckQueryService(
+                gameBoardReader,
+                gameRepository,
+                gameBoardMemberRepository,
+                new GamePairHistoryCalculator());
     }
 
     @Test

@@ -11,13 +11,12 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameDuplicateCheckResult;
+import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator;
+import umc.cockple.demo.domain.game.service.support.calculator.GamePairHistoryCalculator.GamePairHistory;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 게임 중복 체크
@@ -32,6 +31,7 @@ public class GameDuplicateCheckQueryService {
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final GamePairHistoryCalculator gamePairHistoryCalculator;
 
     /**
      * @param memberId 요청자(조회는 인증된 회원이면 누구나 가능 — 권한 제한 없음)
@@ -44,24 +44,15 @@ public class GameDuplicateCheckQueryService {
 
         List<Game> completedGames = gameRepository
                 .findByGameBoardIdAndStatusInWithPlayers(gameBoard.getId(), COMPLETED_ONLY);
-        List<Set<Long>> gameMemberSets = completedGames.stream()
-                .map(this::memberIdsOf)
-                .toList();
-        Set<Long> lastGameMemberIds = completedGames.stream()
-                .max(Comparator.comparing(Game::getCompletedAt))
-                .map(this::memberIdsOf)
-                .orElse(Set.of());
+        GamePairHistory pairHistory = gamePairHistoryCalculator.calculate(completedGames);
 
         List<GameDuplicateCheckResult.PairView> pairs = new ArrayList<>();
         for (int i = 0; i < targetMemberIds.size(); i++) {
             for (int j = i + 1; j < targetMemberIds.size(); j++) {
                 Long memberIdA = targetMemberIds.get(i);
                 Long memberIdB = targetMemberIds.get(j);
-                int count = (int) gameMemberSets.stream()
-                        .filter(members -> members.contains(memberIdA) && members.contains(memberIdB))
-                        .count();
-                boolean playedInLastGame = lastGameMemberIds.contains(memberIdA)
-                        && lastGameMemberIds.contains(memberIdB);
+                int count = pairHistory.count(memberIdA, memberIdB);
+                boolean playedInLastGame = pairHistory.playedInLastGame(memberIdA, memberIdB);
                 pairs.add(new GameDuplicateCheckResult.PairView(memberIdA, memberIdB, count, playedInLastGame));
             }
         }
@@ -75,9 +66,4 @@ public class GameDuplicateCheckQueryService {
         }
     }
 
-    private Set<Long> memberIdsOf(Game game) {
-        return game.getPlayers().stream()
-                .map(player -> player.getGameBoardMember().getId())
-                .collect(Collectors.toSet());
-    }
 }
