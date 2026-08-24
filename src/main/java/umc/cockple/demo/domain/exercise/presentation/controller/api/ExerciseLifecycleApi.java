@@ -24,7 +24,8 @@ public interface ExerciseLifecycleApi {
 
     @PostMapping("/parties/{partyId}/exercises")
     @Operation(summary = "운동 생성",
-            description = "모임 내에서 새로운 운동을 생성합니다. 모임장과 부모임장만 생성 가능합니다.")
+            description = "모임 내에서 새로운 운동을 생성합니다. 모임장과 부모임장만 생성 가능합니다. "
+                    + "응답의 gameBoardId는 함께 생성된 게임판 ID로, 게임판 API 호출 시 사용합니다.")
     @ApiResponse(responseCode = "201", description = "운동 생성 성공")
     @ApiResponse(responseCode = "400", description = "입력값 오류")
     @ApiResponse(responseCode = "403", description = "권한 없음")
@@ -57,7 +58,8 @@ public interface ExerciseLifecycleApi {
 
     @GetMapping("/exercises/{exerciseId}")
     @Operation(summary = "운동 상세 조회",
-            description = "운동의 상세 정보를 조회합니다. 권한, 멤버 여부, 게스트 여부에 따라 반환되는 값이 달라집니다.")
+            description = "운동의 상세 정보를 조회합니다. 권한, 멤버 여부, 게스트 여부에 따라 반환되는 값이 달라집니다. "
+                    + "응답의 gameBoardId는 해당 운동의 게임판 ID로, 게임판 API 호출 시 사용합니다.")
     @ApiResponse(responseCode = "200", description = "운동 상세 조회 성공")
     @ApiResponse(responseCode = "404", description = "존재하지 않는 운동")
     ResponseEntity<BaseResponse<ExerciseDetailDTO.Response>> getExerciseDetail(

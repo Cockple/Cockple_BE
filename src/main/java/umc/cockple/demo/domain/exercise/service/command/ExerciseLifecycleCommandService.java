@@ -58,7 +58,8 @@ public class ExerciseLifecycleCommandService {
 
         log.info("운동 생성 완료 - 운동ID: {}", savedExercise.getId());
 
-        return new ExerciseCreateResult(savedExercise.getId(), savedExercise.getCreatedAt());
+        return new ExerciseCreateResult(
+                savedExercise.getId(), savedExercise.getGameBoard().getId(), savedExercise.getCreatedAt());
     }
 
     public ExerciseDeleteResult deleteExercise(Long exerciseId, Long memberId) {

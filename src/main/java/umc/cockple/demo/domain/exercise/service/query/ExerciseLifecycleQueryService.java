@@ -58,7 +58,8 @@ public class ExerciseLifecycleQueryService {
                 createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
         ExerciseDetailResult.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-        return new ExerciseDetailResult(isManager, exerciseInfo, participantGroup, waitingGroup);
+        return new ExerciseDetailResult(
+                isManager, exercise.getGameBoard().getId(), exerciseInfo, participantGroup, waitingGroup);
     }
 
     public ExerciseEditDetailResult getExerciseForEdit(Long exerciseId, Long memberId) {

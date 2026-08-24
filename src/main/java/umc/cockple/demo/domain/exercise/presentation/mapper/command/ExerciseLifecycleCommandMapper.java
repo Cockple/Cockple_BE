@@ -64,6 +64,7 @@ public class ExerciseLifecycleCommandMapper {
     public ExerciseCreateDTO.Response toCreateResponse(ExerciseCreateResult result) {
         return ExerciseCreateDTO.Response.builder()
                 .exerciseId(result.exerciseId())
+                .gameBoardId(result.gameBoardId())
                 .createdAt(result.createdAt())
                 .build();
     }

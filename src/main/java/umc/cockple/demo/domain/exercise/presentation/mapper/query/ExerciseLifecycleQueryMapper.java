@@ -18,6 +18,7 @@ public class ExerciseLifecycleQueryMapper {
     public ExerciseDetailDTO.Response toDetailResponse(ExerciseDetailResult result) {
         return ExerciseDetailDTO.Response.builder()
                 .isManager(result.isManager())
+                .gameBoardId(result.gameBoardId())
                 .info(toExerciseInfo(result.info()))
                 .participants(toParticipantGroup(result.participants()))
                 .waiting(toWaitingGroup(result.waiting()))

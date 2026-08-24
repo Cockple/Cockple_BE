@@ -85,6 +85,7 @@ public class ExerciseCreateDTO {
     @Builder
     public record Response(
             Long exerciseId,
+            Long gameBoardId,
             LocalDateTime createdAt
     ) {
     }

@@ -10,6 +10,7 @@ public class ExerciseDetailDTO {
     @Builder
     public record Response(
             Boolean isManager,
+            Long gameBoardId,
             ExerciseInfo info,
             ParticipantGroup participants,
             WaitingGroup waiting
