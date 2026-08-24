@@ -16,6 +16,8 @@ import java.util.List;
 @Getter
 public class GameBoard extends BaseEntity {
 
+    public static final int DEFAULT_COURT_COUNT = 2;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,12 +35,18 @@ public class GameBoard extends BaseEntity {
     private List<GameBoardMember> gameBoardMembers = new ArrayList<>();
 
     public static GameBoard create() {
-        return GameBoard.builder().build();
+        GameBoard gameBoard = GameBoard.builder().build();
+        gameBoard.addDefaultCourts();
+        return gameBoard;
     }
 
-    /**
-     * 연관관계 매핑 메서드
-     */
+    private void addDefaultCourts() {
+        for (int courtNo = 1; courtNo <= DEFAULT_COURT_COUNT; courtNo++) {
+            addCourt(Court.create(this, courtNo, courtNo + "번 코트"));
+        }
+    }
+
+
     public void addCourt(Court court) {
         this.courts.add(court);
         court.setGameBoard(this);

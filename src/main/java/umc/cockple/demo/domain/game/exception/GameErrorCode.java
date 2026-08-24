@@ -17,7 +17,6 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_BOARD_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "GAME205", "게임판 명단에 없는 멤버가 포함되어 있습니다."),
 
     GAME_BOARD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "GAME301", "게임판을 관리할 권한이 없습니다."),
-    GAME_BOARD_VIEW_ACCESS_DENIED(HttpStatus.FORBIDDEN, "GAME302", "해당 운동 참가자 또는 게임 진행자만 게임판 명단을 조회할 수 있습니다."),
 
     GAME_BOARD_ID_REQUIRED(HttpStatus.BAD_REQUEST, "GAME401", "게임판 ID가 필요합니다."),
     INVALID_REALTIME_PAYLOAD(HttpStatus.BAD_REQUEST, "GAME402", "게임 요청 형식이 올바르지 않습니다."),
@@ -32,7 +31,8 @@ public enum GameErrorCode implements BaseErrorCode {
     GAME_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "GAME411", "이미 완료된 게임은 취소할 수 없습니다."),
     INVALID_CURSOR(HttpStatus.BAD_REQUEST, "GAME412", "커서 형식이 올바르지 않습니다."),
     ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE(HttpStatus.BAD_REQUEST, "GAME413", "진행 또는 대기 중인 게임에 포함된 선수는 참여 해제할 수 없습니다."),
-    INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다.")
+    INACTIVE_GAME_PLAYER(HttpStatus.BAD_REQUEST, "GAME414", "불참 상태의 선수는 게임에 추가할 수 없습니다."),
+    INVALID_COURT_COUNT(HttpStatus.BAD_REQUEST, "GAME415", "코트는 최소 1개, 최대 10개까지 관리할 수 있습니다.")
 
     ;
 

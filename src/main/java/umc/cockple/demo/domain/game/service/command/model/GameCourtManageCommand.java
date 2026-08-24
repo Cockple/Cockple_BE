@@ -12,14 +12,29 @@ public record GameCourtManageCommand(
         Long gameBoardId,
         List<CourtCommand> courts
 ) {
+    private static final int MIN_COURT_COUNT = 1;
+    private static final int MAX_COURT_COUNT = 10;
+
     public GameCourtManageCommand {
         validateGameBoardId(gameBoardId);
         validateNoDuplicateCourtIds(courts);
+        validateCourtCount(courts);
     }
 
     private static void validateGameBoardId(Long gameBoardId) {
         if (gameBoardId == null) {
             throw new GameException(GameErrorCode.GAME_BOARD_ID_REQUIRED);
+        }
+    }
+
+    /**
+     * PUT 전체 교체 방식이므로 요청 목록이 곧 관리 후 최종 코트 수다.
+     * 기획상 코트는 최소 1개, 최대 10개까지만 유지할 수 있다.
+     */
+    private static void validateCourtCount(List<CourtCommand> courts) {
+        int count = courts == null ? 0 : courts.size();
+        if (count < MIN_COURT_COUNT || count > MAX_COURT_COUNT) {
+            throw new GameException(GameErrorCode.INVALID_COURT_COUNT);
         }
     }
 
