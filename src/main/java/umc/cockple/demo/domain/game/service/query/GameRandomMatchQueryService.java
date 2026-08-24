@@ -24,7 +24,10 @@ import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPo
 import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -62,8 +65,22 @@ public class GameRandomMatchQueryService {
             throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
         }
 
-        GameMatchType matchType = matchTypeSelector.select(candidates);
-        List<GameBoardMember> candidatePool = candidatePoolSelector.select(candidates, matchType);
+        List<GameMatchType> availableTypes = matchTypeSelector.findAvailableTypes(candidates);
+        List<GameMatchType> feasibleTypes = new ArrayList<>();
+        Map<GameMatchType, List<GameBoardMember>> candidatePools =
+                new EnumMap<>(GameMatchType.class);
+        for (GameMatchType availableType : availableTypes) {
+            candidatePoolSelector.find(candidates, availableType).ifPresent(candidatePool -> {
+                feasibleTypes.add(availableType);
+                candidatePools.put(availableType, candidatePool);
+            });
+        }
+        if (feasibleTypes.isEmpty()) {
+            throw new GameException(GameErrorCode.RANDOM_MATCH_NOT_FOUND);
+        }
+
+        GameMatchType matchType = matchTypeSelector.selectFrom(feasibleTypes);
+        List<GameBoardMember> candidatePool = candidatePools.get(matchType);
         List<Game> completedGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 gameBoard.getId(), COMPLETED_ONLY);
         GamePairHistory pairHistory = pairHistoryCalculator.calculate(completedGames);

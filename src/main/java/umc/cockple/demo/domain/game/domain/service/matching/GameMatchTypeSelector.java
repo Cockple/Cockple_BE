@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 public class GameMatchTypeSelector {
 
-    public GameMatchType select(List<GameBoardMember> candidates) {
+    public List<GameMatchType> findAvailableTypes(List<GameBoardMember> candidates) {
         long maleCount = countByGender(candidates, Gender.MALE);
         long femaleCount = countByGender(candidates, Gender.FEMALE);
 
@@ -31,7 +31,13 @@ public class GameMatchTypeSelector {
         if (availableTypes.isEmpty()) {
             throw new GameException(GameErrorCode.INSUFFICIENT_GENDER_COMPOSITION);
         }
+        return availableTypes;
+    }
 
+    public GameMatchType selectFrom(List<GameMatchType> availableTypes) {
+        if (availableTypes.isEmpty()) {
+            throw new GameException(GameErrorCode.INSUFFICIENT_GENDER_COMPOSITION);
+        }
         int selectedIndex = ThreadLocalRandom.current().nextInt(availableTypes.size());
         return availableTypes.get(selectedIndex);
     }

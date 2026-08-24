@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Component
@@ -28,13 +29,19 @@ public class GameCandidatePoolSelector {
     public List<GameBoardMember> select(
             List<GameBoardMember> availableMembers,
             GameMatchType matchType) {
+        return find(availableMembers, matchType).orElseThrow(this::randomMatchNotFound);
+    }
+
+    public Optional<List<GameBoardMember>> find(
+            List<GameBoardMember> availableMembers,
+            GameMatchType matchType) {
         List<GameBoardMember> sortedCandidates = availableMembers.stream()
                 .filter(member -> member.getLevel() != Level.NONE)
                 .filter(member -> belongsToMatchType(member, matchType))
                 .sorted(FAIRNESS_ORDER)
                 .toList();
         if (sortedCandidates.isEmpty()) {
-            throw randomMatchNotFound();
+            return Optional.empty();
         }
 
         int minimumGameCount = sortedCandidates.get(0).getGameCount();
@@ -44,10 +51,10 @@ public class GameCandidatePoolSelector {
                     .filter(member -> member.getGameCount() <= maximumGameCount)
                     .toList();
             if (hasRequiredComposition(expandedPool, matchType)) {
-                return limitSize(expandedPool, matchType);
+                return Optional.of(limitSize(expandedPool, matchType));
             }
         }
-        throw randomMatchNotFound();
+        return Optional.empty();
     }
 
     private boolean belongsToMatchType(GameBoardMember member, GameMatchType matchType) {

@@ -29,7 +29,10 @@ class GameMatchTypeSelectorTest {
                 member(1L, Gender.MALE), member(2L, Gender.MALE),
                 member(3L, Gender.FEMALE), member(4L, Gender.FEMALE));
 
-        assertThat(selector.select(candidates)).isEqualTo(GameMatchType.MIXED_DOUBLES);
+        List<GameMatchType> availableTypes = selector.findAvailableTypes(candidates);
+
+        assertThat(availableTypes).containsExactly(GameMatchType.MIXED_DOUBLES);
+        assertThat(selector.selectFrom(availableTypes)).isEqualTo(GameMatchType.MIXED_DOUBLES);
     }
 
     @Test
@@ -39,7 +42,10 @@ class GameMatchTypeSelectorTest {
                 member(1L, Gender.MALE), member(2L, Gender.MALE),
                 member(3L, Gender.MALE), member(4L, Gender.MALE));
 
-        assertThat(selector.select(candidates)).isEqualTo(GameMatchType.MEN_DOUBLES);
+        List<GameMatchType> availableTypes = selector.findAvailableTypes(candidates);
+
+        assertThat(availableTypes).containsExactly(GameMatchType.MEN_DOUBLES);
+        assertThat(selector.selectFrom(availableTypes)).isEqualTo(GameMatchType.MEN_DOUBLES);
     }
 
     @Test
@@ -49,7 +55,10 @@ class GameMatchTypeSelectorTest {
                 member(1L, Gender.FEMALE), member(2L, Gender.FEMALE),
                 member(3L, Gender.FEMALE), member(4L, Gender.FEMALE));
 
-        assertThat(selector.select(candidates)).isEqualTo(GameMatchType.WOMEN_DOUBLES);
+        List<GameMatchType> availableTypes = selector.findAvailableTypes(candidates);
+
+        assertThat(availableTypes).containsExactly(GameMatchType.WOMEN_DOUBLES);
+        assertThat(selector.selectFrom(availableTypes)).isEqualTo(GameMatchType.WOMEN_DOUBLES);
     }
 
     @Test
@@ -59,7 +68,7 @@ class GameMatchTypeSelectorTest {
                 member(1L, Gender.MALE), member(2L, Gender.MALE),
                 member(3L, Gender.MALE), member(4L, Gender.FEMALE));
 
-        assertThatThrownBy(() -> selector.select(candidates))
+        assertThatThrownBy(() -> selector.findAvailableTypes(candidates))
                 .isInstanceOfSatisfying(GameException.class, exception ->
                         assertThat(exception.getCode())
                                 .isEqualTo(GameErrorCode.INSUFFICIENT_GENDER_COMPOSITION));

@@ -31,6 +31,7 @@ import umc.cockple.demo.support.fixture.GameFixture;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -101,9 +102,12 @@ class GameRandomMatchQueryServiceTest {
                 BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
-        given(matchTypeSelector.select(candidates)).willReturn(GameMatchType.MEN_DOUBLES);
-        given(candidatePoolSelector.select(candidates, GameMatchType.MEN_DOUBLES))
-                .willReturn(candidatePool);
+        given(matchTypeSelector.findAvailableTypes(candidates))
+                .willReturn(List.of(GameMatchType.MEN_DOUBLES));
+        given(candidatePoolSelector.find(candidates, GameMatchType.MEN_DOUBLES))
+                .willReturn(Optional.of(candidatePool));
+        given(matchTypeSelector.selectFrom(List.of(GameMatchType.MEN_DOUBLES)))
+                .willReturn(GameMatchType.MEN_DOUBLES);
         given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 BOARD_ID, COMPLETED_ONLY)).willReturn(completedGames);
         given(pairHistoryCalculator.calculate(completedGames)).willReturn(pairHistory);
@@ -117,9 +121,10 @@ class GameRandomMatchQueryServiceTest {
         then(gameBoardAccessValidator).should().validateGameHost(BOARD_ID, MEMBER_ID);
         then(availabilityPolicy).should().filterAvailable(
                 eq(members), eq(activeGames), any(LocalDateTime.class));
-        then(matchTypeSelector).should().select(candidates);
+        then(matchTypeSelector).should().findAvailableTypes(candidates);
         then(candidatePoolSelector).should()
-                .select(candidates, GameMatchType.MEN_DOUBLES);
+                .find(candidates, GameMatchType.MEN_DOUBLES);
+        then(matchTypeSelector).should().selectFrom(List.of(GameMatchType.MEN_DOUBLES));
         then(pairHistoryCalculator).should().calculate(completedGames);
         then(bestMatchSelector).should()
                 .select(candidatePool, GameMatchType.MEN_DOUBLES, pairHistory);
@@ -150,7 +155,7 @@ class GameRandomMatchQueryServiceTest {
                         assertThat(exception.getCode())
                                 .isEqualTo(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS));
 
-        then(matchTypeSelector).should(never()).select(anyList());
+        then(matchTypeSelector).should(never()).findAvailableTypes(anyList());
         then(candidatePoolSelector).shouldHaveNoInteractions();
         then(pairHistoryCalculator).shouldHaveNoInteractions();
         then(bestMatchSelector).shouldHaveNoInteractions();
@@ -158,16 +163,66 @@ class GameRandomMatchQueryServiceTest {
                 BOARD_ID, COMPLETED_ONLY);
     }
 
+    @Test
+    @DisplayName("일부 타입만 경기 수 +5 안에서 구성 가능하면 해당 타입으로 매칭한다")
+    void match_selectsAmongTypesWithFeasibleCandidatePool() {
+        List<GameBoardMember> members = List.of(
+                member(1L, Gender.MALE, Level.A, 0),
+                member(2L, Gender.MALE, Level.A, 0),
+                member(3L, Gender.MALE, Level.A, 0),
+                member(4L, Gender.MALE, Level.A, 0),
+                member(5L, Gender.FEMALE, Level.A, 6),
+                member(6L, Gender.FEMALE, Level.A, 6));
+        List<GameBoardMember> malePool = members.subList(0, 4);
+        List<Game> activeGames = List.of();
+        List<Game> completedGames = List.of();
+        GamePairHistory pairHistory = new GamePairHistoryCalculator().calculate(List.of());
+        GameRandomMatchQueryService serviceWithRealSelectors = new GameRandomMatchQueryService(
+                gameBoardReader,
+                gameBoardMemberRepository,
+                gameRepository,
+                gameBoardAccessValidator,
+                availabilityPolicy,
+                new GameMatchTypeSelector(),
+                new GameCandidatePoolSelector(),
+                pairHistoryCalculator,
+                bestMatchSelector);
+
+        given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(BOARD_ID))
+                .willReturn(members);
+        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+        given(availabilityPolicy.filterAvailable(
+                eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
+        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(
+                BOARD_ID, COMPLETED_ONLY)).willReturn(completedGames);
+        given(pairHistoryCalculator.calculate(completedGames)).willReturn(pairHistory);
+        given(bestMatchSelector.select(
+                malePool, GameMatchType.MEN_DOUBLES, pairHistory))
+                .willReturn(List.of(1L, 2L, 3L, 4L));
+
+        GameRandomMatchResult result = serviceWithRealSelectors.match(MEMBER_ID, BOARD_ID);
+
+        assertThat(result.gameBoardMemberIds()).containsExactly(1L, 2L, 3L, 4L);
+        then(bestMatchSelector).should()
+                .select(malePool, GameMatchType.MEN_DOUBLES, pairHistory);
+    }
+
     private GameBoardMember member(Long id, Level level) {
+        return member(id, Gender.MALE, level, 0);
+    }
+
+    private GameBoardMember member(Long id, Gender gender, Level level, int gameCount) {
         return GameBoardMember.builder()
                 .id(id)
                 .gameBoard(board)
                 .name("선수" + id)
-                .gender(Gender.MALE)
+                .gender(gender)
                 .level(level)
                 .ageGroup(AgeGroup.TWENTIES)
                 .participating(true)
-                .gameCount(0)
+                .gameCount(gameCount)
                 .shuttlecockSubmitted(false)
                 .build();
     }
