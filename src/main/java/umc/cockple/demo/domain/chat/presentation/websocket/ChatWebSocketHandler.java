@@ -8,8 +8,10 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import umc.cockple.demo.domain.chat.dto.MemberConnectionInfo;
-import umc.cockple.demo.domain.chat.presentation.websocket.session.WebSocketSessionRegistry;
+import umc.cockple.demo.domain.chat.presentation.websocket.session.ChatWebSocketSessionRegistry;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
+import umc.cockple.demo.global.realtime.logging.WebSocketMdcSupport;
+import umc.cockple.demo.global.realtime.session.WebSocketSessionAttributes;
 
 @Component
 @Slf4j
@@ -19,7 +21,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MemberQueryService memberQueryService;
     private final WebSocketResponseSender webSocketResponseSender;
     private final ChatWebSocketRequestDispatcher requestDispatcher;
-    private final WebSocketSessionRegistry sessionRegistry;
+    private final ChatWebSocketSessionRegistry sessionRegistry;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -27,8 +29,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             log.info("웹소켓 연결 성공");
 
             try {
-                Long memberId = (Long) session.getAttributes().get("memberId");
-                Boolean authenticated = (Boolean) session.getAttributes().get("authenticated");
+                Long memberId = (Long) session.getAttributes().get(WebSocketSessionAttributes.MEMBER_ID);
+                Boolean authenticated = (Boolean) session.getAttributes().get(WebSocketSessionAttributes.AUTHENTICATED);
 
                 if (memberId != null && Boolean.TRUE.equals(authenticated)) {
                     MemberConnectionInfo memberInfo = memberQueryService.getMemberConnectionInfo(memberId);
@@ -59,7 +61,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status){
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
-            Long memberId = (Long) session.getAttributes().get("memberId");
+            Long memberId = (Long) session.getAttributes().get(WebSocketSessionAttributes.MEMBER_ID);
 
             log.info("웹소켓 연결 종료");
             log.info("세션 ID: {}, 사용자 ID: {}, 종료 상태: {}", session.getId(), memberId, status);
@@ -74,7 +76,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         try (WebSocketMdcSupport.MdcScope ignored = WebSocketMdcSupport.open(session)) {
-            Long memberId = (Long) session.getAttributes().get("memberId");
+            Long memberId = (Long) session.getAttributes().get(WebSocketSessionAttributes.MEMBER_ID);
             if (isShutdownRelatedError(exception)) {
                 log.debug("서버 종료 관련 WebSocket 전송 오류 (정상) - 세션: {}, 사용자: {}", session.getId(), memberId);
             } else {

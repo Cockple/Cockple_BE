@@ -2,10 +2,13 @@ package umc.cockple.demo.domain.exercise.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.common.BaseEntity;
 
@@ -34,6 +37,14 @@ public class Exercise extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Party party;
 
+    @JoinColumn(name = "game_board_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
+    @Builder.Default
+    private GameBoard gameBoard = GameBoard.create();
+
+    @Column(name = "game_host_id", nullable = false)
+    private Long gameHostId;
+
     @Column(nullable = false)
     private LocalDate date; // 운동 날짜
 
@@ -54,6 +65,7 @@ public class Exercise extends BaseEntity {
     private String notice;
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Guest> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
@@ -64,7 +76,10 @@ public class Exercise extends BaseEntity {
     @Builder.Default
     private List<Guest> guests = new ArrayList<>();
 
-    public static Exercise create(ExerciseAddr exerciseAddr, ExerciseCreateCommand command) {
+    public static Exercise create(
+            ExerciseAddr exerciseAddr,
+            ExerciseCreateCommand command,
+            Long gameHostId) {
         return Exercise.builder()
                 .exerciseAddr(exerciseAddr)
                 .date(command.date())
@@ -74,6 +89,7 @@ public class Exercise extends BaseEntity {
                 .partyGuestAccept(command.partyGuestAccept())
                 .outsideGuestAccept(command.outsideGuestAccept())
                 .notice(command.notice())
+                .gameHostId(gameHostId)
                 .build();
     }
 
@@ -107,12 +123,12 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public Integer getNowCapacity() {
-        return memberExercises.size() + guests.size();
+    public void changeGameHost(Long gameHostId) {
+        this.gameHostId = gameHostId;
     }
 
-    public Integer calculateNextParticipantNumber() {
-        return getNowCapacity() + 1;
+    public Integer getNowCapacity() {
+        return memberExercises.size() + guests.size();
     }
 
     public boolean isAlreadyStarted() {
@@ -130,21 +146,26 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public void addParticipation(MemberExercise memberExercise) {
+    public MemberExercise addParticipation(Member member, ExerciseMemberShipStatus status) {
+        MemberExercise memberExercise = MemberExercise.create(member, this, status);
         this.memberExercises.add(memberExercise);
-        memberExercise.setExercise(this);
+        this.gameBoard.addGameBoardMember(GameBoardMember.createFromMember(member, date));
+        return memberExercise;
     }
 
     public void addGuest(Guest guest) {
         this.guests.add(guest);
         guest.setExercise(this);
+        this.gameBoard.addGameBoardMember(GameBoardMember.createFromGuest(guest));
     }
 
     public void removeParticipation(MemberExercise memberExercise) {
         this.memberExercises.remove(memberExercise);
+        this.gameBoard.removeGameBoardMember(memberExercise.getMember());
     }
 
     public void removeGuest(Guest guest) {
         this.guests.remove(guest);
+        this.gameBoard.removeGameBoardMember(guest);
     }
 }

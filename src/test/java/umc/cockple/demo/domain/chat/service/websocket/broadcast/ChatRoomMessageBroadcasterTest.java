@@ -9,9 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.MessageType;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,14 +24,14 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("ChatRoomMessageBroadcaster")
 class ChatRoomMessageBroadcasterTest {
 
-    @Mock private ChatMessageEncoder messageEncoder;
-    @Mock private ChatMessageSender messageSender;
+    @Mock private RealtimeMessageEncoder messageEncoder;
+    @Mock private ChatMessageFanout messageFanout;
 
     private ChatRoomMessageBroadcaster broadcaster;
 
     @BeforeEach
     void setUp() {
-        broadcaster = new ChatRoomMessageBroadcaster(messageEncoder, messageSender);
+        broadcaster = new ChatRoomMessageBroadcaster(messageEncoder, messageFanout);
     }
 
     @Test
@@ -41,19 +41,19 @@ class ChatRoomMessageBroadcasterTest {
         Long chatRoomId = 1L;
         Long excludedMemberId = 10L;
         WebSocketMessageDTO.MessageResponse message = createMessage(chatRoomId);
-        EncodedChatMessage encodedMessage = new EncodedChatMessage("message-json");
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("message-json");
         given(messageEncoder.encode(message)).willReturn(Optional.of(encodedMessage));
-        given(messageSender.send(20L, encodedMessage)).willReturn(true);
-        given(messageSender.send(30L, encodedMessage)).willReturn(false);
+        given(messageFanout.send(20L, encodedMessage, message.type(), message)).willReturn(true);
+        given(messageFanout.send(30L, encodedMessage, message.type(), message)).willReturn(false);
 
         // when
         broadcaster.broadcast(chatRoomId, message, List.of(excludedMemberId, 20L, 30L), excludedMemberId);
 
         // then
         then(messageEncoder).should().encode(message);
-        then(messageSender).should().send(20L, encodedMessage);
-        then(messageSender).should().send(30L, encodedMessage);
-        then(messageSender).shouldHaveNoMoreInteractions();
+        then(messageFanout).should().send(20L, encodedMessage, message.type(), message);
+        then(messageFanout).should().send(30L, encodedMessage, message.type(), message);
+        then(messageFanout).shouldHaveNoMoreInteractions();
     }
 
     @Test
@@ -68,7 +68,7 @@ class ChatRoomMessageBroadcasterTest {
 
         // then
         then(messageEncoder).shouldHaveNoInteractions();
-        then(messageSender).shouldHaveNoInteractions();
+        then(messageFanout).shouldHaveNoInteractions();
     }
 
     private WebSocketMessageDTO.MessageResponse createMessage(Long chatRoomId) {

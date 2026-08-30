@@ -9,16 +9,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
-import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseBuildingDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMapBuildingsResult;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseMapQueryService;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseMapResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
@@ -27,7 +25,7 @@ import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
@@ -65,12 +63,13 @@ class ExerciseMapQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        ExerciseMapQueryMapper exerciseMapMapper = new ExerciseMapQueryMapper(new ImageUrlResolver(fileService));
+        ExerciseMapResultAssembler exerciseMapResultAssembler =
+                new ExerciseMapResultAssembler(new ImageUrlResolver(fileService));
         exerciseMapQueryService = new ExerciseMapQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new MemberLookupService(memberRepository),
-                exerciseMapMapper
+                exerciseMapResultAssembler
         );
 
         Member manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
@@ -112,12 +111,11 @@ class ExerciseMapQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseBuildingDetailDTO.Response response = exerciseMapQueryService.getBuildingExerciseDetails(
+                ExerciseBuildingDetailResult response = exerciseMapQueryService.getBuildingExerciseDetails(
                         buildingName, streetAddr, targetDate, buildingMember.getId());
 
                 // then
                 assertThat(response.date()).isEqualTo(targetDate);
-                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
                 assertThat(response.buildingName()).isEqualTo(buildingName);
                 assertThat(response.exercises()).isEmpty();
                 verify(exerciseRepository).findExercisesByBuildingAndDate(buildingName, streetAddr, targetDate);
@@ -137,22 +135,21 @@ class ExerciseMapQueryServiceTest {
                         .willReturn(List.of(eveningExercise.getId()));
 
                 // when
-                ExerciseBuildingDetailDTO.Response response = exerciseMapQueryService.getBuildingExerciseDetails(
+                ExerciseBuildingDetailResult response = exerciseMapQueryService.getBuildingExerciseDetails(
                         buildingName, streetAddr, targetDate, buildingMember.getId());
 
                 // then
                 assertThat(response.date()).isEqualTo(targetDate);
-                assertThat(response.dayOfWeek()).isEqualTo("SUNDAY");
                 assertThat(response.buildingName()).isEqualTo(buildingName);
                 assertThat(response.exercises())
                         .extracting(
-                                ExerciseBuildingDetailDTO.ExerciseItem::exerciseId,
-                                ExerciseBuildingDetailDTO.ExerciseItem::partyId,
-                                ExerciseBuildingDetailDTO.ExerciseItem::partyName,
-                                ExerciseBuildingDetailDTO.ExerciseItem::profileImageUrl,
-                                ExerciseBuildingDetailDTO.ExerciseItem::isBookmarked,
-                                ExerciseBuildingDetailDTO.ExerciseItem::startTime,
-                                ExerciseBuildingDetailDTO.ExerciseItem::endTime
+                                ExerciseBuildingDetailResult.ExerciseItem::exerciseId,
+                                ExerciseBuildingDetailResult.ExerciseItem::partyId,
+                                ExerciseBuildingDetailResult.ExerciseItem::partyName,
+                                ExerciseBuildingDetailResult.ExerciseItem::profileImageUrl,
+                                ExerciseBuildingDetailResult.ExerciseItem::bookmarked,
+                                ExerciseBuildingDetailResult.ExerciseItem::startTime,
+                                ExerciseBuildingDetailResult.ExerciseItem::endTime
                         )
                         .containsExactly(
                                 tuple(801L, 10L, "테스트 모임", null, false, LocalTime.of(9, 0), LocalTime.of(11, 0)),
@@ -250,7 +247,7 @@ class ExerciseMapQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseMapBuildingsDTO.Response response = exerciseMapQueryService.getExerciseMapCalendarSummary(
+                ExerciseMapBuildingsResult response = exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(null, null, null, radiusKm), mapMember.getId());
 
                 // then
@@ -281,7 +278,7 @@ class ExerciseMapQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseMapBuildingsDTO.Response response = exerciseMapQueryService.getExerciseMapCalendarSummary(
+                ExerciseMapBuildingsResult response = exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(targetDate, 37.55, 127.11, radiusKm), mapMember.getId());
 
                 // then
@@ -314,7 +311,7 @@ class ExerciseMapQueryServiceTest {
                         .willReturn(List.of(dayOneMorning, dayOneEveningSameBuilding, dayOneOtherBuilding, dayTwoBuilding));
 
                 // when
-                ExerciseMapBuildingsDTO.Response response = exerciseMapQueryService.getExerciseMapCalendarSummary(
+                ExerciseMapBuildingsResult response = exerciseMapQueryService.getExerciseMapCalendarSummary(
                         createMapQuery(targetDate, null, null, radiusKm), mapMember.getId());
 
                 // then
@@ -327,10 +324,10 @@ class ExerciseMapQueryServiceTest {
                         .containsExactly(LocalDate.of(2026, 4, 3), LocalDate.of(2026, 4, 4));
                 assertThat(response.buildings().get(LocalDate.of(2026, 4, 3)))
                         .extracting(
-                                ExerciseMapBuildingsDTO.BuildingInfo::buildingName,
-                                ExerciseMapBuildingsDTO.BuildingInfo::streetAddr,
-                                ExerciseMapBuildingsDTO.BuildingInfo::latitude,
-                                ExerciseMapBuildingsDTO.BuildingInfo::longitude
+                                ExerciseMapBuildingsResult.BuildingInfo::buildingName,
+                                ExerciseMapBuildingsResult.BuildingInfo::streetAddr,
+                                ExerciseMapBuildingsResult.BuildingInfo::latitude,
+                                ExerciseMapBuildingsResult.BuildingInfo::longitude
                         )
                         .containsExactlyInAnyOrder(
                                 tuple("A빌딩", "서울특별시 강남구 테헤란로 10", 37.501, 127.041),
@@ -338,8 +335,8 @@ class ExerciseMapQueryServiceTest {
                         );
                 assertThat(response.buildings().get(LocalDate.of(2026, 4, 4)))
                         .extracting(
-                                ExerciseMapBuildingsDTO.BuildingInfo::buildingName,
-                                ExerciseMapBuildingsDTO.BuildingInfo::streetAddr
+                                ExerciseMapBuildingsResult.BuildingInfo::buildingName,
+                                ExerciseMapBuildingsResult.BuildingInfo::streetAddr
                         )
                         .containsExactly(tuple("A빌딩", "서울특별시 강남구 테헤란로 10"));
             }

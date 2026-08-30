@@ -33,7 +33,7 @@ import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -217,6 +217,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
             // DB에서 제거되었는지 확인
             boolean exists = memberPartyRepository.existsByPartyAndMember(targetParty, member);
             assertThat(exists).isFalse();
+            ChatRoom chatRoom = chatRoomRepository.findByPartyId(targetParty.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoom.getId(), member.getId())).isFalse();
         }
 
         @Test
@@ -908,6 +910,9 @@ class PartyIntegrationTest extends IntegrationTestBase {
             // 검증
             boolean exists = memberPartyRepository.existsByPartyAndMember(party, normalMember);
             assertThat(exists).isFalse();
+            ChatRoom chatRoom = chatRoomRepository.findByPartyId(party.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(
+                    chatRoom.getId(), normalMember.getId())).isFalse();
         }
 
         @Test
@@ -1222,6 +1227,8 @@ class PartyIntegrationTest extends IntegrationTestBase {
             PartyInvitation updated = partyInvitationRepository.findById(invitation.getId()).orElseThrow();
             assertThat(updated.getStatus()).isEqualTo(RequestStatus.APPROVED);
             assertThat(memberPartyRepository.existsByPartyAndMember(party, invitee)).isTrue();
+            ChatRoom chatRoom = chatRoomRepository.findByPartyId(party.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(chatRoom.getId(), invitee.getId())).isTrue();
         }
 
         @Test
@@ -1349,6 +1356,9 @@ class PartyIntegrationTest extends IntegrationTestBase {
             assertThat(updatedRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
             boolean isMember = memberPartyRepository.existsByPartyAndMember(party, applicant);
             assertThat(isMember).isTrue();
+            ChatRoom chatRoom = chatRoomRepository.findByPartyId(party.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(
+                    chatRoom.getId(), applicant.getId())).isTrue();
         }
 
         @Test
@@ -1492,6 +1502,9 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
             assertThat(createdParty.getOwnerId()).isEqualTo(manager.getId());
             assertThat(createdParty.getDesignatedCock()).isEqualTo("통합테스트콕");
+            ChatRoom chatRoom = chatRoomRepository.findByPartyId(createdParty.getId()).orElseThrow();
+            assertThat(chatRoomMemberRepository.existsByChatRoomIdAndMemberId(
+                    chatRoom.getId(), manager.getId())).isTrue();
         }
 
         @Test

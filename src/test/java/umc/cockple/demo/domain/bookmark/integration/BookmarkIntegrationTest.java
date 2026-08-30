@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -73,6 +73,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
                 .maxCapacity(10)
                 .partyGuestAccept(true)
                 .outsideGuestAccept(false)
+                .gameHostId(bookmarkParty.getOwnerId())
                 .exerciseAddr(ExerciseAddr.builder()
                         .addr1("경기도")
                         .addr2("안산시")
@@ -343,6 +344,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
                     .maxCapacity(8)
                     .partyGuestAccept(true)
                     .outsideGuestAccept(false)
+                    .gameHostId(bookmarkParty.getOwnerId())
                     .exerciseAddr(ExerciseAddr.builder()
                             .addr1("경기도")
                             .addr2("안산시")

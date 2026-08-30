@@ -5,6 +5,8 @@ import lombok.*;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 import umc.cockple.demo.domain.notification.enums.NotificationType;
+import umc.cockple.demo.domain.notification.enums.NotificationAction;
+import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
 
 @Entity
 @Builder
@@ -21,15 +23,23 @@ public class Notification extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 
-    @Column(nullable = false)
+    @Column
     private Long partyId;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationResourceType resourceType;
+
+    private Long resourceId;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationAction action;
 
     private String title;
 
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
@@ -40,6 +50,9 @@ public class Notification extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")  // 경우마다 필요한 데이터를 저장 (JSON)
     private String data;
+
+    @Column(name = "notification_key", unique = true, length = 255)
+    private String notificationKey;
 
     public void read() {
         this.isRead = true;

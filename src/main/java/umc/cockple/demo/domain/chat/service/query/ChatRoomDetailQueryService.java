@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.repository.ChatMessageRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
 import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
-import umc.cockple.demo.domain.chat.service.ChatProcessor;
+import umc.cockple.demo.domain.chat.service.support.assembler.ChatMessageViewAssembler;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -39,7 +39,7 @@ public class ChatRoomDetailQueryService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatConverter chatConverter;
     private final ImageUrlResolver imageUrlResolver;
-    private final ChatProcessor chatProcessor;
+    private final ChatMessageViewAssembler chatMessageViewAssembler;
 
     public ChatRoomDetailDTO.Response getChatRoomDetail(Long roomId, Long memberId) {
         log.info("[초기 채팅방 조회 시작] - roomId: {}, memberId: {}", roomId, memberId);
@@ -53,7 +53,7 @@ public class ChatRoomDetailQueryService {
         List<ChatMessage> recentMessages = findRecentMessagesWithImages(roomId, pageable);
         List<ChatMessage> resultMessages = new ArrayList<>(recentMessages);
         Collections.reverse(resultMessages);
-        List<ChatCommonDTO.MessageInfo> commonMessages = chatProcessor.processMessages(memberId, resultMessages);
+        List<ChatCommonDTO.MessageInfo> commonMessages = chatMessageViewAssembler.assembleMessages(memberId, resultMessages);
         List<ChatRoomDetailDTO.MessageInfo> messageInfos = chatConverter.toChatRoomDetailMessageInfos(commonMessages);
 
         List<ChatRoomMember> participants = findChatRoomMembersWithMemberOrThrow(roomId);

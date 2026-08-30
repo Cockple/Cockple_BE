@@ -9,9 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.notification.domain.Notification;
+import umc.cockple.demo.domain.notification.domain.NotificationDestination;
 import umc.cockple.demo.domain.notification.dto.CreateNotificationRequestDTO;
 import umc.cockple.demo.domain.notification.enums.NotificationTarget;
-import umc.cockple.demo.domain.notification.events.NotificationEvent;
+import umc.cockple.demo.domain.notification.event.NotificationEvent;
 import umc.cockple.demo.domain.notification.exception.NotificationErrorCode;
 import umc.cockple.demo.domain.notification.exception.NotificationException;
 import umc.cockple.demo.domain.notification.repository.NotificationRepository;
@@ -49,6 +50,7 @@ public class NotificationCommandService {
     private final NotificationMessageGenerator notificationMessageGenerator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final LegacyNotificationDestinationMapper legacyNotificationDestinationMapper;
 
     // 알림 타입 변경 (초대 수락, 거절에 사용)
     public Response markAsReadNotification(Long memberId, Long notificationId, NotificationType type) {
@@ -107,10 +109,14 @@ public class NotificationCommandService {
             }
 
             String data = objectMapper.writeValueAsString(context);
+            NotificationDestination destination = legacyNotificationDestinationMapper.map(dto);
 
             Notification notification = Notification.builder()
-                    .member(dto.member())
+                    .member(member)
                     .partyId(dto.partyId())
+                    .resourceType(destination != null ? destination.resourceType() : null)
+                    .resourceId(destination != null ? destination.resourceId() : null)
+                    .action(destination != null ? destination.action() : null)
                     .title(title)
                     .content(content)
                     .type(dto.target().getDefaultType())
@@ -120,11 +126,12 @@ public class NotificationCommandService {
                     .build();
 
             notificationRepository.save(notification);
-            long dbTime = System.currentTimeMillis() - start;
-            log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms", member.getId(), dbTime);
+            log.info("[NOTIFICATION] DB 저장 완료 - memberId: {}, 소요시간: {}ms",
+                    member.getId(), System.currentTimeMillis() - start);
 
             eventPublisher.publishEvent(new NotificationEvent(member.getId(), title, content));
-            log.info("[NOTIFICATION] 알림 이벤트 발행 완료 - memberId: {}, 총 소요시간: {}ms", member.getId(), System.currentTimeMillis() - start);
+            log.info("[NOTIFICATION] 알림 이벤트 발행 완료 - memberId: {}, 총 소요시간: {}ms",
+                    member.getId(), System.currentTimeMillis() - start);
 
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_NOTIFICATION_DATA);

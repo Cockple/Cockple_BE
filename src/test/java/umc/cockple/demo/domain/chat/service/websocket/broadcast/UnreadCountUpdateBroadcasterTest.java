@@ -10,9 +10,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.service.websocket.UnreadCountUpdate;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,14 +26,14 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("UnreadCountUpdateBroadcaster")
 class UnreadCountUpdateBroadcasterTest {
 
-    @Mock private ChatMessageEncoder messageEncoder;
-    @Mock private ChatMessageSender messageSender;
+    @Mock private RealtimeMessageEncoder messageEncoder;
+    @Mock private ChatMessageFanout messageFanout;
 
     private UnreadCountUpdateBroadcaster broadcaster;
 
     @BeforeEach
     void setUp() {
-        broadcaster = new UnreadCountUpdateBroadcaster(messageEncoder, messageSender);
+        broadcaster = new UnreadCountUpdateBroadcaster(messageEncoder, messageFanout);
     }
 
     @Test
@@ -44,11 +44,16 @@ class UnreadCountUpdateBroadcasterTest {
         Long excludedMemberId = 10L;
         UnreadCountUpdate update =
                 new UnreadCountUpdate(100L, 2);
-        EncodedChatMessage encodedMessage = new EncodedChatMessage("unread-count-json");
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("unread-count-json");
 
         given(messageEncoder.encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)))
                 .willReturn(Optional.of(encodedMessage));
-        given(messageSender.send(20L, encodedMessage)).willReturn(true);
+        given(messageFanout.send(
+                org.mockito.ArgumentMatchers.eq(20L),
+                org.mockito.ArgumentMatchers.eq(encodedMessage),
+                org.mockito.ArgumentMatchers.eq(WebSocketMessageType.UNREAD_COUNT_UPDATE),
+                any(WebSocketMessageDTO.UnreadCountUpdateMessage.class)
+        )).willReturn(true);
 
         // when
         broadcaster.broadcast(chatRoomId, List.of(update), List.of(excludedMemberId, 20L), excludedMemberId);
@@ -63,8 +68,13 @@ class UnreadCountUpdateBroadcasterTest {
         assertThat(message.messageId()).isEqualTo(update.messageId());
         assertThat(message.newUnreadCount()).isEqualTo(update.newUnreadCount());
 
-        then(messageSender).should().send(20L, encodedMessage);
-        then(messageSender).shouldHaveNoMoreInteractions();
+        then(messageFanout).should().send(
+                20L,
+                encodedMessage,
+                WebSocketMessageType.UNREAD_COUNT_UPDATE,
+                message
+        );
+        then(messageFanout).shouldHaveNoMoreInteractions();
     }
 
     @Test
@@ -79,12 +89,12 @@ class UnreadCountUpdateBroadcasterTest {
 
         // then
         then(messageEncoder).shouldHaveNoInteractions();
-        then(messageSender).shouldHaveNoInteractions();
+        then(messageFanout).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("직렬화 실패 시 전송하지 않고 다음 업데이트로 넘어간다")
-    void broadcast_doesNotSendWhenSerializationFails() {
+    @DisplayName("기존 메시지 직렬화에 실패해도 공용 realtime 전송은 시도한다")
+    void broadcast_attemptsRealtimeWhenLegacySerializationFails() {
         // given
         UnreadCountUpdate update =
                 new UnreadCountUpdate(100L, 2);
@@ -95,7 +105,14 @@ class UnreadCountUpdateBroadcasterTest {
         broadcaster.broadcast(1L, List.of(update), List.of(20L), 10L);
 
         // then
-        then(messageEncoder).should().encode(any(WebSocketMessageDTO.UnreadCountUpdateMessage.class));
-        then(messageSender).shouldHaveNoMoreInteractions();
+        ArgumentCaptor<WebSocketMessageDTO.UnreadCountUpdateMessage> messageCaptor =
+                ArgumentCaptor.forClass(WebSocketMessageDTO.UnreadCountUpdateMessage.class);
+        then(messageEncoder).should().encode(messageCaptor.capture());
+        then(messageFanout).should().send(
+                20L,
+                null,
+                WebSocketMessageType.UNREAD_COUNT_UPDATE,
+                messageCaptor.getValue()
+        );
     }
 }

@@ -7,60 +7,40 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.bookmark.repository.ExerciseBookmarkRepository;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseLifecycleQueryMapper;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseParticipantInfoQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
-import umc.cockple.demo.domain.exercise.dto.guest.ExerciseMyGuestListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
-import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
-import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
-import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryService;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseEditDetailResult;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
-import umc.cockple.demo.domain.party.enums.PartyStatus;
-import umc.cockple.demo.domain.party.exception.PartyErrorCode;
-import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
-import umc.cockple.demo.support.ExerciseCalendarTestHelper;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.GuestFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -69,8 +49,6 @@ import umc.cockple.demo.support.fixture.PartyFixture;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.YearMonth;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -118,30 +96,29 @@ class ExerciseLifecycleQueryServiceTest {
 
         exercise = ExerciseFixture.createExercise(party, LocalDate.now().minusDays(1));
         ReflectionTestUtils.setField(exercise, "id", 100L);
+        ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 300L);
 
         ReflectionTestUtils.setField(exercise, "exerciseAddr", ExerciseFixture.createExerciseAddr());
     }
 
     private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
-        ExerciseParticipantReader exerciseParticipantReader = new ExerciseParticipantReader(
-                memberExerciseRepository, memberPartyRepository);
+        MemberExerciseReader memberExerciseReader = new MemberExerciseReader(
+                memberExerciseRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
-        ExerciseParticipantInfoQueryMapper participantInfoMapper =
-                new ExerciseParticipantInfoQueryMapper(new ImageUrlResolver(fileService));
-        ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper = new ExerciseLifecycleQueryMapper();
-
+        MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
-                exerciseParticipantReader,
-                new ExerciseParticipantInfoAssembler(
-                        exerciseParticipantReader,
+                new ExerciseParticipantSnapshotAssembler(
+                        memberExerciseReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
-                        participantInfoMapper
+                        memberPartyLookupService,
+                        new ImageUrlResolver(fileService)
                 ),
+                new ExerciseParticipantPositionCalculator(),
                 memberLookupService,
-                new ExerciseValidator(memberPartyRepository, memberExerciseRepository),
-                exerciseLifecycleQueryMapper
+                memberPartyLookupService,
+                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository)
         );
     }
 
@@ -170,11 +147,12 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
                 assertThat(response.isManager()).isTrue();
+                assertThat(response.gameBoardId()).isEqualTo(300L);
             }
 
             @Test
@@ -197,7 +175,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), subManager.getId());
 
                 // then
@@ -224,7 +202,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), normalMember.getId());
 
                 // then
@@ -251,7 +229,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(false);
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), outsider.getId());
 
                 // then
@@ -284,13 +262,13 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of());
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
-                List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
+                List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(1);
-                assertThat(participants.get(0).isWithdrawn()).isTrue();
+                assertThat(participants.get(0).withdrawn()).isTrue();
             }
 
             @Test
@@ -320,13 +298,13 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of(memberParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
-                List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
+                List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(1);
-                assertThat(participants.get(0).isWithdrawn()).isFalse();
+                assertThat(participants.get(0).withdrawn()).isFalse();
             }
 
             @Test
@@ -351,13 +329,13 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
-                List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
+                List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(1);
-                assertThat(participants.get(0).isWithdrawn()).isFalse();
+                assertThat(participants.get(0).withdrawn()).isFalse();
                 assertThat(participants.get(0).partyPosition()).isNull();
             }
 
@@ -412,21 +390,21 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
                 assertThat(response.participants().list())
                         .extracting(
-                                ExerciseDetailDTO.ParticipantInfo::name,
-                                ExerciseDetailDTO.ParticipantInfo::participantType,
-                                ExerciseDetailDTO.ParticipantInfo::partyPosition)
+                                ExerciseDetailResult.ParticipantInfo::name,
+                                ExerciseDetailResult.ParticipantInfo::participantType,
+                                ExerciseDetailResult.ParticipantInfo::partyPosition)
                         .containsExactly(
-                                tuple("모임장", "PARTY_MEMBER", "PARTY_MANAGER"),
-                                tuple("부모임장", "PARTY_MEMBER", "PARTY_SUBMANAGER"),
-                                tuple("일반멤버", "PARTY_MEMBER", "PARTY_MEMBER"),
-                                tuple("외부회원", "EXTERNAL_PARTICIPANT", null),
-                                tuple("게스트", "GUEST", null)
+                                tuple("모임장", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_MANAGER),
+                                tuple("부모임장", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_SUBMANAGER),
+                                tuple("일반멤버", ExerciseMemberShipStatus.PARTY_MEMBER, Role.PARTY_MEMBER),
+                                tuple("외부회원", ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT, null),
+                                tuple("게스트", ExerciseMemberShipStatus.GUEST, null)
                         );
             }
 
@@ -467,7 +445,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of(firstParty, secondParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -498,13 +476,13 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Map.of(manager.getId(), "모임장"));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
-                List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
+                List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(1);
-                assertThat(participants.get(0).participantType()).isEqualTo("GUEST");
+                assertThat(participants.get(0).participantType()).isEqualTo(ExerciseMemberShipStatus.GUEST);
                 assertThat(participants.get(0).inviterName()).isEqualTo("모임장");
             }
 
@@ -543,11 +521,11 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of(firstParty, secondParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
-                List<ExerciseDetailDTO.ParticipantInfo> participants = response.participants().list();
+                List<ExerciseDetailResult.ParticipantInfo> participants = response.participants().list();
                 assertThat(participants).hasSize(2);
                 assertThat(participants.get(0).participantNumber()).isEqualTo(1);
                 assertThat(participants.get(0).name()).isEqualTo("첫번째");
@@ -592,7 +570,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of(maleParty, femaleParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -637,7 +615,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(List.of(maleParty, femaleParty));
 
                 // when
-                ExerciseDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseDetail(
+                ExerciseDetailResult response = exerciseLifecycleQueryService.getExerciseDetail(
                         exercise.getId(), manager.getId());
 
                 // then
@@ -700,7 +678,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exerciseForEdit));
 
                 // when
-                ExerciseEditDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseForEdit(
+                ExerciseEditDetailResult response = exerciseLifecycleQueryService.getExerciseForEdit(
                         exerciseForEdit.getId(), manager.getId());
 
                 // then
@@ -737,7 +715,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(true);
 
                 // when
-                ExerciseEditDetailDTO.Response response = exerciseLifecycleQueryService.getExerciseForEdit(
+                ExerciseEditDetailResult response = exerciseLifecycleQueryService.getExerciseForEdit(
                         exerciseForEdit.getId(), subManager.getId());
 
                 // then

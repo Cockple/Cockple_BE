@@ -33,6 +33,34 @@ class ChatRoomReaderTest {
     }
 
     @Test
+    @DisplayName("채팅방 존재 여부를 반환한다")
+    void exists_returnsRepositoryResult() {
+        // given
+        Long chatRoomId = 1L;
+        given(chatRoomRepository.existsById(chatRoomId)).willReturn(true);
+
+        // when
+        boolean result = chatRoomReader.exists(chatRoomId);
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("채팅방이 없으면 false를 반환한다")
+    void exists_returnsFalseWhenChatRoomNotFound() {
+        // given
+        Long chatRoomId = 1L;
+        given(chatRoomRepository.existsById(chatRoomId)).willReturn(false);
+
+        // when
+        boolean result = chatRoomReader.exists(chatRoomId);
+
+        // then
+        assertThat(result).isFalse();
+    }
+
+    @Test
     @DisplayName("채팅방 ID로 채팅방을 조회한다")
     void read_returnsChatRoom() {
         // given
@@ -90,5 +118,36 @@ class ChatRoomReaderTest {
                 .isInstanceOfSatisfying(ChatException.class, exception ->
                         assertThat(exception.getErrorReason().getCode())
                                 .isEqualTo(ChatErrorCode.CHAT_ROOM_NOT_FOUND.getCode()));
+    }
+
+    @Test
+    @DisplayName("모임 ID로 채팅방을 선택 조회한다")
+    void findByPartyId_returnsChatRoom() {
+        // given
+        Long partyId = 10L;
+        ChatRoom chatRoom = ChatFixture.createPartyChatRoom(
+                PartyFixture.createParty("모임", 1L, PartyFixture.createPartyAddr("서울", "강남구"))
+        );
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.of(chatRoom));
+
+        // when
+        Optional<ChatRoom> result = chatRoomReader.findByPartyId(partyId);
+
+        // then
+        assertThat(result).containsSame(chatRoom);
+    }
+
+    @Test
+    @DisplayName("모임 ID로 선택 조회한 채팅방이 없으면 빈 Optional을 반환한다")
+    void findByPartyId_returnsEmptyWhenChatRoomNotFound() {
+        // given
+        Long partyId = 10L;
+        given(chatRoomRepository.findByPartyId(partyId)).willReturn(Optional.empty());
+
+        // when
+        Optional<ChatRoom> result = chatRoomReader.findByPartyId(partyId);
+
+        // then
+        assertThat(result).isEmpty();
     }
 }

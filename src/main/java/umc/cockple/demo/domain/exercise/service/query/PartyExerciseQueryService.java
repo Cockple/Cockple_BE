@@ -4,22 +4,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.query.PartyExerciseCalendarQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.party.PartyExerciseCalendarDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
+import umc.cockple.demo.domain.exercise.service.query.result.PartyExerciseCalendarResult;
+import umc.cockple.demo.domain.exercise.service.support.assembler.PartyExerciseCalendarResultAssembler;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
-import umc.cockple.demo.domain.party.service.support.PartyLookupService;
+import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,14 +33,15 @@ import java.util.Map;
 public class PartyExerciseQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
+    private final MemberExerciseReader memberExerciseReader;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
     private final PartyLookupService partyLookupService;
-    private final PartyExerciseCalendarQueryMapper partyExerciseCalendarMapper;
+    private final MemberPartyLookupService memberPartyLookupService;
+    private final PartyExerciseCalendarResultAssembler partyExerciseCalendarResultAssembler;
 
-    public PartyExerciseCalendarDTO.Response getPartyExerciseCalendar(
+    public PartyExerciseCalendarResult getPartyExerciseCalendar(
             Long partyId, Long memberId, LocalDate startDate, LocalDate endDate) {
 
         log.info("모임 운동 캘린더 조회 시작 - partyId = {}, memberId = {}, startDate = {}, endDate = {}",
@@ -49,7 +51,7 @@ public class PartyExerciseQueryService {
         Member member = memberLookupService.findByIdOrThrow(memberId);
         validateGetPartyExerciseCalendar(startDate, endDate, party);
 
-        Boolean isMember = exerciseParticipantReader.isPartyMember(party, member);
+        Boolean isMember = memberPartyLookupService.isPartyMember(party, member);
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         List<Exercise> exercises = exerciseReader.findByPartyIdAndDateRange(partyId, dateRange.start(), dateRange.end());
@@ -58,7 +60,7 @@ public class PartyExerciseQueryService {
             log.info("해당 기간에 운동이 없어 빈 응답 반환 - partyId: {}, 기간: {} ~ {}",
                     partyId, dateRange.start(), dateRange.end());
 
-            return partyExerciseCalendarMapper.toEmptyPartyCalendarResponse(
+            return partyExerciseCalendarResultAssembler.toEmptyPartyCalendarResult(
                     dateRange.start(), dateRange.end(), isMember, party);
         }
 
@@ -67,11 +69,11 @@ public class PartyExerciseQueryService {
 
         List<Long> exerciseIds = getExerciseIds(exercises);
         Map<Long, Boolean> bookmarkStatus = exerciseBookmarkLookupService.getBookmarkStatus(memberId, exerciseIds);
-        Map<Long, Boolean> participatingStatus = exerciseParticipantReader.getParticipatingStatus(memberId, exerciseIds);
+        Map<Long, Boolean> participatingStatus = memberExerciseReader.getParticipatingStatus(memberId, exerciseIds);
 
         log.info("모임 운동 캘린더 조회 완료 - partyId: {}, 조회된 운동 수: {}", partyId, exercises.size());
 
-        return partyExerciseCalendarMapper.toPartyCalendarResponse(
+        return partyExerciseCalendarResultAssembler.toPartyCalendarResult(
                 exercises, dateRange.start(), dateRange.end(), isMember, party, participantCounts, bookmarkStatus, participatingStatus);
     }
 

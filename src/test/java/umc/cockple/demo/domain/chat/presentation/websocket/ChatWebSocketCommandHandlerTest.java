@@ -9,7 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.exception.ChatErrorCode;
@@ -17,7 +16,8 @@ import umc.cockple.demo.domain.chat.exception.ChatException;
 import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.validation.ChatWebSocketRequestValidator;
+import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 
 import java.util.List;
 
@@ -29,18 +29,16 @@ import static org.mockito.BDDMockito.willThrow;
 @DisplayName("ChatWebSocketCommandHandler")
 class ChatWebSocketCommandHandlerTest {
 
-    @Mock private ChatValidator chatValidator;
-    @Mock private WebSocketResponseSender webSocketResponseSender;
+    @Mock private ChatWebSocketRequestValidator chatWebSocketRequestValidator;
+    @Mock private ChatCommandResponder responder;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private WebSocketSession session;
 
     private ChatWebSocketCommandHandler commandHandler;
 
     @BeforeEach
     void setUp() {
         commandHandler = new ChatWebSocketCommandHandler(
-                chatValidator,
-                webSocketResponseSender,
+                chatWebSocketRequestValidator,
                 eventPublisher
         );
     }
@@ -65,10 +63,10 @@ class ChatWebSocketCommandHandlerTest {
             );
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateSendRequest(chatRoomId, "hello", List.of(), memberId);
+            then(chatWebSocketRequestValidator).should().validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             ArgumentCaptor<ChatMessageSendEvent> eventCaptor = ArgumentCaptor.forClass(ChatMessageSendEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -78,7 +76,7 @@ class ChatWebSocketCommandHandlerTest {
             assertThat(event.content()).isEqualTo("hello");
             assertThat(event.files()).isEmpty();
 
-            then(webSocketResponseSender).shouldHaveNoInteractions();
+            then(responder).shouldHaveNoInteractions();
         }
 
         @Test
@@ -97,11 +95,11 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
             thenChatErrorResponseSent(errorCode);
@@ -123,15 +121,15 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSendRequest(chatRoomId, "hello", List.of(), memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(webSocketResponseSender).should()
-                    .sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
+            then(responder).should()
+                    .sendError("SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
             then(eventPublisher).shouldHaveNoInteractions();
         }
     }
@@ -156,10 +154,10 @@ class ChatWebSocketCommandHandlerTest {
             );
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateSubscriptionRequest(chatRoomId, memberId);
+            then(chatWebSocketRequestValidator).should().validateSubscriptionRequest(chatRoomId, memberId);
 
             ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -168,7 +166,7 @@ class ChatWebSocketCommandHandlerTest {
             assertThat(event.memberId()).isEqualTo(memberId);
             assertThat(event.action()).isEqualTo("SUBSCRIBE");
 
-            then(webSocketResponseSender).should().sendSubscriptionMessage(session, chatRoomId, "SUBSCRIBE");
+            then(responder).should().acknowledgeRoomSubscription(chatRoomId, "SUBSCRIBE");
         }
 
         @Test
@@ -187,11 +185,11 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSubscriptionRequest(chatRoomId, memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
             thenChatErrorResponseSent(errorCode);
@@ -213,15 +211,15 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateSubscriptionRequest(chatRoomId, memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(webSocketResponseSender).should()
-                    .sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
+            then(responder).should()
+                    .sendError("SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
             then(eventPublisher).shouldHaveNoInteractions();
         }
     }
@@ -246,10 +244,10 @@ class ChatWebSocketCommandHandlerTest {
             );
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateUnsubscriptionRequest(chatRoomId, memberId);
+            then(chatWebSocketRequestValidator).should().validateUnsubscriptionRequest(chatRoomId, memberId);
 
             ArgumentCaptor<ChatRoomSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatRoomSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -258,7 +256,7 @@ class ChatWebSocketCommandHandlerTest {
             assertThat(event.memberId()).isEqualTo(memberId);
             assertThat(event.action()).isEqualTo("UNSUBSCRIBE");
 
-            then(webSocketResponseSender).should().sendSubscriptionMessage(session, chatRoomId, "UNSUBSCRIBE");
+            then(responder).should().acknowledgeRoomSubscription(chatRoomId, "UNSUBSCRIBE");
         }
 
         @Test
@@ -277,11 +275,11 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateUnsubscriptionRequest(chatRoomId, memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
             thenChatErrorResponseSent(errorCode);
@@ -303,15 +301,15 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateUnsubscriptionRequest(chatRoomId, memberId);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(webSocketResponseSender).should()
-                    .sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
+            then(responder).should()
+                    .sendError("UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
             then(eventPublisher).shouldHaveNoInteractions();
         }
     }
@@ -336,10 +334,10 @@ class ChatWebSocketCommandHandlerTest {
             );
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateChatListSubscriptionRequest(memberId, chatRoomIds);
+            then(chatWebSocketRequestValidator).should().validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -348,8 +346,8 @@ class ChatWebSocketCommandHandlerTest {
             assertThat(event.chatRoomIds()).containsExactlyElementsOf(chatRoomIds);
             assertThat(event.action()).isEqualTo("SUBSCRIBE");
 
-            then(webSocketResponseSender).should()
-                    .sendChatListSubscriptionMessage(session, chatRoomIds, "SUBSCRIBE_CHAT_LIST");
+            then(responder).should()
+                    .acknowledgeChatListSubscription(chatRoomIds, "SUBSCRIBE_CHAT_LIST");
         }
 
         @Test
@@ -368,11 +366,11 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
             thenChatErrorResponseSent(errorCode);
@@ -394,15 +392,15 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListSubscriptionRequest(memberId, chatRoomIds);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(webSocketResponseSender).should()
-                    .sendErrorMessage(session, "SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
+            then(responder).should()
+                    .sendError("SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
             then(eventPublisher).shouldHaveNoInteractions();
         }
     }
@@ -427,10 +425,10 @@ class ChatWebSocketCommandHandlerTest {
             );
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(chatValidator).should().validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
+            then(chatWebSocketRequestValidator).should().validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             ArgumentCaptor<ChatListSubscriptionEvent> eventCaptor = ArgumentCaptor.forClass(ChatListSubscriptionEvent.class);
             then(eventPublisher).should().publishEvent(eventCaptor.capture());
@@ -439,8 +437,8 @@ class ChatWebSocketCommandHandlerTest {
             assertThat(event.chatRoomIds()).containsExactlyElementsOf(chatRoomIds);
             assertThat(event.action()).isEqualTo("UNSUBSCRIBE");
 
-            then(webSocketResponseSender).should()
-                    .sendChatListSubscriptionMessage(session, chatRoomIds, "UNSUBSCRIBE_CHAT_LIST");
+            then(responder).should()
+                    .acknowledgeChatListSubscription(chatRoomIds, "UNSUBSCRIBE_CHAT_LIST");
         }
 
         @Test
@@ -459,11 +457,11 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new ChatException(errorCode))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
             thenChatErrorResponseSent(errorCode);
@@ -485,15 +483,15 @@ class ChatWebSocketCommandHandlerTest {
                     null
             );
             willThrow(new IllegalStateException("boom"))
-                    .given(chatValidator)
+                    .given(chatWebSocketRequestValidator)
                     .validateChatListUnsubscriptionRequest(memberId, chatRoomIds);
 
             // when
-            commandHandler.handle(session, request, memberId);
+            commandHandler.handle(request, memberId, responder);
 
             // then
-            then(webSocketResponseSender).should()
-                    .sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
+            then(responder).should()
+                    .sendError("UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
             then(eventPublisher).shouldHaveNoInteractions();
         }
     }
@@ -513,17 +511,17 @@ class ChatWebSocketCommandHandlerTest {
         );
 
         // when
-        commandHandler.handle(session, request, memberId);
+        commandHandler.handle(request, memberId, responder);
 
         // then
-        then(webSocketResponseSender).should()
-                .sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + WebSocketMessageType.ERROR);
-        then(chatValidator).shouldHaveNoInteractions();
+        then(responder).should()
+                .sendError("UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + WebSocketMessageType.ERROR);
+        then(chatWebSocketRequestValidator).shouldHaveNoInteractions();
         then(eventPublisher).shouldHaveNoInteractions();
     }
 
     private void thenChatErrorResponseSent(ChatErrorCode errorCode) {
-        then(webSocketResponseSender).should()
-                .sendErrorMessage(session, errorCode.getReason().getCode(), errorCode.getReason().getMessage());
+        then(responder).should()
+                .sendError(errorCode.getReason().getCode(), errorCode.getReason().getMessage());
     }
 }

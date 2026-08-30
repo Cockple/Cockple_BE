@@ -11,10 +11,10 @@ import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.enums.WebSocketMessageType;
 import umc.cockple.demo.domain.chat.events.ChatUnreadStatusUpdateEvent;
 import umc.cockple.demo.domain.chat.service.query.ChatUnreadQueryService;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageEncoder;
-import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageSender;
+import umc.cockple.demo.domain.chat.service.websocket.session.ChatMessageFanout;
+import umc.cockple.demo.global.realtime.message.RealtimeMessageEncoder;
 import umc.cockple.demo.domain.chat.service.websocket.session.ChatSessionRegistry;
-import umc.cockple.demo.domain.chat.service.websocket.session.EncodedChatMessage;
+import umc.cockple.demo.global.realtime.message.EncodedRealtimeMessage;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,8 +32,8 @@ import static org.mockito.Mockito.times;
 @DisplayName("ChatUnreadStatusUpdateEventListener")
 class ChatUnreadStatusUpdateEventListenerTest {
 
-    @Mock private ChatMessageSender chatMessageSender;
-    @Mock private ChatMessageEncoder chatMessageEncoder;
+    @Mock private ChatMessageFanout chatMessageFanout;
+    @Mock private RealtimeMessageEncoder chatMessageEncoder;
     @Mock private ChatUnreadQueryService chatUnreadQueryService;
     @Mock private ChatSessionRegistry chatSessionRegistry;
 
@@ -53,8 +53,8 @@ class ChatUnreadStatusUpdateEventListenerTest {
 
         given(chatSessionRegistry.findOpenMemberIds(targetMemberIds)).willReturn(targetMemberIds);
         given(chatUnreadQueryService.findUnreadStatusesByMembers(targetMemberIds)).willReturn(unreadStatuses);
-        EncodedChatMessage partyEncodedMessage = new EncodedChatMessage("party-unread-json");
-        EncodedChatMessage directEncodedMessage = new EncodedChatMessage("direct-unread-json");
+        EncodedRealtimeMessage partyEncodedMessage = new EncodedRealtimeMessage("party-unread-json");
+        EncodedRealtimeMessage directEncodedMessage = new EncodedRealtimeMessage("direct-unread-json");
         given(chatMessageEncoder.encode(any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class)))
                 .willReturn(Optional.of(partyEncodedMessage), Optional.of(directEncodedMessage));
 
@@ -69,8 +69,18 @@ class ChatUnreadStatusUpdateEventListenerTest {
                 ArgumentCaptor.forClass(WebSocketMessageDTO.UnreadStatusUpdateMessage.class);
 
         then(chatMessageEncoder).should(times(2)).encode(messageCaptor.capture());
-        then(chatMessageSender).should().send(partyUnreadMemberId, partyEncodedMessage);
-        then(chatMessageSender).should().send(directUnreadMemberId, directEncodedMessage);
+        then(chatMessageFanout).should().send(
+                eq(partyUnreadMemberId),
+                eq(partyEncodedMessage),
+                eq(WebSocketMessageType.UNREAD_STATUS_UPDATE),
+                any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class)
+        );
+        then(chatMessageFanout).should().send(
+                eq(directUnreadMemberId),
+                eq(directEncodedMessage),
+                eq(WebSocketMessageType.UNREAD_STATUS_UPDATE),
+                any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class)
+        );
 
         WebSocketMessageDTO.UnreadStatusUpdateMessage partyUnreadMessage = messageCaptor.getAllValues().get(0);
         assertThat(partyUnreadMessage.type()).isEqualTo(WebSocketMessageType.UNREAD_STATUS_UPDATE);
@@ -96,7 +106,7 @@ class ChatUnreadStatusUpdateEventListenerTest {
         given(chatSessionRegistry.findOpenMemberIds(targetMemberIds)).willReturn(List.of(openMemberId));
         given(chatUnreadQueryService.findUnreadStatusesByMembers(List.of(openMemberId)))
                 .willReturn(Map.of(openMemberId, new ChatUnreadQueryService.UnreadStatus(false, true)));
-        EncodedChatMessage encodedMessage = new EncodedChatMessage("open-member-unread-json");
+        EncodedRealtimeMessage encodedMessage = new EncodedRealtimeMessage("open-member-unread-json");
         given(chatMessageEncoder.encode(any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class)))
                 .willReturn(Optional.of(encodedMessage));
 
@@ -107,7 +117,12 @@ class ChatUnreadStatusUpdateEventListenerTest {
 
         // then
         then(chatUnreadQueryService).should().findUnreadStatusesByMembers(List.of(openMemberId));
-        then(chatMessageSender).should(times(1)).send(eq(openMemberId), eq(encodedMessage));
+        then(chatMessageFanout).should(times(1)).send(
+                eq(openMemberId),
+                eq(encodedMessage),
+                eq(WebSocketMessageType.UNREAD_STATUS_UPDATE),
+                any(WebSocketMessageDTO.UnreadStatusUpdateMessage.class)
+        );
     }
 
     @Test
@@ -125,6 +140,6 @@ class ChatUnreadStatusUpdateEventListenerTest {
         // then
         then(chatUnreadQueryService).shouldHaveNoInteractions();
         then(chatMessageEncoder).shouldHaveNoInteractions();
-        then(chatMessageSender).shouldHaveNoInteractions();
+        then(chatMessageFanout).shouldHaveNoInteractions();
     }
 }

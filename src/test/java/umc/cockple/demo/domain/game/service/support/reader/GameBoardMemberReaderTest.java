@@ -1,0 +1,99 @@
+package umc.cockple.demo.domain.game.service.support.reader;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
+import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("GameBoardMemberReader")
+class GameBoardMemberReaderTest {
+
+    private static final Long GAME_BOARD_ID = 1L;
+    private static final Long GAME_BOARD_MEMBER_ID = 2L;
+
+    @InjectMocks private GameBoardMemberReader gameBoardMemberReader;
+    @Mock private GameBoardMemberRepository gameBoardMemberRepository;
+    @Mock private GameBoardMember gameBoardMember;
+
+    @Test
+    @DisplayName("게임판과 명단 ID가 모두 일치하면 명단을 반환한다")
+    void read_returnsMemberBelongingToGameBoard() {
+        given(gameBoardMemberRepository.findByIdAndGameBoardId(GAME_BOARD_MEMBER_ID, GAME_BOARD_ID))
+                .willReturn(Optional.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .isSameAs(gameBoardMember);
+    }
+
+    @Test
+    @DisplayName("해당 게임판에 명단 ID가 없으면 GAME_BOARD_MEMBER_NOT_FOUND 예외를 던진다")
+    void read_throwsWhenMemberDoesNotBelongToGameBoard() {
+        given(gameBoardMemberRepository.findByIdAndGameBoardId(GAME_BOARD_MEMBER_ID, GAME_BOARD_ID))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .isInstanceOfSatisfying(GameException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("게임판 전체 명단 수를 repository에서 조회한다")
+    void countByGameBoard_delegatesToRepository() {
+        given(gameBoardMemberRepository.countByGameBoardId(GAME_BOARD_ID)).willReturn(3L);
+
+        assertThat(gameBoardMemberReader.countByGameBoard(GAME_BOARD_ID)).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("게임판 전체 명단을 ID 오름차순으로 조회한다")
+    void readAllByGameBoard_delegatesToRepository() {
+        given(gameBoardMemberRepository.findByGameBoardIdOrderByIdAsc(GAME_BOARD_ID))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByGameBoard(GAME_BOARD_ID))
+                .containsExactly(gameBoardMember);
+    }
+
+    @Test
+    @DisplayName("게임판과 명단 ID 목록으로 명단을 조회한다")
+    void readAllByGameBoardAndIds_delegatesToRepository() {
+        List<Long> gameBoardMemberIds = List.of(2L, 3L);
+        given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(
+                GAME_BOARD_ID, gameBoardMemberIds))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByGameBoardAndIds(
+                GAME_BOARD_ID, gameBoardMemberIds))
+                .containsExactly(gameBoardMember);
+    }
+
+    @Test
+    @DisplayName("게임판 명단 필터 조건을 repository에 전달한다")
+    void readAllByFilters_delegatesToRepository() {
+        List<Level> levels = List.of(Level.A, Level.B);
+        given(gameBoardMemberRepository.findAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true))
+                .willReturn(List.of(gameBoardMember));
+
+        assertThat(gameBoardMemberReader.readAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true))
+                .containsExactly(gameBoardMember);
+        then(gameBoardMemberRepository).should()
+                .findAllByFilters(GAME_BOARD_ID, levels, Gender.MALE, true);
+    }
+}

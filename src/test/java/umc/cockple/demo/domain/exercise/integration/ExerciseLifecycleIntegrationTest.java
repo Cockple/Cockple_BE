@@ -9,16 +9,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
+import umc.cockple.demo.domain.exercise.presentation.dto.lifecycle.ExerciseCreateDTO;
+import umc.cockple.demo.domain.exercise.presentation.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -37,6 +38,7 @@ import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -120,15 +122,25 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("201 - 모임장이 운동을 생성하면 exerciseId를 반환한다")
+            @DisplayName("201 - 모임장이 운동을 생성하면 게임판이 함께 생성된다")
             void owner_createExercise() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                mockMvc.perform(post("/api/parties/{partyId}/exercises", party.getId())
+                MvcResult mvcResult = mockMvc.perform(post("/api/parties/{partyId}/exercises", party.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.data.exerciseId").isNumber());
+                        .andExpect(jsonPath("$.data.exerciseId").isNumber())
+                        .andReturn();
+
+                long exerciseId = objectMapper.readTree(mvcResult.getResponse().getContentAsString())
+                        .path("data")
+                        .path("exerciseId")
+                        .asLong();
+                Exercise createdExercise = exerciseRepository.findById(exerciseId).orElseThrow();
+
+                assertThat(createdExercise.getGameBoard()).isNotNull();
+                assertThat(createdExercise.getGameBoard().getId()).isNotNull();
             }
 
             @Test
@@ -157,8 +169,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.PARTY_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.PARTY_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(PartyErrorCode.PARTY_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(PartyErrorCode.PARTY_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -171,8 +183,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -313,8 +325,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}", exercise.getId()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -362,15 +374,23 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
         class Success {
 
             @Test
-            @DisplayName("200 - 모임장이 운동을 수정하면 exerciseId를 반환한다")
+            @DisplayName("200 - 모임장이 운동을 수정하면 exerciseId와 갱신된 updatedAt을 반환한다")
             void owner_updateExercise() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
+                LocalDateTime previousUpdatedAt = exercise.getUpdatedAt();
 
                 mockMvc.perform(patch("/api/exercises/{exerciseId}", exercise.getId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()));
+                        .andExpect(jsonPath("$.data.exerciseId").value(exercise.getId()))
+                        .andExpect(result -> {
+                            String updatedAt = objectMapper.readTree(result.getResponse().getContentAsString())
+                                    .path("data")
+                                    .path("updatedAt")
+                                    .asText();
+                            assertThat(LocalDateTime.parse(updatedAt)).isAfter(previousUpdatedAt);
+                        });
 
                 Exercise updatedExercise = exerciseRepository.findById(exercise.getId()).orElseThrow();
                 assertThat(updatedExercise.getPartyGuestAccept()).isFalse();
@@ -416,8 +436,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRequest)))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test

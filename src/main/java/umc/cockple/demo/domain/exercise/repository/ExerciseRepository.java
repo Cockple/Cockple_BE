@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.exercise.repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
@@ -16,6 +17,29 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ExerciseRepository extends JpaRepository<Exercise, Long>, ExerciseRepositoryCustom {
+
+    Optional<Exercise> findByGameBoardId(Long gameBoardId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE exercise e
+            JOIN party p ON p.id = e.party_id
+            SET e.game_host_id = p.owner_id
+            WHERE e.party_id = :partyId
+            AND e.game_host_id = :memberId
+            """, nativeQuery = true)
+    int restoreGameHostToPartyOwner(
+            @Param("partyId") Long partyId,
+            @Param("memberId") Long memberId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE exercise e
+            JOIN party p ON p.id = e.party_id
+            SET e.game_host_id = p.owner_id
+            WHERE e.game_host_id = :memberId
+            """, nativeQuery = true)
+    int restoreGameHostsToPartyOwners(@Param("memberId") Long memberId);
 
     @Query("""
             SELECT e FROM Exercise e 

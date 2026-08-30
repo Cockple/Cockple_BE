@@ -8,21 +8,21 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseMyQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyExerciseListDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseCalendarDTO;
-import umc.cockple.demo.domain.exercise.dto.my.MyPartyExerciseDTO;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseFilterType;
 import umc.cockple.demo.domain.exercise.enums.MyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.enums.MyPartyExerciseOrderType;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
+import umc.cockple.demo.domain.exercise.service.query.result.MyExerciseCalendarResult;
+import umc.cockple.demo.domain.exercise.service.query.result.MyExerciseListResult;
+import umc.cockple.demo.domain.exercise.service.query.result.MyPartyExerciseCalendarResult;
+import umc.cockple.demo.domain.exercise.service.query.result.MyPartyExerciseResult;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseMyResultAssembler;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,12 +36,12 @@ import java.util.stream.Collectors;
 public class ExerciseMyQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
-    private final ExerciseMyQueryMapper exerciseMyMapper;
+    private final MemberPartyLookupService memberPartyLookupService;
+    private final ExerciseMyResultAssembler exerciseMyResultAssembler;
 
-    public MyExerciseCalendarDTO.Response getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
+    public MyExerciseCalendarResult getMyExerciseCalendar(Long memberId, LocalDate startDate, LocalDate endDate) {
 
         log.info("내 운동 캘린더 조회 시작 - memberId = {}, startDate = {}, endDate = {}",
                 memberId, startDate, endDate);
@@ -55,24 +55,24 @@ public class ExerciseMyQueryService {
         if (exercises.isEmpty()) {
             log.info("해당 기간에 참여한 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
                     memberId, dateRange.start(), dateRange.end());
-            return exerciseMyMapper.toEmptyMyCalendarResponse(dateRange.start(), dateRange.end());
+            return exerciseMyResultAssembler.toEmptyMyCalendarResult(dateRange.start(), dateRange.end());
         }
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseMyMapper.toMyCalendarResponse(exercises, dateRange.start(), dateRange.end());
+        return exerciseMyResultAssembler.toMyCalendarResult(exercises, dateRange.start(), dateRange.end());
     }
 
-    public MyPartyExerciseDTO.Response getMyPartyExercise(Long memberId) {
+    public MyPartyExerciseResult getMyPartyExercise(Long memberId) {
 
         log.info("내 모임 운동 조회 시작 - memberId = {}", memberId);
 
 
-        List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
+        List<Long> myPartyIds = memberPartyLookupService.findPartyIdsByMemberId(memberId);
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
-            return exerciseMyMapper.toEmptyMyPartyExerciseResponse();
+            return exerciseMyResultAssembler.toEmptyMyPartyExerciseResult();
         }
 
         Pageable pageable = PageRequest.of(0, 6);
@@ -80,21 +80,21 @@ public class ExerciseMyQueryService {
 
         log.info("내 모임 운동 조회 종료 - 조회된 운동 수 = {}", recentExercises.size());
 
-        return exerciseMyMapper.toMyPartyExerciseDTO(recentExercises);
+        return exerciseMyResultAssembler.toMyPartyExerciseResult(recentExercises);
     }
 
-    public MyPartyExerciseCalendarDTO.Response getMyPartyExerciseCalendar(
+    public MyPartyExerciseCalendarResult getMyPartyExerciseCalendar(
             Long memberId, MyPartyExerciseOrderType orderType, LocalDate startDate, LocalDate endDate) {
 
         log.info("내 모임 운동 캘린더 조회 시작 - memberId = {}, orderType = {}, 기간 = {}~{}", memberId, orderType, startDate, endDate);
 
-        List<Long> myPartyIds = exerciseParticipantReader.findPartyIdsByMemberId(memberId);
+        List<Long> myPartyIds = memberPartyLookupService.findPartyIdsByMemberId(memberId);
 
         DateRange dateRange = DateRange.calculateDateRange(startDate, endDate);
 
         if (myPartyIds.isEmpty()) {
             log.info("내가 속한 모임이 없음 - memberId = {}", memberId);
-            return exerciseMyMapper.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
+            return exerciseMyResultAssembler.toEmptyMyPartyCalendarResult(dateRange.start(), dateRange.end());
         }
 
         List<Exercise> exercises = exerciseReader.findByPartyIdsAndDateRange(myPartyIds, dateRange.start(), dateRange.end());
@@ -102,7 +102,7 @@ public class ExerciseMyQueryService {
         if (exercises.isEmpty()) {
             log.info("해당 기간에 내 모임의 운동이 없어 빈 응답 반환 - memberId: {}, 기간: {} ~ {}",
                     memberId, dateRange.start(), dateRange.end());
-            return exerciseMyMapper.toEmptyMyPartyCalendarResponse(dateRange.start(), dateRange.end());
+            return exerciseMyResultAssembler.toEmptyMyPartyCalendarResult(dateRange.start(), dateRange.end());
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -113,11 +113,11 @@ public class ExerciseMyQueryService {
 
         log.info("내 운동 캘린더 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseMyMapper.toMyPartyCalendarResponse(
+        return exerciseMyResultAssembler.toMyPartyCalendarResult(
                 exercises, dateRange.start(), dateRange.end(), bookmarkStatus, orderType, participantCounts);
     }
 
-    public MyExerciseListDTO.Response getMyExercises(
+    public MyExerciseListResult getMyExercises(
             Long memberId, MyExerciseFilterType filterType, MyExerciseOrderType orderType, Pageable pageable) {
 
         log.info("내 참여 운동 조회 시작 - memberId: {}, filterType: {}, orderType: {}",
@@ -130,7 +130,7 @@ public class ExerciseMyQueryService {
 
         if (exerciseSlice.isEmpty()) {
             log.info("조회된 운동이 없음 - memberId: {}, filterType: {}", memberId, filterType);
-            return exerciseMyMapper.toEmptyMyExerciseList();
+            return exerciseMyResultAssembler.toEmptyMyExerciseListResult();
         }
 
         List<Exercise> exercises = exerciseSlice.getContent();
@@ -142,7 +142,8 @@ public class ExerciseMyQueryService {
 
         log.info("내 참여 운동 조회 완료 - memberId: {}, 조회된 운동 수: {}", memberId, exercises.size());
 
-        return exerciseMyMapper.toMyExerciseListResponse(exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
+        return exerciseMyResultAssembler.toMyExerciseListResult(
+                exerciseSlice, participantCountMap, bookmarkStatus, isCompletedMap);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

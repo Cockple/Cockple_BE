@@ -1,0 +1,271 @@
+package umc.cockple.demo.domain.chat.service.support.assembler;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import umc.cockple.demo.domain.chat.converter.ChatConverter;
+import umc.cockple.demo.domain.chat.domain.ChatMessage;
+import umc.cockple.demo.domain.chat.domain.ChatMessageFile;
+import umc.cockple.demo.domain.chat.domain.ChatRoom;
+import umc.cockple.demo.domain.chat.dto.ChatCommonDTO;
+import umc.cockple.demo.domain.chat.enums.MessageType;
+import umc.cockple.demo.domain.file.service.FileService;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.support.fixture.ChatFixture;
+import umc.cockple.demo.support.fixture.MemberFixture;
+import umc.cockple.demo.support.fixture.PartyFixture;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ChatMessageViewAssembler")
+class ChatMessageViewAssemblerTest {
+
+    @Mock
+    private FileService fileService;
+
+    private ChatConverter chatConverter;
+    private ChatMessageViewAssembler chatMessageViewAssembler;
+
+    private Member sender;
+    private ChatRoom chatRoom;
+
+    @BeforeEach
+    void setUp() {
+        chatConverter = new ChatConverter();
+        chatMessageViewAssembler = new ChatMessageViewAssembler(new ImageUrlResolver(fileService), chatConverter);
+
+        sender = MemberFixture.createMemberWithName("홍길동", "길동", Gender.MALE, Level.A, 1001L);
+        ReflectionTestUtils.setField(sender, "id", 10L);
+
+        var party = PartyFixture.createParty("모임", sender.getId(), PartyFixture.createPartyAddr("서울", "강남구"));
+        ReflectionTestUtils.setField(party, "id", 100L);
+        chatRoom = ChatFixture.createPartyChatRoom(party);
+        ReflectionTestUtils.setField(chatRoom, "id", 1L);
+    }
+
+    // ========== assembleMessages ==========
+
+    @Nested
+    @DisplayName("assembleMessages - 메시지 목록 처리")
+    class AssembleMessages {
+
+        @Test
+        @DisplayName("빈 메시지 목록을 처리하면 빈 리스트를 반환한다")
+        void returnsEmptyList_whenNoMessages() {
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of());
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("내가 보낸 메시지는 isMyMessage가 true이다")
+        void isMyMessage_true_whenSenderIsCurrentUser() {
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "내 메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).isMyMessage()).isTrue();
+        }
+
+        @Test
+        @DisplayName("다른 사람이 보낸 메시지는 isMyMessage가 false이다")
+        void isMyMessage_false_whenSenderIsOther() {
+            Member other = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 2002L);
+            ReflectionTestUtils.setField(other, "id", 20L);
+
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, other, "상대방 메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).isMyMessage()).isFalse();
+        }
+
+        @Test
+        @DisplayName("SYSTEM이 아닌데 sender가 null이면 알 수 없는 사용자로 매핑한다")
+        void mapsUnknownUser_whenNonSystemMessageHasNullSender() {
+            ChatMessage message = ChatMessage.create(chatRoom, null, "삭제된 사용자 메시지", MessageType.TEXT);
+            ReflectionTestUtils.setField(message, "id", 999L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result).hasSize(1);
+            ChatCommonDTO.MessageInfo messageInfo = result.get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.isMyMessage()).isFalse();
+            assertThat(messageInfo.content()).isEqualTo("삭제된 사용자 메시지");
+            assertThat(messageInfo.messageType()).isEqualTo(MessageType.TEXT);
+        }
+
+        @Test
+        @DisplayName("탈퇴한 회원이 보낸 메시지는 isSenderWithdrawn이 true이다")
+        void isSenderWithdrawn_true_whenSenderIsInactive() {
+            Member withdrawn = MemberFixture.createWithdrawnMember("탈퇴한사용자", "탈퇴", 3003L);
+            ReflectionTestUtils.setField(withdrawn, "id", 30L);
+            withdrawn.updateProfileImg(ProfileImg.builder()
+                    .imgKey("member/withdrawn-profile.png")
+                    .build());
+
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, withdrawn, "탈퇴자 메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result).hasSize(1);
+            ChatCommonDTO.MessageInfo messageInfo = result.get(0);
+            assertThat(messageInfo.senderId()).isNull();
+            assertThat(messageInfo.isSenderWithdrawn()).isTrue();
+            assertThat(messageInfo.senderName()).isEqualTo(ChatConverter.UNKNOWN_USER_NAME);
+            assertThat(messageInfo.senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey("member/withdrawn-profile.png");
+        }
+
+        @Test
+        @DisplayName("활성 회원이 보낸 메시지는 isSenderWithdrawn이 false이다")
+        void isSenderWithdrawn_false_whenSenderIsActive() {
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "활성 사용자 메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result.get(0).isSenderWithdrawn()).isFalse();
+        }
+
+        @Test
+        @DisplayName("메시지 처리 결과에 senderName, content, messageType이 올바르게 매핑된다")
+        void messageFields_areCorrectlyMapped() {
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "안녕하세요");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            ChatCommonDTO.MessageInfo info = result.get(0);
+            assertThat(info.messageId()).isEqualTo(1L);
+            assertThat(info.senderId()).isEqualTo(sender.getId());
+            assertThat(info.senderName()).isEqualTo("홍길동");
+            assertThat(info.content()).isEqualTo("안녕하세요");
+            assertThat(info.messageType()).isEqualTo(MessageType.TEXT);
+        }
+
+        @Test
+        @DisplayName("발신자에게 프로필 이미지 키가 없으면 senderProfileImageUrl이 null이다")
+        void senderProfileImageUrl_isNull_whenNoProfileImg() {
+            // sender는 profileImg가 null인 상태 (MemberFixture 기본)
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result.get(0).senderProfileImageUrl()).isNull();
+            verify(fileService, never()).getUrlFromKey(null);
+        }
+
+        @Test
+        @DisplayName("활성 발신자의 프로필 이미지 키는 URL로 해석된다")
+        void senderProfileImageUrl_isResolved_whenProfileImgExists() {
+            sender.updateProfileImg(ProfileImg.builder()
+                    .imgKey("profile/sender.jpg")
+                    .build());
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+            given(fileService.getUrlFromKey("profile/sender.jpg"))
+                    .willReturn("https://cdn.example.com/profile/sender.jpg");
+
+            List<ChatCommonDTO.MessageInfo> result =
+                    chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            assertThat(result.get(0).senderProfileImageUrl())
+                    .isEqualTo("https://cdn.example.com/profile/sender.jpg");
+        }
+
+        @Test
+        @DisplayName("여러 메시지를 처리하면 입력 순서가 유지된다")
+        void multipleMessages_preserveInputOrder() {
+            Member other = MemberFixture.createMemberWithName("김철수", "철수", Gender.MALE, Level.B, 2002L);
+            ReflectionTestUtils.setField(other, "id", 20L);
+
+            ChatMessage msg1 = ChatFixture.createTextMessage(chatRoom, sender, "첫 번째");
+            ReflectionTestUtils.setField(msg1, "id", 1L);
+            ChatMessage msg2 = ChatFixture.createTextMessage(chatRoom, other, "두 번째");
+            ReflectionTestUtils.setField(msg2, "id", 2L);
+            ChatMessage msg3 = ChatFixture.createTextMessage(chatRoom, sender, "세 번째");
+            ReflectionTestUtils.setField(msg3, "id", 3L);
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(msg1, msg2, msg3));
+
+            assertThat(result).hasSize(3);
+            assertThat(result.get(0).messageId()).isEqualTo(1L);
+            assertThat(result.get(0).isMyMessage()).isTrue();
+            assertThat(result.get(1).messageId()).isEqualTo(2L);
+            assertThat(result.get(1).isMyMessage()).isFalse();
+            assertThat(result.get(2).messageId()).isEqualTo(3L);
+            assertThat(result.get(2).isMyMessage()).isTrue();
+        }
+
+        @Test
+        @DisplayName("이미지가 포함된 메시지는 fileOrder 오름차순으로 정렬된다")
+        void messageImages_areSortedByFileOrder() {
+            ChatMessage message = ChatFixture.createTextMessage(chatRoom, sender, "이미지 메시지");
+            ReflectionTestUtils.setField(message, "id", 1L);
+
+            // fileOrder 역순으로 삽입: 3 → 1 → 2
+            ChatMessageFile img3 = ChatMessageFile.builder()
+                    .fileKey("img/third.jpg")
+                    .fileOrder(3)
+                    .originalFileName("third.jpg")
+                    .fileSize(100L)
+                    .fileType("image/jpeg")
+                    .build();
+            ChatMessageFile img1 = ChatMessageFile.builder()
+                    .fileKey("img/first.jpg")
+                    .fileOrder(1)
+                    .originalFileName("first.jpg")
+                    .fileSize(100L)
+                    .fileType("image/jpeg")
+                    .build();
+            ChatMessageFile img2 = ChatMessageFile.builder()
+                    .fileKey("img/second.jpg")
+                    .fileOrder(2)
+                    .originalFileName("second.jpg")
+                    .fileSize(100L)
+                    .fileType("image/jpeg")
+                    .build();
+
+            // ChatMessage의 chatMessageFiles에 역순으로 세팅
+            ReflectionTestUtils.setField(message, "chatMessageFiles", List.of(img3, img1, img2));
+
+            given(fileService.getUrlFromKey("img/first.jpg")).willReturn("https://cdn.example.com/first.jpg");
+            given(fileService.getUrlFromKey("img/second.jpg")).willReturn("https://cdn.example.com/second.jpg");
+            given(fileService.getUrlFromKey("img/third.jpg")).willReturn("https://cdn.example.com/third.jpg");
+
+            List<ChatCommonDTO.MessageInfo> result = chatMessageViewAssembler.assembleMessages(sender.getId(), List.of(message));
+
+            List<ChatCommonDTO.FileInfo> images = result.get(0).images();
+            assertThat(images).hasSize(3);
+            assertThat(images.get(0).imgOrder()).isEqualTo(1);
+            assertThat(images.get(1).imgOrder()).isEqualTo(2);
+            assertThat(images.get(2).imgOrder()).isEqualTo(3);
+        }
+    }
+}

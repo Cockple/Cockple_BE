@@ -10,8 +10,9 @@ Exercise is the densest feature slice: scheduling, guests, participation, waitin
 |------|----------|-------|
 | Read-heavy hotspot | `service/ExerciseQueryService.java` | calendar/detail/recommendation/building/map queries |
 | Command internals | `service/command/internal/` | guest, lifecycle, participation subflows |
-| DTO mapping | `converter/*Mapper.java` | use-case-specific response/command mappers |
-| HTTP surface | `controller/` | split by exercise use case; see ownership map below |
+| DTO mapping | `presentation/mapper/{command,query}/` | use-case-specific request/response boundary mappers |
+| HTTP surface | `presentation/controller/` | split by exercise use case; see ownership map below |
+| Query result assembly | `service/support/assembler/` | domain entities to service result models |
 | Error rules | `exception/ExerciseErrorCode.java` | started/past-time/permission constraints |
 | Integration coverage | `src/test/java/umc/cockple/demo/domain/exercise/` | biggest test package in repo |
 

@@ -11,12 +11,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.participation.ExerciseCancelDTO;
+import umc.cockple.demo.domain.exercise.presentation.dto.participation.ExerciseCancelDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.member.exception.MemberErrorCode;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -162,8 +163,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(post("/api/exercises/{exerciseId}/participants", exercise.getId()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -281,8 +282,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test
@@ -418,8 +419,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(MemberErrorCode.MEMBER_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(MemberErrorCode.MEMBER_NOT_FOUND.getMessage()));
             }
 
             @Test

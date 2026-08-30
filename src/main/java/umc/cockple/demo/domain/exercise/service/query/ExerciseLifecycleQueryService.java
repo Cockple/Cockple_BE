@@ -4,18 +4,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseLifecycleQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseEditDetailDTO;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
-import umc.cockple.demo.domain.exercise.service.support.ExerciseParticipantInfoAssembler;
-import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipantReader;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantPosition;
+import umc.cockple.demo.domain.exercise.service.query.model.ExerciseParticipantSnapshot;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseEditDetailResult;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
+import umc.cockple.demo.global.enums.Gender;
+import umc.cockple.demo.global.enums.Role;
 
 import java.util.*;
 
@@ -26,14 +30,13 @@ import java.util.*;
 public class ExerciseLifecycleQueryService {
 
     private final ExerciseReader exerciseReader;
-    private final ExerciseParticipantReader exerciseParticipantReader;
-    private final ExerciseParticipantInfoAssembler participantInfoAssembler;
+    private final ExerciseParticipantSnapshotAssembler participantSnapshotAssembler;
+    private final ExerciseParticipantPositionCalculator participantPositionCalculator;
     private final MemberLookupService memberLookupService;
+    private final MemberPartyLookupService memberPartyLookupService;
     private final ExerciseValidator exerciseValidator;
 
-    private final ExerciseLifecycleQueryMapper exerciseLifecycleQueryMapper;
-
-    public ExerciseDetailDTO.Response getExerciseDetail(Long exerciseId, Long memberId) {
+    public ExerciseDetailResult getExerciseDetail(Long exerciseId, Long memberId) {
 
         log.info("운동 조회 시작 - exerciseId = {}, memberId = {}", exerciseId, memberId);
 
@@ -43,139 +46,124 @@ public class ExerciseLifecycleQueryService {
         Party party = exercise.getParty();
         boolean isManager = checkManagerPermission(party, member);
 
-        ExerciseDetailDTO.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
+        ExerciseDetailResult.ExerciseInfo exerciseInfo = createExerciseInfo(exercise);
 
-        List<ExerciseDetailDTO.ParticipantInfo> allParticipants = participantInfoAssembler.getAllSortedParticipants(exerciseId, party);
-        ParticipantGroups groups = splitParticipants(allParticipants, exercise.getMaxCapacity());
+        List<ExerciseParticipantSnapshot> participants =
+                participantSnapshotAssembler.getAllParticipants(exerciseId, party);
+        List<ExerciseParticipantPosition> participantPositions =
+                participantPositionCalculator.calculate(participants, exercise.getMaxCapacity());
+        ParticipantGroups groups = splitParticipants(participantPositions);
 
-        ExerciseDetailDTO.ParticipantGroup participantGroup = createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
-        ExerciseDetailDTO.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
+        ExerciseDetailResult.ParticipantGroup participantGroup =
+                createParticipantGroup(groups.participants(), exercise.getMaxCapacity());
+        ExerciseDetailResult.WaitingGroup waitingGroup = createWaitingGroup(groups.waiting());
 
-        return exerciseLifecycleQueryMapper.toDetailResponse(isManager, exerciseInfo, participantGroup, waitingGroup);
+        return new ExerciseDetailResult(
+                isManager, exercise.getGameBoard().getId(), exerciseInfo, participantGroup, waitingGroup);
     }
 
-    public ExerciseEditDetailDTO.Response getExerciseForEdit(Long exerciseId, Long memberId) {
+    public ExerciseEditDetailResult getExerciseForEdit(Long exerciseId, Long memberId) {
         log.info("운동 수정용 상세조회 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
         Exercise exercise = exerciseReader.findExerciseWithBasicInfoOrThrow(exerciseId);
         exerciseValidator.validateExerciseManagementPermission(exercise, memberId);
         log.info("운동 수정용 상세조회 완료 - exerciseId: {}", exerciseId);
-        return exerciseLifecycleQueryMapper.toEditDetailResponse(exercise);
+
+        ExerciseAddr address = exercise.getExerciseAddr();
+        return new ExerciseEditDetailResult(
+                exercise.getDate(),
+                address.getBuildingName(),
+                address.getStreetAddr(),
+                address.getLatitude(),
+                address.getLongitude(),
+                exercise.getStartTime(),
+                exercise.getEndTime(),
+                exercise.getMaxCapacity(),
+                exercise.getPartyGuestAccept(),
+                exercise.getOutsideGuestAccept(),
+                exercise.getNotice()
+        );
     }
 
     // ========== 비즈니스 메서드 ==========
 
     private boolean checkManagerPermission(Party party, Member member) {
-        return exerciseParticipantReader.hasManagerPermission(party, member);
+        return memberPartyLookupService.hasRole(party, member, Role.PARTY_MANAGER);
     }
 
-    private ExerciseDetailDTO.ExerciseInfo createExerciseInfo(Exercise exercise) {
+    private ExerciseDetailResult.ExerciseInfo createExerciseInfo(Exercise exercise) {
         ExerciseAddr addr = exercise.getExerciseAddr();
 
-        return ExerciseDetailDTO.ExerciseInfo.builder()
-                .notice(exercise.getNotice())
-                .buildingName(addr.getBuildingName())
-                .location(addr.getStreetAddr())
-                .build();
+        return new ExerciseDetailResult.ExerciseInfo(
+                exercise.getNotice(), addr.getBuildingName(), addr.getStreetAddr());
     }
 
     private ParticipantGroups splitParticipants(
-            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
-            int maxCapacity) {
+            List<ExerciseParticipantPosition> participantPositions) {
 
-        List<ExerciseDetailDTO.ParticipantInfo> participantList = createParticipantList(allParticipants, maxCapacity);
-        List<ExerciseDetailDTO.ParticipantInfo> waitingList = createWaitingList(allParticipants, maxCapacity);
+        List<ExerciseDetailResult.ParticipantInfo> participantList = participantPositions.stream()
+                .filter(position -> !position.waiting())
+                .map(this::toParticipantInfo)
+                .toList();
+        List<ExerciseDetailResult.ParticipantInfo> waitingList = participantPositions.stream()
+                .filter(ExerciseParticipantPosition::waiting)
+                .map(this::toParticipantInfo)
+                .toList();
 
         return new ParticipantGroups(participantList, waitingList);
     }
 
-    private ExerciseDetailDTO.ParticipantGroup createParticipantGroup(
-            List<ExerciseDetailDTO.ParticipantInfo> participants,
+    private ExerciseDetailResult.ParticipantGroup createParticipantGroup(
+            List<ExerciseDetailResult.ParticipantInfo> participants,
             int maxCapacity) {
 
-        return ExerciseDetailDTO.ParticipantGroup.builder()
-                .currentParticipantCount(participants.size())
-                .totalCount(maxCapacity)
-                .manCount(countByGender(participants, "MALE"))
-                .womenCount(countByGender(participants, "FEMALE"))
-                .list(participants)
-                .build();
+        return new ExerciseDetailResult.ParticipantGroup(
+                participants.size(),
+                maxCapacity,
+                countByGender(participants, Gender.MALE),
+                countByGender(participants, Gender.FEMALE),
+                participants
+        );
     }
 
-    private ExerciseDetailDTO.WaitingGroup createWaitingGroup(
-            List<ExerciseDetailDTO.ParticipantInfo> waiting) {
+    private ExerciseDetailResult.WaitingGroup createWaitingGroup(
+            List<ExerciseDetailResult.ParticipantInfo> waiting) {
 
-        return ExerciseDetailDTO.WaitingGroup.builder()
-                .currentWaitingCount(waiting.size())
-                .manCount(countByGender(waiting, "MALE"))
-                .womenCount(countByGender(waiting, "FEMALE"))
-                .list(waiting)
-                .build();
+        return new ExerciseDetailResult.WaitingGroup(
+                waiting.size(),
+                countByGender(waiting, Gender.MALE),
+                countByGender(waiting, Gender.FEMALE),
+                waiting
+        );
     }
 
-    private List<ExerciseDetailDTO.ParticipantInfo> createParticipantList(
-            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
-            int maxCapacity) {
+    private ExerciseDetailResult.ParticipantInfo toParticipantInfo(
+            ExerciseParticipantPosition position) {
+        ExerciseParticipantSnapshot participant = position.participant();
 
-        List<ExerciseDetailDTO.ParticipantInfo> participantList = new ArrayList<>();
-        int endIndex = Math.min(allParticipants.size(), maxCapacity);
-
-        for (int i = 0; i < endIndex; i++) {
-            ExerciseDetailDTO.ParticipantInfo original = allParticipants.get(i);
-            ExerciseDetailDTO.ParticipantInfo participant = createParticipantWithNumber(original, i + 1);
-            participantList.add(participant);
-        }
-
-        return participantList;
+        return new ExerciseDetailResult.ParticipantInfo(
+                participant.participantId(),
+                position.participantNumber(),
+                participant.profileImageUrl(),
+                participant.name(),
+                participant.gender(),
+                participant.level(),
+                participant.membershipStatus(),
+                participant.partyPosition(),
+                participant.inviterName(),
+                participant.joinedAt(),
+                participant.withdrawn()
+        );
     }
 
-    private List<ExerciseDetailDTO.ParticipantInfo> createWaitingList(
-            List<ExerciseDetailDTO.ParticipantInfo> allParticipants,
-            int maxCapacity) {
-
-        List<ExerciseDetailDTO.ParticipantInfo> waitingList = new ArrayList<>();
-
-        if (allParticipants.size() <= maxCapacity) {
-            return waitingList;
-        }
-
-        for (int i = maxCapacity; i < allParticipants.size(); i++) {
-            ExerciseDetailDTO.ParticipantInfo original = allParticipants.get(i);
-            int waitingNumber = (i - maxCapacity) + 1;
-            ExerciseDetailDTO.ParticipantInfo waiting = createParticipantWithNumber(original, waitingNumber);
-            waitingList.add(waiting);
-        }
-
-        return waitingList;
-    }
-
-    private ExerciseDetailDTO.ParticipantInfo createParticipantWithNumber(
-            ExerciseDetailDTO.ParticipantInfo original,
-            int number) {
-
-        return ExerciseDetailDTO.ParticipantInfo.builder()
-                .participantId(original.participantId())
-                .participantNumber(number)
-                .profileImageUrl(original.profileImageUrl())
-                .name(original.name())
-                .gender(original.gender())
-                .level(original.level())
-                .participantType(original.participantType())
-                .partyPosition(original.partyPosition())
-                .inviterName(original.inviterName())
-                .joinedAt(original.joinedAt())
-                .isWithdrawn(original.isWithdrawn())
-                .build();
-    }
-
-    private int countByGender(List<ExerciseDetailDTO.ParticipantInfo> participants, String gender) {
+    private int countByGender(List<ExerciseDetailResult.ParticipantInfo> participants, Gender gender) {
         return (int) participants.stream()
-                .filter(p -> gender.equals(p.gender()))
+                .filter(participant -> participant.gender() == gender)
                 .count();
     }
 
     private record ParticipantGroups(
-            List<ExerciseDetailDTO.ParticipantInfo> participants,
-            List<ExerciseDetailDTO.ParticipantInfo> waiting
+            List<ExerciseDetailResult.ParticipantInfo> participants,
+            List<ExerciseDetailResult.ParticipantInfo> waiting
     ) {
     }
 }

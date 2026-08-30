@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
-import umc.cockple.demo.domain.chat.service.ChatRoomService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -18,7 +17,6 @@ import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
-import umc.cockple.demo.domain.notification.service.NotificationCommandService;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.domain.PartyAddr;
@@ -29,8 +27,14 @@ import umc.cockple.demo.domain.party.enums.ParticipationType;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.enums.RequestAction;
 import umc.cockple.demo.domain.party.enums.RequestStatus;
+import umc.cockple.demo.domain.party.events.PartyCreatedEvent;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
+import umc.cockple.demo.domain.party.events.PartyUpdatedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationAcceptedEvent;
+import umc.cockple.demo.domain.party.events.PartyInvitationCreatedEvent;
+import umc.cockple.demo.domain.party.events.PartyJoinRequestApprovedEvent;
 import umc.cockple.demo.domain.party.events.PartyMemberJoinedEvent;
+import umc.cockple.demo.domain.party.events.PartyRoleChangedEvent;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
 import umc.cockple.demo.domain.party.exception.PartyException;
 import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
@@ -65,13 +69,9 @@ class PartyCommandServiceTest {
     @Mock
     private MemberRepository memberRepository;
     @Mock
-    private NotificationCommandService notificationCommandService;
-    @Mock
     private PartyAddrRepository partyAddrRepository;
     @Mock
     private MemberPartyRepository memberPartyRepository;
-    @Mock
-    private ChatRoomService chatRoomService;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
     @Mock
@@ -113,14 +113,14 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberPartyRepository.findByPartyAndMember(party, member)).willReturn(Optional.of(memberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, memberId))
+                    .willReturn(Optional.of(memberParty));
 
             // when
             partyCommandService.leaveParty(partyId, memberId);
 
             // then
             verify(memberPartyRepository).delete(memberParty);
-            verify(chatRoomService).leavePartyChatRoom(partyId, memberId);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
@@ -227,7 +227,8 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberPartyRepository.findByPartyAndMember(party, member)).willReturn(Optional.empty());
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, memberId))
+                    .willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> partyCommandService.leaveParty(partyId, memberId))
@@ -455,7 +456,11 @@ class PartyCommandServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.partyId()).isEqualTo(1L);
             verify(partyRepository, times(1)).save(any(Party.class));
-            verify(chatRoomService, times(1)).createPartyChatRoom(any(Party.class), eq(owner));
+            verify(applicationEventPublisher).publishEvent(argThat((Object event) ->
+                    event instanceof PartyCreatedEvent partyCreatedEvent
+                            && partyCreatedEvent.partyId().equals(savedParty.getId())
+                            && partyCreatedEvent.ownerId().equals(owner.getId())
+            ));
         }
 
         @Test
@@ -645,7 +650,7 @@ class PartyCommandServiceTest {
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
 
-            verify(notificationCommandService, times(1)).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyUpdatedEvent.class));
         }
 
         @Test
@@ -868,7 +873,7 @@ class PartyCommandServiceTest {
             // then
             assertThat(targetMemberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
             assertThat(oldSubManagerParty.getRole()).isEqualTo(Role.PARTY_MEMBER);
-            verify(notificationCommandService, times(4)).createNotification(any());
+            verify(applicationEventPublisher, times(2)).publishEvent(any(PartyRoleChangedEvent.class));
         }
 
         @Test
@@ -901,7 +906,6 @@ class PartyCommandServiceTest {
 
             // then
             verify(targetMemberParty, never()).changeRole(any());
-            verify(notificationCommandService, never()).createNotification(any());
         }
 
         @Test
@@ -1026,14 +1030,15 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.of(targetMemberParty));
 
             // when
             partyCommandService.removeMember(partyId, targetMemberId, ownerId);
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(chatRoomService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
         @Test
@@ -1060,14 +1065,15 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
             given(memberPartyRepository.findByPartyAndMember(party, subManager)).willReturn(Optional.of(subManagerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.of(targetMemberParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.of(targetMemberParty));
 
             // when
             partyCommandService.removeMember(partyId, targetMemberId, subManagerId);
 
             // then
             verify(memberPartyRepository, times(1)).delete(targetMemberParty);
-            verify(chatRoomService, times(1)).leavePartyChatRoom(partyId, targetMemberId);
+            verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
         }
 
         @Test
@@ -1094,7 +1100,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(subManagerId)).willReturn(Optional.of(subManager));
             given(memberRepository.findById(targetOwnerId)).willReturn(Optional.of(owner));
             given(memberPartyRepository.findByPartyAndMember(party, subManager)).willReturn(Optional.of(subManagerParty));
-            given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetOwnerId))
+                    .willReturn(Optional.of(ownerParty));
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -1120,6 +1127,8 @@ class PartyCommandServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, ownerId))
+                    .willReturn(Optional.of(ownerParty));
             given(memberPartyRepository.findByPartyAndMember(party, owner)).willReturn(Optional.of(ownerParty));
 
             // when & then
@@ -1150,7 +1159,8 @@ class PartyCommandServiceTest {
             given(memberRepository.findById(targetMemberId)).willReturn(Optional.of(targetMember));
 
             // 타겟 멤버가 모임 소속이 아님 -> findMemberPartyOrThrow 에서 NOT_MEMBER 발생
-            given(memberPartyRepository.findByPartyAndMember(party, targetMember)).willReturn(Optional.empty());
+            given(memberPartyRepository.findByPartyIdAndMemberIdForUpdate(partyId, targetMemberId))
+                    .willReturn(Optional.empty());
 
             // when & then
             PartyException exception = assertThrows(PartyException.class,
@@ -1226,9 +1236,8 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(chatRoomService).joinPartyChatRoom(partyId, applicant);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
-            verify(notificationCommandService).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyJoinRequestApprovedEvent.class));
         }
 
         @Test
@@ -1266,9 +1275,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(joinRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(chatRoomService);
             verifyNoInteractions(applicationEventPublisher);
-            verifyNoInteractions(notificationCommandService);
         }
 
         @Test
@@ -1493,7 +1500,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(response.invitationId()).isEqualTo(100L);
-            verify(notificationCommandService).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyInvitationCreatedEvent.class));
         }
 
         @Test
@@ -1640,9 +1647,8 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.APPROVED);
-            verify(chatRoomService).joinPartyChatRoom(party.getId(), invitee);
             verify(applicationEventPublisher).publishEvent(any(PartyMemberJoinedEvent.class));
-            verify(notificationCommandService).createNotification(any());
+            verify(applicationEventPublisher).publishEvent(any(PartyInvitationAcceptedEvent.class));
         }
 
         @Test
@@ -1675,9 +1681,7 @@ class PartyCommandServiceTest {
 
             // then
             assertThat(invitation.getStatus()).isEqualTo(RequestStatus.REJECTED);
-            verifyNoInteractions(chatRoomService);
             verifyNoInteractions(applicationEventPublisher);
-            verifyNoInteractions(notificationCommandService);
         }
 
         @Test

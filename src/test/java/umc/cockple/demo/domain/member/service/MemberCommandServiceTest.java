@@ -13,6 +13,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.game.service.command.GameBoardRosterCleanupService;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -68,6 +70,7 @@ class MemberCommandServiceTest {
     @Mock private ObjectStorageDeleteOutboxService objectStorageDeleteOutboxService;
     @Mock private KakaoOauthService kakaoOauthService;
     @Mock private TokenVersionRepository tokenVersionRepository;
+    @Mock private GameBoardRosterCleanupService gameBoardRosterCleanupService;
 
     private Member normalMember;
 
@@ -167,6 +170,28 @@ class MemberCommandServiceTest {
         @Nested
         @DisplayName("실패")
         class Failure {
+
+            @Test
+            @DisplayName("미래 게임에 편성된 회원은 탈퇴할 수 없다")
+            void assignedPlayer_cannotWithdraw() {
+                given(memberRepository.findById(normalMember.getId()))
+                        .willReturn(Optional.of(normalMember));
+                given(gameBoardRosterCleanupService.hasActiveFutureAssignment(
+                        eq(normalMember.getId()), any()))
+                        .willReturn(true);
+
+                assertThatThrownBy(() -> memberCommandService.withdrawMember(normalMember.getId()))
+                        .isInstanceOf(MemberException.class)
+                        .hasFieldOrPropertyWithValue(
+                                "code", MemberErrorCode.ASSIGNED_PLAYER_CANNOT_WITHDRAW);
+
+                then(gameBoardRosterCleanupService).should(never())
+                        .removeFutureMemberRosters(eq(normalMember.getId()), any());
+                then(memberExerciseRepository).should(never())
+                        .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(kakaoOauthService).should(never()).unlinkAccess(normalMember);
+                assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
+            }
 
             @Test
             @DisplayName("존재하지_않는_회원이면_MEMBER_NOT_FOUND_예외를_던진다")
@@ -615,6 +640,8 @@ class MemberCommandServiceTest {
             // then
             then(memberExerciseRepository).should()
                     .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+            then(gameBoardRosterCleanupService).should()
+                    .removeFutureMemberRosters(eq(normalMember.getId()), any());
             then(memberExerciseRepository).should(never())
                     .deleteAll();
         }
@@ -636,7 +663,11 @@ class MemberCommandServiceTest {
                 // then
                 then(memberExerciseRepository).should()
                         .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(gameBoardRosterCleanupService).should()
+                        .removeFutureMemberRosters(eq(normalMember.getId()), any());
                 then(memberExerciseRepository).should(never()).deleteAll();
+                then(memberPartyRepository).should()
+                        .findAllByMemberIdForUpdate(normalMember.getId());
                 then(memberPartyRepository).should().deleteAllByMember(normalMember);
                 then(memberKeywordRepository).should().deleteAllByMember(normalMember);
             }

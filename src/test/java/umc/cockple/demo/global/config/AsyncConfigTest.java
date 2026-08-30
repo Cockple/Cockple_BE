@@ -46,9 +46,9 @@ class AsyncConfigTest {
     }
 
     @Test
-    @DisplayName("notificationExecutor는 MDC를 비동기 작업에 전파하고 다음 작업으로 누수하지 않는다")
-    void notificationExecutorPropagatesMdcAndPreventsLeak() throws Exception {
-        ThreadPoolTaskExecutor executor = config.notificationExecutor(1, 1, 1, 1, config.mdcTaskDecorator());
+    @DisplayName("notificationPushExecutor는 MDC를 비동기 작업에 전파하고 다음 작업으로 누수하지 않는다")
+    void notificationPushExecutorPropagatesMdcAndPreventsLeak() throws Exception {
+        ThreadPoolTaskExecutor executor = config.notificationPushExecutor(1, 1, 1, 1, config.mdcTaskDecorator());
 
         assertPropagatesMdcAndPreventsLeak(executor);
     }

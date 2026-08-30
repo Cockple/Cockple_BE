@@ -4,48 +4,55 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.chat.dto.WebSocketMessageDTO;
 import umc.cockple.demo.domain.chat.events.ChatListSubscriptionEvent;
 import umc.cockple.demo.domain.chat.events.ChatMessageSendEvent;
 import umc.cockple.demo.domain.chat.events.ChatRoomSubscriptionEvent;
 import umc.cockple.demo.domain.chat.exception.ChatException;
-import umc.cockple.demo.domain.chat.service.ChatValidator;
+import umc.cockple.demo.domain.chat.service.websocket.validation.ChatWebSocketRequestValidator;
+import umc.cockple.demo.domain.chat.service.websocket.command.ChatCommandResponder;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class ChatWebSocketCommandHandler {
 
-    private final ChatValidator chatValidator;
-    private final WebSocketResponseSender webSocketResponseSender;
+    private final ChatWebSocketRequestValidator chatWebSocketRequestValidator;
     private final ApplicationEventPublisher eventPublisher;
 
-    public void handle(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    public void handle(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         switch (request.type()) {
             case SEND:
-                handleSendMessage(session, request, memberId);
+                handleSendMessage(request, memberId, responder);
                 break;
             case SUBSCRIBE:
-                handleSubscribe(session, request, memberId);
+                handleSubscribe(request, memberId, responder);
                 break;
             case UNSUBSCRIBE:
-                handleUnsubscribe(session, request, memberId);
+                handleUnsubscribe(request, memberId, responder);
                 break;
             case SUBSCRIBE_CHAT_LIST:
-                handleSubscribeChatList(session, request, memberId);
+                handleSubscribeChatList(request, memberId, responder);
                 break;
             case UNSUBSCRIBE_CHAT_LIST:
-                handleUnsubscribeChatList(session, request, memberId);
+                handleUnsubscribeChatList(request, memberId, responder);
                 break;
             default:
-                webSocketResponseSender.sendErrorMessage(session, "UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
+                responder.sendError("UNKNOWN_TYPE", "알 수 없는 메시지 타입입니다:" + request.type());
         }
     }
 
-    private void handleSendMessage(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    private void handleSendMessage(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         try {
-            chatValidator.validateSendRequest(
+            chatWebSocketRequestValidator.validateSendRequest(
                     request.chatRoomId(), request.content(), request.images(), memberId);
 
             ChatMessageSendEvent sendEvent =
@@ -55,16 +62,20 @@ public class ChatWebSocketCommandHandler {
 
         } catch (ChatException e) {
             log.warn("메시지 전송 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            responder.sendError(e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("메시지 전송 처리 중 예외 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
+            responder.sendError("SEND_MESSAGE_ERROR", "메시지 전송 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void handleSubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    private void handleSubscribe(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         try {
-            chatValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
+            chatWebSocketRequestValidator.validateSubscriptionRequest(request.chatRoomId(), memberId);
 
             ChatRoomSubscriptionEvent subscribeEvent =
                     ChatRoomSubscriptionEvent.subscribe(request.chatRoomId(), memberId);
@@ -72,20 +83,24 @@ public class ChatWebSocketCommandHandler {
 
             // ACK는 요청 검증과 구독 이벤트 접수 성공을 의미한다.
             // Redis 구독 저장, 읽음 처리, unread-count 브로드캐스트는 listener가 best-effort로 후속 처리한다.
-            webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "SUBSCRIBE");
+            responder.acknowledgeRoomSubscription(request.chatRoomId(), "SUBSCRIBE");
 
         } catch (ChatException e) {
             log.warn("구독 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            responder.sendError(e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("구독 처리 중 예외 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
+            responder.sendError("SUBSCRIPTION_ERROR", "구독 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void handleUnsubscribe(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    private void handleUnsubscribe(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         try {
-            chatValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
+            chatWebSocketRequestValidator.validateUnsubscriptionRequest(request.chatRoomId(), memberId);
 
             ChatRoomSubscriptionEvent unsubscribeEvent =
                     ChatRoomSubscriptionEvent.unsubscribe(request.chatRoomId(), memberId);
@@ -93,20 +108,24 @@ public class ChatWebSocketCommandHandler {
 
             // ACK는 요청 검증과 구독 해제 이벤트 접수 성공을 의미한다.
             // Redis 구독 해제는 listener가 best-effort로 후속 처리하고 실패 시 error log만 남긴다.
-            webSocketResponseSender.sendSubscriptionMessage(session, request.chatRoomId(), "UNSUBSCRIBE");
+            responder.acknowledgeRoomSubscription(request.chatRoomId(), "UNSUBSCRIBE");
 
         } catch (ChatException e) {
             log.warn("구독 해제 실패 - 채팅방: {}, 멤버: {}, 이유: {}", request.chatRoomId(), memberId, e.getErrorReason().getMessage());
-            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            responder.sendError(e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("구독 해제 처리 중 예외 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
+            responder.sendError("UNSUBSCRIPTION_ERROR", "구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void handleSubscribeChatList(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    private void handleSubscribeChatList(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         try {
-            chatValidator.validateChatListSubscriptionRequest(memberId, request.memberRooms());
+            chatWebSocketRequestValidator.validateChatListSubscriptionRequest(memberId, request.memberRooms());
 
             ChatListSubscriptionEvent subscribeEvent =
                     ChatListSubscriptionEvent.subscribe(memberId, request.memberRooms());
@@ -114,20 +133,24 @@ public class ChatWebSocketCommandHandler {
 
             // ACK는 요청 검증과 채팅방 목록 구독 이벤트 접수 성공을 의미한다.
             // Redis 목록 구독 반영은 비동기 listener가 best-effort로 후속 처리한다.
-            webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
+            responder.acknowledgeChatListSubscription(request.memberRooms(), "SUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());
-            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            responder.sendError(e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("채팅방 목록 구독 처리 중 예외 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
+            responder.sendError("SUBSCRIPTION_ERROR", "채팅방 목록 구독 처리 중 오류가 발생했습니다.");
         }
     }
 
-    private void handleUnsubscribeChatList(WebSocketSession session, WebSocketMessageDTO.Request request, Long memberId) {
+    private void handleUnsubscribeChatList(
+            WebSocketMessageDTO.Request request,
+            Long memberId,
+            ChatCommandResponder responder
+    ) {
         try {
-            chatValidator.validateChatListUnsubscriptionRequest(memberId, request.memberRooms());
+            chatWebSocketRequestValidator.validateChatListUnsubscriptionRequest(memberId, request.memberRooms());
 
             ChatListSubscriptionEvent unsubscribeEvent =
                     ChatListSubscriptionEvent.unsubscribe(memberId, request.memberRooms());
@@ -135,14 +158,14 @@ public class ChatWebSocketCommandHandler {
 
             // ACK는 요청 검증과 채팅방 목록 구독 해제 이벤트 접수 성공을 의미한다.
             // Redis 목록 구독 해제 반영은 비동기 listener가 best-effort로 후속 처리한다.
-            webSocketResponseSender.sendChatListSubscriptionMessage(session, request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
+            responder.acknowledgeChatListSubscription(request.memberRooms(), "UNSUBSCRIBE_CHAT_LIST");
 
         } catch (ChatException e) {
             log.warn("채팅방 목록 구독 해제 검증 실패 - 멤버: {}, 이유: {}", memberId, e.getErrorReason().getMessage());
-            webSocketResponseSender.sendErrorMessage(session, e.getErrorReason().getCode(), e.getErrorReason().getMessage());
+            responder.sendError(e.getErrorReason().getCode(), e.getErrorReason().getMessage());
         } catch (Exception e) {
             log.error("채팅방 목록 구독 해제 처리 중 예외 발생", e);
-            webSocketResponseSender.sendErrorMessage(session, "UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
+            responder.sendError("UNSUBSCRIPTION_ERROR", "채팅방 목록 구독 해제 처리 중 오류가 발생했습니다.");
         }
     }
 }

@@ -5,13 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseCreateDTO;
-import umc.cockple.demo.domain.exercise.dto.lifecycle.ExerciseUpdateDTO;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.member.repository.MemberExerciseRepository;
-import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
+import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
+import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.enums.PartyStatus;
 import umc.cockple.demo.domain.party.exception.PartyErrorCode;
@@ -21,19 +21,23 @@ import umc.cockple.demo.global.enums.Role;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ExerciseValidator {
 
-    private final MemberPartyRepository memberPartyRepository;
+    private static final Set<Role> GAME_HOST_MANAGEMENT_ROLES = Set.of(
+            Role.PARTY_MANAGER, Role.PARTY_SUBMANAGER);
+
+    private final MemberPartyLookupService memberPartyLookupService;
     private final MemberExerciseRepository memberExerciseRepository;
 
-    public void validateCreateExercise(Long memberId, ExerciseCreateDTO.Request request, Party party) {
+    public void validateCreateExercise(Long memberId, ExerciseCreateCommand command, Party party) {
         validatePartyIsActive(party);
         validateSubManagerPermission(memberId, party);
-        validateExerciseTime(request);
+        validateExerciseTime(command);
     }
 
     public void validateJoinExercise(Exercise exercise, Member member) {
@@ -73,14 +77,22 @@ public class ExerciseValidator {
         validateSubManagerPermission(memberId, exercise.getParty());
     }
 
-    public void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateDTO.Request request) {
+    public void validateUpdateExercise(Exercise exercise, Member member, ExerciseUpdateCommand command) {
         validateSubManagerPermission(member.getId(), exercise.getParty());
         validateAlreadyStarted(exercise, ExerciseErrorCode.EXERCISE_ALREADY_STARTED_UPDATE);
-        validateUpdateTime(request, exercise);
+        validateUpdateTime(command, exercise);
     }
 
     public void validateExerciseManagementPermission(Exercise exercise, Long memberId) {
         validateSubManagerPermission(memberId, exercise.getParty());
+    }
+
+    public void validateGameHostManagementPermission(Exercise exercise, Long memberId) {
+        Party party = exercise.getParty();
+        if (!memberPartyLookupService.hasAnyActiveRole(
+                party.getId(), memberId, GAME_HOST_MANAGEMENT_ROLES)) {
+            throw new ExerciseException(ExerciseErrorCode.GAME_HOST_MANAGEMENT_PERMISSION_DENIED);
+        }
     }
 
     // ========== 세부 검증 메서드들 ==========
@@ -93,19 +105,19 @@ public class ExerciseValidator {
 
     private void validateSubManagerPermission(Long memberId, Party party) {
         boolean isOwner = party.getOwnerId().equals(memberId);
-        boolean isManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+        boolean isManager = memberPartyLookupService.hasRole(
                 party.getId(), memberId, Role.PARTY_MANAGER);
-        boolean isSubManager = memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
+        boolean isSubManager = memberPartyLookupService.hasRole(
                 party.getId(), memberId, Role.PARTY_SUBMANAGER);
 
         if (!isOwner && !isManager && !isSubManager)
             throw new ExerciseException(ExerciseErrorCode.INSUFFICIENT_PERMISSION);
     }
 
-    private void validateExerciseTime(ExerciseCreateDTO.Request request) {
-        LocalDate date = request.toParsedDate();
-        LocalTime startTime = request.toParsedStartTime();
-        LocalTime endTime = request.toParsedEndTime();
+    private void validateExerciseTime(ExerciseCreateCommand command) {
+        LocalDate date = command.date();
+        LocalTime startTime = command.startTime();
+        LocalTime endTime = command.endTime();
 
         if (!startTime.isBefore(endTime)) {
             throw new ExerciseException(ExerciseErrorCode.INVALID_EXERCISE_TIME);
@@ -157,7 +169,7 @@ public class ExerciseValidator {
 
     private void validateInviterIsPartyMember(Exercise exercise, Member inviter) {
         Party party = exercise.getParty();
-        boolean isPartyMember = memberPartyRepository.existsByPartyAndMember(party, inviter);
+        boolean isPartyMember = memberPartyLookupService.isPartyMember(party, inviter);
 
         if (!isPartyMember) {
             throw new ExerciseException(ExerciseErrorCode.NOT_PARTY_MEMBER_FOR_GUEST_INVITE);
@@ -182,10 +194,10 @@ public class ExerciseValidator {
         }
     }
 
-    private void validateUpdateTime(ExerciseUpdateDTO.Request request, Exercise exercise) {
-        LocalTime newStartTime = request.toParsedStartTime();
-        LocalTime newEndTime = request.toParsedEndTime();
-        LocalDate newDate = request.toParsedDate();
+    private void validateUpdateTime(ExerciseUpdateCommand command, Exercise exercise) {
+        LocalTime newStartTime = command.startTime();
+        LocalTime newEndTime = command.endTime();
+        LocalDate newDate = command.date();
 
         LocalTime currentStartTime = exercise.getStartTime();
         LocalTime currentEndTime = exercise.getEndTime();
@@ -207,7 +219,7 @@ public class ExerciseValidator {
 
     private boolean isPartyMember(Exercise exercise, Member member) {
         Party party = exercise.getParty();
-        return memberPartyRepository.existsByPartyAndMember(party, member);
+        return memberPartyLookupService.isPartyMember(party, member);
     }
 
 }

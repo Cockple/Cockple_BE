@@ -22,11 +22,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ExerciseRepository Spatial 조회")
 class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
 
+    private static final long GAME_HOST_SOCIAL_ID = 9_999_999_001L;
+
     @Autowired JdbcTemplate jdbcTemplate;
+
+    private Long gameHostId;
 
     @BeforeEach
     void setUp() {
         deleteSpatialExplainData();
+        gameHostId = insertGameHost();
 
         Long nearAddrId = insertExerciseAddr("공간인덱스테스트1", 37.5, 127.0);
         Long fractionalRadiusAddrId = insertExerciseAddr("공간인덱스테스트2", 37.535, 127.0);
@@ -111,16 +116,48 @@ class ExerciseRepositorySpatialIntegrationTest extends IntegrationTestBase {
     }
 
     private void insertExercise(Long addrId, LocalDate date, String startTime) {
+        Long gameBoardId = insertGameBoard();
         jdbcTemplate.update("""
                 INSERT INTO exercise (
                     addr_id, date, start_time, max_capacity,
-                    party_guest_accept, outside_guest_accept, notice
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, addrId, date, startTime, 12, true, true, "spatial-explain-test");
+                    party_guest_accept, outside_guest_accept, notice, game_host_id, game_board_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, addrId, date, startTime, 12, true, true, "spatial-explain-test", gameHostId, gameBoardId);
+    }
+
+    private Long insertGameBoard() {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> connection.prepareStatement(
+                "INSERT INTO game_board (created_at, updated_at) VALUES (NOW(6), NOW(6))",
+                Statement.RETURN_GENERATED_KEYS), keyHolder);
+        return Objects.requireNonNull(keyHolder.getKey()).longValue();
+    }
+
+    private Long insertGameHost() {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement("""
+                    INSERT INTO member (member_name, nickname, is_active, social_id, token_version)
+                    VALUES (?, ?, ?, ?, ?)
+                    """, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, "공간인덱스테스트 진행자");
+            ps.setString(2, "spatial-game-host");
+            ps.setString(3, "ACTIVE");
+            ps.setLong(4, GAME_HOST_SOCIAL_ID);
+            ps.setLong(5, 0L);
+            return ps;
+        }, keyHolder);
+        return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
 
     private void deleteSpatialExplainData() {
+        List<Long> gameBoardIds = jdbcTemplate.queryForList(
+                "SELECT game_board_id FROM exercise WHERE notice = 'spatial-explain-test'",
+                Long.class);
         jdbcTemplate.update("DELETE FROM exercise WHERE notice = 'spatial-explain-test'");
+        gameBoardIds.forEach(gameBoardId ->
+                jdbcTemplate.update("DELETE FROM game_board WHERE id = ?", gameBoardId));
         jdbcTemplate.update("DELETE FROM exercise_addr WHERE building_name LIKE '공간인덱스테스트%'");
+        jdbcTemplate.update("DELETE FROM member WHERE social_id = ?", GAME_HOST_SOCIAL_ID);
     }
 }

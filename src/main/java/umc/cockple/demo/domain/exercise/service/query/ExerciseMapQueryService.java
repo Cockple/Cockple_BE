@@ -4,16 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.cockple.demo.domain.exercise.converter.query.ExerciseMapQueryMapper;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseBuildingDetailDTO;
-import umc.cockple.demo.domain.exercise.dto.map.ExerciseMapBuildingsDTO;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
 import umc.cockple.demo.domain.exercise.service.query.model.ExerciseMapSearchQuery;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseBuildingDetailResult;
+import umc.cockple.demo.domain.exercise.service.query.result.ExerciseMapBuildingsResult;
+import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseMapResultAssembler;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.member.service.support.MemberLookupService;
+import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,9 +31,9 @@ public class ExerciseMapQueryService {
     private final ExerciseReader exerciseReader;
     private final ExerciseBookmarkLookupService exerciseBookmarkLookupService;
     private final MemberLookupService memberLookupService;
-    private final ExerciseMapQueryMapper exerciseMapMapper;
+    private final ExerciseMapResultAssembler exerciseMapResultAssembler;
 
-    public ExerciseBuildingDetailDTO.Response getBuildingExerciseDetails(
+    public ExerciseBuildingDetailResult getBuildingExerciseDetails(
             String buildingName, String streetAddr, LocalDate date, Long memberId) {
 
         log.info("건물 운동 상세 조회 시작 - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
@@ -42,7 +42,7 @@ public class ExerciseMapQueryService {
 
         if (exercises.isEmpty()) {
             log.info("건물에 운동이 존재하지 않습니다. - 건물: {}, 주소: {}, 날짜: {}", buildingName, streetAddr, date);
-            return exerciseMapMapper.toEmptyBuildingDetailResponse(buildingName, date);
+            return exerciseMapResultAssembler.toEmptyBuildingDetailResult(buildingName, date);
         }
 
         List<Long> exerciseIds = getExerciseIds(exercises);
@@ -50,10 +50,10 @@ public class ExerciseMapQueryService {
 
         log.info("건물 운동 상세 조회 종료 - 건물: {}, 주소: {}, 날짜: {}, 결과: {}", buildingName, streetAddr, date, exerciseIds.size());
 
-        return exerciseMapMapper.toBuildingDetailResponse(exercises, buildingName, bookmarkStatus, date);
+        return exerciseMapResultAssembler.toBuildingDetailResult(exercises, buildingName, bookmarkStatus, date);
     }
 
-    public ExerciseMapBuildingsDTO.Response getExerciseMapCalendarSummary(
+    public ExerciseMapBuildingsResult getExerciseMapCalendarSummary(
             ExerciseMapSearchQuery query, Long memberId) {
 
         log.info("월간 운동 캘린더 요약 조회 시작 - 날짜: {}, 중심: ({}, {}), 반경: {}km",
@@ -68,12 +68,12 @@ public class ExerciseMapQueryService {
 
         List<Exercise> exercises = exerciseReader.findByMonthAndRadius(dateRange.start(), dateRange.end(), searchQuery);
 
-        Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> dailyBuildings =
+        Map<LocalDate, List<ExerciseMapBuildingsResult.BuildingInfo>> dailyBuildings =
                 groupExercisesByDateAndBuilding(exercises);
 
         log.info("월간 운동 캘린더 요약 조회 완료 - 조회된 운동 수: {}", exercises.size());
 
-        return exerciseMapMapper.toMapCalendarSummaryResponse(
+        return exerciseMapResultAssembler.toMapCalendarSummaryResult(
                 dateRange.start().getYear(), dateRange.start().getMonthValue(),
                 searchQuery.latitude(), searchQuery.longitude(), searchQuery.radiusKm(), dailyBuildings);
     }
@@ -82,7 +82,8 @@ public class ExerciseMapQueryService {
         return exercises.stream().map(Exercise::getId).toList();
     }
 
-    private Map<LocalDate, List<ExerciseMapBuildingsDTO.BuildingInfo>> groupExercisesByDateAndBuilding(List<Exercise> exercises) {
+    private Map<LocalDate, List<ExerciseMapBuildingsResult.BuildingInfo>> groupExercisesByDateAndBuilding(
+            List<Exercise> exercises) {
         Map<LocalDate, List<Exercise>> exercisesByDate = exercises.stream()
                 .collect(Collectors.groupingBy(Exercise::getDate));
 
@@ -95,12 +96,12 @@ public class ExerciseMapQueryService {
                 ));
     }
 
-    private List<ExerciseMapBuildingsDTO.BuildingInfo> createBuildingSummariesForDate(List<Exercise> dayExercises) {
+    private List<ExerciseMapBuildingsResult.BuildingInfo> createBuildingSummariesForDate(List<Exercise> dayExercises) {
         Map<BuildingKey, List<Exercise>> exercisesByBuilding = dayExercises.stream()
                 .collect(Collectors.groupingBy(this::createBuildingKey));
 
         return exercisesByBuilding.keySet().stream()
-                .map(entry -> exerciseMapMapper.toBuildingSummary(
+                .map(entry -> exerciseMapResultAssembler.toBuildingSummary(
                         entry.name(), entry.address(), entry.latitude(), entry.longitude())
                 )
                 .toList();
