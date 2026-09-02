@@ -75,7 +75,7 @@ public class ChatRoomDetailQueryService {
             Member member = counterPart.getMember();
             isCounterPartWithdrawn = isUnavailableMember(member);
 
-            displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getMemberName();
+            displayName = isCounterPartWithdrawn ? ChatConverter.UNKNOWN_USER_NAME : member.getDisplayName();
             profileImageUrl = isCounterPartWithdrawn
                     ? null
                     : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);

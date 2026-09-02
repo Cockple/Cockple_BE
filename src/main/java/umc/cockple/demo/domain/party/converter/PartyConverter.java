@@ -148,7 +148,7 @@ public class PartyConverter {
         return PartyJoinDTO.Response.builder()
                 .joinRequestId(request.getId())
                 .userId(member.getId())
-                .nickname(member.getNickname())
+                .nickname(member.getDisplayName())
                 .profileImageUrl(imageUrl)
                 .gender(member.getGender().name())
                 .level(member.getLevel().name())
@@ -173,7 +173,7 @@ public class PartyConverter {
                     Member member = mp.getMember();
                     return PartyMemberDTO.MemberDetail.builder()
                             .memberId(member.getId())
-                            .nickname(member.getNickname())
+                            .nickname(member.getDisplayName())
                             .profileImageUrl(getProfileUrl(member.getProfileImg()))
                             .role(mp.getRole().name())
                             .gender(member.getGender().name())
@@ -202,7 +202,7 @@ public class PartyConverter {
     public PartyMemberSuggestionDTO.Response toPartyMemberSuggestionDTO(Member member, String imgUrl) {
         return PartyMemberSuggestionDTO.Response.builder()
                 .userId(member.getId())
-                .nickname(member.getNickname())
+                .nickname(member.getDisplayName())
                 .profileImageUrl(member.getProfileImg() != null ? imgUrl : null)
                 .gender(member.getGender().name())
                 .level(member.getLevel().getKoreanName())

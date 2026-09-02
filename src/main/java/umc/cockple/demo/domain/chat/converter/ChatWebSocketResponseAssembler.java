@@ -26,7 +26,7 @@ public class ChatWebSocketResponseAssembler {
                 .messageType(savedMessage.getType())
                 .images(files)
                 .senderId(sender.getId())
-                .senderName(sender.getMemberName())
+                .senderName(sender.getDisplayName())
                 .senderProfileImageUrl(senderProfileImageUrl)
                 .timestamp(savedMessage.getCreatedAt())
                 .unreadCount(unreadCount)

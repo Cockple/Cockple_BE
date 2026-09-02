@@ -136,7 +136,7 @@ public class ExerciseParticipationCommandService {
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
                 exercise.getId(), member.getId(), exercise.getNowCapacity());
 
-        return new ExerciseCancelResult(member.getMemberName(), exercise.getNowCapacity());
+        return new ExerciseCancelResult(member.getDisplayName(), exercise.getNowCapacity());
     }
 
     public ExerciseCancelResult cancelParticipationByManager(
@@ -195,7 +195,7 @@ public class ExerciseParticipationCommandService {
         memberExerciseRepository.delete(memberExercise);
         publishAttendanceChangedEvent(exercise, participant.getId());
 
-        return new ExerciseCancelResult(participant.getMemberName(), exercise.getNowCapacity());
+        return new ExerciseCancelResult(participant.getDisplayName(), exercise.getNowCapacity());
     }
 
     private void publishAttendanceChangedEvent(Exercise exercise, Long subjectMemberId) {

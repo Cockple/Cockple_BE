@@ -53,7 +53,7 @@ public class ExerciseGuestQueryService {
                 participantPositionCalculator.calculate(allParticipants, exercise.getMaxCapacity());
         Map<Long, ExerciseParticipantPosition> guestPositionById = indexGuestPositions(participantPositions);
 
-        String inviterName = member.getMemberName();
+        String inviterName = member.getDisplayName();
         List<ExerciseMyGuestListResult.GuestInfo> guestInfoList =
                 buildGuestInfoList(myGuests, guestPositionById, inviterName);
 

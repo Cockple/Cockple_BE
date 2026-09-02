@@ -33,9 +33,9 @@ public class ChatSendEventPublisher {
             List<Long> activeSubscribers) {
         String notificationTitle = chatRoom.getType() == ChatRoomType.PARTY
                 ? chatRoom.getParty().getPartyName()
-                : sender.getNickname();
+                : sender.getDisplayName();
         String notificationContent = chatRoom.getType() == ChatRoomType.PARTY
-                ? sender.getNickname() + ": " + savedMessage.getDisplayContent()
+                ? sender.getDisplayName() + ": " + savedMessage.getDisplayContent()
                 : savedMessage.getDisplayContent();
 
         eventPublisher.publishEvent(ChatNotificationEvent.create(

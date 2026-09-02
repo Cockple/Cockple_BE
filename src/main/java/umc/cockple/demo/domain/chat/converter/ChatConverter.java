@@ -120,7 +120,7 @@ public class ChatConverter {
         return members.stream()
                 .map(m -> DirectChatRoomCreateDTO.MemberInfo.builder()
                         .memberId(m.getMember().getId())
-                        .memberName(m.getMember().getMemberName())
+                        .memberName(m.getMember().getDisplayName())
                         .build()
                 ).collect(Collectors.toList());
     }
@@ -154,7 +154,7 @@ public class ChatConverter {
         boolean shouldAnonymizeSender = !isSystemMessage && (isSenderWithdrawn || sender == null);
         String senderName = isSystemMessage
                 ? SYSTEM_USER_NAME
-                : shouldAnonymizeSender ? UNKNOWN_USER_NAME : sender.getMemberName();
+                : shouldAnonymizeSender ? UNKNOWN_USER_NAME : sender.getDisplayName();
         String displayProfileImageUrl = isSystemMessage || shouldAnonymizeSender ? null : senderProfileImageUrl;
 
         return ChatCommonDTO.MessageInfo.builder()
@@ -194,7 +194,7 @@ public class ChatConverter {
         boolean isWithdrawn = member == null || member.isWithdrawn();
         return ChatRoomDetailDTO.MemberInfo.builder()
                 .memberId(isWithdrawn ? null : member.getId())
-                .memberName(isWithdrawn ? UNKNOWN_USER_NAME : member.getMemberName())
+                .memberName(isWithdrawn ? UNKNOWN_USER_NAME : member.getDisplayName())
                 .profileImgUrl(isWithdrawn ? null : memberProfileImgUrl)
                 .build();
     }
