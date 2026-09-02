@@ -44,4 +44,12 @@ public class NotificationMessageGenerator {
     public String generateSubOwnerReleasedMessage(String nickname) {
         return String.format("'%s'님의 부모임장 권한이 해제되었습니다.", nickname);
     }
+
+    public String generateGameStartMessage(String courtName) {
+        return String.format("'%s' 입장해주세요!", courtName);
+    }
+
+    public String generateGameHostAssignedMessage() {
+        return "게임 진행자로 지정되었습니다.";
+    }
 }
