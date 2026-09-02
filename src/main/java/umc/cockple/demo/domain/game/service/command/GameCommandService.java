@@ -130,33 +130,6 @@ public class GameCommandService {
                 gameBoard.getId(), game.getId(), court.getId());
     }
 
-    /**
-     * 게임에 배정된 회원(게스트 제외)에게 게임판 입장 알림을 발송한다.
-     * 수신 대상 회원이 없으면(전원 게스트) 이벤트를 발행하지 않는다.
-     */
-    private void publishGameStarted(Long gameBoardId, Game game, Court court) {
-        List<Long> recipientMemberIds = game.getPlayers().stream()
-                .map(GamePlayer::getGameBoardMember)
-                .map(GameBoardMember::getMember)
-                .filter(java.util.Objects::nonNull)
-                .map(Member::getId)
-                .toList();
-        if (recipientMemberIds.isEmpty()) {
-            return;
-        }
-
-        Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
-        Party party = exercise.getParty();
-        eventPublisher.publishEvent(GameStartedEvent.started(
-                gameBoardId,
-                party.getId(),
-                party.getPartyName(),
-                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
-                court.getCourtName(),
-                recipientMemberIds
-        ));
-    }
 
     /**
      * 게임 완료
@@ -182,10 +155,6 @@ public class GameCommandService {
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
     }
 
-    private void completeInternal(Game game) {
-        game.complete(LocalDateTime.now());
-        game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
-    }
 
     /**
      * 게임 취소/대기 삭제
@@ -262,6 +231,33 @@ public class GameCommandService {
     }
 
     /**
+     * 게임에 배정된 회원(게스트 제외)에게 게임판 입장 알림을 발송
+     */
+    private void publishGameStarted(Long gameBoardId, Game game, Court court) {
+        List<Long> recipientMemberIds = game.getPlayers().stream()
+                .map(GamePlayer::getGameBoardMember)
+                .map(GameBoardMember::getMember)
+                .filter(java.util.Objects::nonNull)
+                .map(Member::getId)
+                .toList();
+        if (recipientMemberIds.isEmpty()) {
+            return;
+        }
+
+        Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(GameStartedEvent.started(
+                gameBoardId,
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                court.getCourtName(),
+                recipientMemberIds
+        ));
+    }
+
+    /**
      * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다
      */
     private void resequenceWaitingQueue(Long gameBoardId) {
@@ -275,5 +271,10 @@ public class GameCommandService {
 
     private void publishMembersChanged(Long gameBoardId, Long memberId) {
         eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersOnly(gameBoardId, memberId));
+    }
+
+    private void completeInternal(Game game) {
+        game.complete(LocalDateTime.now());
+        game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
     }
 }

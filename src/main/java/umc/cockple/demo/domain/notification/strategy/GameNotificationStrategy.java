@@ -22,10 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * 게임(게임판) 도메인 이벤트를 공통 알림 요청으로 변환하는 전략.
- * 알림 클릭 시 게임판(GAME_BOARD) 화면으로 이동하도록 destination을 구성한다.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
