@@ -10,14 +10,19 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
+import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
@@ -46,6 +51,7 @@ public class GameCommandService {
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final ExerciseRepository exerciseRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
     private final ApplicationEventPublisher eventPublisher;
@@ -118,9 +124,38 @@ public class GameCommandService {
         game.start(court, LocalDateTime.now());
         resequenceWaitingQueue(gameBoard.getId());
         publishMembersChanged(gameBoard.getId(), memberId);
+        publishGameStarted(gameBoard.getId(), game, court);
 
         log.info("게임 시작 - gameBoardId: {}, gameId: {}, courtId: {}",
                 gameBoard.getId(), game.getId(), court.getId());
+    }
+
+    /**
+     * 게임에 배정된 회원(게스트 제외)에게 게임판 입장 알림을 발송한다.
+     * 수신 대상 회원이 없으면(전원 게스트) 이벤트를 발행하지 않는다.
+     */
+    private void publishGameStarted(Long gameBoardId, Game game, Court court) {
+        List<Long> recipientMemberIds = game.getPlayers().stream()
+                .map(GamePlayer::getGameBoardMember)
+                .map(GameBoardMember::getMember)
+                .filter(java.util.Objects::nonNull)
+                .map(Member::getId)
+                .toList();
+        if (recipientMemberIds.isEmpty()) {
+            return;
+        }
+
+        Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(GameStartedEvent.started(
+                gameBoardId,
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                court.getCourtName(),
+                recipientMemberIds
+        ));
     }
 
     /**
