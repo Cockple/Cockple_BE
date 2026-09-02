@@ -72,8 +72,9 @@ public class GameCommandService {
         }
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 gameBoard.getId(), ACTIVE_STATUSES);
-        if (availabilityPolicy.hasBlockedMember(
-                List.copyOf(membersById.values()), activeGames, LocalDateTime.now())) {
+
+        if (availabilityPolicy.hasWaitingConflict(
+                List.copyOf(membersById.values()), activeGames)) {
             throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
         }
 

@@ -274,13 +274,13 @@ class GameCommandServiceTest {
         }
 
         @Test
-        @DisplayName("WAITING 또는 10분 미만 PLAYING 선수가 포함되면 UNAVAILABLE_GAME_PLAYER 예외")
+        @DisplayName("이미 대기(WAITING) 게임에 편성된 선수가 포함되면 UNAVAILABLE_GAME_PLAYER 예외")
         void createGame_unavailablePlayer() {
             GameBoardMember member = GameFixture.member(7L, board, "선택 불가", Level.A);
             given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
                     .willReturn(List.of(member));
-            given(availabilityPolicy.hasBlockedMember(any(), any(), any())).willReturn(true);
+            given(availabilityPolicy.hasWaitingConflict(any(), any())).willReturn(true);
 
             assertThatThrownBy(() -> gameCommandService.createGame(
                     MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
