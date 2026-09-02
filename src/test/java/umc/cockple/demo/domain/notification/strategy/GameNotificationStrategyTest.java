@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import umc.cockple.demo.domain.game.events.GameHostAssignedEvent;
 import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.notification.command.NotificationRequest;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
@@ -57,5 +58,31 @@ class GameNotificationStrategyTest {
                 GameStartedEvent.started(1L, 10L, "모임", "image-key", "화이팅코트", List.of(20L)));
 
         assertThat(requests.get(0).content()).isEqualTo("'화이팅코트' 입장해주세요!");
+    }
+
+    @Test
+    @DisplayName("게임 진행자 지정 이벤트를 지원한다")
+    void supportsGameHostAssignedEvent() {
+        boolean supports = strategy.supports(
+                GameHostAssignedEvent.assigned(1L, 10L, "모임", "image-key", 20L));
+
+        assertThat(supports).isTrue();
+    }
+
+    @Test
+    @DisplayName("게임 진행자 지정 알림은 지정된 본인 1명에게 게임판 destination으로 생성된다")
+    void convertsGameHostAssignedNotification() {
+        List<NotificationRequest> requests = strategy.convert(
+                GameHostAssignedEvent.assigned(1L, 10L, "모임", "image-key", 20L));
+
+        assertThat(requests).hasSize(1);
+        NotificationRequest request = requests.get(0);
+        assertThat(request.recipientMemberId()).isEqualTo(20L);
+        assertThat(request.source()).isEqualTo(NotificationSource.GAME);
+        assertThat(request.content()).isEqualTo("게임 진행자로 지정되었습니다.");
+        assertThat(request.destination().resourceType())
+                .isEqualTo(NotificationResourceType.GAME_BOARD);
+        assertThat(request.destination().resourceId()).isEqualTo(1L);
+        assertThat(request.destination().action()).isEqualTo(NotificationAction.VIEW);
     }
 }

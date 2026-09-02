@@ -7,6 +7,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
+import umc.cockple.demo.domain.game.events.GameHostAssignedEvent;
 import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.notification.service.outbox.NotificationOutboxService;
 import umc.cockple.demo.domain.party.events.PartyDeletedEvent;
@@ -69,6 +70,11 @@ public class NotificationOutboxEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void handleGameStarted(GameStartedEvent event) {
+        record(event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void handleGameHostAssigned(GameHostAssignedEvent event) {
         record(event);
     }
 

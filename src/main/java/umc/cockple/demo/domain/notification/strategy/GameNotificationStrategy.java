@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import umc.cockple.demo.domain.game.events.GameHostAssignedEvent;
 import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.notification.command.NotificationRequest;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
@@ -32,7 +33,8 @@ public class GameNotificationStrategy implements NotificationEventStrategy {
 
     @Override
     public boolean supports(Object event) {
-        return event instanceof GameStartedEvent;
+        return event instanceof GameStartedEvent
+                || event instanceof GameHostAssignedEvent;
     }
 
     @Override
@@ -51,6 +53,19 @@ public class GameNotificationStrategy implements NotificationEventStrategy {
                             NotificationOutboxEventType.GAME_STARTED
                     ))
                     .toList();
+        }
+
+        if (event instanceof GameHostAssignedEvent hostEvent) {
+            return List.of(request(
+                    hostEvent.recipientMemberId(),
+                    hostEvent.partyId(),
+                    hostEvent.partyName(),
+                    hostEvent.imageKey(),
+                    notificationMessageGenerator.generateGameHostAssignedMessage(),
+                    hostEvent.gameBoardId(),
+                    hostEvent.eventId(),
+                    NotificationOutboxEventType.GAME_HOST_ASSIGNED
+            ));
         }
 
         throw new IllegalArgumentException("지원하지 않는 게임 이벤트입니다: " + event.getClass().getName());
