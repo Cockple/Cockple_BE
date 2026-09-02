@@ -13,6 +13,9 @@ public class GameBoardDTO {
             List<CourtInfo> courts,
             List<WaitingInfo> waitings
     ) {
+        public Response forBroadcast() {
+            return new Response(false, courtCount, courts, waitings);
+        }
     }
 
     public record CourtInfo(

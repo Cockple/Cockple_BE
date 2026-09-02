@@ -68,10 +68,12 @@ public class GameBoardMembersChangedEventListener {
             return;
         }
 
+        // isGameHost는 개인화 값이므로 브로드캐스트 본문에서는 항상 false
         broadcastSafely(
                 event,
                 GameRealtimeProtocol.TYPE_BOARD_UPDATED,
-                () -> gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), boardDto, null));
+                () -> gameBoardBroadcaster.broadcastBoardUpdate(
+                        event.gameBoardId(), boardDto.forBroadcast(), null));
     }
 
     private void broadcastSafely(
