@@ -24,12 +24,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 게임 도메인 이벤트가 실제 Spring 컨텍스트에서 BEFORE_COMMIT 리스너 -> GameNotificationStrategy ->
  * NotificationOutbox 적재까지 이어지는지 검증하는 흐름 통합 테스트.
  * (전략 변환 자체는 GameNotificationStrategyTest 유닛 테스트에서 이미 검증한다)
+ *
+ * <p>전체 스위트 실행 시 다른 통합 테스트가 남긴 outbox 행과 섞이므로,
+ * 전역 findAll()이 아니라 이 테스트가 만든 행(고유한 resourceId + eventType)만 필터링해 검증한다.
  */
 @DisplayName("게임판 알림 outbox 적재 흐름 (BEFORE_COMMIT)")
 class GameNotificationOutboxFlowTest extends IntegrationTestBase {
 
-    private static final Long GAME_BOARD_ID = 4100L;
-    private static final Long PARTY_ID = 900L;
+    // 다른 테스트가 만든 게임판/모임 id와 겹치지 않도록 실제로 생성되지 않는 큰 값을 사용한다.
+    private static final Long GAME_BOARD_ID = 999_100L;
+    private static final Long PARTY_ID = 999_900L;
 
     @Autowired private ApplicationEventPublisher eventPublisher;
     @Autowired private TransactionTemplate transactionTemplate;
@@ -37,7 +41,11 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
 
     @AfterEach
     void tearDown() {
-        notificationOutboxRepository.deleteAll();
+        // 다른 통합 테스트의 outbox 행은 건드리지 않고, 이 테스트가 만든 행만 정리한다.
+        List<NotificationOutbox> mine = notificationOutboxRepository.findAll().stream()
+                .filter(outbox -> GAME_BOARD_ID.equals(outbox.getResourceId()))
+                .toList();
+        notificationOutboxRepository.deleteAll(mine);
     }
 
     @Test
@@ -48,10 +56,9 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
                         GAME_BOARD_ID, PARTY_ID, "우리모임", "img-key", "화이팅코트",
                         List.of(11L, 22L))));
 
-        List<NotificationOutbox> outboxes = notificationOutboxRepository.findAll();
+        List<NotificationOutbox> outboxes = findMine(NotificationOutboxEventType.GAME_STARTED);
         assertThat(outboxes).hasSize(2);
         assertThat(outboxes).allSatisfy(outbox -> {
-            assertThat(outbox.getEventType()).isEqualTo(NotificationOutboxEventType.GAME_STARTED);
             assertThat(outbox.getSource()).isEqualTo(NotificationSource.GAME);
             assertThat(outbox.getResourceType()).isEqualTo(NotificationResourceType.GAME_BOARD);
             assertThat(outbox.getResourceId()).isEqualTo(GAME_BOARD_ID);
@@ -71,10 +78,9 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
                 eventPublisher.publishEvent(GameHostAssignedEvent.assigned(
                         GAME_BOARD_ID, PARTY_ID, "우리모임", "img-key", 33L)));
 
-        List<NotificationOutbox> outboxes = notificationOutboxRepository.findAll();
+        List<NotificationOutbox> outboxes = findMine(NotificationOutboxEventType.GAME_HOST_ASSIGNED);
         assertThat(outboxes).hasSize(1);
         NotificationOutbox outbox = outboxes.get(0);
-        assertThat(outbox.getEventType()).isEqualTo(NotificationOutboxEventType.GAME_HOST_ASSIGNED);
         assertThat(outbox.getSource()).isEqualTo(NotificationSource.GAME);
         assertThat(outbox.getRecipientMemberId()).isEqualTo(33L);
         assertThat(outbox.getResourceType()).isEqualTo(NotificationResourceType.GAME_BOARD);
@@ -92,6 +98,13 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
             status.setRollbackOnly();
         });
 
-        assertThat(notificationOutboxRepository.findAll()).isEmpty();
+        assertThat(findMine(NotificationOutboxEventType.GAME_STARTED)).isEmpty();
+    }
+
+    private List<NotificationOutbox> findMine(NotificationOutboxEventType eventType) {
+        return notificationOutboxRepository.findAll().stream()
+                .filter(outbox -> eventType == outbox.getEventType())
+                .filter(outbox -> GAME_BOARD_ID.equals(outbox.getResourceId()))
+                .toList();
     }
 }
