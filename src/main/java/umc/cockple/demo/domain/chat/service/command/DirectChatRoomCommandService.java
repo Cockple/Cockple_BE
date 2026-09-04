@@ -44,18 +44,18 @@ public class DirectChatRoomCommandService {
         if (existingRoom.isPresent()) {
             List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(existingRoom.get().getId());
             log.info("===이미 존재하는 채팅방===");
-            return chatConverter.toDirectChatRoomCreateDTO(existingRoom.get(), members, target.getMemberName());
+            return chatConverter.toDirectChatRoomCreateDTO(existingRoom.get(), members, target.getDisplayName());
         }
 
         ChatRoom newRoom = ChatRoom.createDirectChatRoom();
         chatRoomRepository.save(newRoom);
 
-        ChatRoomMember member1 = ChatRoomMember.createJoined(newRoom, me, target.getMemberName());
-        ChatRoomMember member2 = ChatRoomMember.createPending(newRoom, target, me.getMemberName());
+        ChatRoomMember member1 = ChatRoomMember.createJoined(newRoom, me, target.getDisplayName());
+        ChatRoomMember member2 = ChatRoomMember.createPending(newRoom, target, me.getDisplayName());
         chatRoomMemberRepository.saveAll(List.of(member1, member2));
 
         log.info("[개인 채팅방 생성 완료] chatRoomId: {}, sender: {}, receiver: {}", newRoom.getId(), memberId, targetMemberId);
-        return chatConverter.toDirectChatRoomCreateDTO(newRoom, List.of(member1, member2), target.getMemberName());
+        return chatConverter.toDirectChatRoomCreateDTO(newRoom, List.of(member1, member2), target.getDisplayName());
     }
 
 }

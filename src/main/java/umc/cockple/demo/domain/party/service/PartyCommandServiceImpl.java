@@ -209,7 +209,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                         publishRoleChangedEvent(
                                 party,
                                 PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED,
-                                mp.getMember().getNickname()
+                                mp.getMember().getDisplayName()
                         );
                     });
         }
@@ -220,7 +220,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         PartyRoleChangedEvent.RoleChangeAction roleChangeAction = (newRole == Role.PARTY_SUBMANAGER)
                 ? PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED
                 : PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED;
-        publishRoleChangedEvent(party, roleChangeAction, targetMember.getNickname());
+        publishRoleChangedEvent(party, roleChangeAction, targetMember.getDisplayName());
 
         log.info("멤버 역할 변경 완료 - partyId: {}, targetMemberId: {}, newRole: {}", partyId, targetMemberId, newRole);
     }
@@ -326,7 +326,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
                     invitation.getId(),
                     invitation.getParty().getId(),
                     invitation.getInviter().getId(),
-                    invitee.getNickname(),
+                    invitee.getDisplayName(),
                     invitation.getParty().getPartyName(),
                     invitation.getParty().getPartyImg() != null
                             ? invitation.getParty().getPartyImg().getImgKey() : null

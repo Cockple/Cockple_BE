@@ -175,6 +175,13 @@ public class Member extends BaseEntity {
     }
 
     /**
+     * 화면에 노출할 표시 이름
+     */
+    public String getDisplayName() {
+        return memberName != null ? memberName : nickname;
+    }
+
+    /**
      * 온보딩(상세정보 입력) 완료 여부.
      */
     public boolean isProfileCompleted() {

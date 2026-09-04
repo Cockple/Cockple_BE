@@ -94,7 +94,7 @@ public class ExerciseParticipantSnapshotAssembler {
         return new ExerciseParticipantSnapshot(
                 member.getId(),
                 imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey),
-                member.getMemberName(),
+                member.getDisplayName(),
                 member.getGender(),
                 member.getLevel(),
                 memberExercise.getExerciseMemberShipStatus(),

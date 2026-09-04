@@ -27,7 +27,7 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
     }
 
     @Query("""
-            SELECT new map(m.id as id, m.memberName as name) FROM Member m 
+            SELECT new map(m.id as id, COALESCE(m.memberName, m.nickname) as name) FROM Member m
             WHERE m.id IN :memberIds
             """)
     List<Map<String, Object>> findMemberNameMapsByIds(@Param("memberIds") Set<Long> memberIds);

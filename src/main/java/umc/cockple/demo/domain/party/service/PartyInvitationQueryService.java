@@ -33,7 +33,7 @@ public class PartyInvitationQueryService {
                 .partyId(invitation.getParty().getId())
                 .partyName(invitation.getParty().getPartyName())
                 .inviterId(invitation.getInviter().getId())
-                .inviterNickname(invitation.getInviter().getNickname())
+                .inviterNickname(invitation.getInviter().getDisplayName())
                 .status(invitation.getStatus())
                 .createdAt(invitation.getCreatedAt())
                 .build();
