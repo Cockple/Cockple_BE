@@ -219,7 +219,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
      * 자신의 구독 응답으로 받은 값을 유지하도록 한다.
      */
     private GameBoardDTO.Response toBroadcastBoard(GameBoardDTO.Response board) {
-        return new GameBoardDTO.Response(false, board.courtCount(), board.courts(), board.waitings());
+        return board.forBroadcast();
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {

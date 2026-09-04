@@ -41,6 +41,11 @@ public class Game extends BaseEntity {
 
     private LocalDateTime completedAt; // 게임 완료 시각
 
+    // 자동 완료 스케줄러와 사용자 요청(완료/이동/삭제)이 같은 게임을 동시에 바꾸는 것을 막는 낙관적 락.
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<GamePlayer> players = new ArrayList<>();

@@ -27,12 +27,23 @@ public class GameBoardMemberAvailabilityPolicy {
                 .toList();
     }
 
-    public boolean hasBlockedMember(
+    /**
+     * 수동 게임 편성 정책
+     */
+    public boolean hasWaitingConflict(
             List<GameBoardMember> members,
-            List<Game> activeGames,
-            LocalDateTime now) {
-        Set<Long> blockedMemberIds = blockedMemberIds(activeGames, now);
-        return members.stream().anyMatch(member -> blockedMemberIds.contains(member.getId()));
+            List<Game> activeGames) {
+        Set<Long> waitingMemberIds = new HashSet<>();
+        for (Game game : activeGames) {
+            if (game.getStatus() != GameStatus.WAITING) {
+                continue;
+            }
+            game.getPlayers().stream()
+                    .map(GamePlayer::getGameBoardMember)
+                    .map(GameBoardMember::getId)
+                    .forEach(waitingMemberIds::add);
+        }
+        return members.stream().anyMatch(member -> waitingMemberIds.contains(member.getId()));
     }
 
     private Set<Long> blockedMemberIds(List<Game> activeGames, LocalDateTime now) {

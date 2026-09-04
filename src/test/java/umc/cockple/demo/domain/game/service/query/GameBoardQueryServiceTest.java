@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
@@ -17,6 +18,8 @@ import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -24,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -36,6 +40,7 @@ class GameBoardQueryServiceTest {
     @Mock private CourtRepository courtRepository;
     @Mock private GameRepository gameRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
+    @Mock private ImageUrlResolver imageUrlResolver;
 
     @InjectMocks private GameBoardQueryService gameBoardQueryService;
 
@@ -105,6 +110,42 @@ class GameBoardQueryServiceTest {
         assertThat(players.get(0).gameBoardMemberId()).isEqualTo(7L);
         assertThat(players.get(0).name()).isEqualTo("선수A");
         assertThat(players.get(0).level()).isEqualTo(Level.A);
+        // 회원 계정이 없는(게스트성) 명단 멤버는 프로필 이미지가 null
+        assertThat(players.get(0).profileImageUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("회원 계정이 연결된 플레이어는 프로필 이미지 URL을 담아 반환한다")
+    void getBoard_resolvesProfileImageForMemberPlayer() {
+        // given
+        Court court1 = GameFixture.court(10L, board, 1, "1번");
+        Member account = Member.builder().id(200L).build();
+        GameBoardMember withAccount = GameBoardMember.builder()
+                .id(9L)
+                .gameBoard(board)
+                .member(account)
+                .name("회원선수")
+                .gender(Gender.MALE)
+                .level(Level.A)
+                .shuttlecockSubmitted(false)
+                .participating(true)
+                .gameCount(0)
+                .build();
+        Game playing = GameFixture.playingGame(51L, board, court1, LocalDateTime.now(),
+                GameFixture.player(withAccount, 0));
+
+        given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+        given(courtRepository.findByGameBoardIdOrderByCourtNoAsc(BOARD_ID)).willReturn(List.of(court1));
+        given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
+                .willReturn(List.of(playing));
+        given(imageUrlResolver.resolve(any(), any())).willReturn("https://img/p.jpg");
+
+        // when
+        GameBoardResult result = gameBoardQueryService.getBoard(MEMBER_ID, BOARD_ID);
+
+        // then
+        GameBoardResult.PlayerView player = result.courts().get(0).game().players().get(0);
+        assertThat(player.profileImageUrl()).isEqualTo("https://img/p.jpg");
     }
 
     @Test
