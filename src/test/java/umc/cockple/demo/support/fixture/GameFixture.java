@@ -6,6 +6,7 @@ import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 
@@ -35,6 +36,21 @@ public class GameFixture {
         return GameBoardMember.builder()
                 .id(id)
                 .gameBoard(gameBoard)
+                .name(name)
+                .gender(Gender.MALE)
+                .level(level)
+                .shuttlecockSubmitted(false)
+                .participating(true)
+                .gameCount(0)
+                .build();
+    }
+
+    public static GameBoardMember memberWithAccount(
+            Long id, GameBoard gameBoard, Member account, String name, Level level) {
+        return GameBoardMember.builder()
+                .id(id)
+                .gameBoard(gameBoard)
+                .member(account)
                 .name(name)
                 .gender(Gender.MALE)
                 .level(level)
