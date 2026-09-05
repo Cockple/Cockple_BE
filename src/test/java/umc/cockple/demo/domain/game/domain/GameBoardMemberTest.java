@@ -91,6 +91,18 @@ class GameBoardMemberTest {
     }
 
     @Test
+    @DisplayName("셔틀콕 제출 상태를 변경하며 같은 값 요청은 멱등적으로 처리한다")
+    void changeShuttlecockSubmission_updatesIdempotently() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.TWENTIES);
+
+        gameBoardMember.changeShuttlecockSubmission(true);
+        gameBoardMember.changeShuttlecockSubmission(true);
+
+        assertThat(gameBoardMember.getShuttlecockSubmitted()).isTrue();
+    }
+
+    @Test
     @DisplayName("회원과 게스트 원본을 동시에 연결할 수 없다")
     void validateSourceReference_rejectsMemberAndGuestTogether() {
         GameBoardMember gameBoardMember = GameBoardMember.builder()

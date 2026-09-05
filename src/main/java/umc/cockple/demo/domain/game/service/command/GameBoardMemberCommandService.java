@@ -13,6 +13,7 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberShuttlecockSubmissionCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
@@ -77,5 +78,21 @@ public class GameBoardMemberCommandService {
 
         gameBoardMember.changeParticipation(command.participating());
         eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(command.gameBoardId(), memberId));
+    }
+
+    public void changeShuttlecockSubmission(
+            Long memberId, GameBoardMemberShuttlecockSubmissionCommand command) {
+        gameBoardReader.readForUpdate(command.gameBoardId());
+        gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
+        GameBoardMember gameBoardMember = gameBoardMemberReader.read(
+                command.gameBoardId(), command.gameBoardMemberId());
+
+        if (gameBoardMember.getShuttlecockSubmitted() == command.shuttlecockSubmitted()) {
+            return;
+        }
+
+        gameBoardMember.changeShuttlecockSubmission(command.shuttlecockSubmitted());
+        eventPublisher.publishEvent(
+                GameBoardMembersChangedEvent.membersOnly(command.gameBoardId(), memberId));
     }
 }
