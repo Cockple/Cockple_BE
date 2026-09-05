@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberShuttlecockSubmissionCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardMemberReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
@@ -200,5 +201,59 @@ class GameBoardMemberCommandServiceTest {
         assertThat(gameBoardMember.getParticipating()).isTrue();
         then(gameReader).shouldHaveNoInteractions();
         then(eventPublisher).should(never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("게임 진행자가 셔틀콕 제출 상태를 변경하고 명단 변경 이벤트를 발행한다")
+    void changeShuttlecockSubmission_updatesStateAndPublishesMembersEvent() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberShuttlecockSubmissionCommand submissionCommand =
+                new GameBoardMemberShuttlecockSubmissionCommand(
+                        GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, true);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+
+        gameBoardMemberCommandService.changeShuttlecockSubmission(MEMBER_ID, submissionCommand);
+
+        then(gameBoardAccessValidator).should().validateGameHost(GAME_BOARD_ID, MEMBER_ID);
+        assertThat(gameBoardMember.getShuttlecockSubmitted()).isTrue();
+        then(eventPublisher).should()
+                .publishEvent(GameBoardMembersChangedEvent.membersOnly(GAME_BOARD_ID, MEMBER_ID));
+    }
+
+    @Test
+    @DisplayName("현재 값과 같은 셔틀콕 제출 상태 요청은 이벤트 없이 성공한다")
+    void changeShuttlecockSubmission_sameValueIsIdempotent() {
+        GameBoardMember gameBoardMember = GameBoardMember.create(
+                "선수", Gender.MALE, Level.D, AgeGroup.THIRTIES);
+        GameBoardMemberShuttlecockSubmissionCommand submissionCommand =
+                new GameBoardMemberShuttlecockSubmissionCommand(
+                        GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, false);
+        given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
+                .willReturn(gameBoardMember);
+
+        gameBoardMemberCommandService.changeShuttlecockSubmission(MEMBER_ID, submissionCommand);
+
+        assertThat(gameBoardMember.getShuttlecockSubmitted()).isFalse();
+        then(eventPublisher).should(never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("게임 진행자가 아니면 셔틀콕 제출 상태 변경을 위해 명단을 조회하지 않는다")
+    void changeShuttlecockSubmission_deniesNonGameHost() {
+        GameBoardMemberShuttlecockSubmissionCommand submissionCommand =
+                new GameBoardMemberShuttlecockSubmissionCommand(
+                        GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, true);
+        willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
+                .given(gameBoardAccessValidator).validateGameHost(GAME_BOARD_ID, MEMBER_ID);
+
+        assertThatThrownBy(() -> gameBoardMemberCommandService.changeShuttlecockSubmission(
+                MEMBER_ID, submissionCommand))
+                .isInstanceOfSatisfying(GameException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED));
+
+        then(gameBoardMemberReader).shouldHaveNoInteractions();
+        then(eventPublisher).shouldHaveNoInteractions();
     }
 }
