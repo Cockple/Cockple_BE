@@ -43,6 +43,12 @@ public class GameBoardMemberDTO {
     ) {
     }
 
+    public record ShuttlecockSubmissionRequest(
+            @NotNull(message = "셔틀콕 제출 상태는 필수입니다.")
+            Boolean shuttlecockSubmitted
+    ) {
+    }
+
     public record Response(
             int totalCount,
             List<MemberInfo> gameBoardMembers

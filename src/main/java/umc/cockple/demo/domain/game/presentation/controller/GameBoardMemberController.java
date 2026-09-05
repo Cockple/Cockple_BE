@@ -9,6 +9,7 @@ import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMemberMapper;
 import umc.cockple.demo.domain.game.service.command.GameBoardMemberCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberShuttlecockSubmissionCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.query.GameBoardMemberQueryService;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
@@ -37,6 +38,21 @@ public class GameBoardMemberController implements GameBoardMemberApi {
                 gameBoardId, gameBoardMemberId, request);
 
         gameBoardMemberCommandService.changeParticipation(memberId, command);
+
+        return BaseResponse.of(CommonSuccessCode.OK);
+    }
+
+    @Override
+    public ResponseEntity<BaseResponse<Void>> changeShuttlecockSubmission(
+            Long gameBoardId,
+            Long gameBoardMemberId,
+            GameBoardMemberDTO.ShuttlecockSubmissionRequest request) {
+        Long memberId = SecurityUtil.getCurrentMemberId();
+        GameBoardMemberShuttlecockSubmissionCommand command =
+                gameBoardMemberMapper.toShuttlecockSubmissionCommand(
+                        gameBoardId, gameBoardMemberId, request);
+
+        gameBoardMemberCommandService.changeShuttlecockSubmission(memberId, command);
 
         return BaseResponse.of(CommonSuccessCode.OK);
     }

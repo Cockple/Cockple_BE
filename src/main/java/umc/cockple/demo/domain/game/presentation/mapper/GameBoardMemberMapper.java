@@ -5,6 +5,7 @@ import umc.cockple.demo.domain.game.enums.AgeGroup;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardMemberDTO;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberParticipationCommand;
+import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberShuttlecockSubmissionCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameBoardMemberUpdateCommand;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
@@ -55,6 +56,14 @@ public class GameBoardMemberMapper {
             GameBoardMemberDTO.ParticipationRequest request) {
         return new GameBoardMemberParticipationCommand(
                 gameBoardId, gameBoardMemberId, request.participating());
+    }
+
+    public GameBoardMemberShuttlecockSubmissionCommand toShuttlecockSubmissionCommand(
+            Long gameBoardId,
+            Long gameBoardMemberId,
+            GameBoardMemberDTO.ShuttlecockSubmissionRequest request) {
+        return new GameBoardMemberShuttlecockSubmissionCommand(
+                gameBoardId, gameBoardMemberId, request.shuttlecockSubmitted());
     }
 
     public GameBoardMemberSearchQuery toSearchQuery(
