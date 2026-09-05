@@ -3,9 +3,11 @@ package umc.cockple.demo.domain.game.service.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
+import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.CourtStatus;
 import umc.cockple.demo.domain.game.enums.GameStatus;
@@ -14,6 +16,8 @@ import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.domain.ProfileImg;
 
 import java.util.Comparator;
 import java.util.List;
@@ -32,6 +36,7 @@ public class GameBoardQueryService {
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
+    private final ImageUrlResolver imageUrlResolver;
 
     /**
      * 코트 보드 조회. 조회 자체는 인증된 회원이면 누구나 가능
@@ -85,11 +90,22 @@ public class GameBoardQueryService {
     private List<GameBoardResult.PlayerView> toPlayerViews(Game game) {
         return game.getPlayers().stream()
                 .sorted(Comparator.comparingInt(GamePlayer::getPlayerOrder))
-                .map(player -> new GameBoardResult.PlayerView(
-                        player.getGameBoardMember().getId(),
-                        player.getGameBoardMember().getName(),
-                        player.getGameBoardMember().getLevel(),
-                        player.getPlayerOrder()))
+                .map(player -> {
+                    GameBoardMember gameBoardMember = player.getGameBoardMember();
+                    return new GameBoardResult.PlayerView(
+                            gameBoardMember.getId(),
+                            gameBoardMember.getName(),
+                            resolveProfileImageUrl(gameBoardMember),
+                            gameBoardMember.getLevel(),
+                            player.getPlayerOrder());
+                })
                 .toList();
+    }
+
+    private String resolveProfileImageUrl(GameBoardMember gameBoardMember) {
+        Member member = gameBoardMember.getMember();
+        return member == null
+                ? null
+                : imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey);
     }
 }

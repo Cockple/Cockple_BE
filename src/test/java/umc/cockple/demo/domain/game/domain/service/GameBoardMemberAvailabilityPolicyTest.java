@@ -83,6 +83,25 @@ class GameBoardMemberAvailabilityPolicyTest {
                 List.of(member), List.of(oldPlaying, waiting), now);
 
         assertThat(result).isEmpty();
-        assertThat(policy.hasBlockedMember(List.of(member), List.of(oldPlaying, waiting), now)).isTrue();
+        assertThat(policy.hasWaitingConflict(List.of(member), List.of(oldPlaying, waiting))).isTrue();
+    }
+
+    @Test
+    @DisplayName("수동 편성: 이미 대기(WAITING) 게임에 편성된 회원은 hasWaitingConflict가 true")
+    void hasWaitingConflict_blocksWaitingMember() {
+        GameBoardMember member = GameFixture.member(1L, board, "대기중", Level.A);
+        Game waiting = GameFixture.waitingGame(1L, board, 1, GameFixture.player(member, 0));
+
+        assertThat(policy.hasWaitingConflict(List.of(member), List.of(waiting))).isTrue();
+    }
+
+    @Test
+    @DisplayName("수동 편성: 진행 중(PLAYING)이기만 한 회원은 쿨다운과 무관하게 hasWaitingConflict가 false")
+    void hasWaitingConflict_ignoresPlayingMembers() {
+        GameBoardMember recent = GameFixture.member(1L, board, "방금진행", Level.A);
+        Game recentPlaying = GameFixture.playingGame(
+                1L, board, null, now.minusMinutes(1), GameFixture.player(recent, 0));
+
+        assertThat(policy.hasWaitingConflict(List.of(recent), List.of(recentPlaying))).isFalse();
     }
 }

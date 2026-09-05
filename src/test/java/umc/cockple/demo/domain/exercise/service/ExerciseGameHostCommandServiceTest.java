@@ -5,8 +5,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
@@ -17,6 +19,7 @@ import umc.cockple.demo.domain.exercise.service.command.ExerciseGameHostCommandS
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGameHostChangeCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGameHostChangeResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.game.events.GameHostAssignedEvent;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
@@ -50,6 +53,7 @@ class ExerciseGameHostCommandServiceTest {
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private Member manager;
     private Member subManager;
@@ -64,7 +68,8 @@ class ExerciseGameHostCommandServiceTest {
         exerciseGameHostCommandService = new ExerciseGameHostCommandService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
-                memberPartyLookupService
+                memberPartyLookupService,
+                eventPublisher
         );
 
         manager = member(1L, "모임장", Gender.MALE, Level.A);
@@ -98,6 +103,49 @@ class ExerciseGameHostCommandServiceTest {
             assertThat(exercise.getGameHostId()).isEqualTo(normalMember.getId());
             assertThat(result.exerciseId()).isEqualTo(exercise.getId());
             assertThat(result.participantId()).isEqualTo(normalMember.getId());
+        }
+
+        @Test
+        @DisplayName("게임 진행자 지정에 성공하면 지정된 본인에게 알림 이벤트를 발행한다")
+        void publishesGameHostAssignedEventToNewHost() {
+            ReflectionTestUtils.setField(exercise.getGameBoard(), "id", 55L);
+            given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.of(activeMembership(normalMember)));
+
+            exerciseGameHostCommandService.changeGameHost(
+                    exercise.getId(),
+                    manager.getId(),
+                    new ExerciseGameHostChangeCommand(normalMember.getId()));
+
+            ArgumentCaptor<GameHostAssignedEvent> captor =
+                    ArgumentCaptor.forClass(GameHostAssignedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            GameHostAssignedEvent event = captor.getValue();
+            assertThat(event.recipientMemberId()).isEqualTo(normalMember.getId());
+            assertThat(event.gameBoardId()).isEqualTo(55L);
+            assertThat(event.partyId()).isEqualTo(party.getId());
+            assertThat(event.partyName()).isEqualTo("테스트 모임");
+        }
+
+        @Test
+        @DisplayName("게임 진행자 변경이 실패하면 알림 이벤트를 발행하지 않는다")
+        void doesNotPublishWhenChangeFails() {
+            given(exerciseRepository.findById(exercise.getId())).willReturn(Optional.of(exercise));
+            givenManagementPermission(manager);
+            given(memberPartyRepository.findByPartyIdAndMemberIdAndStatusForUpdate(
+                    party.getId(), normalMember.getId(), MemberPartyStatus.ACTIVE))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> exerciseGameHostCommandService.changeGameHost(
+                    exercise.getId(),
+                    manager.getId(),
+                    new ExerciseGameHostChangeCommand(normalMember.getId())))
+                    .isInstanceOf(ExerciseException.class);
+
+            verify(eventPublisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
         }
 
         @Test

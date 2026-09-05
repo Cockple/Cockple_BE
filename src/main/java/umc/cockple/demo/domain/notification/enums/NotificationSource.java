@@ -6,5 +6,6 @@ package umc.cockple.demo.domain.notification.enums;
 public enum NotificationSource {
     PARTY,
     EXERCISE,
-    CHAT
+    CHAT,
+    GAME
 }

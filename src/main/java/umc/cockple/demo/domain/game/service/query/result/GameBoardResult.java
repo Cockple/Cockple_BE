@@ -6,9 +6,6 @@ import umc.cockple.demo.global.enums.Level;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 코트 보드 조회(#2) 내부 result 모델. (명단 제외한 코트/대기열)
- */
 public record GameBoardResult(
         boolean isGameHost,
         int courtCount,
@@ -20,7 +17,7 @@ public record GameBoardResult(
             int courtNo,
             String courtName,
             CourtStatus status,
-            GameView game // EMPTY 이면 null
+            GameView game
     ) {
     }
 
@@ -41,6 +38,7 @@ public record GameBoardResult(
     public record PlayerView(
             Long gameBoardMemberId,
             String name,
+            String profileImageUrl,
             Level level,
             int playerOrder
     ) {

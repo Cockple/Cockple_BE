@@ -4,5 +4,6 @@ public enum NotificationResourceType {
     PARTY,
     PARTY_INVITATION,
     EXERCISE,
-    CHAT_ROOM
+    CHAT_ROOM,
+    GAME_BOARD
 }

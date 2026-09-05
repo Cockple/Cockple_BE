@@ -42,6 +42,7 @@ public class GameBoardMapper {
         return new GameBoardDTO.PlayerInfo(
                 player.gameBoardMemberId(),
                 player.name(),
+                player.profileImageUrl(),
                 player.level().getKoreanName(),
                 player.playerOrder());
     }

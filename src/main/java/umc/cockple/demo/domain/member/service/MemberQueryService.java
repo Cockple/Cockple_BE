@@ -133,7 +133,7 @@ public class MemberQueryService {
 
         return MemberConnectionInfo.builder()
                 .memberId(memberId)
-                .memberName(member.getMemberName())
+                .memberName(member.getDisplayName())
                 .build();
     }
 

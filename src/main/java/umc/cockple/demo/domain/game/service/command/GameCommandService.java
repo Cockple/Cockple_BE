@@ -10,14 +10,19 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
+import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
@@ -46,6 +51,7 @@ public class GameCommandService {
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
+    private final ExerciseRepository exerciseRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
     private final ApplicationEventPublisher eventPublisher;
@@ -72,8 +78,9 @@ public class GameCommandService {
         }
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 gameBoard.getId(), ACTIVE_STATUSES);
-        if (availabilityPolicy.hasBlockedMember(
-                List.copyOf(membersById.values()), activeGames, LocalDateTime.now())) {
+
+        if (availabilityPolicy.hasWaitingConflict(
+                List.copyOf(membersById.values()), activeGames)) {
             throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
         }
 
@@ -118,10 +125,12 @@ public class GameCommandService {
         game.start(court, LocalDateTime.now());
         resequenceWaitingQueue(gameBoard.getId());
         publishMembersChanged(gameBoard.getId(), memberId);
+        publishGameStarted(gameBoard.getId(), game, court);
 
         log.info("게임 시작 - gameBoardId: {}, gameId: {}, courtId: {}",
                 gameBoard.getId(), game.getId(), court.getId());
     }
+
 
     /**
      * 게임 완료
@@ -147,10 +156,6 @@ public class GameCommandService {
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
     }
 
-    private void completeInternal(Game game) {
-        game.complete(LocalDateTime.now());
-        game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
-    }
 
     /**
      * 게임 취소/대기 삭제
@@ -227,6 +232,33 @@ public class GameCommandService {
     }
 
     /**
+     * 게임에 배정된 회원(게스트 제외)에게 게임판 입장 알림을 발송
+     */
+    private void publishGameStarted(Long gameBoardId, Game game, Court court) {
+        List<Long> recipientMemberIds = game.getPlayers().stream()
+                .map(GamePlayer::getGameBoardMember)
+                .map(GameBoardMember::getMember)
+                .filter(java.util.Objects::nonNull)
+                .map(Member::getId)
+                .toList();
+        if (recipientMemberIds.isEmpty()) {
+            return;
+        }
+
+        Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(GameStartedEvent.started(
+                gameBoardId,
+                party.getId(),
+                party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                court.getCourtName(),
+                recipientMemberIds
+        ));
+    }
+
+    /**
      * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다
      */
     private void resequenceWaitingQueue(Long gameBoardId) {
@@ -240,5 +272,10 @@ public class GameCommandService {
 
     private void publishMembersChanged(Long gameBoardId, Long memberId) {
         eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersOnly(gameBoardId, memberId));
+    }
+
+    private void completeInternal(Game game) {
+        game.complete(LocalDateTime.now());
+        game.getPlayers().forEach(player -> player.getGameBoardMember().increaseGameCount());
     }
 }

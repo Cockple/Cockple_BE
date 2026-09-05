@@ -91,6 +91,34 @@ class MemberTest {
     }
 
     @Nested
+    @DisplayName("getDisplayName")
+    class GetDisplayName {
+
+        @Test
+        @DisplayName("유저가_입력한_이름이_있으면_memberName을_반환한다")
+        void memberName이_있으면_memberName() {
+            Member member = Member.builder()
+                    .memberName("강와나")
+                    .nickname("kakao_nick")
+                    .socialId(1001L)
+                    .build();
+
+            assertThat(member.getDisplayName()).isEqualTo("강와나");
+        }
+
+        @Test
+        @DisplayName("온보딩_전이라_memberName이_없으면_nickname으로_대체한다")
+        void memberName이_없으면_nickname_폴백() {
+            Member member = Member.builder()
+                    .nickname("kakao_nick")
+                    .socialId(1001L)
+                    .build();
+
+            assertThat(member.getDisplayName()).isEqualTo("kakao_nick");
+        }
+    }
+
+    @Nested
     @DisplayName("rejoin")
     class Rejoin {
 

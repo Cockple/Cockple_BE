@@ -81,7 +81,7 @@ public class ExerciseGameHostQueryService {
                 imageUrlResolver.resolve(member.getProfileImg(), ProfileImg::getImgKey),
                 memberParty.getRole(),
                 member.getId().equals(gameHostId),
-                member.getMemberName(),
+                member.getDisplayName(),
                 member.getGender(),
                 member.getLevel(),
                 lastExerciseDate

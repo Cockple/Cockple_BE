@@ -81,7 +81,7 @@ public class GameBoardMember extends BaseEntity {
     public static GameBoardMember createFromMember(Member member, LocalDate exerciseDate) {
         return GameBoardMember.builder()
                 .member(member)
-                .name(member.getMemberName())
+                .name(member.getDisplayName())
                 .gender(member.getGender())
                 .level(member.getLevel())
                 .ageGroup(AgeGroup.fromBirthDate(member.getBirth(), exerciseDate))

@@ -13,6 +13,9 @@ public class GameBoardDTO {
             List<CourtInfo> courts,
             List<WaitingInfo> waitings
     ) {
+        public Response forBroadcast() {
+            return new Response(false, courtCount, courts, waitings);
+        }
     }
 
     public record CourtInfo(
@@ -41,6 +44,7 @@ public class GameBoardDTO {
     public record PlayerInfo(
             Long gameBoardMemberId,
             String name,
+            String profileImageUrl, // 게스트 등 회원 계정이 없으면 null
             String level, // 급수 한글 표기 (예: "준자강", "A조")
             int playerOrder
     ) {

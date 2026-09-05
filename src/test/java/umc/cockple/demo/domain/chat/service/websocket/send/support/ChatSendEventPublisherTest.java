@@ -77,7 +77,7 @@ class ChatSendEventPublisherTest {
         assertThat(event.chatRoomId()).isEqualTo(roomId);
         assertThat(event.chatRoomType()).isEqualTo(ChatRoomType.PARTY);
         assertThat(event.notificationTitle()).isEqualTo("배드민턴 모임");
-        assertThat(event.notificationContent()).isEqualTo("길동: 안녕하세요");
+        assertThat(event.notificationContent()).isEqualTo("홍길동: 안녕하세요");
         assertThat(event.senderId()).isEqualTo(senderId);
         assertThat(event.activeSubscriberIds()).containsExactly(senderId);
     }

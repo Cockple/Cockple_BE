@@ -15,14 +15,19 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
+import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
+import umc.cockple.demo.domain.game.events.GameStartedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
@@ -44,6 +49,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameCommandService")
@@ -53,6 +59,7 @@ class GameCommandServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private CourtRepository courtRepository;
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
+    @Mock private ExerciseRepository exerciseRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
     @Mock private ApplicationEventPublisher eventPublisher;
@@ -99,6 +106,67 @@ class GameCommandServiceTest {
             assertThat(waiting.getWaitingOrder()).isNull();
             then(eventPublisher).should()
                     .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
+        }
+
+        @Test
+        @DisplayName("게임에 배정된 회원에게 게임 시작 알림 이벤트를 발행한다")
+        void startGame_publishesGameStartedEventForMemberPlayers() {
+            // given - 회원 계정이 연결된 명단 멤버 2명으로 대기 게임 구성
+            Member account20 = Member.builder().id(200L).build();
+            Member account30 = Member.builder().id(300L).build();
+            GamePlayer p1 = GameFixture.player(
+                    GameFixture.memberWithAccount(1L, board, account20, "빠나영", Level.A), 0);
+            GamePlayer p2 = GameFixture.player(
+                    GameFixture.memberWithAccount(2L, board, account30, "김민지", Level.B), 1);
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, p1, p2);
+
+            Party party = Party.builder().id(10L).partyName("우리모임").build();
+            Exercise exercise = Exercise.builder().party(party).build();
+
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
+            given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of());
+            given(exerciseRepository.findByGameBoardId(BOARD_ID)).willReturn(Optional.of(exercise));
+
+            // when
+            gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID));
+
+            // then
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(eventPublisher).should(times(2)).publishEvent(captor.capture());
+            GameStartedEvent started = captor.getAllValues().stream()
+                    .filter(GameStartedEvent.class::isInstance)
+                    .map(GameStartedEvent.class::cast)
+                    .findFirst().orElseThrow();
+            assertThat(started.gameBoardId()).isEqualTo(BOARD_ID);
+            assertThat(started.partyName()).isEqualTo("우리모임");
+            assertThat(started.courtName()).isEqualTo("1번 코트");
+            assertThat(started.recipientMemberIds()).containsExactly(200L, 300L);
+        }
+
+        @Test
+        @DisplayName("게임 참가자가 전원 게스트면 게임 시작 알림 이벤트를 발행하지 않는다")
+        void startGame_doesNotPublishWhenAllGuests() {
+            // given - GameFixture.member 는 회원 계정(member)이 없는 게스트성 명단 멤버다
+            GamePlayer guest = GameFixture.player(
+                    GameFixture.member(1L, board, "게스트", Level.A), 0);
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, guest);
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
+            given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of());
+
+            // when
+            gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID));
+
+            // then
+            then(eventPublisher).should(never()).publishEvent(any(GameStartedEvent.class));
+            then(exerciseRepository).shouldHaveNoInteractions();
         }
 
         @Test
@@ -274,13 +342,13 @@ class GameCommandServiceTest {
         }
 
         @Test
-        @DisplayName("WAITING 또는 10분 미만 PLAYING 선수가 포함되면 UNAVAILABLE_GAME_PLAYER 예외")
+        @DisplayName("이미 대기(WAITING) 게임에 편성된 선수가 포함되면 UNAVAILABLE_GAME_PLAYER 예외")
         void createGame_unavailablePlayer() {
             GameBoardMember member = GameFixture.member(7L, board, "선택 불가", Level.A);
             given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
                     .willReturn(List.of(member));
-            given(availabilityPolicy.hasBlockedMember(any(), any(), any())).willReturn(true);
+            given(availabilityPolicy.hasWaitingConflict(any(), any())).willReturn(true);
 
             assertThatThrownBy(() -> gameCommandService.createGame(
                     MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
