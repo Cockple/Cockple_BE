@@ -38,6 +38,23 @@ public interface GameBoardMemberApi {
             @Valid @RequestBody GameBoardMemberDTO.ParticipationRequest request
     );
 
+    @PatchMapping("/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}/shuttlecock-submission")
+    @Operation(summary = "게임판 명단 셔틀콕 제출 상태 변경", description = """
+            게임 진행자가 명단의 셔틀콕 제출 여부를 변경합니다.
+
+            - `shuttlecockSubmitted`는 필수 Boolean입니다.
+            - 현재 값과 같은 요청은 성공하는 멱등 동작입니다.
+            """)
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류")
+    @ApiResponse(responseCode = "403", description = "게임판 관리 권한 없음")
+    @ApiResponse(responseCode = "404", description = "게임판 또는 명단을 찾을 수 없음")
+    ResponseEntity<BaseResponse<Void>> changeShuttlecockSubmission(
+            @PathVariable Long gameBoardId,
+            @PathVariable Long gameBoardMemberId,
+            @Valid @RequestBody GameBoardMemberDTO.ShuttlecockSubmissionRequest request
+    );
+
     @PatchMapping("/{gameBoardId}/gameBoardMembers/{gameBoardMemberId}")
     @Operation(summary = "게임판 명단 정보 수정", description = """
             게임 진행자가 명단의 이름, 성별, 급수, 연령대를 수정합니다.
