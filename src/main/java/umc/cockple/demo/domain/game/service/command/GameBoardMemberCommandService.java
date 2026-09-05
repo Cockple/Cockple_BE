@@ -82,6 +82,7 @@ public class GameBoardMemberCommandService {
 
     public void changeShuttlecockSubmission(
             Long memberId, GameBoardMemberShuttlecockSubmissionCommand command) {
+        gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
         GameBoardMember gameBoardMember = gameBoardMemberReader.read(
                 command.gameBoardId(), command.gameBoardMemberId());

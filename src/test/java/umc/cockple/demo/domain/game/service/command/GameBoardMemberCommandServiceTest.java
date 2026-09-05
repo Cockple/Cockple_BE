@@ -237,6 +237,7 @@ class GameBoardMemberCommandServiceTest {
 
             gameBoardMemberCommandService.changeShuttlecockSubmission(MEMBER_ID, submissionCommand);
 
+            then(gameBoardReader).should().readForUpdate(GAME_BOARD_ID);
             then(gameBoardAccessValidator).should().validateGameHost(GAME_BOARD_ID, MEMBER_ID);
             assertThat(gameBoardMember.getShuttlecockSubmitted()).isTrue();
             then(eventPublisher).should()
@@ -256,13 +257,14 @@ class GameBoardMemberCommandServiceTest {
 
             gameBoardMemberCommandService.changeShuttlecockSubmission(MEMBER_ID, submissionCommand);
 
+            then(gameBoardReader).should().readForUpdate(GAME_BOARD_ID);
             assertThat(gameBoardMember.getShuttlecockSubmitted()).isFalse();
             then(eventPublisher).should(never()).publishEvent(any());
         }
 
         @Test
-        @DisplayName("게임 진행자가 아니면 셔틀콕 제출 상태 변경을 위해 명단을 조회하지 않는다")
-        void deniesNonGameHost() {
+        @DisplayName("게임판 락 획득 후 게임 진행자가 아니면 명단을 조회하지 않는다")
+        void deniesNonGameHostAfterLock() {
             GameBoardMemberShuttlecockSubmissionCommand submissionCommand =
                     new GameBoardMemberShuttlecockSubmissionCommand(
                             GAME_BOARD_ID, GAME_BOARD_MEMBER_ID, true);
@@ -274,6 +276,7 @@ class GameBoardMemberCommandServiceTest {
                     .isInstanceOfSatisfying(GameException.class, exception ->
                             assertThat(exception.getCode()).isEqualTo(GameErrorCode.GAME_BOARD_ACCESS_DENIED));
 
+            then(gameBoardReader).should().readForUpdate(GAME_BOARD_ID);
             then(gameBoardMemberReader).shouldHaveNoInteractions();
             then(eventPublisher).shouldHaveNoInteractions();
         }
