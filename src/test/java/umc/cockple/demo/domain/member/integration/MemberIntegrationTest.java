@@ -85,6 +85,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
         partyAddrRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         memberRepository.deleteAll(); // cascade: MemberAddr, MemberKeyword 등 함께 삭제
         SecurityContextHelper.clearAuthentication();
     }
