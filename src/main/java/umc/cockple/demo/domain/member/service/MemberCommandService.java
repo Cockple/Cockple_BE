@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
+import umc.cockple.demo.domain.exercise.service.ExerciseParticipationCleanupService;
 import umc.cockple.demo.domain.game.service.command.GameBoardRosterCleanupService;
 import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
@@ -36,7 +36,7 @@ public class MemberCommandService {
     private final MemberRepository memberRepository;
     private final MemberKeywordRepository memberKeywordRepository;
     private final MemberAddrRepository memberAddrRepository;
-    private final ExerciseParticipationRepository exerciseParticipationRepository;
+    private final ExerciseParticipationCleanupService exerciseParticipationCleanupService;
     private final MemberPartyRepository memberPartyRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -96,8 +96,8 @@ public class MemberCommandService {
 
         // 참여중인 미래 운동과 연결된 게임판 명단을 동일한 기준 시각으로 함께 정리
         gameBoardRosterCleanupService.removeFutureMemberRosters(member.getId(), withdrawalTime);
-        exerciseParticipationRepository.deleteFutureExercisesByMember(
-                member, withdrawalTime.toLocalDate(), withdrawalTime.toLocalTime());
+        exerciseParticipationCleanupService.deleteFutureParticipationsForWithdrawal(
+                member.getId(), withdrawalTime);
         memberPartyRepository.findAllByMemberIdForUpdate(member.getId());
         memberPartyRepository.deleteAllByMember(member);
         memberKeywordRepository.deleteAllByMember(member);

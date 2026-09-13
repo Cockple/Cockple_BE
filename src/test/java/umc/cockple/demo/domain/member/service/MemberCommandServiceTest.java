@@ -13,7 +13,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.chat.repository.ChatRoomMemberRepository;
-import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
+import umc.cockple.demo.domain.exercise.service.ExerciseParticipationCleanupService;
 import umc.cockple.demo.domain.game.service.command.GameBoardRosterCleanupService;
 import umc.cockple.demo.support.fixture.ChatFixture;
 import umc.cockple.demo.domain.file.service.ObjectStorageDeleteOutboxService;
@@ -61,7 +61,7 @@ class MemberCommandServiceTest {
     private MemberCommandService memberCommandService;
 
     @Mock private MemberRepository memberRepository;
-    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
+    @Mock private ExerciseParticipationCleanupService exerciseParticipationCleanupService;
     @Mock private MemberPartyRepository memberPartyRepository;
     @Mock private MemberKeywordRepository memberKeywordRepository;
     @Mock private MemberAddrRepository memberAddrRepository;
@@ -187,8 +187,8 @@ class MemberCommandServiceTest {
 
                 then(gameBoardRosterCleanupService).should(never())
                         .removeFutureMemberRosters(eq(normalMember.getId()), any());
-                then(exerciseParticipationRepository).should(never())
-                        .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(exerciseParticipationCleanupService).should(never())
+                        .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
                 then(kakaoOauthService).should(never()).unlinkAccess(normalMember);
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
             }
@@ -638,12 +638,12 @@ class MemberCommandServiceTest {
             memberCommandService.withdrawMember(normalMember.getId());
 
             // then
-            then(exerciseParticipationRepository).should()
-                    .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+            then(exerciseParticipationCleanupService).should()
+                    .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
             then(gameBoardRosterCleanupService).should()
                     .removeFutureMemberRosters(eq(normalMember.getId()), any());
-            then(exerciseParticipationRepository).should(never())
-                    .deleteAll();
+            then(exerciseParticipationCleanupService).should(never())
+                    .prepareMemberHardDelete(any());
         }
 
         @Nested
@@ -661,11 +661,12 @@ class MemberCommandServiceTest {
                 memberCommandService.withdrawMember(normalMember.getId());
 
                 // then
-                then(exerciseParticipationRepository).should()
-                        .deleteFutureExercisesByMember(eq(normalMember), any(), any());
+                then(exerciseParticipationCleanupService).should()
+                        .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
                 then(gameBoardRosterCleanupService).should()
                         .removeFutureMemberRosters(eq(normalMember.getId()), any());
-                then(exerciseParticipationRepository).should(never()).deleteAll();
+                then(exerciseParticipationCleanupService).should(never())
+                        .prepareMemberHardDelete(any());
                 then(memberPartyRepository).should()
                         .findAllByMemberIdForUpdate(normalMember.getId());
                 then(memberPartyRepository).should().deleteAllByMember(normalMember);

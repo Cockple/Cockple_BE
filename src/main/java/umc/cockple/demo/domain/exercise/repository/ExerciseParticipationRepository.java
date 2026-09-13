@@ -32,19 +32,26 @@ public interface ExerciseParticipationRepository extends JpaRepository<ExerciseP
     List<ExerciseParticipation> findByExerciseIdWithMemberAndProfile(
             @Param("exerciseId") Long exerciseId);
 
-    @Modifying
+    @Modifying(flushAutomatically = true)
     @Query("""
             DELETE FROM ExerciseParticipation me
-            WHERE me.member = :member
+            WHERE me.member.id = :memberId
             AND (
                 me.exercise.date > :today
                 OR (me.exercise.date = :today AND me.exercise.startTime > :now)
             )
             """)
-    void deleteFutureExercisesByMember(
-            @Param("member") Member member,
+    int deleteFutureParticipationsByMemberId(
+            @Param("memberId") Long memberId,
             @Param("today") LocalDate today,
             @Param("now") LocalTime now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM ExerciseParticipation me
+            WHERE me.member.id = :memberId
+            """)
+    int deleteAllByMemberId(@Param("memberId") Long memberId);
 
     @Query("select me.exercise.id " +
             "from ExerciseParticipation me " +
