@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.bookmark.repository.PartyBookmarkRepository;
 import umc.cockple.demo.domain.bookmark.service.BookmarkQueryService;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -59,7 +59,7 @@ class BookmarkQueryCountTest extends IntegrationTestBase {
     @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Autowired PartyBookmarkRepository partyBookmarkRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
 
     @PersistenceContext EntityManager em;
 
@@ -67,7 +67,7 @@ class BookmarkQueryCountTest extends IntegrationTestBase {
     void tearDown() {
         exerciseBookmarkRepository.deleteAll();
         partyBookmarkRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -115,7 +115,7 @@ class BookmarkQueryCountTest extends IntegrationTestBase {
         memberPartyRepository.save(MemberFixture.createMemberParty(party, member, Role.PARTY_MANAGER));
         var exercise = exerciseRepository.save(
                 ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(idx + 1)));
-        memberExerciseRepository.save(MemberFixture.createMemberExercise(member, exercise));
+        exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(member, exercise));
         exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                 .member(member).exercise(exercise).build());
     }

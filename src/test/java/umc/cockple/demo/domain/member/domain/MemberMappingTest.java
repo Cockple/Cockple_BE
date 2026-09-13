@@ -25,4 +25,12 @@ class MemberMappingTest {
         assertThat(Arrays.asList(oneToMany.cascade())).isEmpty();
         assertThat(oneToMany.orphanRemoval()).isFalse();
     }
+
+    @Test
+    @DisplayName("Member는 exercise 도메인의 참여 엔티티를 역방향 참조하지 않는다")
+    void member_doesNotReferenceExerciseParticipation() {
+        assertThat(Member.class.getDeclaredFields())
+                .noneMatch(field -> field.getGenericType().getTypeName()
+                        .contains("umc.cockple.demo.domain.exercise.domain.ExerciseParticipation"));
+    }
 }

@@ -12,7 +12,7 @@ import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -46,7 +46,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
     @Autowired MemberRepository memberRepository;
     @Autowired MemberAddrRepository memberAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired ExerciseRepository exerciseRepository;
@@ -92,7 +92,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
     void tearDown() {
         guestRepository.deleteAll();
         exerciseBookmarkRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -219,7 +219,7 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                 // given
                 Exercise ex = exerciseRepository.save(ExerciseFixture.createRecommendableExercise(party,
                         LocalDate.now().plusDays(3), 37.5, 127.0, "참여완료 체육관"));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(outsider, ex));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(outsider, ex));
 
                 SecurityContextHelper.setAuthentication(outsider.getId(), outsider.getNickname());
 
@@ -331,8 +331,8 @@ class ExerciseRecommendationIntegrationTest extends IntegrationTestBase {
                     37.51, 127.01, "필터 이른 체육관", LocalTime.of(9, 0), LocalTime.of(11, 0));
             filteredPopularExercise = saveRecommendableExercise(filteredParty, LocalDate.of(2026, 3, 25),
                     37.52, 127.02, "필터 인기 체육관", LocalTime.of(18, 0), LocalTime.of(20, 0));
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(manager, filteredPopularExercise));
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, filteredPopularExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(manager, filteredPopularExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, filteredPopularExercise));
             exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                     .member(recommendationMember)
                     .exercise(filteredPopularExercise)

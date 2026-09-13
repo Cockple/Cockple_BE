@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGameHostCommandService;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGameHostChangeCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGameHostChangeResult;
@@ -52,7 +52,7 @@ class ExerciseGameHostCommandServiceTest {
 
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     private Member manager;
@@ -67,7 +67,7 @@ class ExerciseGameHostCommandServiceTest {
                 new MemberPartyLookupService(memberPartyRepository);
         exerciseGameHostCommandService = new ExerciseGameHostCommandService(
                 new ExerciseReader(exerciseRepository),
-                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
+                new ExerciseValidator(memberPartyLookupService, exerciseParticipationRepository),
                 memberPartyLookupService,
                 eventPublisher
         );

@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -51,7 +51,7 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
 
     private Member manager;
@@ -76,7 +76,7 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -187,8 +187,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
             void alreadyJoined() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 mockMvc.perform(post("/api/exercises/{exerciseId}/participants", exercise.getId()))
                         .andExpect(status().isBadRequest())
@@ -250,8 +250,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
             void cancelParticipation_success() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
                         .andExpect(status().isOk())
@@ -295,8 +295,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
                         ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1),
                                 LocalTime.of(12, 0), true, false));
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, startedExercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, startedExercise));
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", startedExercise.getId()))
                         .andExpect(status().isBadRequest())
@@ -306,7 +306,7 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
 
             @Test
             @DisplayName("404 - 참여 기록이 없으면 에러를 반환한다")
-            void memberExerciseNotFound() throws Exception {
+            void exerciseParticipationNotFound() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
@@ -338,8 +338,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
             void owner_cancelMemberParticipation() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
@@ -356,8 +356,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
             void subManager_cancelMemberParticipation() throws Exception {
                 SecurityContextHelper.setAuthentication(subManager.getId(), subManager.getNickname());
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 
@@ -447,8 +447,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
                 Exercise startedExercise = exerciseRepository.save(
                         ExerciseFixture.createExercise(party, LocalDate.of(2000, 1, 1)));
 
-                memberExerciseRepository.save(
-                        MemberFixture.createMemberExercise(normalMember, startedExercise));
+                exerciseParticipationRepository.save(
+                        MemberFixture.createExerciseParticipation(normalMember, startedExercise));
 
                 ExerciseCancelDTO.ByManagerRequest request = new ExerciseCancelDTO.ByManagerRequest(false);
 

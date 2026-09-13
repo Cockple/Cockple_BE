@@ -29,7 +29,7 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -58,7 +58,7 @@ class ExerciseLifecycleCommandServiceTest {
     // 인프라 의존성만 Mock
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private ExerciseReader exerciseReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private PartyLookupService partyLookupService;
@@ -72,7 +72,7 @@ class ExerciseLifecycleCommandServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(
-                new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
+                new MemberPartyLookupService(memberPartyRepository), exerciseParticipationRepository);
         exerciseLifecycleCommandService = new ExerciseLifecycleCommandService(
                 exerciseRepository,
                 exerciseReader,

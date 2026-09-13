@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.time.LocalDate;
@@ -21,17 +21,17 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class MemberExerciseReader {
+public class ExerciseParticipationReader {
 
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
 
-    public MemberExercise findMemberExerciseOrThrow(Exercise exercise, Member member) {
-        return memberExerciseRepository.findByExerciseAndMember(exercise, member)
+    public ExerciseParticipation findExerciseParticipationOrThrow(Exercise exercise, Member member) {
+        return exerciseParticipationRepository.findByExerciseAndMember(exercise, member)
                 .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
     }
 
-    public List<MemberExercise> findMemberExercisesWithMemberAndProfile(Long exerciseId) {
-        return memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exerciseId);
+    public List<ExerciseParticipation> findExerciseParticipationsWithMemberAndProfile(Long exerciseId) {
+        return exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exerciseId);
     }
 
     public Map<Long, LocalDate> findLastExerciseDates(
@@ -40,7 +40,7 @@ public class MemberExerciseReader {
             return Collections.emptyMap();
         }
 
-        return memberExerciseRepository
+        return exerciseParticipationRepository
                 .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
                 .stream()
                 .collect(Collectors.toMap(
@@ -54,7 +54,7 @@ public class MemberExerciseReader {
             return Collections.emptyMap();
         }
 
-        List<Long> participatingExerciseIds = memberExerciseRepository
+        List<Long> participatingExerciseIds = exerciseParticipationRepository
                 .findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds);
         Set<Long> participatingExerciseIdSet = new HashSet<>(participatingExerciseIds);
 

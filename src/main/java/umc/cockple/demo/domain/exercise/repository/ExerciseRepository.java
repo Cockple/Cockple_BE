@@ -113,7 +113,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
 
     @Query("""
             SELECT e FROM Exercise e 
-            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.participations me
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
             LEFT JOIN FETCH p.partyImg
@@ -178,7 +178,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
                 AND mp.member.isActive = 'ACTIVE'
             )
             AND NOT EXISTS (
-                SELECT 1 FROM MemberExercise me
+                SELECT 1 FROM ExerciseParticipation me
                 WHERE me.exercise.id = e.id
                 AND me.member.id = :memberId
             )
@@ -194,7 +194,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
            
     @Query("""
             SELECT e FROM Exercise e 
-            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.participations me
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
             WHERE me.member.id = :memberId
@@ -204,7 +204,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
 
     @Query("""
             SELECT e FROM Exercise e 
-            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.participations me
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
             WHERE me.member.id = :memberId
@@ -215,7 +215,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
 
     @Query("""
             SELECT e FROM Exercise e 
-            JOIN FETCH e.memberExercises me
+            JOIN FETCH e.participations me
             JOIN FETCH e.exerciseAddr addr
             JOIN FETCH e.party p
             WHERE me.member.id = :memberId
@@ -334,7 +334,7 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long>, Exerc
                 AND mp.member.isActive = 'ACTIVE'
             )
             AND NOT EXISTS (
-                SELECT 1 FROM MemberExercise me
+                SELECT 1 FROM ExerciseParticipation me
                 WHERE me.exercise.id = e.id
                 AND me.member.id = :memberId
             )
