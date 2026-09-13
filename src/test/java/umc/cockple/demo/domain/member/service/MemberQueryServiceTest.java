@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.contest.service.ContestQueryService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
 import umc.cockple.demo.domain.member.dto.GetAllAddressResponseDTO;
 import umc.cockple.demo.domain.member.dto.GetMyProfileResponseDTO;
@@ -23,7 +23,7 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.Gender;
@@ -50,7 +50,7 @@ class MemberQueryServiceTest {
 
     @Mock private MemberRepository memberRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private ContestQueryService contestQueryService;
     @Mock private FileService fileService;
 
@@ -236,7 +236,7 @@ class MemberQueryServiceTest {
 
                 given(memberRepository.findById(member.getId())).willReturn(Optional.of(member));
                 given(contestQueryService.getMyMedalSummary(member.getId())).willReturn(medals(0, 0, 0));
-                given(memberExerciseRepository.countByMember_Id(member.getId())).willReturn(1L);
+                given(exerciseParticipationRepository.countByMember_Id(member.getId())).willReturn(1L);
 
                 // when
                 GetMyProfileResponseDTO response = memberQueryService.getMyProfile(member.getId());

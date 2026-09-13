@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -56,7 +56,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
     @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
 
@@ -85,7 +85,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
     void tearDown() {
         guestRepository.deleteAll();
         exerciseBookmarkRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -120,7 +120,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
             @DisplayName("요청한 기간의 내 운동 캘린더가 반환된다")
             void 요청한_기간의_내_운동_캘린더가_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 mockMvc.perform(get("/api/exercises/my/calender")
                                 .param("startDate", startDate.toString())
@@ -167,7 +167,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
                         ExerciseFixture.createExerciseWithAddr(party, defaultExerciseDate));
 
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, defaultExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, defaultExercise));
 
                 mockMvc.perform(get("/api/exercises/my/calender"))
                         .andExpect(status().isOk())
@@ -399,7 +399,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
             featuredUpcomingExercise = exerciseRepository.save(featuredUpcomingExercise);
             upcomingExercises.set(9, featuredUpcomingExercise);
 
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, featuredUpcomingExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, featuredUpcomingExercise));
             guestRepository.save(GuestFixture.createGuest(featuredUpcomingExercise, manager.getId()));
             exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                     .member(normalMember)
@@ -579,7 +579,7 @@ class ExerciseMyIntegrationTest extends IntegrationTestBase {
             ReflectionTestUtils.setField(exercise, "partyGuestAccept", partyGuestAccept);
 
             Exercise savedExercise = exerciseRepository.save(exercise);
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, savedExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, savedExercise));
             return savedExercise;
         }
     }

@@ -19,7 +19,7 @@ import umc.cockple.demo.domain.member.dto.GetProfileResponseDTO;
 import umc.cockple.demo.domain.member.dto.OnboardingStatusResponseDTO;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.global.enums.Keyword;
@@ -37,7 +37,7 @@ public class MemberQueryService {
 
     private final MemberRepository memberRepository;
     private final MemberPartyRepository memberPartyRepository;
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
     private final ContestQueryService contestQueryService;
     private final FileService fileService;
 
@@ -62,7 +62,7 @@ public class MemberQueryService {
         MemberAddr memberAddr = findMainAddress(member);
 
         // 운동 개수 추출 (컬렉션 로딩 없이 COUNT)
-        int exerciseCnt = (int) memberExerciseRepository.countByMember_Id(memberId);
+        int exerciseCnt = (int) exerciseParticipationRepository.countByMember_Id(memberId);
 
         // 엔티티 -> 값 타입으로 변환
         List<Keyword> keywords = member.getKeywords().stream()

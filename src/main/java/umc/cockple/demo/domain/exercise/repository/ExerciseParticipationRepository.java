@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.member.domain.Member;
 
 import java.time.LocalDate;
@@ -13,28 +13,28 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface MemberExerciseRepository extends JpaRepository<MemberExercise, Long> {
+public interface ExerciseParticipationRepository extends JpaRepository<ExerciseParticipation, Long> {
 
     boolean existsByExerciseAndMember(Exercise exercise, Member member);
 
     // 프로필의 참여 운동 수. 컬렉션 전량 로딩 없이 COUNT만 수행한다.
     long countByMember_Id(Long memberId);
 
-    Optional<MemberExercise> findByExerciseAndMember(Exercise exercise, Member member);
+    Optional<ExerciseParticipation> findByExerciseAndMember(Exercise exercise, Member member);
 
     @Query("""
-            SELECT me FROM MemberExercise me
+            SELECT me FROM ExerciseParticipation me
             JOIN FETCH me.member m
             LEFT JOIN FETCH m.profileImg mp
             WHERE me.exercise.id = :exerciseId
             ORDER BY me.createdAt ASC
             """)
-    List<MemberExercise> findByExerciseIdWithMemberAndProfile(
+    List<ExerciseParticipation> findByExerciseIdWithMemberAndProfile(
             @Param("exerciseId") Long exerciseId);
 
     @Modifying
     @Query("""
-            DELETE FROM MemberExercise me
+            DELETE FROM ExerciseParticipation me
             WHERE me.member = :member
             AND (
                 me.exercise.date > :today
@@ -47,14 +47,14 @@ public interface MemberExerciseRepository extends JpaRepository<MemberExercise, 
             @Param("now") LocalTime now);
 
     @Query("select me.exercise.id " +
-            "from MemberExercise me " +
+            "from ExerciseParticipation me " +
             "where me.member.id = :memberId and me.exercise.id in :exerciseIds")
     List<Long> findAllExerciseIdsByMemberAndExerciseIds(@Param("memberId") Long memberId,
                                                         @Param("exerciseIds") List<Long> exerciseIds);
 
     @Query("""
             SELECT me.member.id, MAX(e.date)
-            FROM MemberExercise me
+            FROM ExerciseParticipation me
             JOIN me.exercise e
             WHERE me.member.id IN :memberIds
             AND e.party.id = :partyId

@@ -13,9 +13,9 @@ import umc.cockple.demo.domain.chat.repository.ChatRoomRepository;
 import umc.cockple.demo.domain.contest.domain.Contest;
 import umc.cockple.demo.domain.contest.enums.MedalType;
 import umc.cockple.demo.domain.contest.repository.ContestRepository;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.file.repository.ObjectStorageDeleteOutboxRepository;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.*;
@@ -65,7 +65,7 @@ class MemberIntegrationTest extends IntegrationTestBase {
     @MockitoBean FileService fileService;
 
     @Autowired ContestRepository contestRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired MemberKeywordRepository memberKeywordRepository;
     @Autowired ChatRoomRepository chatRoomRepository;
     @Autowired ChatRoomMemberRepository chatRoomMemberRepository;
@@ -330,11 +330,11 @@ class MemberIntegrationTest extends IntegrationTestBase {
                 memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
                 memberPartyRepository.save(MemberFixture.createMemberParty(null, freshMember, Role.PARTY_MEMBER));
 
-                memberExerciseRepository.save(MemberExercise.builder()
+                exerciseParticipationRepository.save(ExerciseParticipation.builder()
                         .member(freshMember)
                         .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
                         .build());
-                memberExerciseRepository.save(MemberExercise.builder()
+                exerciseParticipationRepository.save(ExerciseParticipation.builder()
                         .member(freshMember)
                         .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
                         .build());

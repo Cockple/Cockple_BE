@@ -18,7 +18,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
 import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseLifecycleQueryService;
@@ -28,11 +28,11 @@ import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -73,7 +73,7 @@ class ExerciseLifecycleQueryServiceTest {
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private GuestRepository guestRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
@@ -102,14 +102,14 @@ class ExerciseLifecycleQueryServiceTest {
     }
 
     private ExerciseLifecycleQueryService createExerciseLifecycleQueryService() {
-        MemberExerciseReader memberExerciseReader = new MemberExerciseReader(
-                memberExerciseRepository);
+        ExerciseParticipationReader exerciseParticipationReader = new ExerciseParticipationReader(
+                exerciseParticipationRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
         MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         return new ExerciseLifecycleQueryService(
                 new ExerciseReader(exerciseRepository),
                 new ExerciseParticipantSnapshotAssembler(
-                        memberExerciseReader,
+                        exerciseParticipationReader,
                         new GuestReader(guestRepository),
                         memberLookupService,
                         memberPartyLookupService,
@@ -118,7 +118,7 @@ class ExerciseLifecycleQueryServiceTest {
                 new ExerciseParticipantPositionCalculator(),
                 memberLookupService,
                 memberPartyLookupService,
-                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository)
+                new ExerciseValidator(memberPartyLookupService, exerciseParticipationRepository)
         );
     }
 
@@ -138,7 +138,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -166,7 +166,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(subManager.getId()))
                         .willReturn(Optional.of(subManager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -193,7 +193,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(normalMember.getId()))
                         .willReturn(Optional.of(normalMember));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -220,7 +220,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(outsider.getId()))
                         .willReturn(Optional.of(outsider));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -244,14 +244,14 @@ class ExerciseLifecycleQueryServiceTest {
                 Member withdrawnMember = MemberFixture.createWithdrawnMember("탈퇴회원", "탈퇴닉네임", 9999L);
                 ReflectionTestUtils.setField(withdrawnMember, "id", 99L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(withdrawnMember, exercise);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(withdrawnMember, exercise);
 
                 given(exerciseRepository.findExerciseWithBasicInfo(exercise.getId()))
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
-                        .willReturn(List.of(memberExercise));
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of(exerciseParticipation));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -278,7 +278,7 @@ class ExerciseLifecycleQueryServiceTest {
                 Member activeMember = MemberFixture.createMember("활성회원", Gender.FEMALE, Level.B, 2002L);
                 ReflectionTestUtils.setField(activeMember, "id", 2L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(activeMember, exercise);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(activeMember, exercise);
 
                 MemberParty memberParty = MemberFixture.createMemberParty(party, activeMember, Role.PARTY_MEMBER);
 
@@ -286,8 +286,8 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
-                        .willReturn(List.of(memberExercise));
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of(exerciseParticipation));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -318,7 +318,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
@@ -352,16 +352,16 @@ class ExerciseLifecycleQueryServiceTest {
                 Member outsider = MemberFixture.createMember("외부회원", Gender.FEMALE, Level.B, 5005L);
                 ReflectionTestUtils.setField(outsider, "id", 33L);
 
-                MemberExercise managerExercise = MemberFixture.createMemberExercise(manager, exercise);
+                ExerciseParticipation managerExercise = MemberFixture.createExerciseParticipation(manager, exercise);
                 ReflectionTestUtils.setField(managerExercise, "createdAt", LocalDateTime.now().minusMinutes(5));
 
-                MemberExercise subManagerExercise = MemberFixture.createMemberExercise(subManager, exercise);
+                ExerciseParticipation subManagerExercise = MemberFixture.createExerciseParticipation(subManager, exercise);
                 ReflectionTestUtils.setField(subManagerExercise, "createdAt", LocalDateTime.now().minusMinutes(4));
 
-                MemberExercise normalMemberExercise = MemberFixture.createMemberExercise(normalMember, exercise);
-                ReflectionTestUtils.setField(normalMemberExercise, "createdAt", LocalDateTime.now().minusMinutes(3));
+                ExerciseParticipation normalExerciseParticipation = MemberFixture.createExerciseParticipation(normalMember, exercise);
+                ReflectionTestUtils.setField(normalExerciseParticipation, "createdAt", LocalDateTime.now().minusMinutes(3));
 
-                MemberExercise outsiderExercise = MemberFixture.createExternalMemberExercise(outsider, exercise);
+                ExerciseParticipation outsiderExercise = MemberFixture.createExternalExerciseParticipation(outsider, exercise);
                 ReflectionTestUtils.setField(outsiderExercise, "createdAt", LocalDateTime.now().minusMinutes(2));
 
                 Guest guest = GuestFixture.createGuest(exercise, manager.getId());
@@ -376,8 +376,8 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
-                        .willReturn(List.of(managerExercise, subManagerExercise, normalMemberExercise, outsiderExercise));
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                        .willReturn(List.of(managerExercise, subManagerExercise, normalExerciseParticipation, outsiderExercise));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
                 given(memberPartyRepository.existsByPartyIdAndMemberIdAndRole(
@@ -420,10 +420,10 @@ class ExerciseLifecycleQueryServiceTest {
                 Member secondMember = MemberFixture.createMember("두번째", Gender.FEMALE, Level.B, 3002L);
                 ReflectionTestUtils.setField(secondMember, "id", 4L);
 
-                MemberExercise first = MemberFixture.createMemberExercise(firstMember, exercise);
+                ExerciseParticipation first = MemberFixture.createExerciseParticipation(firstMember, exercise);
                 ReflectionTestUtils.setField(first, "createdAt", LocalDateTime.now().minusMinutes(10));
 
-                MemberExercise second = MemberFixture.createMemberExercise(secondMember, exercise);
+                ExerciseParticipation second = MemberFixture.createExerciseParticipation(secondMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
                 MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.PARTY_MEMBER);
@@ -433,7 +433,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of(first, second));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -465,7 +465,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(guest));
@@ -496,10 +496,10 @@ class ExerciseLifecycleQueryServiceTest {
                 Member secondMember = MemberFixture.createMember("두번째", Gender.FEMALE, Level.B, 5002L);
                 ReflectionTestUtils.setField(secondMember, "id", 8L);
 
-                MemberExercise first = MemberFixture.createMemberExercise(firstMember, exercise);
+                ExerciseParticipation first = MemberFixture.createExerciseParticipation(firstMember, exercise);
                 ReflectionTestUtils.setField(first, "createdAt", LocalDateTime.now().minusMinutes(10));
 
-                MemberExercise second = MemberFixture.createMemberExercise(secondMember, exercise);
+                ExerciseParticipation second = MemberFixture.createExerciseParticipation(secondMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
                 MemberParty firstParty = MemberFixture.createMemberParty(party, firstMember, Role.PARTY_MEMBER);
@@ -509,7 +509,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of(first, second));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -545,10 +545,10 @@ class ExerciseLifecycleQueryServiceTest {
                 Member femaleMember = MemberFixture.createMember("여성", Gender.FEMALE, Level.B, 6002L);
                 ReflectionTestUtils.setField(femaleMember, "id", 12L);
 
-                MemberExercise first = MemberFixture.createMemberExercise(maleMember, exercise);
+                ExerciseParticipation first = MemberFixture.createExerciseParticipation(maleMember, exercise);
                 ReflectionTestUtils.setField(first, "createdAt", LocalDateTime.now().minusMinutes(10));
 
-                MemberExercise second = MemberFixture.createMemberExercise(femaleMember, exercise);
+                ExerciseParticipation second = MemberFixture.createExerciseParticipation(femaleMember, exercise);
                 ReflectionTestUtils.setField(second, "createdAt", LocalDateTime.now());
 
                 MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.PARTY_MEMBER);
@@ -558,7 +558,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of(first, second));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
@@ -590,10 +590,10 @@ class ExerciseLifecycleQueryServiceTest {
                 Member femaleMember = MemberFixture.createMember("여성", Gender.FEMALE, Level.B, 4002L);
                 ReflectionTestUtils.setField(femaleMember, "id", 6L);
 
-                MemberExercise maleExercise = MemberFixture.createMemberExercise(maleMember, exercise);
+                ExerciseParticipation maleExercise = MemberFixture.createExerciseParticipation(maleMember, exercise);
                 ReflectionTestUtils.setField(maleExercise, "createdAt", LocalDateTime.now().minusMinutes(5));
 
-                MemberExercise femaleExercise = MemberFixture.createMemberExercise(femaleMember, exercise);
+                ExerciseParticipation femaleExercise = MemberFixture.createExerciseParticipation(femaleMember, exercise);
                 ReflectionTestUtils.setField(femaleExercise, "createdAt", LocalDateTime.now());
 
                 MemberParty maleParty = MemberFixture.createMemberParty(party, maleMember, Role.PARTY_MEMBER);
@@ -603,7 +603,7 @@ class ExerciseLifecycleQueryServiceTest {
                         .willReturn(Optional.of(exercise));
                 given(memberRepository.findById(manager.getId()))
                         .willReturn(Optional.of(manager));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of(maleExercise, femaleExercise));
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of());
