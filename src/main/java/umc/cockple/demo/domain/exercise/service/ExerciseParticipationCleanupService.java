@@ -14,7 +14,7 @@ public class ExerciseParticipationCleanupService {
 
     private final ExerciseParticipationRepository exerciseParticipationRepository;
 
-    public int deleteFutureParticipationsForWithdrawal(
+    public int deleteFutureParticipationForWithdrawal(
             Long memberId,
             LocalDateTime withdrawalTime) {
         return exerciseParticipationRepository.deleteFutureParticipationsByMemberId(

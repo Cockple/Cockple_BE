@@ -188,7 +188,7 @@ class MemberCommandServiceTest {
                 then(gameBoardRosterCleanupService).should(never())
                         .removeFutureMemberRosters(eq(normalMember.getId()), any());
                 then(exerciseParticipationCleanupService).should(never())
-                        .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
+                        .deleteFutureParticipationForWithdrawal(eq(normalMember.getId()), any());
                 then(kakaoOauthService).should(never()).unlinkAccess(normalMember);
                 assertThat(normalMember.getIsActive()).isEqualTo(MemberStatus.ACTIVE);
             }
@@ -639,7 +639,7 @@ class MemberCommandServiceTest {
 
             // then
             then(exerciseParticipationCleanupService).should()
-                    .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
+                    .deleteFutureParticipationForWithdrawal(eq(normalMember.getId()), any());
             then(gameBoardRosterCleanupService).should()
                     .removeFutureMemberRosters(eq(normalMember.getId()), any());
             then(exerciseParticipationCleanupService).should(never())
@@ -662,7 +662,7 @@ class MemberCommandServiceTest {
 
                 // then
                 then(exerciseParticipationCleanupService).should()
-                        .deleteFutureParticipationsForWithdrawal(eq(normalMember.getId()), any());
+                        .deleteFutureParticipationForWithdrawal(eq(normalMember.getId()), any());
                 then(gameBoardRosterCleanupService).should()
                         .removeFutureMemberRosters(eq(normalMember.getId()), any());
                 then(exerciseParticipationCleanupService).should(never())

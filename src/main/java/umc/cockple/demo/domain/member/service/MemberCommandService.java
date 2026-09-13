@@ -96,7 +96,7 @@ public class MemberCommandService {
 
         // 참여중인 미래 운동과 연결된 게임판 명단을 동일한 기준 시각으로 함께 정리
         gameBoardRosterCleanupService.removeFutureMemberRosters(member.getId(), withdrawalTime);
-        exerciseParticipationCleanupService.deleteFutureParticipationsForWithdrawal(
+        exerciseParticipationCleanupService.deleteFutureParticipationForWithdrawal(
                 member.getId(), withdrawalTime);
         memberPartyRepository.findAllByMemberIdForUpdate(member.getId());
         memberPartyRepository.deleteAllByMember(member);

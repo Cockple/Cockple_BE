@@ -33,7 +33,7 @@ class ExerciseParticipationCleanupServiceTest {
                 memberId, withdrawalTime.toLocalDate(), withdrawalTime.toLocalTime()))
                 .willReturn(2);
 
-        int deletedCount = cleanupService.deleteFutureParticipationsForWithdrawal(
+        int deletedCount = cleanupService.deleteFutureParticipationForWithdrawal(
                 memberId, withdrawalTime);
 
         assertThat(deletedCount).isEqualTo(2);
