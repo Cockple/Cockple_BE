@@ -12,6 +12,7 @@ import java.util.UUID;
  * @param partyName          알림 제목으로 사용할 모임 이름
  * @param imageKey           알림 이미지 키
  * @param courtName          게임이 배치된 코트 이름
+ * @param participantNames   알림 문구에 노출할 게임 참가자 이름(회원·게스트 포함, 자리 순서)
  * @param recipientMemberIds 알림 수신 대상 회원 ID
  */
 public record GameStartedEvent(
@@ -20,11 +21,13 @@ public record GameStartedEvent(
         String partyName,
         String imageKey,
         String courtName,
+        List<String> participantNames,
         List<Long> recipientMemberIds,
         LocalDateTime occurredAt,
         UUID eventId
 ) {
     public GameStartedEvent {
+        participantNames = List.copyOf(participantNames);
         recipientMemberIds = List.copyOf(recipientMemberIds);
     }
 
@@ -34,11 +37,12 @@ public record GameStartedEvent(
             String partyName,
             String imageKey,
             String courtName,
+            List<String> participantNames,
             List<Long> recipientMemberIds
     ) {
         return new GameStartedEvent(
                 gameBoardId, partyId, partyName, imageKey, courtName,
-                recipientMemberIds, LocalDateTime.now(), UUID.randomUUID()
+                participantNames, recipientMemberIds, LocalDateTime.now(), UUID.randomUUID()
         );
     }
 }

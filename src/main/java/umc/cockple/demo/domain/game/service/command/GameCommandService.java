@@ -245,6 +245,12 @@ public class GameCommandService {
             return;
         }
 
+        List<String> participantNames = game.getPlayers().stream()
+                .sorted(java.util.Comparator.comparingInt(GamePlayer::getPlayerOrder))
+                .map(GamePlayer::getGameBoardMember)
+                .map(GameBoardMember::getName)
+                .toList();
+
         Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
         Party party = exercise.getParty();
@@ -254,13 +260,11 @@ public class GameCommandService {
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
                 court.getCourtName(),
+                participantNames,
                 recipientMemberIds
         ));
     }
 
-    /**
-     * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다
-     */
     private void resequenceWaitingQueue(Long gameBoardId) {
         List<Game> waitingGames = gameRepository
                 .findByGameBoardIdAndStatusOrderByWaitingOrderAsc(gameBoardId, GameStatus.WAITING);

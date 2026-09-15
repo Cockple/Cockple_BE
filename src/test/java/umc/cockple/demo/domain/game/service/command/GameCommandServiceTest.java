@@ -144,6 +144,7 @@ class GameCommandServiceTest {
             assertThat(started.gameBoardId()).isEqualTo(BOARD_ID);
             assertThat(started.partyName()).isEqualTo("우리모임");
             assertThat(started.courtName()).isEqualTo("1번 코트");
+            assertThat(started.participantNames()).containsExactly("빠나영", "김민지");
             assertThat(started.recipientMemberIds()).containsExactly(200L, 300L);
         }
 
