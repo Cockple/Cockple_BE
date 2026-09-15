@@ -54,7 +54,7 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
         transactionTemplate.executeWithoutResult(status ->
                 eventPublisher.publishEvent(GameStartedEvent.started(
                         GAME_BOARD_ID, PARTY_ID, "우리모임", "img-key", "화이팅코트",
-                        List.of(11L, 22L))));
+                        List.of("김하나", "이두리"), List.of(11L, 22L))));
 
         List<NotificationOutbox> outboxes = findMine(NotificationOutboxEventType.GAME_STARTED);
         assertThat(outboxes).hasSize(2);
@@ -64,7 +64,7 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
             assertThat(outbox.getResourceId()).isEqualTo(GAME_BOARD_ID);
             assertThat(outbox.getAction()).isEqualTo(NotificationAction.VIEW);
             assertThat(outbox.getTitle()).isEqualTo("우리모임");
-            assertThat(outbox.getContent()).isEqualTo("'화이팅코트' 입장해주세요!");
+            assertThat(outbox.getContent()).isEqualTo("'화이팅코트' 입장해주세요!\n김하나 이두리");
             assertThat(outbox.getLegacyPartyId()).isEqualTo(PARTY_ID);
         });
         assertThat(outboxes).extracting(NotificationOutbox::getRecipientMemberId)
@@ -94,7 +94,8 @@ class GameNotificationOutboxFlowTest extends IntegrationTestBase {
     void rolledBack_recordsNothing() {
         transactionTemplate.executeWithoutResult(status -> {
             eventPublisher.publishEvent(GameStartedEvent.started(
-                    GAME_BOARD_ID, PARTY_ID, "우리모임", "img-key", "화이팅코트", List.of(11L)));
+                    GAME_BOARD_ID, PARTY_ID, "우리모임", "img-key", "화이팅코트",
+                    List.of("김하나"), List.of(11L)));
             status.setRollbackOnly();
         });
 
