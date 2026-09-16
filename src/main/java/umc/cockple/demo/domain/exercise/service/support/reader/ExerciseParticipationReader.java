@@ -27,7 +27,7 @@ public class ExerciseParticipationReader {
 
     public ExerciseParticipation findExerciseParticipationOrThrow(Exercise exercise, Member member) {
         return exerciseParticipationRepository.findByExerciseAndMember(exercise, member)
-                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                .orElseThrow(() -> new ExerciseException(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
     }
 
     public List<ExerciseParticipation> findExerciseParticipationsWithMemberAndProfile(Long exerciseId) {

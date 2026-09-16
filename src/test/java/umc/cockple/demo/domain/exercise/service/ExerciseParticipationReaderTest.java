@@ -43,7 +43,7 @@ class ExerciseParticipationReaderTest {
     }
 
     @Test
-    @DisplayName("참가 기록이 없으면 ExerciseException(MEMBER_EXERCISE_NOT_FOUND)을 던진다")
+    @DisplayName("참가 기록이 없으면 ExerciseException(EXERCISE_PARTICIPATION_NOT_FOUND)을 던진다")
     void findExerciseParticipationOrThrow_throwsWhenMissing() {
         given(exerciseParticipationRepository.findByExerciseAndMember(exercise, member))
                 .willReturn(Optional.empty());
@@ -51,6 +51,6 @@ class ExerciseParticipationReaderTest {
         assertThatThrownBy(() -> exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, member))
                 .isInstanceOf(ExerciseException.class)
                 .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
-                        .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                        .isEqualTo(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
     }
 }

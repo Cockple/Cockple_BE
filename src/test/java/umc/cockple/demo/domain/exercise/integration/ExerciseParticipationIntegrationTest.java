@@ -311,8 +311,8 @@ class ExerciseParticipationIntegrationTest extends IntegrationTestBase {
 
                 mockMvc.perform(delete("/api/exercises/{exerciseId}/participants/my", exercise.getId()))
                         .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND.getCode()))
-                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND.getMessage()));
+                        .andExpect(jsonPath("$.code").value(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND.getCode()))
+                        .andExpect(jsonPath("$.message").value(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND.getMessage()));
             }
         }
     }

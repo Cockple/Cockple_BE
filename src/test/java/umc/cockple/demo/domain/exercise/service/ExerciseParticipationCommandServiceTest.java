@@ -394,20 +394,20 @@ class ExerciseParticipationCommandServiceTest {
             }
 
             @Test
-            @DisplayName("참여 기록이 없으면 ExerciseException(MEMBER_EXERCISE_NOT_FOUND)을 던진다")
+            @DisplayName("참여 기록이 없으면 ExerciseException(EXERCISE_PARTICIPATION_NOT_FOUND)을 던진다")
             void exerciseParticipationNotFound_throwsException() {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
                 given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
-                        .willThrow(new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                        .willThrow(new ExerciseException(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
 
                 assertThatThrownBy(() ->
                         exerciseParticipationCommandService.cancelParticipation(exercise.getId(), participant.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
-                                .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
             }
 
             @Test
