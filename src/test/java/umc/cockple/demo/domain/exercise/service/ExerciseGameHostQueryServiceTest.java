@@ -12,11 +12,11 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseGameHostQueryService;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseGameHostResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -55,7 +55,7 @@ class ExerciseGameHostQueryServiceTest {
 
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private FileService fileService;
 
     private Member manager;
@@ -69,8 +69,8 @@ class ExerciseGameHostQueryServiceTest {
         exerciseGameHostQueryService = new ExerciseGameHostQueryService(
                 new ExerciseReader(exerciseRepository),
                 memberPartyLookupService,
-                new MemberExerciseReader(memberExerciseRepository),
-                new ExerciseValidator(memberPartyLookupService, memberExerciseRepository),
+                new ExerciseParticipationReader(exerciseParticipationRepository),
+                new ExerciseValidator(memberPartyLookupService, exerciseParticipationRepository),
                 new ImageUrlResolver(fileService)
         );
 
@@ -111,7 +111,7 @@ class ExerciseGameHostQueryServiceTest {
                     party.getId(), MemberPartyStatus.ACTIVE))
                     .willReturn(List.of(
                             laterMemberParty, earlierMemberParty, subManagerParty, managerParty));
-            given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(
+            given(exerciseParticipationRepository.findLastExerciseDateByMemberIdsAndPartyId(
                     argThat(ids -> ids.containsAll(List.of(1L, 2L, 3L, 4L))),
                     org.mockito.ArgumentMatchers.eq(party.getId())))
                     .willReturn(List.<Object[]>of(
@@ -158,7 +158,7 @@ class ExerciseGameHostQueryServiceTest {
 
             assertThat(result.totalCount()).isZero();
             assertThat(result.participants()).isEmpty();
-            verify(memberExerciseRepository, never())
+            verify(exerciseParticipationRepository, never())
                     .findLastExerciseDateByMemberIdsAndPartyId(
                             org.mockito.ArgumentMatchers.anyList(),
                             org.mockito.ArgumentMatchers.anyLong());

@@ -26,14 +26,14 @@ import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCom
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -64,11 +64,11 @@ import static org.mockito.Mockito.atLeastOnce;
 class ExerciseParticipationCommandServiceTest {
 
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private GuestRepository guestRepository;
     @Mock private ExerciseReader exerciseReader;
     @Mock private GuestReader guestReader;
-    @Mock private MemberExerciseReader memberExerciseReader;
+    @Mock private ExerciseParticipationReader exerciseParticipationReader;
     @Mock private MemberLookupService memberLookupService;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private GamePlayerRepository gamePlayerRepository;
@@ -83,13 +83,13 @@ class ExerciseParticipationCommandServiceTest {
     void setUp() {
         MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
         ExerciseValidator exerciseValidator = new ExerciseValidator(
-                memberPartyLookupService, memberExerciseRepository);
+                memberPartyLookupService, exerciseParticipationRepository);
         exerciseParticipationCommandService = new ExerciseParticipationCommandService(
-                memberExerciseRepository,
+                exerciseParticipationRepository,
                 guestRepository,
                 exerciseReader,
                 guestReader,
-                memberExerciseReader,
+                exerciseParticipationReader,
                 memberLookupService,
                 memberPartyLookupService,
                 eventPublisher,
@@ -129,11 +129,11 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
                         .willAnswer(invocation -> {
-                            MemberExercise me = invocation.getArgument(0);
+                            ExerciseParticipation me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 50L);
                             return me;
                         });
@@ -142,10 +142,10 @@ class ExerciseParticipationCommandServiceTest {
                 ExerciseJoinResult response = exerciseParticipationCommandService.joinExercise(exercise.getId(), participant.getId());
 
                 // then
-                ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
+                ArgumentCaptor<ExerciseParticipation> participationCaptor = ArgumentCaptor.forClass(ExerciseParticipation.class);
+                then(exerciseParticipationRepository).should().saveAndFlush(participationCaptor.capture());
 
-                MemberExercise savedParticipation = participationCaptor.getValue();
+                ExerciseParticipation savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(50L);
                 assertThat(response.currentParticipants()).isEqualTo(1);
                 assertThat(savedParticipation.getMember()).isSameAs(participant);
@@ -179,11 +179,11 @@ class ExerciseParticipationCommandServiceTest {
                 given(exerciseReader.findByIdWithPartyLevelsOrThrow(outsideAcceptExercise.getId()))
                         .willReturn(outsideAcceptExercise);
                 given(memberLookupService.findByIdOrThrow(outsideMember.getId())).willReturn(outsideMember);
-                given(memberExerciseRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(outsideAcceptExercise, outsideMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
-                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
                         .willAnswer(invocation -> {
-                            MemberExercise me = invocation.getArgument(0);
+                            ExerciseParticipation me = invocation.getArgument(0);
                             ReflectionTestUtils.setField(me, "id", 51L);
                             return me;
                         });
@@ -193,10 +193,10 @@ class ExerciseParticipationCommandServiceTest {
                         .joinExercise(outsideAcceptExercise.getId(), outsideMember.getId());
 
                 // then
-                ArgumentCaptor<MemberExercise> participationCaptor = ArgumentCaptor.forClass(MemberExercise.class);
-                then(memberExerciseRepository).should().saveAndFlush(participationCaptor.capture());
+                ArgumentCaptor<ExerciseParticipation> participationCaptor = ArgumentCaptor.forClass(ExerciseParticipation.class);
+                then(exerciseParticipationRepository).should().saveAndFlush(participationCaptor.capture());
 
-                MemberExercise savedParticipation = participationCaptor.getValue();
+                ExerciseParticipation savedParticipation = participationCaptor.getValue();
                 assertThat(response.participantId()).isEqualTo(51L);
                 assertThat(response.currentParticipants()).isEqualTo(1);
                 assertThat(savedParticipation.getMember()).isSameAs(outsideMember);
@@ -218,9 +218,9 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
                         .willThrow(uniqueConflict("uk_member_exercise_exercise_member"));
 
                 assertThatThrownBy(() -> exerciseParticipationCommandService
@@ -242,9 +242,9 @@ class ExerciseParticipationCommandServiceTest {
                 DataIntegrityViolationException conflict = uniqueConflict("other_constraint");
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, participant)).willReturn(true);
-                given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+                given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
                         .willThrow(conflict);
 
                 assertThatThrownBy(() -> exerciseParticipationCommandService
@@ -280,7 +280,7 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).willReturn(true);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).willReturn(true);
 
                 assertThatThrownBy(() ->
                         exerciseParticipationCommandService.joinExercise(exercise.getId(), participant.getId()))
@@ -296,7 +296,7 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(outsideMember, "id", 3L);
 
                 given(memberLookupService.findByIdOrThrow(outsideMember.getId())).willReturn(outsideMember);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, outsideMember)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, outsideMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, outsideMember)).willReturn(false);
 
                 assertThatThrownBy(() ->
@@ -313,7 +313,7 @@ class ExerciseParticipationCommandServiceTest {
                 ReflectionTestUtils.setField(youngMember, "id", 4L);
 
                 given(memberLookupService.findByIdOrThrow(youngMember.getId())).willReturn(youngMember);
-                given(memberExerciseRepository.existsByExerciseAndMember(exercise, youngMember)).willReturn(false);
+                given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, youngMember)).willReturn(false);
                 given(memberPartyRepository.existsByPartyAndMember(party, youngMember)).willReturn(true);
 
                 assertThatThrownBy(() ->
@@ -343,14 +343,14 @@ class ExerciseParticipationCommandServiceTest {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
-                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(participant, exercise);
+                ReflectionTestUtils.setField(exerciseParticipation, "id", 50L);
                 exercise.getGameBoard().addGameBoardMember(
                         GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
-                        .willReturn(memberExercise);
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
+                        .willReturn(exerciseParticipation);
 
                 // when
                 ExerciseCancelResult response = exerciseParticipationCommandService
@@ -359,7 +359,7 @@ class ExerciseParticipationCommandServiceTest {
                 // then
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
                 assertThat(response.currentParticipants()).isNotNull();
-                then(memberExerciseRepository).should().delete(memberExercise);
+                then(exerciseParticipationRepository).should().delete(exerciseParticipation);
                 assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
         }
@@ -378,13 +378,13 @@ class ExerciseParticipationCommandServiceTest {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, startedExercise);
-                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(participant, startedExercise);
+                ReflectionTestUtils.setField(exerciseParticipation, "id", 50L);
 
                 given(exerciseReader.findByIdOrThrow(startedExercise.getId())).willReturn(startedExercise);
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(startedExercise, participant))
-                        .willReturn(memberExercise);
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(startedExercise, participant))
+                        .willReturn(exerciseParticipation);
 
                 assertThatThrownBy(() ->
                         exerciseParticipationCommandService.cancelParticipation(startedExercise.getId(), participant.getId()))
@@ -394,20 +394,20 @@ class ExerciseParticipationCommandServiceTest {
             }
 
             @Test
-            @DisplayName("참여 기록이 없으면 ExerciseException(MEMBER_EXERCISE_NOT_FOUND)을 던진다")
-            void memberExerciseNotFound_throwsException() {
+            @DisplayName("참여 기록이 없으면 ExerciseException(EXERCISE_PARTICIPATION_NOT_FOUND)을 던진다")
+            void exerciseParticipationNotFound_throwsException() {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
-                        .willThrow(new ExerciseException(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
+                        .willThrow(new ExerciseException(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
 
                 assertThatThrownBy(() ->
                         exerciseParticipationCommandService.cancelParticipation(exercise.getId(), participant.getId()))
                         .isInstanceOf(ExerciseException.class)
                         .satisfies(e -> assertThat(((ExerciseException) e).getCode())
-                                .isEqualTo(ExerciseErrorCode.MEMBER_EXERCISE_NOT_FOUND));
+                                .isEqualTo(ExerciseErrorCode.EXERCISE_PARTICIPATION_NOT_FOUND));
             }
 
             @Test
@@ -415,11 +415,11 @@ class ExerciseParticipationCommandServiceTest {
             void assignedPlayer_throwsException() {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(participant, exercise);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
-                        .willReturn(memberExercise);
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
+                        .willReturn(exerciseParticipation);
                 given(gamePlayerRepository.existsByMemberSource(
                         exercise.getGameBoard().getId(), participant.getId()))
                         .willReturn(true);
@@ -430,7 +430,7 @@ class ExerciseParticipationCommandServiceTest {
                         .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                                 .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
 
-                then(memberExerciseRepository).should(never()).delete(any(MemberExercise.class));
+                then(exerciseParticipationRepository).should(never()).delete(any(ExerciseParticipation.class));
             }
         }
     }
@@ -450,16 +450,16 @@ class ExerciseParticipationCommandServiceTest {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 2L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
-                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(participant, exercise);
+                ReflectionTestUtils.setField(exerciseParticipation, "id", 50L);
                 exercise.getGameBoard().addGameBoardMember(
                         GameBoardMember.createFromMember(participant, exercise.getDate()));
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
-                        .willReturn(memberExercise);
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
+                        .willReturn(exerciseParticipation);
 
                 // when
                 ExerciseCancelResult response = exerciseParticipationCommandService
@@ -467,7 +467,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
-                then(memberExerciseRepository).should().delete(memberExercise);
+                then(exerciseParticipationRepository).should().delete(exerciseParticipation);
                 assertThat(exercise.getGameBoard().getGameBoardMembers()).isEmpty();
             }
 
@@ -481,8 +481,8 @@ class ExerciseParticipationCommandServiceTest {
                 Member participant = MemberFixture.createMember("참여자", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(participant, "id", 3L);
 
-                MemberExercise memberExercise = MemberFixture.createMemberExercise(participant, exercise);
-                ReflectionTestUtils.setField(memberExercise, "id", 50L);
+                ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(participant, exercise);
+                ReflectionTestUtils.setField(exerciseParticipation, "id", 50L);
 
                 ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
@@ -492,8 +492,8 @@ class ExerciseParticipationCommandServiceTest {
                         .willReturn(true);
                 given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
                 given(memberLookupService.findByIdOrThrow(participant.getId())).willReturn(participant);
-                given(memberExerciseReader.findMemberExerciseOrThrow(exercise, participant))
-                        .willReturn(memberExercise);
+                given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant))
+                        .willReturn(exerciseParticipation);
 
                 // when
                 ExerciseCancelResult response = exerciseParticipationCommandService
@@ -501,7 +501,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 // then
                 assertThat(response.memberName()).isEqualTo(participant.getMemberName());
-                then(memberExerciseRepository).should().delete(memberExercise);
+                then(exerciseParticipationRepository).should().delete(exerciseParticipation);
             }
 
             @Test
@@ -629,11 +629,11 @@ class ExerciseParticipationCommandServiceTest {
         void joinExercise_publishesEventToManagersOnly() {
             // given: 일반멤버(id 6)가 본인 운동에 참여 신청
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
-            given(memberExerciseRepository.existsByExerciseAndMember(exercise, normalMember)).willReturn(false);
+            given(exerciseParticipationRepository.existsByExerciseAndMember(exercise, normalMember)).willReturn(false);
             given(memberPartyRepository.existsByPartyAndMember(party, normalMember)).willReturn(true);
-            given(memberExerciseRepository.saveAndFlush(any(MemberExercise.class)))
+            given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
                     .willAnswer(invocation -> {
-                        MemberExercise me = invocation.getArgument(0);
+                        ExerciseParticipation me = invocation.getArgument(0);
                         ReflectionTestUtils.setField(me, "id", 50L);
                         return me;
                     });
@@ -652,11 +652,11 @@ class ExerciseParticipationCommandServiceTest {
         @DisplayName("본인 참여 취소 시, 취소한 부모임장 본인은 수신자에서 제외된다")
         void cancelParticipation_excludesSubjectFromRecipients() {
             // given: 부모임장(id 5) 본인이 참여를 취소
-            MemberExercise memberExercise = MemberFixture.createMemberExercise(subManager, exercise);
-            ReflectionTestUtils.setField(memberExercise, "id", 70L);
+            ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(subManager, exercise);
+            ReflectionTestUtils.setField(exerciseParticipation, "id", 70L);
 
             given(memberLookupService.findByIdOrThrow(subManager.getId())).willReturn(subManager);
-            given(memberExerciseReader.findMemberExerciseOrThrow(exercise, subManager)).willReturn(memberExercise);
+            given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, subManager)).willReturn(exerciseParticipation);
 
             // when
             exerciseParticipationCommandService.cancelParticipation(exercise.getId(), subManager.getId());
@@ -671,12 +671,12 @@ class ExerciseParticipationCommandServiceTest {
         @DisplayName("매니저가 멤버 참여를 취소하면 취소된 멤버를 subject로 이벤트를 발행한다")
         void cancelByManager_member_publishesEvent() {
             // given: 모임장이 일반멤버(id 6) 참여를 취소
-            MemberExercise memberExercise = MemberFixture.createMemberExercise(normalMember, exercise);
-            ReflectionTestUtils.setField(memberExercise, "id", 71L);
+            ExerciseParticipation exerciseParticipation = MemberFixture.createExerciseParticipation(normalMember, exercise);
+            ReflectionTestUtils.setField(exerciseParticipation, "id", 71L);
             ExerciseCancelByManagerCommand request = new ExerciseCancelByManagerCommand(false);
 
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
-            given(memberExerciseReader.findMemberExerciseOrThrow(exercise, normalMember)).willReturn(memberExercise);
+            given(exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, normalMember)).willReturn(exerciseParticipation);
 
             // when
             exerciseParticipationCommandService.cancelParticipationByManager(

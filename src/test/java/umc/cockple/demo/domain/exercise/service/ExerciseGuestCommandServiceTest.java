@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.repository.GamePlayerRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.never;
 class ExerciseGuestCommandServiceTest {
 
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private GuestRepository guestRepository;
     @Mock private ExerciseReader exerciseReader;
     @Mock private GuestReader guestReader;
@@ -71,7 +71,7 @@ class ExerciseGuestCommandServiceTest {
     @BeforeEach
     void setUp() {
         ExerciseValidator exerciseValidator = new ExerciseValidator(
-                new MemberPartyLookupService(memberPartyRepository), memberExerciseRepository);
+                new MemberPartyLookupService(memberPartyRepository), exerciseParticipationRepository);
         exerciseGuestCommandService = new ExerciseGuestCommandService(
                 guestRepository,
                 exerciseReader,

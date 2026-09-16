@@ -70,7 +70,7 @@ public class Exercise extends BaseEntity {
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
     @Builder.Default
-    private List<MemberExercise> memberExercises = new ArrayList<>();
+    private List<ExerciseParticipation> participations = new ArrayList<>();
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL)
     @Builder.Default
@@ -128,7 +128,7 @@ public class Exercise extends BaseEntity {
     }
 
     public Integer getNowCapacity() {
-        return memberExercises.size() + guests.size();
+        return participations.size() + guests.size();
     }
 
     public boolean isAlreadyStarted() {
@@ -146,11 +146,11 @@ public class Exercise extends BaseEntity {
         }
     }
 
-    public MemberExercise addParticipation(Member member, ExerciseMemberShipStatus status) {
-        MemberExercise memberExercise = MemberExercise.create(member, this, status);
-        this.memberExercises.add(memberExercise);
+    public ExerciseParticipation addParticipation(Member member, ExerciseMemberShipStatus status) {
+        ExerciseParticipation exerciseParticipation = ExerciseParticipation.create(member, this, status);
+        this.participations.add(exerciseParticipation);
         this.gameBoard.addGameBoardMember(GameBoardMember.createFromMember(member, date));
-        return memberExercise;
+        return exerciseParticipation;
     }
 
     public void addGuest(Guest guest) {
@@ -159,9 +159,9 @@ public class Exercise extends BaseEntity {
         this.gameBoard.addGameBoardMember(GameBoardMember.createFromGuest(guest));
     }
 
-    public void removeParticipation(MemberExercise memberExercise) {
-        this.memberExercises.remove(memberExercise);
-        this.gameBoard.removeGameBoardMember(memberExercise.getMember());
+    public void removeParticipation(ExerciseParticipation exerciseParticipation) {
+        this.participations.remove(exerciseParticipation);
+        this.gameBoard.removeGameBoardMember(exerciseParticipation.getMember());
     }
 
     public void removeGuest(Guest guest) {

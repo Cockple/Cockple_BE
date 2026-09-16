@@ -121,8 +121,8 @@ public class ExerciseLifecycleCommandService {
     }
 
     private List<Long> recipientMemberIds(Exercise exercise) {
-        return exercise.getMemberExercises().stream()
-                .map(memberExercise -> memberExercise.getMember().getId())
+        return exercise.getParticipations().stream()
+                .map(exerciseParticipation -> exerciseParticipation.getMember().getId())
                 .toList();
     }
 }

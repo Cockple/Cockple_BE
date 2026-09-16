@@ -16,15 +16,15 @@ import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
@@ -44,11 +44,11 @@ public class ExerciseParticipationCommandService {
     private static final String GAME_BOARD_MEMBER_UNIQUE_CONSTRAINT =
             "uk_game_board_member_board_member";
 
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
     private final GuestRepository guestRepository;
     private final ExerciseReader exerciseReader;
     private final GuestReader guestReader;
-    private final MemberExerciseReader memberExerciseReader;
+    private final ExerciseParticipationReader exerciseParticipationReader;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
     private final ApplicationEventPublisher eventPublisher;
@@ -68,22 +68,22 @@ public class ExerciseParticipationCommandService {
         ExerciseMemberShipStatus membershipStatus = isPartyMember
                 ? ExerciseMemberShipStatus.PARTY_MEMBER
                 : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
-        MemberExercise memberExercise = exercise.addParticipation(member, membershipStatus);
+        ExerciseParticipation exerciseParticipation = exercise.addParticipation(member, membershipStatus);
 
-        MemberExercise savedMemberExercise = saveParticipation(memberExercise);
+        ExerciseParticipation savedExerciseParticipation = saveParticipation(exerciseParticipation);
         publishAttendanceChangedEvent(exercise, member.getId());
         publishGameBoardMembersChanged(exercise, memberId);
 
-        log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
-                , savedMemberExercise.getId(), isPartyMember);
+        log.info("운동 신청 종료 - exerciseParticipationId: {}, isPartyMember : {}"
+                , savedExerciseParticipation.getId(), isPartyMember);
 
         return new ExerciseJoinResult(
-                savedMemberExercise.getId(), savedMemberExercise.getCreatedAt(), exercise.getNowCapacity());
+                savedExerciseParticipation.getId(), savedExerciseParticipation.getCreatedAt(), exercise.getNowCapacity());
     }
 
-    private MemberExercise saveParticipation(MemberExercise memberExercise) {
+    private ExerciseParticipation saveParticipation(ExerciseParticipation exerciseParticipation) {
         try {
-            return memberExerciseRepository.saveAndFlush(memberExercise);
+            return exerciseParticipationRepository.saveAndFlush(exerciseParticipation);
         } catch (DataIntegrityViolationException exception) {
             if (isDuplicateParticipation(exception)) {
                 throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
@@ -122,14 +122,14 @@ public class ExerciseParticipationCommandService {
 
         Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
         Member member = memberLookupService.findByIdOrThrow(memberId);
-        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, member);
+        ExerciseParticipation exerciseParticipation = exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), member.getId());
 
-        exercise.removeParticipation(memberExercise);
+        exercise.removeParticipation(exerciseParticipation);
 
-        memberExerciseRepository.delete(memberExercise);
+        exerciseParticipationRepository.delete(exerciseParticipation);
         publishAttendanceChangedEvent(exercise, member.getId());
         publishGameBoardMembersChanged(exercise, memberId);
 
@@ -186,13 +186,13 @@ public class ExerciseParticipationCommandService {
 
     private ExerciseCancelResult cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
-        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
+        ExerciseParticipation exerciseParticipation = exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant);
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), participant.getId());
 
-        exercise.removeParticipation(memberExercise);
+        exercise.removeParticipation(exerciseParticipation);
 
-        memberExerciseRepository.delete(memberExercise);
+        exerciseParticipationRepository.delete(exerciseParticipation);
         publishAttendanceChangedEvent(exercise, participant.getId());
 
         return new ExerciseCancelResult(participant.getDisplayName(), exercise.getNowCapacity());

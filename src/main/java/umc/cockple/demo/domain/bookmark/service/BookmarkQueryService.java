@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -44,7 +44,7 @@ public class BookmarkQueryService {
     private final ExerciseBookmarkRepository exerciseBookmarkRepository;
     private final PartyBookmarkRepository partyBookmarkRepository;
     private final MemberPartyRepository memberPartyRepository;
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
     private final ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     private final MemberRepository memberRepository;
     private final BookmarkConverter bookmarkConverter;
@@ -67,7 +67,7 @@ public class BookmarkQueryService {
         List<Long> exerciseIds = bookmarks.stream().map(b -> b.getExercise().getId()).toList();
 
         Set<Long> myParties = new HashSet<>(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(memberId, partyIds));
-        Set<Long> myExercises = new HashSet<>(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds));
+        Set<Long> myExercises = new HashSet<>(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(memberId, exerciseIds));
 
         // exercise 도메인의 공통 참여 인원수 조회 로직 사용 (N+1 제거)
         Map<Long, Integer> nowCntByExerciseId = exerciseParticipantCountLookupService

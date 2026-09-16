@@ -16,7 +16,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.support.assembler.ExerciseParticipantSnapshotAssembler;
 import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.exercise.service.query.ExerciseGuestQueryService;
@@ -27,7 +27,7 @@ import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -64,7 +64,7 @@ class ExerciseGuestQueryServiceTest {
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private GuestRepository guestRepository;
     @Mock private FileService fileService;
 
@@ -74,8 +74,8 @@ class ExerciseGuestQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        MemberExerciseReader memberExerciseReader = new MemberExerciseReader(
-                memberExerciseRepository);
+        ExerciseParticipationReader exerciseParticipationReader = new ExerciseParticipationReader(
+                exerciseParticipationRepository);
         GuestReader guestReader = new GuestReader(guestRepository);
         MemberLookupService memberLookupService = new MemberLookupService(memberRepository);
         MemberPartyLookupService memberPartyLookupService = new MemberPartyLookupService(memberPartyRepository);
@@ -84,7 +84,7 @@ class ExerciseGuestQueryServiceTest {
                 new ExerciseReader(exerciseRepository),
                 guestReader,
                 new ExerciseParticipantSnapshotAssembler(
-                        memberExerciseReader,
+                        exerciseParticipationReader,
                         guestReader,
                         memberLookupService,
                         memberPartyLookupService,
@@ -138,7 +138,7 @@ class ExerciseGuestQueryServiceTest {
                         .willReturn(Optional.of(manager));
                 given(guestRepository.findByExerciseIdAndInviterId(exercise.getId(), manager.getId()))
                         .willReturn(List.of(myFirstGuest, mySecondGuest));
-                given(memberExerciseRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
+                given(exerciseParticipationRepository.findByExerciseIdWithMemberAndProfile(exercise.getId()))
                         .willReturn(List.of());
                 given(guestRepository.findByExerciseId(exercise.getId()))
                         .willReturn(List.of(myFirstGuest, otherInvitedGuest, mySecondGuest));
