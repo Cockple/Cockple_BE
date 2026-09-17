@@ -144,7 +144,50 @@ class GameCommandServiceTest {
             assertThat(started.gameBoardId()).isEqualTo(BOARD_ID);
             assertThat(started.partyName()).isEqualTo("우리모임");
             assertThat(started.courtName()).isEqualTo("1번 코트");
+            assertThat(started.participantNames()).containsExactly("빠나영", "김민지");
             assertThat(started.recipientMemberIds()).containsExactly(200L, 300L);
+        }
+
+        @Test
+        @DisplayName("참가자 이름은 게스트를 포함해 playerOrder 순으로, 수신자는 회원만 담아 이벤트를 발행한다")
+        void startGame_participantNamesIncludeGuestsInPlayerOrder() {
+            // given - 회원 2명 + 게스트 1명을, playerOrder 와 어긋난 입력 순서로 배치
+            Member account20 = Member.builder().id(200L).build();
+            Member account30 = Member.builder().id(300L).build();
+            GamePlayer pMember0 = GameFixture.player(
+                    GameFixture.memberWithAccount(1L, board, account20, "김가나", Level.A), 0);
+            GamePlayer pGuest1 = GameFixture.player(
+                    GameFixture.member(2L, board, "이게스트", Level.A), 1);
+            GamePlayer pMember2 = GameFixture.player(
+                    GameFixture.memberWithAccount(3L, board, account30, "박다라", Level.B), 2);
+            // 입력 순서(pMember2, pGuest1, pMember0)는 playerOrder(0,1,2)와 다르다
+            Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, pMember2, pGuest1, pMember0);
+
+            Party party = Party.builder().id(10L).partyName("우리모임").build();
+            Exercise exercise = Exercise.builder().party(party).build();
+
+            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
+            given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
+            given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
+            given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
+                    .willReturn(List.of());
+            given(exerciseRepository.findByGameBoardId(BOARD_ID)).willReturn(Optional.of(exercise));
+
+            // when
+            gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID));
+
+            // then
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(eventPublisher).should(times(2)).publishEvent(captor.capture());
+            GameStartedEvent started = captor.getAllValues().stream()
+                    .filter(GameStartedEvent.class::isInstance)
+                    .map(GameStartedEvent.class::cast)
+                    .findFirst().orElseThrow();
+            // 이름: 게스트 포함, playerOrder(0,1,2) 순으로 정렬
+            assertThat(started.participantNames()).containsExactly("김가나", "이게스트", "박다라");
+            // 수신자: 회원 계정이 있는 사람만 (게스트 제외)
+            assertThat(started.recipientMemberIds()).containsExactlyInAnyOrder(200L, 300L);
         }
 
         @Test

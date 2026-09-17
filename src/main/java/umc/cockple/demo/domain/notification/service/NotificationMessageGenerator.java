@@ -2,6 +2,8 @@ package umc.cockple.demo.domain.notification.service;
 
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class NotificationMessageGenerator {
 
@@ -45,8 +47,12 @@ public class NotificationMessageGenerator {
         return String.format("'%s'님의 부모임장 권한이 해제되었습니다.", nickname);
     }
 
-    public String generateGameStartMessage(String courtName) {
-        return String.format("'%s' 입장해주세요!", courtName);
+    public String generateGameStartMessage(String courtName, List<String> participantNames) {
+        String message = String.format("'%s' 입장해주세요!", courtName);
+        if (participantNames == null || participantNames.isEmpty()) {
+            return message;
+        }
+        return message + "\n" + String.join(" ", participantNames);
     }
 
     public String generateGameHostAssignedMessage() {
