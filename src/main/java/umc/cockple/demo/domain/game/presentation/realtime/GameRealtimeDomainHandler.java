@@ -19,6 +19,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
@@ -142,11 +143,10 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         Long gameBoardId = requireGameBoardId(payload);
 
         GameCreateCommand command = new GameCreateCommand(gameBoardId, payload.gameBoardMemberIds());
-        Long gameId = gameCommandService.createGame(context.memberId(), command);
+        GameCreateResult result = gameCommandService.createGame(context.memberId(), command);
 
-        // 호출자에게는 생성된 gameId + 최신 보드를, 나머지 구독자에게는 보드 갱신을 전달한다.
-        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
-        responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(gameId, boardDto));
+        GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(result.board());
+        responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(result.gameId(), boardDto));
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
@@ -202,7 +202,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
-        // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외한다.
+        // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외
         gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
@@ -212,11 +212,8 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     /**
-     * isGameHost 는 "요청자 자신이 게임 진행자인지"를 뜻하는 개인 값이다.
-     * 보드 DTO 는 변경을 일으킨 요청자 기준으로 조회되므로, 그대로 브로드캐스트하면
-     * 진행자가 일으킨 변경 때 다른 구독자에게도 isGameHost=true 가 새어나간다.
-     * 따라서 브로드캐스트 본문에서는 항상 false 로 내리고, 각 클라이언트는
-     * 자신의 구독 응답으로 받은 값을 유지하도록 한다.
+     * 브로드캐스트 본문에서는 항상 false 로 내리고, 각 클라이언트는
+     * 자신의 구독 응답으로 받은 값을 유지
      */
     private GameBoardDTO.Response toBroadcastBoard(GameBoardDTO.Response board) {
         return board.forBroadcast();
@@ -230,21 +227,21 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
     }
 
     private void requireMoveCourtPayload(GameRealtimePayload payload) {
-        // MOVE_COURT: 원본 코트 ID와 목적지 코트 번호가 모두 필요하다.
+        // MOVE_COURT: 원본 코트 ID와 목적지 코트 번호가 모두 필요
         if (payload.courtId() == null || payload.targetCourtNo() == null) {
             throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
         }
     }
 
     private void requireStartGamePayload(GameRealtimePayload payload) {
-        // START_GAME: 시작할 대기 게임 ID와 목적지 코트 ID가 모두 필요하다.
+        // START_GAME: 시작할 대기 게임 ID와 목적지 코트 ID가 모두 필요
         if (payload.gameId() == null || payload.courtId() == null) {
             throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
         }
     }
 
     private void requireGameId(GameRealtimePayload payload) {
-        // DELETE_GAME/MOVE_TO_WAITING/COMPLETE_GAME: 대상 게임 ID가 필요하다.
+        // DELETE_GAME/MOVE_TO_WAITING/COMPLETE_GAME: 대상 게임 ID가 필요
         if (payload.gameId() == null) {
             throw new GameException(GameErrorCode.INVALID_REALTIME_PAYLOAD);
         }

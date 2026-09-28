@@ -33,7 +33,10 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
+import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
+import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.global.enums.Level;
@@ -47,6 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -62,6 +67,7 @@ class GameCommandServiceTest {
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    @Mock private GameBoardResultAssembler gameBoardResultAssembler;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameCommandService gameCommandService;
@@ -334,6 +340,44 @@ class GameCommandServiceTest {
                     .containsExactly(tuple(8L, 0), tuple(7L, 1));
             then(eventPublisher).should()
                     .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
+        }
+
+        @Test
+        @DisplayName("기존 활성 게임에 새 게임을 더해 보드를 조립하고, 활성 게임은 다시 조회하지 않는다")
+        void createGame_returnsBoardAssembledWithinTransaction() {
+            // given
+            GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
+            Game existingWaiting = GameFixture.waitingGame(40L, board, 1);
+            GameBoardResult assembledBoard = new GameBoardResult(true, 1, List.of(), List.of());
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
+            given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
+                    .willReturn(List.of(m7));
+            given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
+                    .willReturn(List.of(existingWaiting));
+            given(gameRepository.countByGameBoardIdAndStatus(BOARD_ID, GameStatus.WAITING)).willReturn(1L);
+            given(gameRepository.save(any(Game.class))).willAnswer(inv -> inv.getArgument(0));
+            given(courtRepository.findByGameBoardIdOrderByCourtNoAsc(BOARD_ID)).willReturn(List.of(court));
+            given(gameBoardResultAssembler.assemble(eq(true), eq(List.of(court)), anyList()))
+                    .willReturn(assembledBoard);
+
+            // when
+            GameCreateResult result = gameCommandService.createGame(
+                    MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L)));
+
+            // then
+            assertThat(result.board()).isSameAs(assembledBoard);
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<Game>> gamesCaptor = ArgumentCaptor.forClass(List.class);
+            then(gameBoardResultAssembler).should().assemble(eq(true), eq(List.of(court)), gamesCaptor.capture());
+            List<Game> assembledGames = gamesCaptor.getValue();
+            assertThat(assembledGames).hasSize(2);
+            assertThat(assembledGames.get(0)).isSameAs(existingWaiting);
+            assertThat(assembledGames.get(1).getStatus()).isEqualTo(GameStatus.WAITING);
+            assertThat(assembledGames.get(1).getWaitingOrder()).isEqualTo(2);
+
+            then(gameRepository).should(times(1))
+                    .findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList());
         }
 
         @Test
