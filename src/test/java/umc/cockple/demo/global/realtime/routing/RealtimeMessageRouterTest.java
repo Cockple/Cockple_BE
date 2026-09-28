@@ -3,6 +3,8 @@ package umc.cockple.demo.global.realtime.routing;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -32,7 +34,7 @@ class RealtimeMessageRouterTest {
     void routeDelegatesToRegisteredDomainHandler() {
         RealtimeDomainHandler chatHandler = handler("CHAT", "SEND", "SUBSCRIBE");
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler), new SimpleMeterRegistry());
         JsonNode payload = objectMapper.createObjectNode()
                 .put("chatRoomId", 20L)
                 .put("content", "hello");
@@ -58,7 +60,7 @@ class RealtimeMessageRouterTest {
         RealtimeDomainHandler chatHandler = handler("CHAT", "SUBSCRIBE");
         RealtimeDomainHandler gameHandler = handler("GAME", "SUBSCRIBE");
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler, gameHandler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler, gameHandler), new SimpleMeterRegistry());
 
         router.route(connectionContext, envelope("GAME", "SUBSCRIBE", "request-1", null), responder);
 
@@ -79,7 +81,7 @@ class RealtimeMessageRouterTest {
     void routeSendsUnknownRouteError() {
         RealtimeDomainHandler chatHandler = handler("CHAT", "SEND");
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler), new SimpleMeterRegistry());
 
         router.route(connectionContext, envelope("GAME", "START", "request-1", null), responder);
 
@@ -98,7 +100,7 @@ class RealtimeMessageRouterTest {
     @DisplayName("필수 필드가 없는 요청은 INVALID_MESSAGE 오류로 응답한다")
     void routeRejectsMessageWithoutRequiredFields() {
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of());
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(), new SimpleMeterRegistry());
         RealtimeInboundEnvelope envelope = new RealtimeInboundEnvelope(
                 RealtimeProtocolVersion.CURRENT,
                 "CHAT",
@@ -119,7 +121,7 @@ class RealtimeMessageRouterTest {
     @DisplayName("현재 버전이 아닌 요청은 UNSUPPORTED_VERSION 오류로 응답한다")
     void routeRejectsUnsupportedProtocolVersion() {
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of());
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(), new SimpleMeterRegistry());
         RealtimeInboundEnvelope envelope = new RealtimeInboundEnvelope(
                 999,
                 "CHAT",
@@ -141,7 +143,7 @@ class RealtimeMessageRouterTest {
     void routeConvertsHandlerExceptionToInternalError() {
         RealtimeDomainHandler chatHandler = handler("CHAT", "SEND");
         RealtimeResponder responder = mock(RealtimeResponder.class);
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler), new SimpleMeterRegistry());
         willThrow(new IllegalStateException("database details"))
                 .given(chatHandler)
                 .handle(
@@ -159,12 +161,65 @@ class RealtimeMessageRouterTest {
     }
 
     @Test
+    @DisplayName("handler 처리 시간을 domain, action, outcome 태그로 기록한다")
+    void routeRecordsHandlerDuration() {
+        RealtimeDomainHandler gameHandler = handler("GAME", "CREATE_GAME");
+        RealtimeResponder responder = mock(RealtimeResponder.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(gameHandler), meterRegistry);
+
+        router.route(connectionContext, envelope("game", "create_game", "request-1", null), responder);
+
+        Timer timer = meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC)
+                .tags("domain", "GAME", "action", "CREATE_GAME", "outcome", "success")
+                .timer();
+        assertThat(timer).isNotNull();
+        assertThat(timer.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("handler 예외도 outcome=error로 처리 시간을 기록한다")
+    void routeRecordsHandlerDurationOnFailure() {
+        RealtimeDomainHandler chatHandler = handler("CHAT", "SEND");
+        RealtimeResponder responder = mock(RealtimeResponder.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler), meterRegistry);
+        willThrow(new IllegalStateException("boom"))
+                .given(chatHandler)
+                .handle(
+                        org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
+                        org.mockito.ArgumentMatchers.any(JsonNode.class),
+                        org.mockito.ArgumentMatchers.eq(responder)
+                );
+
+        router.route(connectionContext, envelope("CHAT", "SEND", "request-1", null), responder);
+
+        Timer timer = meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC)
+                .tags("domain", "CHAT", "action", "SEND", "outcome", "error")
+                .timer();
+        assertThat(timer).isNotNull();
+        assertThat(timer.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("라우팅되지 않은 요청은 처리 시간을 기록하지 않는다")
+    void routeDoesNotRecordUnknownRoute() {
+        RealtimeResponder responder = mock(RealtimeResponder.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(), meterRegistry);
+
+        router.route(connectionContext, envelope("GAME", "UNKNOWN", "request-1", null), responder);
+
+        assertThat(meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC).timers()).isEmpty();
+    }
+
+    @Test
     @DisplayName("동일한 domain과 action을 중복 등록하면 시작 시점에 실패한다")
     void constructorRejectsDuplicateRoute() {
         RealtimeDomainHandler firstHandler = handler("CHAT", "SEND");
         RealtimeDomainHandler duplicateHandler = handler("chat", "send");
 
-        assertThatThrownBy(() -> new RealtimeMessageRouter(List.of(firstHandler, duplicateHandler)))
+        assertThatThrownBy(() -> new RealtimeMessageRouter(List.of(firstHandler, duplicateHandler), new SimpleMeterRegistry()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("중복된 실시간 route")
                 .hasMessageContaining("CHAT/SEND");

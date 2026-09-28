@@ -2,6 +2,7 @@ package umc.cockple.demo.domain.chat.presentation.realtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ class ChatRealtimeDomainHandlerTest {
     @Test
     @DisplayName("router가 CHAT/SEND payload를 채팅 명령으로 변환해 전달한다")
     void routesSendCommand() {
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(handler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(handler), new SimpleMeterRegistry());
         RealtimeInboundEnvelope envelope = new RealtimeInboundEnvelope(
                 RealtimeProtocolVersion.CURRENT,
                 "chat",
@@ -118,7 +119,7 @@ class ChatRealtimeDomainHandlerTest {
     @Test
     @DisplayName("채팅 명령 처리 예외는 router의 공용 내부 오류로 변환한다")
     void delegatesCommandFailureToRouterErrorBoundary() {
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(handler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(handler), new SimpleMeterRegistry());
         RealtimeInboundEnvelope envelope = new RealtimeInboundEnvelope(
                 RealtimeProtocolVersion.CURRENT,
                 "CHAT",

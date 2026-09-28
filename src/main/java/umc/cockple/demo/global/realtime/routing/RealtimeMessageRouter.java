@@ -2,6 +2,8 @@ package umc.cockple.demo.global.realtime.routing;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.global.realtime.protocol.RealtimeInboundEnvelope;
@@ -19,10 +21,14 @@ import java.util.Set;
 @Slf4j
 public class RealtimeMessageRouter {
 
-    private final Map<RouteKey, RealtimeDomainHandler> handlers;
+    static final String HANDLER_DURATION_METRIC = "realtime.handler.duration";
 
-    public RealtimeMessageRouter(List<RealtimeDomainHandler> domainHandlers) {
+    private final Map<RouteKey, RealtimeDomainHandler> handlers;
+    private final MeterRegistry meterRegistry;
+
+    public RealtimeMessageRouter(List<RealtimeDomainHandler> domainHandlers, MeterRegistry meterRegistry) {
         this.handlers = registerHandlers(domainHandlers);
+        this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry는 null일 수 없습니다.");
     }
 
     public void route(
@@ -59,15 +65,24 @@ public class RealtimeMessageRouter {
         );
         JsonNode payload = envelope.payload() == null ? NullNode.getInstance() : envelope.payload();
 
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String outcome = "success";
         try {
             handler.handle(requestContext, payload, responder);
         } catch (Exception e) {
+            outcome = "error";
             log.error(
                     "실시간 도메인 handler 처리 실패 - domain: {}, action: {}, memberId: {}, sessionId: {}",
                     routeKey.domain(), routeKey.action(), connectionContext.memberId(),
                     connectionContext.sessionId(), e
             );
             sendError(responder, RealtimeRoutingErrorCode.INTERNAL_ERROR);
+        } finally {
+            sample.stop(Timer.builder(HANDLER_DURATION_METRIC)
+                    .tag("domain", routeKey.domain())
+                    .tag("action", routeKey.action())
+                    .tag("outcome", outcome)
+                    .register(meterRegistry));
         }
     }
 
