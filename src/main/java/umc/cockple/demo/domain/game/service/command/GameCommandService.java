@@ -100,7 +100,9 @@ public class GameCommandService {
 
         Game savedGame = gameRepository.save(game);
         GameBoardResult board = assembleBoardAfterCreate(gameBoard.getId(), activeGames, savedGame);
-        publishMembersChanged(gameBoard.getId(), memberId);
+        // 커밋 후 리스너가 이 snapshot을 재조회 없이 전파
+        eventPublisher.publishEvent(
+                GameBoardMembersChangedEvent.membersWithBoard(gameBoard.getId(), memberId, board));
         log.info("게임 대기 생성 - gameBoardId: {}, gameId: {}, 인원: {}",
                 gameBoard.getId(), savedGame.getId(), command.gameBoardMemberIds().size());
         return new GameCreateResult(savedGame.getId(), board);
@@ -211,8 +213,7 @@ public class GameCommandService {
 
     /**
      * 대기열 이동
-     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비운다.
-     * 경기 기록으로 남지 않으며 게임횟수도 증가시키지 않는다.
+     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비움
      *
      * @param memberId 요청자
      */

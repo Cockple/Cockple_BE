@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
@@ -314,6 +315,15 @@ class GameCommandServiceTest {
     @DisplayName("createGame (#8 게임 대기 생성)")
     class CreateGame {
 
+        private final GameBoardResult assembledBoard = new GameBoardResult(true, 1, List.of(), List.of());
+
+        @BeforeEach
+        void setUpBoardAssembly() {
+            // 생성 성공 케이스에서만 보드를 조립하므로 예외 케이스에서 쓰이지 않아도 되도록 lenient로 둔다.
+            lenient().when(gameBoardResultAssembler.assemble(anyBoolean(), anyList(), anyList()))
+                    .thenReturn(assembledBoard);
+        }
+
         @Test
         @DisplayName("선택 멤버로 대기 게임을 만들고, 배열 순서를 playerOrder로 대기열 맨 뒤에 붙인다")
         void createGame_createsWaitingGameWithOrderedPlayers() {
@@ -339,7 +349,7 @@ class GameCommandServiceTest {
                     .extracting(p -> p.getGameBoardMember().getId(), GamePlayer::getPlayerOrder)
                     .containsExactly(tuple(8L, 0), tuple(7L, 1));
             then(eventPublisher).should()
-                    .publishEvent(GameBoardMembersChangedEvent.membersOnly(BOARD_ID, MEMBER_ID));
+                    .publishEvent(GameBoardMembersChangedEvent.membersWithBoard(BOARD_ID, MEMBER_ID, assembledBoard));
         }
 
         @Test
@@ -348,7 +358,6 @@ class GameCommandServiceTest {
             // given
             GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
             Game existingWaiting = GameFixture.waitingGame(40L, board, 1);
-            GameBoardResult assembledBoard = new GameBoardResult(true, 1, List.of(), List.of());
             given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
                     .willReturn(List.of(m7));
@@ -357,8 +366,6 @@ class GameCommandServiceTest {
             given(gameRepository.countByGameBoardIdAndStatus(BOARD_ID, GameStatus.WAITING)).willReturn(1L);
             given(gameRepository.save(any(Game.class))).willAnswer(inv -> inv.getArgument(0));
             given(courtRepository.findByGameBoardIdOrderByCourtNoAsc(BOARD_ID)).willReturn(List.of(court));
-            given(gameBoardResultAssembler.assemble(eq(true), eq(List.of(court)), anyList()))
-                    .willReturn(assembledBoard);
 
             // when
             GameCreateResult result = gameCommandService.createGame(
@@ -378,6 +385,9 @@ class GameCommandServiceTest {
 
             then(gameRepository).should(times(1))
                     .findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList());
+            // 커밋 후 리스너가 재조회 없이 전파하도록 같은 snapshot을 이벤트에 싣는다.
+            then(eventPublisher).should()
+                    .publishEvent(GameBoardMembersChangedEvent.membersWithBoard(BOARD_ID, MEMBER_ID, assembledBoard));
         }
 
         @Test

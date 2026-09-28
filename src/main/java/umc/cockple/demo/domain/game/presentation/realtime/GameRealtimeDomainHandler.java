@@ -147,7 +147,6 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
 
         GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(result.board());
         responder.send(GameRealtimeProtocol.TYPE_GAME_CREATED, new GameCreatedAck(result.gameId(), boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
     }
 
     private void handleMoveToWaiting(
