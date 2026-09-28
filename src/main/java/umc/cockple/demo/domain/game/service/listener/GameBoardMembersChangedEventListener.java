@@ -35,7 +35,7 @@ public class GameBoardMembersChangedEventListener {
     private final GameBoardMapper gameBoardMapper;
     private final GameBoardBroadcaster gameBoardBroadcaster;
 
-    @Async
+    @Async("gameExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMembersChanged(GameBoardMembersChangedEvent event) {
         GameBoardMemberDTO.Response membersDto;

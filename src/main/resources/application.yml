@@ -119,6 +119,12 @@ async:
       max-size: 8
       queue-capacity: 500
       await-termination-seconds: 30
+  # 게임판 실시간 전파 풀 (커밋 후 명단/보드 조회 + 구독 세션 fan-out)
+  game:
+    core-size: 2
+    max-size: 4
+    queue-capacity: 500
+    await-termination-seconds: 30
 
 fcm:
   fake-latency-ms: 0
