@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -45,7 +46,7 @@ class RealtimeMessageRouterTest {
         ArgumentCaptor<RealtimeRequestContext> contextCaptor =
                 ArgumentCaptor.forClass(RealtimeRequestContext.class);
         then(chatHandler).should().handle(contextCaptor.capture(), org.mockito.ArgumentMatchers.eq(payload),
-                org.mockito.ArgumentMatchers.eq(responder));
+                org.mockito.ArgumentMatchers.any(RealtimeResponder.class));
         RealtimeRequestContext context = contextCaptor.getValue();
         assertThat(context.memberId()).isEqualTo(10L);
         assertThat(context.sessionId()).isEqualTo("session-1");
@@ -67,7 +68,7 @@ class RealtimeMessageRouterTest {
         then(gameHandler).should().handle(
                 org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
                 org.mockito.ArgumentMatchers.eq(NullNode.getInstance()),
-                org.mockito.ArgumentMatchers.eq(responder)
+                org.mockito.ArgumentMatchers.any(RealtimeResponder.class)
         );
         then(chatHandler).should(never()).handle(
                 org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
@@ -149,7 +150,7 @@ class RealtimeMessageRouterTest {
                 .handle(
                         org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
                         org.mockito.ArgumentMatchers.any(JsonNode.class),
-                        org.mockito.ArgumentMatchers.eq(responder)
+                        org.mockito.ArgumentMatchers.any(RealtimeResponder.class)
                 );
 
         router.route(connectionContext, envelope("CHAT", "SEND", "request-1", null), responder);
@@ -158,6 +159,29 @@ class RealtimeMessageRouterTest {
                 RealtimeRoutingErrorCode.INTERNAL_ERROR.getCode(),
                 RealtimeRoutingErrorCode.INTERNAL_ERROR.getMessage()
         );
+    }
+
+    @Test
+    @DisplayName("handler에 전달한 responder의 응답과 오류 응답은 원본 responder로 전달된다")
+    void routeDelegatesHandlerResponsesToOriginalResponder() {
+        RealtimeDomainHandler gameHandler = handler("GAME", "CREATE_GAME");
+        RealtimeResponder responder = mock(RealtimeResponder.class);
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(gameHandler), new SimpleMeterRegistry());
+        willAnswer(invocation -> {
+            RealtimeResponder handlerResponder = invocation.getArgument(2);
+            handlerResponder.send("GAME_CREATED", "data");
+            handlerResponder.sendError("GAME_101", "message");
+            return null;
+        }).given(gameHandler).handle(
+                org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
+                org.mockito.ArgumentMatchers.any(JsonNode.class),
+                org.mockito.ArgumentMatchers.any(RealtimeResponder.class)
+        );
+
+        router.route(connectionContext, envelope("GAME", "CREATE_GAME", "request-1", null), responder);
+
+        then(responder).should().send("GAME_CREATED", "data");
+        then(responder).should().sendError("GAME_101", "message");
     }
 
     @Test
@@ -171,14 +195,40 @@ class RealtimeMessageRouterTest {
         router.route(connectionContext, envelope("game", "create_game", "request-1", null), responder);
 
         Timer timer = meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC)
-                .tags("domain", "GAME", "action", "CREATE_GAME", "outcome", "success")
+                .tags("domain", "GAME", "action", "CREATE_GAME", "outcome", "success", "exception", "none")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("handler 예외도 outcome=error로 처리 시간을 기록한다")
+    @DisplayName("handler가 예외 없이 직접 오류 응답을 보내면 outcome=error, exception=none으로 기록한다")
+    void routeRecordsHandledErrorResponseAsError() {
+        RealtimeDomainHandler gameHandler = handler("GAME", "CREATE_GAME");
+        RealtimeResponder responder = mock(RealtimeResponder.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(gameHandler), meterRegistry);
+        willAnswer(invocation -> {
+            RealtimeResponder handlerResponder = invocation.getArgument(2);
+            handlerResponder.sendError("GAME_101", "도메인 검증 실패");
+            return null;
+        }).given(gameHandler).handle(
+                org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
+                org.mockito.ArgumentMatchers.any(JsonNode.class),
+                org.mockito.ArgumentMatchers.any(RealtimeResponder.class)
+        );
+
+        router.route(connectionContext, envelope("GAME", "CREATE_GAME", "request-1", null), responder);
+
+        Timer timer = meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC)
+                .tags("domain", "GAME", "action", "CREATE_GAME", "outcome", "error", "exception", "none")
+                .timer();
+        assertThat(timer).isNotNull();
+        assertThat(timer.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("handler 예외는 outcome=error와 예외 클래스명으로 기록한다")
     void routeRecordsHandlerDurationOnFailure() {
         RealtimeDomainHandler chatHandler = handler("CHAT", "SEND");
         RealtimeResponder responder = mock(RealtimeResponder.class);
@@ -189,13 +239,14 @@ class RealtimeMessageRouterTest {
                 .handle(
                         org.mockito.ArgumentMatchers.any(RealtimeRequestContext.class),
                         org.mockito.ArgumentMatchers.any(JsonNode.class),
-                        org.mockito.ArgumentMatchers.eq(responder)
+                        org.mockito.ArgumentMatchers.any(RealtimeResponder.class)
                 );
 
         router.route(connectionContext, envelope("CHAT", "SEND", "request-1", null), responder);
 
         Timer timer = meterRegistry.find(RealtimeMessageRouter.HANDLER_DURATION_METRIC)
-                .tags("domain", "CHAT", "action", "SEND", "outcome", "error")
+                .tags("domain", "CHAT", "action", "SEND", "outcome", "error",
+                        "exception", "IllegalStateException")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(1);
