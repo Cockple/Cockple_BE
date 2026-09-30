@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.chat.compatibility;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -221,7 +222,7 @@ class ChatWebSocketCompatibilityTest {
                 objectMapper,
                 commandHandler
         );
-        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler));
+        RealtimeMessageRouter router = new RealtimeMessageRouter(List.of(chatHandler), new SimpleMeterRegistry());
         WebSocketRealtimeResponderFactory responderFactory =
                 new WebSocketRealtimeResponderFactory(messageEncoder, sessionMessageSender);
         return new RealtimeWebSocketRequestDispatcher(
