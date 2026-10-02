@@ -28,11 +28,15 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
+import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
+import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -54,15 +58,16 @@ public class GameCommandService {
     private final ExerciseRepository exerciseRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    private final GameBoardResultAssembler gameBoardResultAssembler;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 대기 생성
      *
      * @param memberId 요청자
-     * @return 생성된 게임 ID
+     * @return 생성된 게임 ID + 생성 직후 보드 스냅샷
      */
-    public Long createGame(Long memberId, GameCreateCommand command) {
+    public GameCreateResult createGame(Long memberId, GameCreateCommand command) {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
@@ -94,10 +99,23 @@ public class GameCommandService {
         }
 
         Game savedGame = gameRepository.save(game);
-        publishMembersChanged(gameBoard.getId(), memberId);
+        GameBoardResult board = assembleBoardAfterCreate(gameBoard.getId(), activeGames, savedGame);
+        // 커밋 후 리스너가 이 snapshot을 재조회 없이 전파
+        eventPublisher.publishEvent(
+                GameBoardMembersChangedEvent.membersWithBoard(gameBoard.getId(), memberId, board));
         log.info("게임 대기 생성 - gameBoardId: {}, gameId: {}, 인원: {}",
                 gameBoard.getId(), savedGame.getId(), command.gameBoardMemberIds().size());
-        return savedGame.getId();
+        return new GameCreateResult(savedGame.getId(), board);
+    }
+
+    /**
+     * 검증 단계에서 조회한 활성 게임에 새 게임을 더해 보드 조립
+     */
+    private GameBoardResult assembleBoardAfterCreate(Long gameBoardId, List<Game> activeGames, Game savedGame) {
+        List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoardId);
+        List<Game> gamesAfterCreate = new ArrayList<>(activeGames);
+        gamesAfterCreate.add(savedGame);
+        return gameBoardResultAssembler.assemble(true, courts, gamesAfterCreate);
     }
 
     /**
@@ -195,8 +213,7 @@ public class GameCommandService {
 
     /**
      * 대기열 이동
-     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비운다.
-     * 경기 기록으로 남지 않으며 게임횟수도 증가시키지 않는다.
+     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비움
      *
      * @param memberId 요청자
      */

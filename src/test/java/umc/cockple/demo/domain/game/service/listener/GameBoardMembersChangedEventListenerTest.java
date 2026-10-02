@@ -86,6 +86,24 @@ class GameBoardMembersChangedEventListenerTest {
     }
 
     @Test
+    @DisplayName("이벤트에 게임판 snapshot이 실려 있으면 재조회하지 않고 그대로 전파한다")
+    void handleMembersChanged_usesCarriedBoardSnapshotWithoutQuery() {
+        GameBoardResult carriedBoard = new GameBoardResult(true, 2, List.of(), List.of());
+        GameBoardDTO.Response carriedBoardDto = new GameBoardDTO.Response(true, 2, List.of(), List.of());
+        given(gameBoardMapper.toResponse(carriedBoard)).willReturn(carriedBoardDto);
+        event = GameBoardMembersChangedEvent.membersWithBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID, carriedBoard);
+
+        listener.handleMembersChanged(event);
+
+        then(gameBoardQueryService).shouldHaveNoInteractions();
+        then(gameBoardBroadcaster).should()
+                .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
+        // isGameHost는 개인화 값이므로 브로드캐스트 본문에서는 false로 내린다.
+        then(gameBoardBroadcaster).should()
+                .broadcastBoardUpdate(GAME_BOARD_ID, carriedBoardDto.forBroadcast(), null);
+    }
+
+    @Test
     @DisplayName("게임/운동 상태 변경은 명단 snapshot만 전파한다")
     void handleMembersChanged_membersOnlySkipsBoardSnapshot() {
         event = GameBoardMembersChangedEvent.membersOnly(GAME_BOARD_ID, ACTOR_MEMBER_ID);

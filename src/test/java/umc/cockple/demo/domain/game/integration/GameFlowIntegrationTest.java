@@ -24,6 +24,7 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
@@ -91,7 +92,9 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> memberIds = saveMembers(board, "김A", "김B", "김C", "김D");
 
         // --- #8 게임 대기 생성 ---
-        Long gameId = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), memberIds));
+        GameCreateResult createResult = gameCommandService.createGame(
+                actor, new GameCreateCommand(board.getId(), memberIds));
+        Long gameId = createResult.gameId();
 
         Game created = gameRepository.findById(gameId).orElseThrow();
         assertThat(created.getStatus()).isEqualTo(GameStatus.WAITING);
@@ -106,6 +109,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         assertThat(afterCreate.waitings())
                 .extracting(GameBoardResult.WaitingView::gameId)
                 .containsExactly(gameId);
+        // 생성 트랜잭션에서 만든 보드 스냅샷은 재조회한 보드와 같아야 한다.
+        assertThat(createResult.board()).isEqualTo(afterCreate);
 
         // --- #4 게임 시작: 1번 코트에 배치 ---
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameId, court1.getId()));
@@ -135,8 +140,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> members1 = saveMembers(board, "김A", "김B");
         List<Long> members2 = saveMembers(board, "김C", "김D");
 
-        Long game1 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members1)); // 대기 1번
-        Long game2 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members2)); // 대기 2번
+        Long game1 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members1)).gameId(); // 대기 1번
+        Long game2 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members2)).gameId(); // 대기 2번
 
         // --- #6 대기 1번(game1) 삭제 + 복원 ---
         GameDeleteResult result = gameCommandService.deleteGame(
@@ -164,8 +169,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> membersB = saveMembers(board, "김B1", "김B2");
         List<Long> membersA = saveMembers(board, "김A1", "김A2");
 
-        Long gameB = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersB)); // 대기 1번
-        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)); // 대기 2번
+        Long gameB = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersB)).gameId(); // 대기 1번
+        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)).gameId(); // 대기 2번
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameA, court1.getId()));   // A 진행 (B는 대기 1번)
 
         // --- #7 대기열 이동: A를 기록 없이 대기열 맨 앞으로 ---
@@ -206,7 +211,7 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         Court court1 = courtRepository.findByGameBoardIdOrderByCourtNoAsc(board.getId()).get(0);
         List<Long> membersA = saveMembers(board, "김A1", "김A2");
 
-        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA));
+        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)).gameId();
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameA, court1.getId()));
 
         // --- 게임 완료 ---
