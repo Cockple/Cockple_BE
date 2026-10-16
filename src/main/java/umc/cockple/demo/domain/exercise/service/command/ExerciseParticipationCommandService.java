@@ -15,6 +15,7 @@ import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
 import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.PromotionCandidate;
 import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
@@ -33,6 +34,7 @@ import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupServ
 import umc.cockple.demo.domain.party.domain.Party;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -130,11 +132,12 @@ public class ExerciseParticipationCommandService {
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), member.getId());
 
-        Set<ParticipantKey> previousWaiting = waitingPromotionService.findWaitingParticipants(exercise);
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(false, memberId));
         exercise.removeParticipation(exerciseParticipation);
 
         exerciseParticipationRepository.delete(exerciseParticipation);
-        waitingPromotionService.notifyPromoted(exercise, previousWaiting);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
@@ -153,9 +156,10 @@ public class ExerciseParticipationCommandService {
 
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
-        Set<ParticipantKey> previousWaiting = waitingPromotionService.findWaitingParticipants(exercise);
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(command.guest(), participantId));
         ExerciseCancelResult result = executeParticipantCancellation(exercise, participantId, command);
-        waitingPromotionService.notifyPromoted(exercise, previousWaiting);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, managerId);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",

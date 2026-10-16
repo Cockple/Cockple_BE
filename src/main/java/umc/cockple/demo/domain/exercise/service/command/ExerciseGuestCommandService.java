@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
 import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.PromotionCandidate;
 import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
@@ -21,7 +22,7 @@ import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 
-import java.util.Set;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -71,10 +72,11 @@ public class ExerciseGuestCommandService {
         exerciseGameAssignmentValidator.validateGuestCancellation(
                 exercise.getGameBoard().getId(), guest.getId());
 
-        Set<ParticipantKey> previousWaiting = waitingPromotionService.findWaitingParticipants(exercise);
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(true, guestId));
         exercise.removeGuest(guest);
         guestRepository.delete(guest);
-        waitingPromotionService.notifyPromoted(exercise, previousWaiting);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}",

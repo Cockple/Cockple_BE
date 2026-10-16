@@ -11,6 +11,7 @@ import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParti
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,25 +32,37 @@ public class ExerciseWaitingPromotionService {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public void notifyPromoted(Exercise exercise, Set<ParticipantKey> previousWaiting) {
-        if (previousWaiting.isEmpty()) {
-            return;
+    public Optional<PromotionCandidate> findPromotionCandidate(Exercise exercise, ParticipantKey cancelledParticipant) {
+        if (exercise.getNowCapacity() <= exercise.getMaxCapacity()) {
+            return Optional.empty();
         }
-        Party party = exercise.getParty();
-        sortedParticipants(exercise).stream()
+
+        List<Participant> participants = sortedParticipants(exercise);
+        boolean cancellingConfirmedParticipant = participants.stream()
                 .limit(exercise.getMaxCapacity())
-                .filter(participant -> previousWaiting.contains(participant.key()))
-                .forEach(participant -> eventPublisher.publishEvent(
-                        ExerciseAttendanceChangedEvent.changed(
-                                exercise.getId(), party.getId(), party.getPartyName(),
-                                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
-                                exercise.getDate(),
-                                participant.key().guest() ? null : participant.key().id(),
-                                List.of(participant.recipientMemberId()),
-                                participant.guestName())));
+                .anyMatch(participant -> participant.key().equals(cancelledParticipant));
+        if (!cancellingConfirmedParticipant) {
+            return Optional.empty();
+        }
+
+        Participant firstWaiting = participants.get(exercise.getMaxCapacity());
+        return Optional.of(new PromotionCandidate(
+                firstWaiting.key(), firstWaiting.recipientMemberId(), firstWaiting.guestName()));
+    }
+
+    public void notifyPromoted(Exercise exercise, PromotionCandidate candidate) {
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(ExerciseAttendanceChangedEvent.changed(
+                exercise.getId(), party.getId(), party.getPartyName(),
+                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
+                exercise.getDate(),
+                candidate.key().guest() ? null : candidate.key().id(),
+                List.of(candidate.recipientMemberId()), candidate.guestName()));
     }
 
     public record ParticipantKey(boolean guest, Long id) {}
+
+    public record PromotionCandidate(ParticipantKey key, Long recipientMemberId, String guestName) {}
 
     private List<Participant> sortedParticipants(Exercise exercise) {
         List<Participant> participants = new ArrayList<>();
