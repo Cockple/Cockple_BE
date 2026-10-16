@@ -6,10 +6,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseJoinedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.notification.command.NotificationRequest;
 import umc.cockple.demo.domain.notification.enums.NotificationAction;
 import umc.cockple.demo.domain.notification.enums.NotificationResourceType;
+import umc.cockple.demo.domain.notification.enums.outbox.NotificationOutboxEventType;
 import umc.cockple.demo.domain.notification.service.NotificationMessageGenerator;
 
 import java.time.LocalDate;
@@ -24,6 +26,27 @@ class ExerciseNotificationStrategyTest {
             new ExerciseNotificationStrategy(
                     new NotificationMessageGenerator(),
                     new ObjectMapper().registerModule(new JavaTimeModule()));
+
+    @Test
+    @DisplayName("확정 신청 알림은 신청자 이름·운동 날짜를 담고 운동 화면으로 연결한다")
+    void convertsJoinedExerciseNotification() {
+        ExerciseJoinedEvent event = ExerciseJoinedEvent.joined(
+                100L, 10L, "모임", "image-key", LocalDate.of(2026, 10, 16), "신청자", List.of(20L, 30L));
+
+        assertThat(strategy.supports(event)).isTrue();
+        List<NotificationRequest> requests = strategy.convert(event);
+
+        assertThat(requests).extracting(NotificationRequest::recipientMemberId).containsExactly(20L, 30L);
+        assertThat(requests).allSatisfy(request -> {
+            assertThat(request.title()).isEqualTo("모임");
+            assertThat(request.content()).isEqualTo("신청자님이 10.16 (금) 운동을 신청하셨습니다.");
+            assertThat(request.eventType()).isEqualTo(NotificationOutboxEventType.EXERCISE_JOINED);
+            assertThat(request.eventId()).isEqualTo(event.eventId());
+            assertThat(request.destination().resourceType()).isEqualTo(NotificationResourceType.EXERCISE);
+            assertThat(request.destination().resourceId()).isEqualTo(100L);
+            assertThat(request.destination().action()).isEqualTo(NotificationAction.VIEW);
+        });
+    }
 
     @Test
     @DisplayName("운동 삭제 알림은 수신자별로 생성되고 destination이 없다")

@@ -18,6 +18,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseJoinedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
@@ -238,6 +239,7 @@ class ExerciseParticipationCommandServiceTest {
 
                 then(eventPublisher).should(never())
                         .publishEvent(any(ExerciseAttendanceChangedEvent.class));
+                then(eventPublisher).should(never()).publishEvent(any(ExerciseJoinedEvent.class));
             }
 
             @Test
@@ -611,6 +613,90 @@ class ExerciseParticipationCommandServiceTest {
     }
 
     @Nested
+    @DisplayName("확정 참여 신청 알림")
+    class JoinedEventPublishing {
+
+        private Member applicant;
+
+        @BeforeEach
+        void setUpApplicant() {
+            applicant = MemberFixture.createMember("신청자", Gender.MALE, Level.B, 4001L,
+                    LocalDate.of(2000, 1, 1));
+            ReflectionTestUtils.setField(applicant, "id", 4L);
+            lenient().when(memberLookupService.findByIdOrThrow(applicant.getId())).thenReturn(applicant);
+            lenient().when(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
+                    .thenAnswer(invocation -> {
+                        ExerciseParticipation participation = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(participation, "createdAt", LocalDate.of(2099, 1, 10).atStartOfDay());
+                        return participation;
+                    });
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("정원의 마지막 자리로 확정 신청하면 기존 운동 모임원 전원에게 알린다")
+        void confirmedJoinNotifiesOnlyExistingPartyParticipants(boolean applicantIsPartyMember) {
+            ReflectionTestUtils.setField(exercise, "maxCapacity", 5);
+            ReflectionTestUtils.setField(exercise, "outsideGuestAccept", true);
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(applicantIsPartyMember);
+            exercise.addParticipation(manager, ExerciseMemberShipStatus.PARTY_MEMBER);
+            Member regularMember = MemberFixture.createMember("일반회원", Gender.FEMALE, Level.B, 2001L);
+            ReflectionTestUtils.setField(regularMember, "id", 2L);
+            exercise.addParticipation(regularMember, ExerciseMemberShipStatus.PARTY_MEMBER);
+            Member externalMember = MemberFixture.createMember("외부회원", Gender.MALE, Level.B, 3001L);
+            ReflectionTestUtils.setField(externalMember, "id", 3L);
+            exercise.addParticipation(externalMember, ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT);
+            GuestFixture.createGuest(exercise, manager.getId());
+
+            exerciseParticipationCommandService.joinExercise(exercise.getId(), applicant.getId());
+
+            ArgumentCaptor<ExerciseJoinedEvent> captor = ArgumentCaptor.forClass(ExerciseJoinedEvent.class);
+            then(eventPublisher).should().publishEvent(captor.capture());
+            ExerciseJoinedEvent event = captor.getValue();
+            assertThat(event.recipientMemberIds()).containsExactlyInAnyOrder(manager.getId(), regularMember.getId());
+            assertThat(event.participantName()).isEqualTo(applicant.getDisplayName());
+            assertThat(event.exerciseId()).isEqualTo(exercise.getId());
+            assertThat(event.exerciseDate()).isEqualTo(exercise.getDate());
+            assertThat(event.partyId()).isEqualTo(party.getId());
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseAttendanceChangedEvent.class));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("회원 또는 게스트로 정원이 찼다면 신규 대기 신청 알림을 보내지 않는다")
+        void waitingJoinDoesNotNotify(boolean fullWithGuest) {
+            ReflectionTestUtils.setField(exercise, "maxCapacity", 1);
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(true);
+            if (fullWithGuest) {
+                Guest confirmed = GuestFixture.createGuest(exercise, manager.getId());
+                ReflectionTestUtils.setField(confirmed, "id", 60L);
+                ReflectionTestUtils.setField(confirmed, "createdAt", LocalDate.of(2099, 1, 1).atStartOfDay());
+            } else {
+                ExerciseParticipation confirmed = exercise.addParticipation(manager, ExerciseMemberShipStatus.PARTY_MEMBER);
+                ReflectionTestUtils.setField(confirmed, "createdAt", LocalDate.of(2099, 1, 1).atStartOfDay());
+            }
+
+            exerciseParticipationCommandService.joinExercise(exercise.getId(), applicant.getId());
+
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseJoinedEvent.class));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("확정 신청이어도 수신할 기존 운동 모임원이 없으면 알림을 보내지 않는다")
+        void noPartyRecipientsDoesNotNotify(boolean externalParticipantExists) {
+            given(memberPartyRepository.existsByPartyAndMember(party, applicant)).willReturn(true);
+            if (externalParticipantExists) {
+                exercise.addParticipation(manager, ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT);
+            }
+
+            exerciseParticipationCommandService.joinExercise(exercise.getId(), applicant.getId());
+
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseJoinedEvent.class));
+        }
+    }
+
+    @Nested
     @DisplayName("대기자 확정 전환 알림")
     class AttendanceChangedEventPublishing {
 
@@ -640,7 +726,11 @@ class ExerciseParticipationCommandServiceTest {
             given(memberLookupService.findByIdOrThrow(normalMember.getId())).willReturn(normalMember);
             given(memberPartyRepository.existsByPartyAndMember(party, normalMember)).willReturn(true);
             given(exerciseParticipationRepository.saveAndFlush(any(ExerciseParticipation.class)))
-                    .willAnswer(invocation -> invocation.getArgument(0));
+                    .willAnswer(invocation -> {
+                        ExerciseParticipation participation = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(participation, "createdAt", LocalDate.of(2099, 1, 10).atStartOfDay());
+                        return participation;
+                    });
 
             exerciseParticipationCommandService.joinExercise(exercise.getId(), normalMember.getId());
 
@@ -748,6 +838,7 @@ class ExerciseParticipationCommandServiceTest {
         }
 
         private ExerciseAttendanceChangedEvent captureAttendanceEvent() {
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseJoinedEvent.class));
             ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
             then(eventPublisher).should(atLeastOnce()).publishEvent(captor.capture());
             List<ExerciseAttendanceChangedEvent> events = captor.getAllValues().stream()

@@ -35,6 +35,10 @@ public class NotificationMessageGenerator {
         return String.format("%s 운동이 수정되었습니다.", dateStr);
     }
 
+    public String generateExerciseJoinedMessage(String participantName, String dateStr) {
+        return String.format("%s님이 %s 운동을 신청하셨습니다.", participantName, dateStr);
+    }
+
     public String generateExerciseAttendChangedMessage() {
         return "운동 참석으로 변경되었어요!";
     }
