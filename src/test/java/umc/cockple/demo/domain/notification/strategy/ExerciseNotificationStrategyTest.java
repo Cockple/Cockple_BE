@@ -54,16 +54,33 @@ class ExerciseNotificationStrategyTest {
     }
 
     @Test
-    @DisplayName("운동 참석 변경 알림은 수신자별로 생성한다")
+    @DisplayName("회원 확정 전환 알림은 본인에게 보내고 모임 화면으로 연결한다")
     void convertsAttendanceChangedNotification() {
         List<NotificationRequest> requests = strategy.convert(
                 ExerciseAttendanceChangedEvent.changed(
                         100L, 10L, "모임", "image-key",
-                        LocalDate.of(2099, 12, 31), 20L, List.of(30L, 40L)));
+                        LocalDate.of(2099, 12, 31), 20L, List.of(20L)));
 
-        assertThat(requests).extracting(NotificationRequest::recipientMemberId)
-                .containsExactly(30L, 40L);
-        assertThat(requests.get(0).destination().resourceType())
-                .isEqualTo(NotificationResourceType.EXERCISE);
+        assertThat(requests).hasSize(1);
+        assertThat(requests.get(0).recipientMemberId()).isEqualTo(20L);
+        assertThat(requests.get(0).content()).isEqualTo("운동 참석으로 변경되었어요!");
+        assertThat(requests.get(0).destination().resourceType()).isEqualTo(NotificationResourceType.PARTY);
+        assertThat(requests.get(0).destination().resourceId()).isEqualTo(10L);
+        assertThat(requests.get(0).destination().action()).isEqualTo(NotificationAction.VIEW);
+    }
+
+    @Test
+    @DisplayName("게스트 확정 전환 알림은 등록자에게 이름을 붙여 보내고 모임 화면으로 연결한다")
+    void convertsGuestPromotionNotification() {
+        List<NotificationRequest> requests = strategy.convert(
+                ExerciseAttendanceChangedEvent.changed(
+                        100L, 10L, "모임", "image-key",
+                        LocalDate.of(2099, 12, 31), null, List.of(30L), "초대손님"));
+
+        assertThat(requests).hasSize(1);
+        assertThat(requests.get(0).recipientMemberId()).isEqualTo(30L);
+        assertThat(requests.get(0).content()).isEqualTo("[초대손님] 운동 참석으로 변경되었어요!");
+        assertThat(requests.get(0).destination().resourceType()).isEqualTo(NotificationResourceType.PARTY);
+        assertThat(requests.get(0).destination().resourceId()).isEqualTo(10L);
     }
 }

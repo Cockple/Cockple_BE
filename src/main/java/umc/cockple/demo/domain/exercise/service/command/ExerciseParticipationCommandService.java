@@ -12,6 +12,8 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
 import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
@@ -21,17 +23,14 @@ import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
-import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
-import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
-import umc.cockple.demo.global.enums.Role;
 
-import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -55,6 +54,7 @@ public class ExerciseParticipationCommandService {
 
     private final ExerciseValidator exerciseValidator;
     private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
+    private final ExerciseWaitingPromotionService waitingPromotionService;
 
     public ExerciseJoinResult joinExercise(Long exerciseId, Long memberId) {
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
@@ -71,7 +71,6 @@ public class ExerciseParticipationCommandService {
         ExerciseParticipation exerciseParticipation = exercise.addParticipation(member, membershipStatus);
 
         ExerciseParticipation savedExerciseParticipation = saveParticipation(exerciseParticipation);
-        publishAttendanceChangedEvent(exercise, member.getId());
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 신청 종료 - exerciseParticipationId: {}, isPartyMember : {}"
@@ -127,10 +126,11 @@ public class ExerciseParticipationCommandService {
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), member.getId());
 
+        Set<ParticipantKey> previousWaiting = waitingPromotionService.findWaitingParticipants(exercise);
         exercise.removeParticipation(exerciseParticipation);
 
         exerciseParticipationRepository.delete(exerciseParticipation);
-        publishAttendanceChangedEvent(exercise, member.getId());
+        waitingPromotionService.notifyPromoted(exercise, previousWaiting);
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
@@ -149,7 +149,9 @@ public class ExerciseParticipationCommandService {
 
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
+        Set<ParticipantKey> previousWaiting = waitingPromotionService.findWaitingParticipants(exercise);
         ExerciseCancelResult result = executeParticipantCancellation(exercise, participantId, command);
+        waitingPromotionService.notifyPromoted(exercise, previousWaiting);
         publishGameBoardMembersChanged(exercise, managerId);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
@@ -193,30 +195,8 @@ public class ExerciseParticipationCommandService {
         exercise.removeParticipation(exerciseParticipation);
 
         exerciseParticipationRepository.delete(exerciseParticipation);
-        publishAttendanceChangedEvent(exercise, participant.getId());
 
         return new ExerciseCancelResult(participant.getDisplayName(), exercise.getNowCapacity());
-    }
-
-    private void publishAttendanceChangedEvent(Exercise exercise, Long subjectMemberId) {
-        var party = exercise.getParty();
-        List<Long> recipientMemberIds = party.getMemberParties().stream()
-                .filter(memberParty -> memberParty.getStatus() == MemberPartyStatus.ACTIVE)
-                .filter(memberParty -> memberParty.getRole() == Role.PARTY_MANAGER
-                        || memberParty.getRole() == Role.PARTY_SUBMANAGER)
-                .map(memberParty -> memberParty.getMember().getId())
-                .filter(memberId -> !memberId.equals(subjectMemberId))
-                .toList();
-
-        eventPublisher.publishEvent(ExerciseAttendanceChangedEvent.changed(
-                exercise.getId(),
-                party.getId(),
-                party.getPartyName(),
-                party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
-                exercise.getDate(),
-                subjectMemberId,
-                recipientMemberIds
-        ));
     }
 
     private void publishGameBoardMembersChanged(Exercise exercise, Long actorMemberId) {

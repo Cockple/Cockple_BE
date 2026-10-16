@@ -93,8 +93,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                             attendanceEvent.imageKey(),
                             attendanceEvent.exerciseId(),
                             attendanceEvent.exerciseDate(),
-                            notificationMessageGenerator.generateExerciseAttendChangedMessage(),
-                            destination(attendanceEvent.exerciseId()),
+                            notificationMessageGenerator.generateExerciseAttendChangedMessage(attendanceEvent.guestName()),
+                            new NotificationDestination(NotificationResourceType.PARTY,
+                                    attendanceEvent.partyId(), NotificationAction.VIEW),
                             NotificationType.CHANGE,
                             attendanceEvent.eventId(),
                             NotificationOutboxEventType.EXERCISE_ATTENDANCE_CHANGED

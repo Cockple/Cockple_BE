@@ -39,6 +39,12 @@ public class NotificationMessageGenerator {
         return "운동 참석으로 변경되었어요!";
     }
 
+    public String generateExerciseAttendChangedMessage(String guestName) {
+        return guestName == null
+                ? generateExerciseAttendChangedMessage()
+                : String.format("[%s] %s", guestName, generateExerciseAttendChangedMessage());
+    }
+
     public String generateSubOwnerAssignedMessage(String nickname) {
         return String.format("'%s'님이 부모임장으로 지정되었습니다.", nickname);
     }
