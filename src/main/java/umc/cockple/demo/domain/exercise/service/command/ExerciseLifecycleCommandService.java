@@ -71,7 +71,7 @@ public class ExerciseLifecycleCommandService {
         exerciseValidator.validateDeleteExercise(exercise, member.getId());
 
         Party party = exercise.getParty();
-        List<Long> recipientMemberIds = recipientMemberIds(exercise);
+        List<Long> recipientMemberIds = recipientMemberIds(exercise, memberId);
         eventPublisher.publishEvent(ExerciseDeletedEvent.deleted(
                 exercise.getId(),
                 party.getId(),
@@ -112,7 +112,7 @@ public class ExerciseLifecycleCommandService {
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
                 exercise.getDate(),
-                recipientMemberIds(exercise)
+                recipientMemberIds(exercise, memberId)
         ));
 
         log.info("운동 수정 완료 - exerciseId: {}", exercise.getId());
@@ -120,9 +120,10 @@ public class ExerciseLifecycleCommandService {
         return new ExerciseUpdateResult(exercise.getId(), exercise.getUpdatedAt());
     }
 
-    private List<Long> recipientMemberIds(Exercise exercise) {
+    private List<Long> recipientMemberIds(Exercise exercise, Long actorMemberId) {
         return exercise.getParticipations().stream()
                 .map(exerciseParticipation -> exerciseParticipation.getMember().getId())
+                .filter(memberId -> !memberId.equals(actorMemberId))
                 .toList();
     }
 }

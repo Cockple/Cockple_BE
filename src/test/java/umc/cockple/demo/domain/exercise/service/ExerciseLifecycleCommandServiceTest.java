@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -305,9 +307,10 @@ class ExerciseLifecycleCommandServiceTest {
                 then(exerciseRepository).should().delete(exercise);
             }
 
-            @Test
-            @DisplayName("운동을 삭제하면 참여자들을 수신자로 ExerciseDeletedEvent를 발행한다")
-            void deleteExercise_publishesDeletedEvent() {
+            @ParameterizedTest
+            @ValueSource(booleans = {false, true})
+            @DisplayName("운동 삭제 알림은 요청자의 참여 여부와 관계없이 다른 참여자들에게만 발송한다")
+            void deleteExercise_publishesDeletedEvent(boolean actorParticipates) {
                 // given: 운동에 참여자 2명 존재
                 Member p1 = MemberFixture.createMember("참여자1", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(p1, "id", 20L);
@@ -315,6 +318,9 @@ class ExerciseLifecycleCommandServiceTest {
                 ReflectionTestUtils.setField(p2, "id", 30L);
                 exercise.addParticipation(p1, ExerciseMemberShipStatus.PARTY_MEMBER);
                 exercise.addParticipation(p2, ExerciseMemberShipStatus.PARTY_MEMBER);
+                if (actorParticipates) {
+                    exercise.addParticipation(manager, ExerciseMemberShipStatus.PARTY_MEMBER);
+                }
 
                 // when
                 exerciseLifecycleCommandService.deleteExercise(exercise.getId(), manager.getId());
@@ -436,9 +442,10 @@ class ExerciseLifecycleCommandServiceTest {
                 then(exerciseRepository).should().flush();
             }
 
-            @Test
-            @DisplayName("운동을 수정하면 참여자들을 수신자로 ExerciseUpdatedEvent를 발행한다")
-            void updateExercise_publishesUpdatedEvent() {
+            @ParameterizedTest
+            @ValueSource(booleans = {false, true})
+            @DisplayName("운동 수정 알림은 요청자의 참여 여부와 관계없이 다른 참여자들에게만 발송한다")
+            void updateExercise_publishesUpdatedEvent(boolean actorParticipates) {
                 // given: 운동에 참여자 2명 존재
                 Member p1 = MemberFixture.createMember("참여자1", Gender.MALE, Level.B, 2001L);
                 ReflectionTestUtils.setField(p1, "id", 20L);
@@ -446,6 +453,9 @@ class ExerciseLifecycleCommandServiceTest {
                 ReflectionTestUtils.setField(p2, "id", 30L);
                 exercise.addParticipation(p1, ExerciseMemberShipStatus.PARTY_MEMBER);
                 exercise.addParticipation(p2, ExerciseMemberShipStatus.PARTY_MEMBER);
+                if (actorParticipates) {
+                    exercise.addParticipation(manager, ExerciseMemberShipStatus.PARTY_MEMBER);
+                }
 
                 // when
                 exerciseLifecycleCommandService.updateExercise(
