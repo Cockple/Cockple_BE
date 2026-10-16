@@ -47,8 +47,8 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
     @Override
     public List<NotificationRequest> convert(Object event) {
         if (event instanceof PartyUpdatedEvent partyUpdatedEvent) {
-            return List.of(request(
-                    partyUpdatedEvent.recipientMemberId(),
+            return partyUpdatedEvent.recipientMemberIds().stream().map(memberId -> request(
+                    memberId,
                     partyUpdatedEvent.partyId(),
                     partyUpdatedEvent.partyName(),
                     partyUpdatedEvent.imageKey(),
@@ -58,12 +58,12 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                     Map.of(),
                     partyUpdatedEvent.eventId(),
                     NotificationOutboxEventType.PARTY_UPDATED
-            ));
+            )).toList();
         }
 
         if (event instanceof PartyDeletedEvent partyDeletedEvent) {
-            return List.of(request(
-                    partyDeletedEvent.deletedByMemberId(),
+            return partyDeletedEvent.recipientMemberIds().stream().map(memberId -> request(
+                    memberId,
                     partyDeletedEvent.partyId(),
                     partyDeletedEvent.partyName(),
                     partyDeletedEvent.imageKey(),
@@ -73,7 +73,7 @@ public class PartyNotificationStrategy implements NotificationEventStrategy {
                     Map.of(),
                     partyDeletedEvent.eventId(),
                     NotificationOutboxEventType.PARTY_DELETED
-            ));
+            )).toList();
         }
 
         if (event instanceof PartyJoinRequestApprovedEvent approvedEvent) {

@@ -24,9 +24,9 @@ class PartyNotificationStrategyTest {
     @DisplayName("모임 삭제 알림은 destination 없이 변환한다")
     void convertsPartyDeletedWithoutDestination() {
         List<NotificationRequest> requests = strategy.convert(
-                PartyDeletedEvent.deleted(10L, 20L, "모임", "image-key"));
+                PartyDeletedEvent.deleted(10L, 10L, List.of(20L, 30L), "모임", "image-key"));
 
-        assertThat(requests).hasSize(1);
+        assertThat(requests).extracting(NotificationRequest::recipientMemberId).containsExactly(20L, 30L);
         assertThat(requests.get(0).recipientMemberId()).isEqualTo(20L);
         assertThat(requests.get(0).destination()).isNull();
     }

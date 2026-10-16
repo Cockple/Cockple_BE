@@ -640,6 +640,17 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
 
+            Member recipient = MemberFixture.createMember("모임원", Gender.MALE, Level.A, 2L);
+            ReflectionTestUtils.setField(recipient, "id", 2L);
+            MemberParty ownerMembership = MemberParty.createOwner(owner, party);
+            MemberParty activeMembership = MemberParty.create(party, recipient);
+            MemberParty inactiveMembership = MemberParty.builder()
+                    .member(MemberFixture.createMember("비활성", Gender.MALE, Level.A, 3L))
+                    .status(umc.cockple.demo.domain.member.enums.MemberPartyStatus.BANNED)
+                    .build();
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId))
+                    .willReturn(List.of(ownerMembership, activeMembership, inactiveMembership));
+
             // when
             partyCommandService.updateParty(partyId, memberId, request);
 
@@ -650,7 +661,8 @@ class PartyCommandServiceTest {
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
 
-            verify(applicationEventPublisher).publishEvent(any(PartyUpdatedEvent.class));
+            verify(applicationEventPublisher).publishEvent(org.mockito.ArgumentMatchers.argThat(
+                    (PartyUpdatedEvent event) -> event.recipientMemberIds().equals(List.of(2L))));
         }
 
         @Test
@@ -740,12 +752,25 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
 
+            Member recipient = MemberFixture.createMember("모임원", Gender.MALE, Level.A, 2L);
+            ReflectionTestUtils.setField(recipient, "id", 2L);
+            MemberParty ownerMembership = MemberParty.createOwner(owner, party);
+            MemberParty activeMembership = MemberParty.create(party, recipient);
+            MemberParty inactiveMembership = MemberParty.builder()
+                    .member(MemberFixture.createMember("비활성", Gender.MALE, Level.A, 3L))
+                    .status(umc.cockple.demo.domain.member.enums.MemberPartyStatus.BANNED)
+                    .build();
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId))
+                    .willReturn(List.of(ownerMembership, activeMembership, inactiveMembership));
+
             // when
             partyCommandService.deleteParty(partyId, ownerId);
 
             // then
             assertThat(party.getStatus()).isEqualTo(PartyStatus.INACTIVE);
-            verify(applicationEventPublisher).publishEvent(any(PartyDeletedEvent.class));
+            verify(applicationEventPublisher).publishEvent(org.mockito.ArgumentMatchers.argThat(
+                    (PartyDeletedEvent event) -> event.recipientMemberIds().equals(List.of(2L))
+                            && event.deletedByMemberId().equals(ownerId)));
         }
 
         @Test

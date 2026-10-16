@@ -2,10 +2,12 @@ package umc.cockple.demo.domain.party.events;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
 
 public record PartyDeletedEvent(
         Long partyId,
         Long deletedByMemberId,
+        List<Long> recipientMemberIds,
         String partyName,
         String imageKey,
         LocalDateTime occurredAt,
@@ -15,6 +17,7 @@ public record PartyDeletedEvent(
         return new PartyDeletedEvent(
                 partyId,
                 deletedByMemberId,
+                List.of(),
                 null,
                 null,
                 LocalDateTime.now(),
@@ -25,12 +28,14 @@ public record PartyDeletedEvent(
     public static PartyDeletedEvent deleted(
             Long partyId,
             Long deletedByMemberId,
+            List<Long> recipientMemberIds,
             String partyName,
             String imageKey
     ) {
         return new PartyDeletedEvent(
                 partyId,
                 deletedByMemberId,
+                List.copyOf(recipientMemberIds),
                 partyName,
                 imageKey,
                 LocalDateTime.now(),

@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -94,7 +95,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         applicationEventPublisher.publishEvent(PartyUpdatedEvent.updated(
                 partyId,
-                member.getId(),
+                notificationRecipients(partyId, memberId),
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null
         ));
@@ -120,6 +121,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         applicationEventPublisher.publishEvent(PartyDeletedEvent.deleted(
                 partyId,
                 memberId,
+                notificationRecipients(partyId, memberId),
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null
         ));
@@ -605,6 +607,15 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
+    }
+
+    private List<Long> notificationRecipients(Long partyId, Long actorId) {
+        return memberPartyRepository.findAllByPartyIdWithMember(partyId).stream()
+                .filter(mp -> mp.getStatus() == MemberPartyStatus.ACTIVE)
+                .map(mp -> mp.getMember().getId())
+                .filter(id -> !id.equals(actorId))
+                .distinct()
+                .toList();
     }
 
     private void publishRoleChangedEvent(
