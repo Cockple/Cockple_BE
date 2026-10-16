@@ -206,14 +206,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         // SUBOWNER 지정 시, 기존 부모임장 자동 해제
         if (newRole == Role.PARTY_SUBMANAGER) {
             memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)
-                    .ifPresent(mp -> {
-                        mp.changeRole(Role.PARTY_MEMBER);
-                        publishRoleChangedEvent(
-                                party,
-                                PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED,
-                                mp.getMember().getDisplayName()
-                        );
-                    });
+                    .ifPresent(mp -> mp.changeRole(Role.PARTY_MEMBER));
         }
 
         // 역할 변경
