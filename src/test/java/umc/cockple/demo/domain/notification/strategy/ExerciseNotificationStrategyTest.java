@@ -82,7 +82,7 @@ class ExerciseNotificationStrategyTest {
         List<NotificationRequest> requests = strategy.convert(
                 ExerciseAttendanceChangedEvent.changed(
                         100L, 10L, "모임", "image-key",
-                        LocalDate.of(2099, 12, 31), 20L, List.of(20L)));
+                        LocalDate.of(2099, 12, 31), 20L, List.of(20L), null));
 
         assertThat(requests).hasSize(1);
         assertThat(requests.get(0).recipientMemberId()).isEqualTo(20L);

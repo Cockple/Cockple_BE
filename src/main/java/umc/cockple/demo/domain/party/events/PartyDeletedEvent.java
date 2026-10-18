@@ -13,18 +13,6 @@ public record PartyDeletedEvent(
         LocalDateTime occurredAt,
         UUID eventId
 ) {
-    public static PartyDeletedEvent deleted(Long partyId, Long deletedByMemberId) {
-        return new PartyDeletedEvent(
-                partyId,
-                deletedByMemberId,
-                List.of(),
-                null,
-                null,
-                LocalDateTime.now(),
-                UUID.randomUUID()
-        );
-    }
-
     public static PartyDeletedEvent deleted(
             Long partyId,
             Long deletedByMemberId,

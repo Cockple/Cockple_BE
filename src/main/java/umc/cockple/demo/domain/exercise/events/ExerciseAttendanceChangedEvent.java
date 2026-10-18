@@ -28,19 +28,6 @@ public record ExerciseAttendanceChangedEvent(
             String imageKey,
             LocalDate exerciseDate,
             Long subjectMemberId,
-            List<Long> recipientMemberIds
-    ) {
-        return changed(exerciseId, partyId, partyName, imageKey, exerciseDate,
-                subjectMemberId, recipientMemberIds, null);
-    }
-
-    public static ExerciseAttendanceChangedEvent changed(
-            Long exerciseId,
-            Long partyId,
-            String partyName,
-            String imageKey,
-            LocalDate exerciseDate,
-            Long subjectMemberId,
             List<Long> recipientMemberIds,
             String guestName
     ) {
