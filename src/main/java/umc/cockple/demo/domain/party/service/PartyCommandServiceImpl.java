@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.member.domain.Member;
+import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
@@ -94,7 +95,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
         applicationEventPublisher.publishEvent(PartyUpdatedEvent.updated(
                 partyId,
-                member.getId(),
+                notificationRecipients(partyId, memberId),
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null
         ));
@@ -120,6 +121,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         applicationEventPublisher.publishEvent(PartyDeletedEvent.deleted(
                 partyId,
                 memberId,
+                notificationRecipients(partyId, memberId),
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null
         ));
@@ -204,14 +206,7 @@ public class PartyCommandServiceImpl implements PartyCommandService {
         // SUBOWNER 지정 시, 기존 부모임장 자동 해제
         if (newRole == Role.PARTY_SUBMANAGER) {
             memberPartyRepository.findByPartyIdAndRole(partyId, Role.PARTY_SUBMANAGER)
-                    .ifPresent(mp -> {
-                        mp.changeRole(Role.PARTY_MEMBER);
-                        publishRoleChangedEvent(
-                                party,
-                                PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED,
-                                mp.getMember().getDisplayName()
-                        );
-                    });
+                    .ifPresent(mp -> mp.changeRole(Role.PARTY_MEMBER));
         }
 
         // 역할 변경
@@ -605,6 +600,15 @@ public class PartyCommandServiceImpl implements PartyCommandService {
 
     private void rejectInvitation(PartyInvitation invitation) {
         invitation.updateStatus(RequestStatus.REJECTED);
+    }
+
+    private List<Long> notificationRecipients(Long partyId, Long actorId) {
+        return memberPartyRepository.findAllByPartyIdWithMember(partyId).stream()
+                .filter(mp -> mp.getStatus() == MemberPartyStatus.ACTIVE)
+                .map(mp -> mp.getMember().getId())
+                .filter(id -> !id.equals(actorId))
+                .distinct()
+                .toList();
     }
 
     private void publishRoleChangedEvent(

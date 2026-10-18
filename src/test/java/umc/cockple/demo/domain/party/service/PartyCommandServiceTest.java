@@ -5,6 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -640,6 +643,17 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(memberId)).willReturn(Optional.of(owner));
 
+            Member recipient = MemberFixture.createMember("모임원", Gender.MALE, Level.A, 2L);
+            ReflectionTestUtils.setField(recipient, "id", 2L);
+            MemberParty ownerMembership = MemberParty.createOwner(owner, party);
+            MemberParty activeMembership = MemberParty.create(party, recipient);
+            MemberParty inactiveMembership = MemberParty.builder()
+                    .member(MemberFixture.createMember("비활성", Gender.MALE, Level.A, 3L))
+                    .status(umc.cockple.demo.domain.member.enums.MemberPartyStatus.BANNED)
+                    .build();
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId))
+                    .willReturn(List.of(ownerMembership, activeMembership, inactiveMembership));
+
             // when
             partyCommandService.updateParty(partyId, memberId, request);
 
@@ -650,7 +664,8 @@ class PartyCommandServiceTest {
             assertThat(party.getPrice()).isEqualTo(10000);
             assertThat(party.getContent()).isEqualTo("새로운 내용");
 
-            verify(applicationEventPublisher).publishEvent(any(PartyUpdatedEvent.class));
+            verify(applicationEventPublisher).publishEvent(org.mockito.ArgumentMatchers.argThat(
+                    (PartyUpdatedEvent event) -> event.recipientMemberIds().equals(List.of(2L))));
         }
 
         @Test
@@ -740,12 +755,25 @@ class PartyCommandServiceTest {
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberRepository.findById(ownerId)).willReturn(Optional.of(owner));
 
+            Member recipient = MemberFixture.createMember("모임원", Gender.MALE, Level.A, 2L);
+            ReflectionTestUtils.setField(recipient, "id", 2L);
+            MemberParty ownerMembership = MemberParty.createOwner(owner, party);
+            MemberParty activeMembership = MemberParty.create(party, recipient);
+            MemberParty inactiveMembership = MemberParty.builder()
+                    .member(MemberFixture.createMember("비활성", Gender.MALE, Level.A, 3L))
+                    .status(umc.cockple.demo.domain.member.enums.MemberPartyStatus.BANNED)
+                    .build();
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId))
+                    .willReturn(List.of(ownerMembership, activeMembership, inactiveMembership));
+
             // when
             partyCommandService.deleteParty(partyId, ownerId);
 
             // then
             assertThat(party.getStatus()).isEqualTo(PartyStatus.INACTIVE);
-            verify(applicationEventPublisher).publishEvent(any(PartyDeletedEvent.class));
+            verify(applicationEventPublisher).publishEvent(org.mockito.ArgumentMatchers.argThat(
+                    (PartyDeletedEvent event) -> event.recipientMemberIds().equals(List.of(2L))
+                            && event.deletedByMemberId().equals(ownerId)));
         }
 
         @Test
@@ -873,7 +901,40 @@ class PartyCommandServiceTest {
             // then
             assertThat(targetMemberParty.getRole()).isEqualTo(Role.PARTY_SUBMANAGER);
             assertThat(oldSubManagerParty.getRole()).isEqualTo(Role.PARTY_MEMBER);
-            verify(applicationEventPublisher, times(2)).publishEvent(any(PartyRoleChangedEvent.class));
+            ArgumentCaptor<PartyRoleChangedEvent> captor = ArgumentCaptor.forClass(PartyRoleChangedEvent.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().action()).isEqualTo(PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED);
+            assertThat(captor.getValue().subjectNickname()).isEqualTo(targetMember.getDisplayName());
+            assertThat(captor.getValue().recipientMemberIds()).containsExactlyInAnyOrder(targetMemberId, oldSubManagerId);
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = Role.class, names = {"PARTY_MEMBER", "PARTY_SUBMANAGER"})
+        @DisplayName("부모임장 최초 지정과 단독 해제는 각각 해당 알림을 한 번 발행한다")
+        void publishesSingleNotificationForAssignmentOrRelease(Role newRole) {
+            Long partyId = 1L;
+            Long ownerId = 1L;
+            Long targetId = 10L;
+            Member target = MemberFixture.createMember("대상회원", Gender.MALE, Level.A, targetId);
+            ReflectionTestUtils.setField(target, "id", targetId);
+            Party party = PartyFixture.createParty("모임명", ownerId, PartyFixture.createPartyAddr("서울", "강남"));
+            ReflectionTestUtils.setField(party, "id", partyId);
+            Role previousRole = newRole == Role.PARTY_SUBMANAGER ? Role.PARTY_MEMBER : Role.PARTY_SUBMANAGER;
+            MemberParty membership = MemberFixture.createMemberParty(party, target, previousRole);
+            given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
+            given(memberRepository.findById(targetId)).willReturn(Optional.of(target));
+            given(memberPartyRepository.findByPartyAndMember(party, target)).willReturn(Optional.of(membership));
+            given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(List.of(membership));
+
+            partyCommandService.updateMemberRole(partyId, targetId, ownerId, new PartyMemberRoleDTO.Request(newRole));
+
+            assertThat(membership.getRole()).isEqualTo(newRole);
+            ArgumentCaptor<PartyRoleChangedEvent> captor = ArgumentCaptor.forClass(PartyRoleChangedEvent.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().action()).isEqualTo(newRole == Role.PARTY_SUBMANAGER
+                    ? PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_ASSIGNED
+                    : PartyRoleChangedEvent.RoleChangeAction.SUBOWNER_RELEASED);
+            assertThat(captor.getValue().subjectNickname()).isEqualTo(target.getDisplayName());
         }
 
         @Test
@@ -906,6 +967,7 @@ class PartyCommandServiceTest {
 
             // then
             verify(targetMemberParty, never()).changeRole(any());
+            verifyNoInteractions(applicationEventPublisher);
         }
 
         @Test

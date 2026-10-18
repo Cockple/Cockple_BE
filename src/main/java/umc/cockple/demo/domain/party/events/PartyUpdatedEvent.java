@@ -2,10 +2,11 @@ package umc.cockple.demo.domain.party.events;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
 
 public record PartyUpdatedEvent(
         Long partyId,
-        Long recipientMemberId,
+        List<Long> recipientMemberIds,
         String partyName,
         String imageKey,
         LocalDateTime occurredAt,
@@ -13,12 +14,12 @@ public record PartyUpdatedEvent(
 ) {
     public static PartyUpdatedEvent updated(
             Long partyId,
-            Long recipientMemberId,
+            List<Long> recipientMemberIds,
             String partyName,
             String imageKey
     ) {
         return new PartyUpdatedEvent(
-                partyId, recipientMemberId, partyName, imageKey, LocalDateTime.now(), UUID.randomUUID()
+                partyId, List.copyOf(recipientMemberIds), partyName, imageKey, LocalDateTime.now(), UUID.randomUUID()
         );
     }
 }

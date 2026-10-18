@@ -13,6 +13,7 @@ public record ExerciseAttendanceChangedEvent(
         LocalDate exerciseDate,
         Long subjectMemberId,
         List<Long> recipientMemberIds,
+        String guestName,
         LocalDateTime occurredAt,
         UUID eventId
 ) {
@@ -27,11 +28,12 @@ public record ExerciseAttendanceChangedEvent(
             String imageKey,
             LocalDate exerciseDate,
             Long subjectMemberId,
-            List<Long> recipientMemberIds
+            List<Long> recipientMemberIds,
+            String guestName
     ) {
         return new ExerciseAttendanceChangedEvent(
                 exerciseId, partyId, partyName, imageKey, exerciseDate,
-                subjectMemberId, recipientMemberIds, LocalDateTime.now(), UUID.randomUUID()
+                subjectMemberId, recipientMemberIds, guestName, LocalDateTime.now(), UUID.randomUUID()
         );
     }
 }

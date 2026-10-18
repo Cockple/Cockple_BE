@@ -5,12 +5,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.exercise.domain.Guest;
+import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
@@ -23,6 +29,7 @@ import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInvit
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseGuestInviteResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
@@ -79,7 +86,10 @@ class ExerciseGuestCommandServiceTest {
                 memberLookupService,
                 eventPublisher,
                 exerciseValidator,
-                new ExerciseGameAssignmentValidator(gamePlayerRepository));
+                new ExerciseGameAssignmentValidator(gamePlayerRepository),
+                new ExerciseWaitingPromotionService(
+                        new ExerciseParticipantPositionCalculator(),
+                        eventPublisher));
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -222,6 +232,48 @@ class ExerciseGuestCommandServiceTest {
     @Nested
     @DisplayName("cancelGuestInvitation")
     class CancelGuestInvitation {
+
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("등록자가 확정 게스트를 취소하면 첫 대기자의 종류에 맞게 알린다")
+        void cancellingConfirmedGuestPromotesWaitingParticipant(boolean waitingGuest) {
+            ReflectionTestUtils.setField(exercise, "maxCapacity", 1);
+            Guest confirmed = createGuest(exercise, manager.getId(), 60L);
+            ReflectionTestUtils.setField(confirmed, "createdAt", LocalDate.of(2099, 1, 1).atStartOfDay());
+            if (waitingGuest) {
+                Guest waiting = createGuest(exercise, 999L, 61L);
+                ReflectionTestUtils.setField(waiting, "guestName", "대기손님");
+                ReflectionTestUtils.setField(waiting, "createdAt", LocalDate.of(2099, 1, 2).atStartOfDay());
+            } else {
+                ExerciseParticipation waiting = exercise.addParticipation(manager,
+                        ExerciseMemberShipStatus.PARTY_MEMBER);
+                ReflectionTestUtils.setField(waiting, "createdAt", LocalDate.of(2099, 1, 2).atStartOfDay());
+            }
+            given(guestReader.findByIdOrThrow(confirmed.getId())).willReturn(confirmed);
+
+            exerciseGuestCommandService.cancelGuestInvitation(exercise.getId(), confirmed.getId(), manager.getId());
+
+            ArgumentCaptor<ExerciseAttendanceChangedEvent> captor =
+                    ArgumentCaptor.forClass(ExerciseAttendanceChangedEvent.class);
+            then(eventPublisher).should().publishEvent(captor.capture());
+            assertThat(captor.getValue().recipientMemberIds()).containsExactly(waitingGuest ? 999L : manager.getId());
+            assertThat(captor.getValue().guestName()).isEqualTo(waitingGuest ? "대기손님" : null);
+        }
+
+        @Test
+        @DisplayName("등록자가 대기 게스트를 취소해도 알림을 보내지 않는다")
+        void cancellingWaitingGuestDoesNotNotify() {
+            ReflectionTestUtils.setField(exercise, "maxCapacity", 1);
+            Guest confirmed = createGuest(exercise, manager.getId(), 60L);
+            Guest waiting = createGuest(exercise, manager.getId(), 61L);
+            ReflectionTestUtils.setField(confirmed, "createdAt", LocalDate.of(2099, 1, 1).atStartOfDay());
+            ReflectionTestUtils.setField(waiting, "createdAt", LocalDate.of(2099, 1, 2).atStartOfDay());
+            given(guestReader.findByIdOrThrow(waiting.getId())).willReturn(waiting);
+
+            exerciseGuestCommandService.cancelGuestInvitation(exercise.getId(), waiting.getId(), manager.getId());
+
+            then(eventPublisher).should(never()).publishEvent(any(ExerciseAttendanceChangedEvent.class));
+        }
 
         @Test
         @DisplayName("초대자가 본인 게스트를 취소하면 Response를 반환한다")
