@@ -10,6 +10,8 @@ import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateAddressCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateAddressCommand;
@@ -24,6 +26,7 @@ import umc.cockple.demo.domain.party.domain.Party;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -38,6 +41,7 @@ public class ExerciseLifecycleCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
+    private final ExerciseWaitingPromotionService waitingPromotionService;
 
     public ExerciseCreateResult createExercise(
             Long partyId,
@@ -100,10 +104,16 @@ public class ExerciseLifecycleCommandService {
 
         exerciseValidator.validateUpdateExercise(exercise, member, updateCommand);
 
+        Set<ParticipantKey> previouslyWaiting = updateCommand.maxCapacity() != null
+                && updateCommand.maxCapacity() > exercise.getMaxCapacity()
+                ? waitingPromotionService.findWaitingParticipants(exercise)
+                : Set.of();
         exercise.updateExerciseInfo(updateCommand);
         exercise.updateExerciseAddr(addressCommand);
 
         exerciseRepository.flush();
+
+        waitingPromotionService.notifyNewlyConfirmed(exercise, previouslyWaiting);
 
         Party party = exercise.getParty();
         eventPublisher.publishEvent(ExerciseUpdatedEvent.updated(

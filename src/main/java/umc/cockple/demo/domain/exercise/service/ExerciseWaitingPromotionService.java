@@ -50,6 +50,17 @@ public class ExerciseWaitingPromotionService {
                 firstWaiting.key(), firstWaiting.recipientMemberId(), firstWaiting.guestName()));
     }
 
+    public void notifyNewlyConfirmed(Exercise exercise, Set<ParticipantKey> previouslyWaiting) {
+        if (previouslyWaiting.isEmpty()) {
+            return;
+        }
+        sortedParticipants(exercise).stream()
+                .limit(exercise.getMaxCapacity())
+                .filter(participant -> previouslyWaiting.contains(participant.key()))
+                .forEach(participant -> notifyPromoted(exercise, new PromotionCandidate(
+                        participant.key(), participant.recipientMemberId(), participant.guestName())));
+    }
+
     public void notifyPromoted(Exercise exercise, PromotionCandidate candidate) {
         Party party = exercise.getParty();
         eventPublisher.publishEvent(ExerciseAttendanceChangedEvent.changed(

@@ -15,6 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
@@ -28,6 +29,7 @@ import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCreateRes
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseDeleteResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseUpdateResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.calculator.ExerciseParticipantPositionCalculator;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -42,6 +44,7 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.global.enums.Role;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
+import umc.cockple.demo.support.fixture.GuestFixture;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -52,6 +55,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseLifecycleCommandService")
@@ -81,7 +85,8 @@ class ExerciseLifecycleCommandServiceTest {
                 memberLookupService,
                 partyLookupService,
                 eventPublisher,
-                exerciseValidator);
+                exerciseValidator,
+                new ExerciseWaitingPromotionService(new ExerciseParticipantPositionCalculator(), eventPublisher));
 
         manager = MemberFixture.createMember("모임장", Gender.MALE, Level.A, 1001L);
         ReflectionTestUtils.setField(manager, "id", 1L);
@@ -427,6 +432,49 @@ class ExerciseLifecycleCommandServiceTest {
         @Nested
         @DisplayName("성공 케이스")
         class Success {
+
+            @ParameterizedTest
+            @ValueSource(ints = {1, 2, 3, 4, 5})
+            @DisplayName("정원 증가로 새로 확정된 회원과 게스트 등록자에게만 참석 전환 알림을 보낸다")
+            void capacityChangeNotifiesOnlyPromotedParticipants(int capacity) {
+                ReflectionTestUtils.setField(exercise, "maxCapacity", 2);
+                var confirmed = exercise.addParticipation(manager, ExerciseMemberShipStatus.PARTY_MEMBER);
+                ReflectionTestUtils.setField(confirmed, "createdAt", LocalDate.of(2099, 1, 1).atStartOfDay());
+                Member second = MemberFixture.createMember("확정 회원", Gender.MALE, Level.B, 2001L);
+                ReflectionTestUtils.setField(second, "id", 20L);
+                var secondParticipation = exercise.addParticipation(second, ExerciseMemberShipStatus.PARTY_MEMBER);
+                ReflectionTestUtils.setField(secondParticipation, "createdAt", LocalDate.of(2099, 1, 2).atStartOfDay());
+                var guest = GuestFixture.createGuest(exercise, 99L, "대기 게스트", Gender.FEMALE);
+                ReflectionTestUtils.setField(guest, "id", 30L);
+                ReflectionTestUtils.setField(guest, "createdAt", LocalDate.of(2099, 1, 3).atStartOfDay());
+                Member waiting = MemberFixture.createMember("대기 회원", Gender.MALE, Level.B, 2002L);
+                ReflectionTestUtils.setField(waiting, "id", 30L);
+                var waitingParticipation = exercise.addParticipation(waiting, ExerciseMemberShipStatus.PARTY_MEMBER);
+                ReflectionTestUtils.setField(waitingParticipation, "createdAt", LocalDate.of(2099, 1, 4).atStartOfDay());
+                ExerciseUpdateCommand command = ExerciseUpdateCommand.builder()
+                        .maxCapacity(capacity)
+                        .build();
+
+                exerciseLifecycleCommandService.updateExercise(
+                        exercise.getId(), manager.getId(), command, validAddressCommand);
+
+                int expectedPromotions = Math.max(0, Math.min(capacity, 4) - 2);
+                ArgumentCaptor<ExerciseAttendanceChangedEvent> captor =
+                        ArgumentCaptor.forClass(ExerciseAttendanceChangedEvent.class);
+                then(eventPublisher).should(times(expectedPromotions)).publishEvent(captor.capture());
+                if (expectedPromotions > 0) {
+                    var guestEvent = captor.getAllValues().get(0);
+                    assertThat(guestEvent.recipientMemberIds()).containsExactly(99L);
+                    assertThat(guestEvent.guestName()).isEqualTo("대기 게스트");
+                    assertThat(guestEvent.subjectMemberId()).isNull();
+                }
+                if (expectedPromotions > 1) {
+                    var memberEvent = captor.getAllValues().get(1);
+                    assertThat(memberEvent.recipientMemberIds()).containsExactly(30L);
+                    assertThat(memberEvent.subjectMemberId()).isEqualTo(30L);
+                    assertThat(memberEvent.guestName()).isNull();
+                }
+            }
 
             @Test
             @DisplayName("모임장이 운동을 수정하면 Response를 반환한다")
