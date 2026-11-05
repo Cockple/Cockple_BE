@@ -22,7 +22,6 @@ import umc.cockple.demo.domain.game.domain.service.matching.GameCandidatePoolSel
 import umc.cockple.demo.domain.game.domain.service.matching.GameMatchTypeSelector;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
-import umc.cockple.demo.global.enums.Level;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,10 +60,7 @@ public class GameRandomMatchQueryService {
         List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
         List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(
                 gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
-        List<GameBoardMember> candidates = availabilityPolicy
-                .filterAvailable(members, activeGames).stream()
-                .filter(member -> member.getLevel() != Level.NONE)
-                .toList();
+        List<GameBoardMember> candidates = availabilityPolicy.filterAvailable(members, activeGames);
         if (candidates.size() < 4) {
             throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
         }

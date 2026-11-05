@@ -5,6 +5,7 @@ import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.global.enums.Level;
 
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +17,7 @@ public class GameBoardMemberAvailabilityPolicy {
     /**
      * 랜덤 매칭 정책
      * <p>
-     * 불참 선수와 활성 게임(WAITING, PLAYING)에 속한 선수를 모두 제외한다.
+     * 불참 선수, 급수가 없는 선수, 활성 게임(WAITING, PLAYING)에 속한 선수를 모두 제외한다.
      * 수동 편성({@link #hasWaitingConflict})은 PLAYING 선수를 허용하므로 두 정책은 의도적으로 다르다.
      */
     public List<GameBoardMember> filterAvailable(
@@ -25,6 +26,7 @@ public class GameBoardMemberAvailabilityPolicy {
         Set<Long> blockedMemberIds = blockedMemberIds(activeGames);
         return members.stream()
                 .filter(member -> Boolean.TRUE.equals(member.getParticipating()))
+                .filter(member -> member.getLevel() != Level.NONE)
                 .filter(member -> !blockedMemberIds.contains(member.getId()))
                 .toList();
     }

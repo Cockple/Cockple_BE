@@ -56,6 +56,18 @@ class GameBoardMemberAvailabilityPolicyTest {
     }
 
     @Test
+    @DisplayName("급수가 없는 선수는 제외한다")
+    void filterAvailable_excludesMembersWithoutLevel() {
+        GameBoardMember noLevel = GameFixture.member(1L, board, "급수없음", Level.NONE);
+        GameBoardMember available = GameFixture.member(2L, board, "가용", Level.A);
+
+        List<GameBoardMember> result = policy.filterAvailable(
+                List.of(noLevel, available), List.of());
+
+        assertThat(result).containsExactly(available);
+    }
+
+    @Test
     @DisplayName("PLAYING 선수는 시작 시각이 없어도 제외한다")
     void filterAvailable_excludesPlayingMembersWithoutStartedAt() {
         GameBoardMember playing = GameFixture.member(1L, board, "시각없음", Level.A);

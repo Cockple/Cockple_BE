@@ -97,7 +97,7 @@ class GameRandomMatchQueryServiceTest {
         given(gameReader.readAllByGameBoardAndStatuses(
                 BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
-                eq(members), eq(activeGames))).willReturn(members);
+                eq(members), eq(activeGames))).willReturn(candidates);
         given(matchTypeSelector.findAvailableTypes(candidates))
                 .willReturn(List.of(GameMatchType.MEN_DOUBLES));
         given(candidatePoolSelector.find(candidates, GameMatchType.MEN_DOUBLES))
@@ -144,7 +144,7 @@ class GameRandomMatchQueryServiceTest {
         given(gameReader.readAllByGameBoardAndStatuses(
                 BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
-                eq(members), eq(activeGames))).willReturn(members);
+                eq(members), eq(activeGames))).willReturn(members.subList(0, 3));
 
         assertThatThrownBy(() -> service.match(MEMBER_ID, BOARD_ID))
                 .isInstanceOfSatisfying(GameException.class, exception ->
