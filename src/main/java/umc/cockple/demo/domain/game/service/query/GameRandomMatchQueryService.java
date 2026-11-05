@@ -25,8 +25,7 @@ import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPo
 import umc.cockple.demo.global.enums.Level;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,21 +53,9 @@ public class GameRandomMatchQueryService {
 
         List<GameBoardMember> candidates = findAvailableCandidates(gameBoard);
 
-        List<GameMatchType> availableTypes = matchTypeSelector.findAvailableTypes(candidates);
-        List<GameMatchType> feasibleTypes = new ArrayList<>();
-        Map<GameMatchType, List<GameBoardMember>> candidatePools =
-                new EnumMap<>(GameMatchType.class);
-        for (GameMatchType availableType : availableTypes) {
-            candidatePoolSelector.find(candidates, availableType).ifPresent(candidatePool -> {
-                feasibleTypes.add(availableType);
-                candidatePools.put(availableType, candidatePool);
-            });
-        }
-        if (feasibleTypes.isEmpty()) {
-            throw new GameException(GameErrorCode.RANDOM_MATCH_NOT_FOUND);
-        }
+        Map<GameMatchType, List<GameBoardMember>> candidatePools = findCandidatePools(candidates);
 
-        GameMatchType matchType = matchTypeSelector.selectFrom(feasibleTypes);
+        GameMatchType matchType = matchTypeSelector.selectFrom(List.copyOf(candidatePools.keySet()));
         List<GameBoardMember> candidatePool = candidatePools.get(matchType);
         List<Long> candidatePoolIds = candidatePool.stream()
                 .map(GameBoardMember::getId)
@@ -95,5 +82,18 @@ public class GameRandomMatchQueryService {
             throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
         }
         return candidates;
+    }
+
+    private Map<GameMatchType, List<GameBoardMember>> findCandidatePools(
+            List<GameBoardMember> candidates) {
+        Map<GameMatchType, List<GameBoardMember>> candidatePools = new LinkedHashMap<>();
+        for (GameMatchType availableType : matchTypeSelector.findAvailableTypes(candidates)) {
+            candidatePoolSelector.find(candidates, availableType)
+                    .ifPresent(candidatePool -> candidatePools.put(availableType, candidatePool));
+        }
+        if (candidatePools.isEmpty()) {
+            throw new GameException(GameErrorCode.RANDOM_MATCH_NOT_FOUND);
+        }
+        return candidatePools;
     }
 }
