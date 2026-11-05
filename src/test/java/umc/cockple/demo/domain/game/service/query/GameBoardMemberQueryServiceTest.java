@@ -47,7 +47,7 @@ class GameBoardMemberQueryServiceTest {
         given(gameBoardMemberReader.readAllByFilters(GAME_BOARD_ID, List.of(), null, null))
                 .willReturn(List.of());
         given(gameReader.readAllByGameBoardAndStatuses(
-                GAME_BOARD_ID, List.of(GameStatus.PLAYING, GameStatus.WAITING)))
+                GAME_BOARD_ID, GameStatus.ACTIVE_STATUSES))
                 .willReturn(List.of());
 
         GameBoardMemberResult result = gameBoardMemberQueryService.getMembers(

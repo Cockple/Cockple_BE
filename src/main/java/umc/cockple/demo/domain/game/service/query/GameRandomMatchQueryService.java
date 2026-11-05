@@ -22,11 +22,8 @@ import umc.cockple.demo.domain.game.domain.service.matching.GameCandidatePoolSel
 import umc.cockple.demo.domain.game.domain.service.matching.GameMatchTypeSelector;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
-import umc.cockple.demo.global.enums.Level;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,9 +31,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class GameRandomMatchQueryService {
-
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
 
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
@@ -51,43 +45,51 @@ public class GameRandomMatchQueryService {
     public GameRandomMatchResult match(Long memberId, Long gameBoardId) {
         gameBoardAccessValidator.validateGameHost(gameBoardId, memberId);
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);
-        LocalDateTime now = LocalDateTime.now();
 
+        List<GameBoardMember> candidates = findAvailableCandidates(gameBoard);
+        Map<GameMatchType, List<GameBoardMember>> candidatePools = findCandidatePools(candidates);
+
+        GameMatchType matchType = matchTypeSelector.selectFrom(List.copyOf(candidatePools.keySet()));
+        List<Long> matchedMemberIds = selectBestMatch(
+                gameBoard, candidatePools.get(matchType), matchType);
+
+        return new GameRandomMatchResult(matchedMemberIds);
+    }
+
+    private List<GameBoardMember> findAvailableCandidates(GameBoard gameBoard) {
         List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
-        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
-        List<GameBoardMember> candidates = availabilityPolicy
-                .filterAvailable(members, activeGames, now).stream()
-                .filter(member -> member.getLevel() != Level.NONE)
-                .toList();
+        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(
+                gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
+        List<GameBoardMember> candidates = availabilityPolicy.filterAvailable(members, activeGames);
         if (candidates.size() < 4) {
             throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
         }
+        return candidates;
+    }
 
-        List<GameMatchType> availableTypes = matchTypeSelector.findAvailableTypes(candidates);
-        List<GameMatchType> feasibleTypes = new ArrayList<>();
-        Map<GameMatchType, List<GameBoardMember>> candidatePools =
-                new EnumMap<>(GameMatchType.class);
-        for (GameMatchType availableType : availableTypes) {
-            candidatePoolSelector.find(candidates, availableType).ifPresent(candidatePool -> {
-                feasibleTypes.add(availableType);
-                candidatePools.put(availableType, candidatePool);
-            });
+    private Map<GameMatchType, List<GameBoardMember>> findCandidatePools(
+            List<GameBoardMember> candidates) {
+        Map<GameMatchType, List<GameBoardMember>> candidatePools = new LinkedHashMap<>();
+        for (GameMatchType availableType : matchTypeSelector.findAvailableTypes(candidates)) {
+            candidatePoolSelector.find(candidates, availableType)
+                    .ifPresent(candidatePool -> candidatePools.put(availableType, candidatePool));
         }
-        if (feasibleTypes.isEmpty()) {
+        if (candidatePools.isEmpty()) {
             throw new GameException(GameErrorCode.RANDOM_MATCH_NOT_FOUND);
         }
+        return candidatePools;
+    }
 
-        GameMatchType matchType = matchTypeSelector.selectFrom(feasibleTypes);
-        List<GameBoardMember> candidatePool = candidatePools.get(matchType);
+    private List<Long> selectBestMatch(
+            GameBoard gameBoard,
+            List<GameBoardMember> candidatePool,
+            GameMatchType matchType) {
         List<Long> candidatePoolIds = candidatePool.stream()
                 .map(GameBoardMember::getId)
                 .toList();
         List<GamePairCount> pairCounts = gameReader.readCompletedPairCounts(
                 gameBoard.getId(), candidatePoolIds);
         GamePairHistory pairHistory = pairHistoryCalculator.fromCounts(pairCounts, List.of());
-        List<Long> matchedMemberIds = bestMatchSelector.select(
-                candidatePool, matchType, pairHistory);
-
-        return new GameRandomMatchResult(matchedMemberIds);
+        return bestMatchSelector.select(candidatePool, matchType, pairHistory);
     }
 }
