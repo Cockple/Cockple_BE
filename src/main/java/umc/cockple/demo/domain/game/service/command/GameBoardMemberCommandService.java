@@ -20,15 +20,11 @@ import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
-import java.util.List;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class GameBoardMemberCommandService {
-
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.PLAYING, GameStatus.WAITING);
 
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
@@ -72,7 +68,7 @@ public class GameBoardMemberCommandService {
         }
         if (!command.participating()
                 && gameReader.existsByGameBoardMemberAndStatuses(
-                        command.gameBoardMemberId(), ACTIVE_STATUSES)) {
+                        command.gameBoardMemberId(), GameStatus.ACTIVE_STATUSES)) {
             throw new GameException(GameErrorCode.ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE);
         }
 

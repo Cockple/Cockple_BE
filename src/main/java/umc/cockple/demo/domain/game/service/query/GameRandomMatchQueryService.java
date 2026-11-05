@@ -33,9 +33,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GameRandomMatchQueryService {
 
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
-
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
     private final GameReader gameReader;
@@ -62,7 +59,8 @@ public class GameRandomMatchQueryService {
 
     private List<GameBoardMember> findAvailableCandidates(GameBoard gameBoard) {
         List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
-        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
+        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(
+                gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
         List<GameBoardMember> candidates = availabilityPolicy
                 .filterAvailable(members, activeGames).stream()
                 .filter(member -> member.getLevel() != Level.NONE)

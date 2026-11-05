@@ -57,7 +57,6 @@ public class GameBoardMemberAvailabilityPolicy {
     }
 
     private boolean blocksSelection(Game game) {
-        return game.getStatus() == GameStatus.WAITING
-                || game.getStatus() == GameStatus.PLAYING;
+        return game.getStatus().isActive();
     }
 }

@@ -47,8 +47,6 @@ class GameRandomMatchQueryServiceTest {
 
     private static final Long MEMBER_ID = 10L;
     private static final Long BOARD_ID = 1L;
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
 
     @Mock private GameBoardReader gameBoardReader;
     @Mock private GameBoardMemberReader gameBoardMemberReader;
@@ -97,7 +95,7 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames))).willReturn(members);
         given(matchTypeSelector.findAvailableTypes(candidates))
@@ -144,7 +142,7 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames))).willReturn(members);
 
@@ -189,7 +187,7 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
                 eq(members), eq(activeGames))).willReturn(members);
         given(gameReader.readCompletedPairCounts(

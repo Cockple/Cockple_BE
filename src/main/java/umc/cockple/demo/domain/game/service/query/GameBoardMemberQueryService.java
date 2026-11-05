@@ -26,8 +26,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GameBoardMemberQueryService {
 
-    private static final List<GameStatus> ACTIVE_STATUSES = List.of(GameStatus.PLAYING, GameStatus.WAITING);
-
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
     private final GameReader gameReader;
@@ -59,7 +57,7 @@ public class GameBoardMemberQueryService {
 
     private Map<Long, EnumSet<GameStatus>> loadActiveStatuses(Long gameBoardId) {
         List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(
-                gameBoardId, ACTIVE_STATUSES);
+                gameBoardId, GameStatus.ACTIVE_STATUSES);
         Map<Long, EnumSet<GameStatus>> statusesByMemberId = new HashMap<>();
 
         for (Game game : activeGames) {
