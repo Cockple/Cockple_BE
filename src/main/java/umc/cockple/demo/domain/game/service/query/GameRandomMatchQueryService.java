@@ -24,7 +24,6 @@ import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessVal
 import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.global.enums.Level;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,12 +61,10 @@ public class GameRandomMatchQueryService {
     }
 
     private List<GameBoardMember> findAvailableCandidates(GameBoard gameBoard) {
-        LocalDateTime now = LocalDateTime.now();
-
         List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
         List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
         List<GameBoardMember> candidates = availabilityPolicy
-                .filterAvailable(members, activeGames, now).stream()
+                .filterAvailable(members, activeGames).stream()
                 .filter(member -> member.getLevel() != Level.NONE)
                 .toList();
         if (candidates.size() < 4) {

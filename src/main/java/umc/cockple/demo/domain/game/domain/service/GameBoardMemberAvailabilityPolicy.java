@@ -6,7 +6,6 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,13 +13,10 @@ import java.util.Set;
 @Component
 public class GameBoardMemberAvailabilityPolicy {
 
-    private static final long PLAYING_COOLDOWN_MINUTES = 10;
-
     public List<GameBoardMember> filterAvailable(
             List<GameBoardMember> members,
-            List<Game> activeGames,
-            LocalDateTime now) {
-        Set<Long> blockedMemberIds = blockedMemberIds(activeGames, now);
+            List<Game> activeGames) {
+        Set<Long> blockedMemberIds = blockedMemberIds(activeGames);
         return members.stream()
                 .filter(member -> Boolean.TRUE.equals(member.getParticipating()))
                 .filter(member -> !blockedMemberIds.contains(member.getId()))
@@ -46,10 +42,10 @@ public class GameBoardMemberAvailabilityPolicy {
         return members.stream().anyMatch(member -> waitingMemberIds.contains(member.getId()));
     }
 
-    private Set<Long> blockedMemberIds(List<Game> activeGames, LocalDateTime now) {
+    private Set<Long> blockedMemberIds(List<Game> activeGames) {
         Set<Long> blockedMemberIds = new HashSet<>();
         for (Game game : activeGames) {
-            if (!blocksSelection(game, now)) {
+            if (!blocksSelection(game)) {
                 continue;
             }
             game.getPlayers().stream()
@@ -60,14 +56,8 @@ public class GameBoardMemberAvailabilityPolicy {
         return blockedMemberIds;
     }
 
-    private boolean blocksSelection(Game game, LocalDateTime now) {
-        if (game.getStatus() == GameStatus.WAITING) {
-            return true;
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            return false;
-        }
-        LocalDateTime startedAt = game.getStartedAt();
-        return startedAt == null || startedAt.isAfter(now.minusMinutes(PLAYING_COOLDOWN_MINUTES));
+    private boolean blocksSelection(Game game) {
+        return game.getStatus() == GameStatus.WAITING
+                || game.getStatus() == GameStatus.PLAYING;
     }
 }
