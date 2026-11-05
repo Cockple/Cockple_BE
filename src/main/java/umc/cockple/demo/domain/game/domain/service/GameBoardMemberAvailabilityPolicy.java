@@ -13,6 +13,12 @@ import java.util.Set;
 @Component
 public class GameBoardMemberAvailabilityPolicy {
 
+    /**
+     * 랜덤 매칭 정책
+     * <p>
+     * 불참 선수와 활성 게임(WAITING, PLAYING)에 속한 선수를 모두 제외한다.
+     * 수동 편성({@link #hasWaitingConflict})은 PLAYING 선수를 허용하므로 두 정책은 의도적으로 다르다.
+     */
     public List<GameBoardMember> filterAvailable(
             List<GameBoardMember> members,
             List<Game> activeGames) {
@@ -25,6 +31,9 @@ public class GameBoardMemberAvailabilityPolicy {
 
     /**
      * 수동 게임 편성 정책
+     * <p>
+     * 대기(WAITING) 게임에 이미 편성된 선수만 충돌로 본다.
+     * 랜덤 매칭({@link #filterAvailable})과 달리 PLAYING 선수는 허용한다.
      */
     public boolean hasWaitingConflict(
             List<GameBoardMember> members,
