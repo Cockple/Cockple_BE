@@ -52,19 +52,11 @@ public class GameRandomMatchQueryService {
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);
 
         List<GameBoardMember> candidates = findAvailableCandidates(gameBoard);
-
         Map<GameMatchType, List<GameBoardMember>> candidatePools = findCandidatePools(candidates);
 
         GameMatchType matchType = matchTypeSelector.selectFrom(List.copyOf(candidatePools.keySet()));
-        List<GameBoardMember> candidatePool = candidatePools.get(matchType);
-        List<Long> candidatePoolIds = candidatePool.stream()
-                .map(GameBoardMember::getId)
-                .toList();
-        List<GamePairCount> pairCounts = gameReader.readCompletedPairCounts(
-                gameBoard.getId(), candidatePoolIds);
-        GamePairHistory pairHistory = pairHistoryCalculator.fromCounts(pairCounts, List.of());
-        List<Long> matchedMemberIds = bestMatchSelector.select(
-                candidatePool, matchType, pairHistory);
+        List<Long> matchedMemberIds = selectBestMatch(
+                gameBoard, candidatePools.get(matchType), matchType);
 
         return new GameRandomMatchResult(matchedMemberIds);
     }
@@ -95,5 +87,18 @@ public class GameRandomMatchQueryService {
             throw new GameException(GameErrorCode.RANDOM_MATCH_NOT_FOUND);
         }
         return candidatePools;
+    }
+
+    private List<Long> selectBestMatch(
+            GameBoard gameBoard,
+            List<GameBoardMember> candidatePool,
+            GameMatchType matchType) {
+        List<Long> candidatePoolIds = candidatePool.stream()
+                .map(GameBoardMember::getId)
+                .toList();
+        List<GamePairCount> pairCounts = gameReader.readCompletedPairCounts(
+                gameBoard.getId(), candidatePoolIds);
+        GamePairHistory pairHistory = pairHistoryCalculator.fromCounts(pairCounts, List.of());
+        return bestMatchSelector.select(candidatePool, matchType, pairHistory);
     }
 }
