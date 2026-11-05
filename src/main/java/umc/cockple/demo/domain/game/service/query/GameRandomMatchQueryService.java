@@ -51,17 +51,8 @@ public class GameRandomMatchQueryService {
     public GameRandomMatchResult match(Long memberId, Long gameBoardId) {
         gameBoardAccessValidator.validateGameHost(gameBoardId, memberId);
         GameBoard gameBoard = gameBoardReader.read(gameBoardId);
-        LocalDateTime now = LocalDateTime.now();
 
-        List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
-        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
-        List<GameBoardMember> candidates = availabilityPolicy
-                .filterAvailable(members, activeGames, now).stream()
-                .filter(member -> member.getLevel() != Level.NONE)
-                .toList();
-        if (candidates.size() < 4) {
-            throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
-        }
+        List<GameBoardMember> candidates = findAvailableCandidates(gameBoard);
 
         List<GameMatchType> availableTypes = matchTypeSelector.findAvailableTypes(candidates);
         List<GameMatchType> feasibleTypes = new ArrayList<>();
@@ -89,5 +80,20 @@ public class GameRandomMatchQueryService {
                 candidatePool, matchType, pairHistory);
 
         return new GameRandomMatchResult(matchedMemberIds);
+    }
+
+    private List<GameBoardMember> findAvailableCandidates(GameBoard gameBoard) {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<GameBoardMember> members = gameBoardMemberReader.readAllByGameBoard(gameBoard.getId());
+        List<Game> activeGames = gameReader.readAllByGameBoardAndStatuses(gameBoard.getId(), ACTIVE_STATUSES);
+        List<GameBoardMember> candidates = availabilityPolicy
+                .filterAvailable(members, activeGames, now).stream()
+                .filter(member -> member.getLevel() != Level.NONE)
+                .toList();
+        if (candidates.size() < 4) {
+            throw new GameException(GameErrorCode.INSUFFICIENT_AVAILABLE_PLAYERS);
+        }
+        return candidates;
     }
 }
