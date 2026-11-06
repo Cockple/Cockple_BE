@@ -183,7 +183,7 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
         responder.send(GameRealtimeProtocol.TYPE_GAME_DELETED,
                 new GameDeletedAck(result.gameId(), toDeletedPlayers(result.players()), boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
     }
 
     private List<DeletedPlayer> toDeletedPlayers(List<GameDeleteResult.PlayerView> players) {
@@ -202,20 +202,12 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
         // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, toBroadcastBoard(boardDto), context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
     }
 
     private GameBoardDTO.Response loadBoardDto(RealtimeRequestContext context, Long gameBoardId) {
         GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
         return gameBoardMapper.toResponse(board);
-    }
-
-    /**
-     * 브로드캐스트 본문에서는 항상 false 로 내리고, 각 클라이언트는
-     * 자신의 구독 응답으로 받은 값을 유지
-     */
-    private GameBoardDTO.Response toBroadcastBoard(GameBoardDTO.Response board) {
-        return board.forBroadcast();
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {

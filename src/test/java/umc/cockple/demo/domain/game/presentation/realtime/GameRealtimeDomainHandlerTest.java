@@ -171,7 +171,7 @@ class GameRealtimeDomainHandlerTest {
                     .moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(GAME_BOARD_ID, 50L));
             then(responder).should().send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
             then(gameBoardBroadcaster).should()
-                    .broadcastBoardUpdate(GAME_BOARD_ID, boardDto.forBroadcast(), SESSION_ID);
+                    .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, SESSION_ID);
         }
     }
 
@@ -214,9 +214,9 @@ class GameRealtimeDomainHandlerTest {
 
         var broadcasts = inOrder(gameBoardBroadcaster);
         then(gameBoardBroadcaster).should(broadcasts)
-                .broadcastBoardUpdate(GAME_BOARD_ID, playingDto.forBroadcast(), SESSION_ID);
+                .broadcastBoardUpdate(GAME_BOARD_ID, playingDto, SESSION_ID);
         then(gameBoardBroadcaster).should(broadcasts)
-                .broadcastBoardUpdate(GAME_BOARD_ID, waitingDto.forBroadcast(), null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, waitingDto, null);
     }
 
     private RealtimeRequestContext context(String action) {

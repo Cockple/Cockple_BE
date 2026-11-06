@@ -100,7 +100,7 @@ class GameBoardMembersChangedEventListenerTest {
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
         // isGameHost는 개인화 값이므로 브로드캐스트 본문에서는 false로 내린다.
         then(gameBoardBroadcaster).should()
-                .broadcastBoardUpdate(GAME_BOARD_ID, carriedBoardDto.forBroadcast(), null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, carriedBoardDto, null);
     }
 
     @Test

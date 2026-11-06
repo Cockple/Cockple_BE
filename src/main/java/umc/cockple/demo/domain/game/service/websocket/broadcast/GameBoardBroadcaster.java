@@ -3,6 +3,7 @@ package umc.cockple.demo.domain.game.service.websocket.broadcast;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.repository.redis.GameBoardSubscriber;
 import umc.cockple.demo.domain.game.repository.redis.GameBoardSubscriptionStore;
@@ -24,11 +25,12 @@ public class GameBoardBroadcaster {
     private final GameBoardSubscriptionStore subscriptionStore;
     private final RealtimeMessagePublisher realtimeMessagePublisher;
 
-    public void broadcastBoardUpdate(Long gameBoardId, Object boardData, String excludedSessionId) {
+    public void broadcastBoardUpdate(Long gameBoardId, GameBoardDTO.Response board, String excludedSessionId) {
+        // 진행자 여부는 세션별 값이므로 공용 보드에서는 false로 전송한다.
         broadcastUpdate(
                 gameBoardId,
                 GameRealtimeProtocol.TYPE_BOARD_UPDATED,
-                boardData,
+                board.forBroadcast(),
                 excludedSessionId);
     }
 
