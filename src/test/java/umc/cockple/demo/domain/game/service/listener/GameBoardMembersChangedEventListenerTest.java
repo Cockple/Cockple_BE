@@ -58,7 +58,7 @@ class GameBoardMembersChangedEventListenerTest {
 
         given(gameBoardMemberQueryService.getMembers(GAME_BOARD_ID, NO_FILTERS)).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
-        lenient().when(gameBoardQueryService.getBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
+        lenient().when(gameBoardQueryService.getCommittedBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
         lenient().when(gameBoardMapper.toResponse(board)).thenReturn(boardDto);
     }
 

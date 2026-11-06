@@ -64,7 +64,7 @@ public class GameBoardMembersChangedEventListener {
             // 변경 트랜잭션이 snapshot을 실어 보냈으면 재조회 X
             board = event.boardSnapshot() != null
                     ? event.boardSnapshot()
-                    : gameBoardQueryService.getBoard(event.actorMemberId(), event.gameBoardId());
+                    : gameBoardQueryService.getCommittedBoard(event.actorMemberId(), event.gameBoardId());
             boardDto = gameBoardMapper.toResponse(board);
         } catch (Exception e) {
             log.error("게임판 snapshot 조회 실패 - gameBoardId: {}", event.gameBoardId(), e);

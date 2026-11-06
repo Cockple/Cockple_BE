@@ -29,7 +29,7 @@ public class GameCourtsManagedEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCourtsManaged(GameCourtsManagedEvent event) {
         try {
-            GameBoardResult board = gameBoardQueryService.getBoard(event.actorMemberId(), event.gameBoardId());
+            GameBoardResult board = gameBoardQueryService.getCommittedBoard(event.actorMemberId(), event.gameBoardId());
             GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
             // REST 요청에는 제외할 WebSocket 세션이 없으므로 구독 세션 전체에 브로드캐스트
             gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), board.revision(), boardDto, null);

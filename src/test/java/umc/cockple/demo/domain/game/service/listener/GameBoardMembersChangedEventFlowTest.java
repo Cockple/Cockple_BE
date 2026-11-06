@@ -66,7 +66,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
 
         given(gameBoardMemberQueryService.getMembers(anyLong(), eq(NO_FILTERS))).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
-        given(gameBoardQueryService.getBoard(eq(ACTOR_MEMBER_ID), anyLong())).willReturn(board);
+        given(gameBoardQueryService.getCommittedBoard(eq(ACTOR_MEMBER_ID), anyLong())).willReturn(board);
         given(gameBoardMapper.toResponse(board)).willReturn(boardDto);
     }
 
@@ -103,6 +103,23 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
                 .broadcastMembersUpdate(anyLong(), eq(membersDto), isNull());
         then(gameBoardBroadcaster).should(never())
                 .broadcastBoardUpdate(anyLong(), eq(0L), eq(boardDto), isNull());
+    }
+
+    @Test
+    @DisplayName("게임판 revision은 커밋될 때만 증가한다")
+    void boardRevisionPersistsOnlyOnCommit() {
+        Long boardId = transactionTemplate.execute(status ->
+                gameBoardRepository.save(GameBoard.create()).getId());
+        assertThat(gameBoardRepository.findById(boardId).orElseThrow().getRevision()).isZero();
+
+        transactionTemplate.executeWithoutResult(status ->
+                gameBoardRepository.findByIdForUpdate(boardId).orElseThrow().advanceRevision());
+        transactionTemplate.executeWithoutResult(status -> {
+            gameBoardRepository.findByIdForUpdate(boardId).orElseThrow().advanceRevision();
+            status.setRollbackOnly();
+        });
+
+        assertThat(gameBoardRepository.findById(boardId).orElseThrow().getRevision()).isEqualTo(1L);
     }
 
     @Test

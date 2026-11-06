@@ -19,7 +19,7 @@ import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessVal
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ, propagation = Propagation.REQUIRES_NEW)
+@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 @RequiredArgsConstructor
 public class GameBoardQueryService {
 
@@ -30,6 +30,11 @@ public class GameBoardQueryService {
     private final GameRepository gameRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardResultAssembler gameBoardResultAssembler;
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ, propagation = Propagation.REQUIRES_NEW)
+    public GameBoardResult getCommittedBoard(Long memberId, Long gameBoardId) {
+        return getBoard(memberId, gameBoardId);
+    }
 
     /**
      * 코트 보드 조회. 조회 자체는 인증된 회원이면 누구나 가능
