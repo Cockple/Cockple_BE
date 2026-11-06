@@ -8,17 +8,24 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import umc.cockple.demo.domain.game.enums.CourtStatus;
+import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
+import umc.cockple.demo.domain.game.presentation.dto.GameBoardMemberDTO;
 import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
+import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMemberMapper;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
 import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
+import umc.cockple.demo.domain.game.service.listener.GameBoardMembersChangedEventListener;
+import umc.cockple.demo.domain.game.service.query.GameBoardMemberQueryService;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
+import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
 import umc.cockple.demo.domain.game.service.websocket.subscription.GameBoardSubscriptionService;
@@ -33,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -165,6 +173,50 @@ class GameRealtimeDomainHandlerTest {
             then(gameBoardBroadcaster).should()
                     .broadcastBoardUpdate(GAME_BOARD_ID, boardDto.forBroadcast(), SESSION_ID);
         }
+    }
+
+    @Test
+    @DisplayName("지연된 생성 이벤트는 시작 보드 뒤에 이전 대기 보드를 전파한다 (#742)")
+    void delayedCreateEventBroadcastsWaitingBoardAfterPlayingBoard() {
+        long gameId = 50L;
+        long courtId = 2L;
+        GameBoardResult waiting = mock(GameBoardResult.class);
+        GameBoardResult playing = mock(GameBoardResult.class);
+        GameBoardDTO.Response waitingDto = new GameBoardDTO.Response(true, 1,
+                List.of(new GameBoardDTO.CourtInfo(courtId, 1, "1번 코트", CourtStatus.EMPTY, null)),
+                List.of(new GameBoardDTO.WaitingInfo(gameId, 1, List.of())));
+        GameBoardDTO.Response playingDto = new GameBoardDTO.Response(true, 1,
+                List.of(new GameBoardDTO.CourtInfo(courtId, 1, "1번 코트", CourtStatus.PLAYING,
+                        new GameBoardDTO.GameInfo(gameId, null, List.of()))), List.of());
+        given(gameCommandService.createGame(eq(MEMBER_ID), any(GameCreateCommand.class)))
+                .willReturn(new GameCreateResult(gameId, waiting));
+        given(gameBoardQueryService.getBoard(MEMBER_ID, GAME_BOARD_ID)).willReturn(playing);
+        given(gameBoardMapper.toResponse(waiting)).willReturn(waitingDto);
+        given(gameBoardMapper.toResponse(playing)).willReturn(playingDto);
+
+        GameBoardMemberQueryService memberQueryService = mock(GameBoardMemberQueryService.class);
+        GameBoardMemberMapper memberMapper = mock(GameBoardMemberMapper.class);
+        GameBoardMemberResult members = new GameBoardMemberResult(0, List.of());
+        given(memberQueryService.getMembers(eq(GAME_BOARD_ID), any())).willReturn(members);
+        given(memberMapper.toResponse(members)).willReturn(new GameBoardMemberDTO.Response(0, List.of()));
+        GameBoardMembersChangedEventListener listener = new GameBoardMembersChangedEventListener(
+                memberQueryService, memberMapper, gameBoardQueryService, gameBoardMapper, gameBoardBroadcaster);
+        GameBoardMembersChangedEvent delayedEvent =
+                GameBoardMembersChangedEvent.membersWithBoard(GAME_BOARD_ID, MEMBER_ID, waiting);
+
+        handler.handle(context("CREATE_GAME"), createPayload(List.of(7L)), responder);
+        then(responder).should().send(eq(GameRealtimeProtocol.TYPE_GAME_CREATED), any());
+        handler.handle(context("START_GAME"), objectMapper.createObjectNode()
+                .put("gameBoardId", GAME_BOARD_ID).put("gameId", gameId).put("courtId", courtId), responder);
+
+        // 생성 커밋 후 리스너가 늦게 실행되는 순서를 직접 재현한다.
+        listener.handleMembersChanged(delayedEvent);
+
+        var broadcasts = inOrder(gameBoardBroadcaster);
+        then(gameBoardBroadcaster).should(broadcasts)
+                .broadcastBoardUpdate(GAME_BOARD_ID, playingDto.forBroadcast(), SESSION_ID);
+        then(gameBoardBroadcaster).should(broadcasts)
+                .broadcastBoardUpdate(GAME_BOARD_ID, waitingDto.forBroadcast(), null);
     }
 
     private RealtimeRequestContext context(String action) {
