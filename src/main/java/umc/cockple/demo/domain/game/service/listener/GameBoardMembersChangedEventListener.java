@@ -58,10 +58,11 @@ public class GameBoardMembersChangedEventListener {
             return;
         }
 
+        GameBoardResult board;
         GameBoardDTO.Response boardDto;
         try {
             // 변경 트랜잭션이 snapshot을 실어 보냈으면 재조회 X
-            GameBoardResult board = event.boardSnapshot() != null
+            board = event.boardSnapshot() != null
                     ? event.boardSnapshot()
                     : gameBoardQueryService.getBoard(event.actorMemberId(), event.gameBoardId());
             boardDto = gameBoardMapper.toResponse(board);
@@ -74,7 +75,7 @@ public class GameBoardMembersChangedEventListener {
                 event,
                 GameRealtimeProtocol.TYPE_BOARD_UPDATED,
                 () -> gameBoardBroadcaster.broadcastBoardUpdate(
-                        event.gameBoardId(), boardDto, null));
+                        event.gameBoardId(), board.revision(), boardDto, null));
     }
 
     private void broadcastSafely(

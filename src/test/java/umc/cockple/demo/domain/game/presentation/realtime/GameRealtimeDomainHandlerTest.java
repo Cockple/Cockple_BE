@@ -86,7 +86,7 @@ class GameRealtimeDomainHandlerTest {
         @DisplayName("생성 트랜잭션이 만든 보드로 요청자에게만 응답하고, 보드 재조회나 동기 브로드캐스트를 하지 않는다")
         void respondsWithBoardFromCreateResultWithoutRequeryOrBroadcast() {
             // given
-            GameBoardResult board = new GameBoardResult(true, 2, List.of(), List.of());
+            GameBoardResult board = new GameBoardResult(0L, true, 2, List.of(), List.of());
             GameBoardDTO.Response boardDto = new GameBoardDTO.Response(true, 2, List.of(), List.of());
             given(gameCommandService.createGame(eq(MEMBER_ID), any(GameCreateCommand.class)))
                     .willReturn(new GameCreateResult(50L, board));
@@ -155,7 +155,7 @@ class GameRealtimeDomainHandlerTest {
         @DisplayName("MOVE_TO_WAITING은 요청자에게 BOARD_UPDATED로 응답하고, 요청 세션을 제외해 isGameHost=false 보드를 브로드캐스트한다")
         void moveToWaitingRespondsAndBroadcastsExcludingRequester() {
             // given
-            GameBoardResult board = new GameBoardResult(true, 1, List.of(), List.of());
+            GameBoardResult board = new GameBoardResult(0L, true, 1, List.of(), List.of());
             GameBoardDTO.Response boardDto = new GameBoardDTO.Response(true, 1, List.of(), List.of());
             given(gameBoardQueryService.getBoard(MEMBER_ID, GAME_BOARD_ID)).willReturn(board);
             given(gameBoardMapper.toResponse(board)).willReturn(boardDto);
@@ -171,7 +171,7 @@ class GameRealtimeDomainHandlerTest {
                     .moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(GAME_BOARD_ID, 50L));
             then(responder).should().send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
             then(gameBoardBroadcaster).should()
-                    .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, SESSION_ID);
+                    .broadcastBoardUpdate(GAME_BOARD_ID, 0L, boardDto, SESSION_ID);
         }
     }
 
@@ -182,6 +182,8 @@ class GameRealtimeDomainHandlerTest {
         long courtId = 2L;
         GameBoardResult waiting = mock(GameBoardResult.class);
         GameBoardResult playing = mock(GameBoardResult.class);
+        given(waiting.revision()).willReturn(10L);
+        given(playing.revision()).willReturn(11L);
         GameBoardDTO.Response waitingDto = new GameBoardDTO.Response(true, 1,
                 List.of(new GameBoardDTO.CourtInfo(courtId, 1, "1번 코트", CourtStatus.EMPTY, null)),
                 List.of(new GameBoardDTO.WaitingInfo(gameId, 1, List.of())));
@@ -214,9 +216,9 @@ class GameRealtimeDomainHandlerTest {
 
         var broadcasts = inOrder(gameBoardBroadcaster);
         then(gameBoardBroadcaster).should(broadcasts)
-                .broadcastBoardUpdate(GAME_BOARD_ID, playingDto, SESSION_ID);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 11L, playingDto, SESSION_ID);
         then(gameBoardBroadcaster).should(broadcasts)
-                .broadcastBoardUpdate(GAME_BOARD_ID, waitingDto, null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 10L, waitingDto, null);
     }
 
     private RealtimeRequestContext context(String action) {

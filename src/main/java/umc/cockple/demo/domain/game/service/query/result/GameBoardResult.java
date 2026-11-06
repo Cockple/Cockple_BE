@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record GameBoardResult(
+        long revision,
         boolean isGameHost,
         int courtCount,
         List<CourtView> courts,

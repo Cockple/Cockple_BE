@@ -99,7 +99,8 @@ public class GameCommandService {
         }
 
         Game savedGame = gameRepository.save(game);
-        GameBoardResult board = assembleBoardAfterCreate(gameBoard.getId(), activeGames, savedGame);
+        gameBoard.advanceRevision();
+        GameBoardResult board = assembleBoardAfterCreate(gameBoard, activeGames, savedGame);
         // 커밋 후 리스너가 이 snapshot을 재조회 없이 전파
         eventPublisher.publishEvent(
                 GameBoardMembersChangedEvent.membersWithBoard(gameBoard.getId(), memberId, board));
@@ -111,18 +112,18 @@ public class GameCommandService {
     /**
      * 검증 단계에서 조회한 활성 게임에 새 게임을 더해 보드 조립
      */
-    private GameBoardResult assembleBoardAfterCreate(Long gameBoardId, List<Game> activeGames, Game savedGame) {
-        List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoardId);
+    private GameBoardResult assembleBoardAfterCreate(GameBoard gameBoard, List<Game> activeGames, Game savedGame) {
+        List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoard.getId());
         List<Game> gamesAfterCreate = new ArrayList<>(activeGames);
         gamesAfterCreate.add(savedGame);
-        return gameBoardResultAssembler.assemble(true, courts, gamesAfterCreate);
+        return gameBoardResultAssembler.assemble(gameBoard.getRevision(), true, courts, gamesAfterCreate);
     }
 
     /**
      * @param memberId 요청자
      */
     public void startGame(Long memberId, GameStartCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
@@ -142,6 +143,7 @@ public class GameCommandService {
 
         game.start(court, LocalDateTime.now());
         resequenceWaitingQueue(gameBoard.getId());
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
         publishGameStarted(gameBoard.getId(), game, court);
 
@@ -156,7 +158,7 @@ public class GameCommandService {
      * @param memberId 요청자
      */
     public void completeGame(Long memberId, GameCompleteCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
@@ -169,6 +171,7 @@ public class GameCommandService {
         }
 
         completeInternal(game);
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
@@ -182,7 +185,7 @@ public class GameCommandService {
      * @return 삭제된 게임 ID + (restore 시) 플레이어 목록
      */
     public GameDeleteResult deleteGame(Long memberId, GameDeleteCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
@@ -204,6 +207,7 @@ public class GameCommandService {
         if (wasWaiting) {
             resequenceWaitingQueue(gameBoard.getId());
         }
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 삭제 - gameBoardId: {}, gameId: {}, wasWaiting: {}, restore: {}",
@@ -218,7 +222,7 @@ public class GameCommandService {
      * @param memberId 요청자
      */
     public void moveGameToWaiting(Long memberId, GameToWaitingCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game game = gameRepository.findById(command.gameId())
@@ -232,6 +236,7 @@ public class GameCommandService {
 
         game.returnToWaiting(0);
         resequenceWaitingQueue(gameBoard.getId());
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("대기열 이동 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());

@@ -51,12 +51,14 @@ public class GameBoardMemberCommandService {
     }
 
     public void updateMember(Long memberId, GameBoardMemberUpdateCommand command) {
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
         GameBoardMember gameBoardMember = gameBoardMemberReader.read(
                 command.gameBoardId(), command.gameBoardMemberId());
 
         gameBoardMember.updateInfo(
                 command.name(), command.gender(), command.level(), command.ageGroup());
+        gameBoard.advanceRevision();
 
         eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(command.gameBoardId(), memberId));
     }

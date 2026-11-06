@@ -180,10 +180,11 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
         GameDeleteCommand command = new GameDeleteCommand(gameBoardId, payload.gameId(), restore);
         GameDeleteResult result = gameCommandService.deleteGame(context.memberId(), command);
 
-        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
+        GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
         responder.send(GameRealtimeProtocol.TYPE_GAME_DELETED,
                 new GameDeletedAck(result.gameId(), toDeletedPlayers(result.players()), boardDto));
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, board.revision(), boardDto, context.sessionId());
     }
 
     private List<DeletedPlayer> toDeletedPlayers(List<GameDeleteResult.PlayerView> players) {
@@ -198,16 +199,12 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
 
     private void respondAndBroadcastBoard(
             RealtimeRequestContext context, Long gameBoardId, RealtimeResponder responder) {
-        GameBoardDTO.Response boardDto = loadBoardDto(context, gameBoardId);
+        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
+        GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
 
         responder.send(GameRealtimeProtocol.TYPE_BOARD_UPDATED, boardDto);
         // 변경을 일으킨 세션은 위에서 직접 응답을 받았으므로 브로드캐스트 대상에서 제외
-        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, boardDto, context.sessionId());
-    }
-
-    private GameBoardDTO.Response loadBoardDto(RealtimeRequestContext context, Long gameBoardId) {
-        GameBoardResult board = gameBoardQueryService.getBoard(context.memberId(), gameBoardId);
-        return gameBoardMapper.toResponse(board);
+        gameBoardBroadcaster.broadcastBoardUpdate(gameBoardId, board.revision(), boardDto, context.sessionId());
     }
 
     private Long requireGameBoardId(GameRealtimePayload payload) {

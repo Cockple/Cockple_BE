@@ -61,7 +61,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
     void setUp() {
         GameBoardMemberResult members = new GameBoardMemberResult(0, List.of());
         membersDto = new GameBoardMemberDTO.Response(0, List.of());
-        GameBoardResult board = new GameBoardResult(false, 0, List.of(), List.of());
+        GameBoardResult board = new GameBoardResult(0L, false, 0, List.of(), List.of());
         boardDto = new GameBoardDTO.Response(false, 0, List.of(), List.of());
 
         given(gameBoardMemberQueryService.getMembers(anyLong(), eq(NO_FILTERS))).willReturn(members);
@@ -85,7 +85,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         then(gameBoardBroadcaster).should(timeout(3000))
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
         then(gameBoardBroadcaster).should(timeout(3000))
-                .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 0L, boardDto, null);
     }
 
     @Test
@@ -102,7 +102,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         then(gameBoardBroadcaster).should(never())
                 .broadcastMembersUpdate(anyLong(), eq(membersDto), isNull());
         then(gameBoardBroadcaster).should(never())
-                .broadcastBoardUpdate(anyLong(), eq(boardDto), isNull());
+                .broadcastBoardUpdate(anyLong(), eq(0L), eq(boardDto), isNull());
     }
 
     @Test
@@ -122,7 +122,7 @@ class GameBoardMembersChangedEventFlowTest extends IntegrationTestBase {
         then(gameBoardBroadcaster).should(timeout(3000))
                 .broadcastMembersUpdate(savedGameBoardId, membersDto, null);
         then(gameBoardBroadcaster).should(timeout(3000))
-                .broadcastBoardUpdate(savedGameBoardId, boardDto, null);
+                .broadcastBoardUpdate(savedGameBoardId, 0L, boardDto, null);
         assertThat(gameBoardRepository.existsById(savedGameBoardId)).isTrue();
     }
 }
