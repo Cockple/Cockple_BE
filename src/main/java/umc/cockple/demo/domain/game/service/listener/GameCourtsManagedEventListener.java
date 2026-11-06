@@ -29,11 +29,10 @@ public class GameCourtsManagedEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCourtsManaged(GameCourtsManagedEvent event) {
         try {
-            GameBoardResult board = gameBoardQueryService.getBoard(event.actorMemberId(), event.gameBoardId());
+            GameBoardResult board = gameBoardQueryService.getCommittedBoard(event.actorMemberId(), event.gameBoardId());
             GameBoardDTO.Response boardDto = gameBoardMapper.toResponse(board);
             // REST 요청에는 제외할 WebSocket 세션이 없으므로 구독 세션 전체에 브로드캐스트
-            // isGameHost는 개인화 값이라 브로드캐스트 본문에서는 항상 false
-            gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), boardDto.forBroadcast(), null);
+            gameBoardBroadcaster.broadcastBoardUpdate(event.gameBoardId(), board.revision(), boardDto, null);
         } catch (Exception e) {
             log.error("코트 관리 브로드캐스트 실패 - gameBoardId: {}", event.gameBoardId(), e);
         }

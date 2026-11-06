@@ -14,6 +14,7 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.never;
 class GameAutoCompleteServiceTest {
 
     @Mock private GameRepository gameRepository;
+    @Mock private GameBoardReader gameBoardReader;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private GameAutoCompleteService gameAutoCompleteService;
@@ -50,6 +52,7 @@ class GameAutoCompleteServiceTest {
                 GameFixture.player(member, 0));
         given(gameRepository.findByStatusAndStartedAtBeforeWithPlayers(eq(GameStatus.PLAYING), any()))
                 .willReturn(List.of(stale));
+        given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
 
         // when
         int completed = gameAutoCompleteService.autoCompleteStaleGames();
@@ -92,12 +95,16 @@ class GameAutoCompleteServiceTest {
                 GameFixture.player(GameFixture.member(3L, board2, "c", Level.A), 0));
         given(gameRepository.findByStatusAndStartedAtBeforeWithPlayers(eq(GameStatus.PLAYING), any()))
                 .willReturn(List.of(g1, g2, g3));
+        given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board1);
+        given(gameBoardReader.readForUpdate(2L)).willReturn(board2);
 
         // when
         int completed = gameAutoCompleteService.autoCompleteStaleGames();
 
         // then
         assertThat(completed).isEqualTo(3);
+        assertThat(board1.getRevision()).isEqualTo(1L);
+        assertThat(board2.getRevision()).isEqualTo(1L);
         then(eventPublisher).should()
                 .publishEvent(GameBoardMembersChangedEvent.membersAndBoard(BOARD_ID, null));
         then(eventPublisher).should()

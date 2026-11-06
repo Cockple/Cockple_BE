@@ -53,12 +53,12 @@ class GameBoardMembersChangedEventListenerTest {
         event = GameBoardMembersChangedEvent.membersAndBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID);
         GameBoardMemberResult members = new GameBoardMemberResult(0, List.of());
         membersDto = new GameBoardMemberDTO.Response(0, List.of());
-        GameBoardResult board = new GameBoardResult(false, 0, List.of(), List.of());
+        GameBoardResult board = new GameBoardResult(0L, false, 0, List.of(), List.of());
         boardDto = new GameBoardDTO.Response(false, 0, List.of(), List.of());
 
         given(gameBoardMemberQueryService.getMembers(GAME_BOARD_ID, NO_FILTERS)).willReturn(members);
         given(gameBoardMemberMapper.toResponse(members)).willReturn(membersDto);
-        lenient().when(gameBoardQueryService.getBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
+        lenient().when(gameBoardQueryService.getCommittedBoard(ACTOR_MEMBER_ID, GAME_BOARD_ID)).thenReturn(board);
         lenient().when(gameBoardMapper.toResponse(board)).thenReturn(boardDto);
     }
 
@@ -70,7 +70,7 @@ class GameBoardMembersChangedEventListenerTest {
         then(gameBoardBroadcaster).should()
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
         then(gameBoardBroadcaster).should()
-                .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 0L, boardDto, null);
     }
 
     @Test
@@ -82,13 +82,13 @@ class GameBoardMembersChangedEventListenerTest {
         assertThatCode(() -> listener.handleMembersChanged(event)).doesNotThrowAnyException();
 
         then(gameBoardBroadcaster).should()
-                .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 0L, boardDto, null);
     }
 
     @Test
     @DisplayName("이벤트에 게임판 snapshot이 실려 있으면 재조회하지 않고 그대로 전파한다")
     void handleMembersChanged_usesCarriedBoardSnapshotWithoutQuery() {
-        GameBoardResult carriedBoard = new GameBoardResult(true, 2, List.of(), List.of());
+        GameBoardResult carriedBoard = new GameBoardResult(0L, true, 2, List.of(), List.of());
         GameBoardDTO.Response carriedBoardDto = new GameBoardDTO.Response(true, 2, List.of(), List.of());
         given(gameBoardMapper.toResponse(carriedBoard)).willReturn(carriedBoardDto);
         event = GameBoardMembersChangedEvent.membersWithBoard(GAME_BOARD_ID, ACTOR_MEMBER_ID, carriedBoard);
@@ -100,7 +100,7 @@ class GameBoardMembersChangedEventListenerTest {
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
         // isGameHost는 개인화 값이므로 브로드캐스트 본문에서는 false로 내린다.
         then(gameBoardBroadcaster).should()
-                .broadcastBoardUpdate(GAME_BOARD_ID, carriedBoardDto.forBroadcast(), null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 0L, carriedBoardDto, null);
     }
 
     @Test
@@ -114,6 +114,6 @@ class GameBoardMembersChangedEventListenerTest {
                 .broadcastMembersUpdate(GAME_BOARD_ID, membersDto, null);
         then(gameBoardQueryService).shouldHaveNoInteractions();
         then(gameBoardBroadcaster).should(never())
-                .broadcastBoardUpdate(GAME_BOARD_ID, boardDto, null);
+                .broadcastBoardUpdate(GAME_BOARD_ID, 0L, boardDto, null);
     }
 }

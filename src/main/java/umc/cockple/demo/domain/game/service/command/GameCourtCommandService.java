@@ -51,7 +51,7 @@ public class GameCourtCommandService {
      * @param memberId 요청자
      */
     public GameCourtManageResult manageCourts(Long memberId, GameCourtManageCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
         List<GameCourtManageCommand.CourtCommand> requestedCourts = command.courts();
 
@@ -66,6 +66,7 @@ public class GameCourtCommandService {
         log.info("게임 코트 관리 완료 - gameBoardId: {}, 코트 수: {}", gameBoard.getId(), finalCourts.size());
 
         // 커밋 후 같은 게임판 구독자에게 보드 갱신을 브로드캐스트하도록 이벤트 발행
+        gameBoard.advanceRevision();
         eventPublisher.publishEvent(new GameCourtsManagedEvent(gameBoard.getId(), memberId));
 
         return toResult(gameBoard.getId(), finalCourts);
@@ -78,7 +79,7 @@ public class GameCourtCommandService {
      * @param memberId 요청자
      */
     public void moveCourt(Long memberId, GameCourtMoveCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Game sourceGame = gameRepository.findByCourtIdAndStatus(command.courtId(), GameStatus.PLAYING)
@@ -100,6 +101,7 @@ public class GameCourtCommandService {
 
         sourceGame.changeCourt(targetCourt);
         targetGame.ifPresent(game -> game.changeCourt(sourceCourt));
+        gameBoard.advanceRevision();
 
         log.info("게임 코트 위치 변경 완료 - gameBoardId: {}, {}번코트 → {}번코트, swap: {}",
                 gameBoard.getId(), sourceCourt.getCourtNo(), targetCourt.getCourtNo(), targetGame.isPresent());

@@ -52,7 +52,7 @@ class GameBoardResultAssemblerTest {
 
         // when
         GameBoardResult result = assembler.assemble(
-                true, List.of(court1, court2), List.of(newlyCreated, playingOnCourt2, waitingFirst));
+                1L, true, List.of(court1, court2), List.of(newlyCreated, playingOnCourt2, waitingFirst));
 
         // then
         assertThat(result.isGameHost()).isTrue();
@@ -68,7 +68,7 @@ class GameBoardResultAssemblerTest {
     @DisplayName("코트와 활성 게임이 없으면 빈 보드를 반환한다")
     void assemble_emptyBoard() {
         // when
-        GameBoardResult result = assembler.assemble(false, List.of(), List.of());
+        GameBoardResult result = assembler.assemble(0L, false, List.of(), List.of());
 
         // then
         assertThat(result.isGameHost()).isFalse();
