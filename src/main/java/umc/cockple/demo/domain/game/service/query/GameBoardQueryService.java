@@ -21,8 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GameBoardQueryService {
 
-    private static final List<GameStatus> ACTIVE_STATUSES = List.of(GameStatus.PLAYING, GameStatus.WAITING);
-
     private final GameBoardReader gameBoardReader;
     private final CourtRepository courtRepository;
     private final GameRepository gameRepository;
@@ -40,7 +38,7 @@ public class GameBoardQueryService {
 
         List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoard.getId());
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                gameBoard.getId(), ACTIVE_STATUSES);
+                gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
 
         return gameBoardResultAssembler.assemble(isGameHost, courts, activeGames);
     }

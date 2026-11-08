@@ -30,13 +30,11 @@ import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -49,8 +47,6 @@ class GameRandomMatchQueryServiceTest {
 
     private static final Long MEMBER_ID = 10L;
     private static final Long BOARD_ID = 1L;
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
 
     @Mock private GameBoardReader gameBoardReader;
     @Mock private GameBoardMemberReader gameBoardMemberReader;
@@ -99,9 +95,9 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
-                eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
+                eq(members), eq(activeGames))).willReturn(candidates);
         given(matchTypeSelector.findAvailableTypes(candidates))
                 .willReturn(List.of(GameMatchType.MEN_DOUBLES));
         given(candidatePoolSelector.find(candidates, GameMatchType.MEN_DOUBLES))
@@ -120,7 +116,7 @@ class GameRandomMatchQueryServiceTest {
         assertThat(result.gameBoardMemberIds()).containsExactly(2L, 3L, 4L, 5L);
         then(gameBoardAccessValidator).should().validateGameHost(BOARD_ID, MEMBER_ID);
         then(availabilityPolicy).should().filterAvailable(
-                eq(members), eq(activeGames), any(LocalDateTime.class));
+                eq(members), eq(activeGames));
         then(matchTypeSelector).should().findAvailableTypes(candidates);
         then(candidatePoolSelector).should()
                 .find(candidates, GameMatchType.MEN_DOUBLES);
@@ -146,9 +142,9 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
-                eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
+                eq(members), eq(activeGames))).willReturn(members.subList(0, 3));
 
         assertThatThrownBy(() -> service.match(MEMBER_ID, BOARD_ID))
                 .isInstanceOfSatisfying(GameException.class, exception ->
@@ -191,9 +187,9 @@ class GameRandomMatchQueryServiceTest {
         given(gameBoardMemberReader.readAllByGameBoard(BOARD_ID))
                 .willReturn(members);
         given(gameReader.readAllByGameBoardAndStatuses(
-                BOARD_ID, ACTIVE_STATUSES)).willReturn(activeGames);
+                BOARD_ID, GameStatus.ACTIVE_STATUSES)).willReturn(activeGames);
         given(availabilityPolicy.filterAvailable(
-                eq(members), eq(activeGames), any(LocalDateTime.class))).willReturn(members);
+                eq(members), eq(activeGames))).willReturn(members);
         given(gameReader.readCompletedPairCounts(
                 BOARD_ID, List.of(1L, 2L, 3L, 4L))).willReturn(pairCounts);
         given(pairHistoryCalculator.fromCounts(pairCounts, List.of())).willReturn(pairHistory);

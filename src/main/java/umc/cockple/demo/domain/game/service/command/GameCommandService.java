@@ -48,9 +48,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GameCommandService {
 
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
-
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
     private final CourtRepository courtRepository;
@@ -82,7 +79,7 @@ public class GameCommandService {
             throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
         }
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                gameBoard.getId(), ACTIVE_STATUSES);
+                gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
 
         if (availabilityPolicy.hasWaitingConflict(
                 List.copyOf(membersById.values()), activeGames)) {
