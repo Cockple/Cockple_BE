@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
@@ -16,6 +15,7 @@ import umc.cockple.demo.domain.game.enums.CourtStatus;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
+import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.member.domain.Member;
@@ -42,7 +42,7 @@ class GameBoardQueryServiceTest {
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ImageUrlResolver imageUrlResolver;
 
-    @InjectMocks private GameBoardQueryService gameBoardQueryService;
+    private GameBoardQueryService gameBoardQueryService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -50,6 +50,10 @@ class GameBoardQueryServiceTest {
 
     @BeforeEach
     void setUp() {
+        // 조립 규칙까지 함께 검증하도록 실제 assembler를 사용한다.
+        gameBoardQueryService = new GameBoardQueryService(
+                gameBoardReader, courtRepository, gameRepository, gameBoardAccessValidator,
+                new GameBoardResultAssembler(imageUrlResolver));
         board = GameFixture.gameBoard(BOARD_ID);
     }
 

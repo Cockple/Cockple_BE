@@ -125,6 +125,8 @@ class GameBoardMemberCommandServiceTest {
             given(gameBoardMemberReader.read(GAME_BOARD_ID, GAME_BOARD_MEMBER_ID))
                     .willReturn(gameBoardMember);
 
+            given(gameBoardReader.readForUpdate(GAME_BOARD_ID)).willReturn(GameBoard.create());
+
             gameBoardMemberCommandService.updateMember(MEMBER_ID, updateCommand);
 
             then(gameBoardAccessValidator).should().validateGameHost(GAME_BOARD_ID, MEMBER_ID);

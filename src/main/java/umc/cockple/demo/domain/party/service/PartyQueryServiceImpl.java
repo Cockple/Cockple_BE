@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.member.domain.*;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
@@ -51,7 +51,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     private final MemberPartyRepository memberPartyRepository;
     private final MemberAddrRepository memberAddrRepository;
     private final ExerciseRepository exerciseRepository;
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
     private final PartyBookmarkRepository partyBookmarkRepository;
     private final FileService fileService;
 
@@ -226,7 +226,7 @@ public class PartyQueryServiceImpl implements PartyQueryService{
     //멤버별 마지막 운동일 조회
     private Map<Long, LocalDate> getLastExerciseDateMap(List<MemberParty> memberParties, Long partyId) {
         List<Long> memberIds = memberParties.stream().map(mp -> mp.getMember().getId()).toList();
-        return memberExerciseRepository
+        return exerciseParticipationRepository
                 .findLastExerciseDateByMemberIdsAndPartyId(memberIds, partyId)
                 .stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDate) row[1]));

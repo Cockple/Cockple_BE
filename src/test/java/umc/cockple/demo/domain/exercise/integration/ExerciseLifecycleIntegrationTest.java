@@ -19,7 +19,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -59,7 +59,7 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
 
     private Member manager;
@@ -86,7 +86,7 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -531,8 +531,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                 Exercise smallExercise = exerciseRepository.save(
                         ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1), 1));
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, smallExercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, smallExercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", smallExercise.getId()))
                         .andExpect(status().isOk())
@@ -609,8 +609,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                 Exercise smallExercise = exerciseRepository.save(
                         ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1), 1));
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, smallExercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, smallExercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", smallExercise.getId()))
                         .andExpect(status().isOk())
@@ -623,8 +623,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
             void 먼저_가입한_참가자가_더_낮은_participantNumber를_받는다() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, exercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
                         .andExpect(status().isOk())
@@ -640,8 +640,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
             void 참가자의_성별_카운트가_올바르게_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, exercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
                         .andExpect(status().isOk())
@@ -658,8 +658,8 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                 Exercise smallExercise = exerciseRepository.save(
                         ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().minusDays(1), 1));
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, smallExercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, smallExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, smallExercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", smallExercise.getId()))
                         .andExpect(status().isOk())
@@ -676,10 +676,10 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
             void 참가자_유형별_partyPosition이_올바르게_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(manager, exercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, exercise));
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
-                memberExerciseRepository.save(MemberFixture.createExternalMemberExercise(outsider, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(manager, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExternalExerciseParticipation(outsider, exercise));
                 guestRepository.save(GuestFixture.createGuest(exercise, manager.getId()));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
@@ -719,7 +719,7 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
             void 활성_회원_참가자는_isWithdrawn_false로_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(manager.getId(), manager.getNickname());
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
                         .andExpect(status().isOk())
@@ -734,7 +734,7 @@ class ExerciseLifecycleIntegrationTest extends IntegrationTestBase {
                 Member withdrawnMember = memberRepository.save(
                         MemberFixture.createWithdrawnMember("탈퇴회원", "탈퇴닉네임", 8888L));
 
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(withdrawnMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(withdrawnMember, exercise));
 
                 mockMvc.perform(get("/api/exercises/{exerciseId}", exercise.getId()))
                         .andExpect(status().isOk())

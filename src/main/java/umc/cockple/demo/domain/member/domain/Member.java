@@ -8,7 +8,6 @@ import umc.cockple.demo.domain.bookmark.domain.PartyBookmark;
 import umc.cockple.demo.domain.chat.domain.ChatMessage;
 import umc.cockple.demo.domain.chat.domain.ChatRoomMember;
 import umc.cockple.demo.domain.contest.domain.Contest;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
 import umc.cockple.demo.domain.member.dto.MemberDetailInfoRequestDTO;
 import umc.cockple.demo.domain.member.dto.UpdateProfileRequestDTO;
 import umc.cockple.demo.domain.notification.domain.Notification;
@@ -84,13 +83,6 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default
     private List<MemberParty> memberParties = new ArrayList<>();
-
-    // Member hard delete 시 참여 데이터 정리를 위한 ORM 생명주기 매핑이다.
-    // 운동 참여의 생성·취소 책임은 Exercise가 가진다.
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
-    @Builder.Default
-    @Getter(AccessLevel.NONE)
-    private List<MemberExercise> memberExercises = new ArrayList<>();
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @Builder.Default

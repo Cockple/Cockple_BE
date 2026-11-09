@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.listener;
+package umc.cockple.demo.domain.game.presentation.realtime.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
-import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class GameBoardMembersChangedEventListener {
     private final GameBoardMapper gameBoardMapper;
     private final GameBoardBroadcaster gameBoardBroadcaster;
 
-    @Async
+    @Async("gameExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMembersChanged(GameBoardMembersChangedEvent event) {
         GameBoardMemberDTO.Response membersDto;
@@ -58,22 +58,24 @@ public class GameBoardMembersChangedEventListener {
             return;
         }
 
+        GameBoardResult board;
         GameBoardDTO.Response boardDto;
         try {
-            GameBoardResult board = gameBoardQueryService.getBoard(
-                    event.actorMemberId(), event.gameBoardId());
+            // 변경 트랜잭션이 snapshot을 실어 보냈으면 재조회 X
+            board = event.boardSnapshot() != null
+                    ? event.boardSnapshot()
+                    : gameBoardQueryService.getCommittedBoard(event.actorMemberId(), event.gameBoardId());
             boardDto = gameBoardMapper.toResponse(board);
         } catch (Exception e) {
             log.error("게임판 snapshot 조회 실패 - gameBoardId: {}", event.gameBoardId(), e);
             return;
         }
 
-        // isGameHost는 개인화 값이므로 브로드캐스트 본문에서는 항상 false
         broadcastSafely(
                 event,
                 GameRealtimeProtocol.TYPE_BOARD_UPDATED,
                 () -> gameBoardBroadcaster.broadcastBoardUpdate(
-                        event.gameBoardId(), boardDto.forBroadcast(), null));
+                        event.gameBoardId(), board.revision(), boardDto, null));
     }
 
     private void broadcastSafely(

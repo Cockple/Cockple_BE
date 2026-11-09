@@ -2,6 +2,8 @@ package umc.cockple.demo.global.realtime.routing;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.global.realtime.protocol.RealtimeInboundEnvelope;
@@ -19,10 +21,17 @@ import java.util.Set;
 @Slf4j
 public class RealtimeMessageRouter {
 
-    private final Map<RouteKey, RealtimeDomainHandler> handlers;
+    static final String HANDLER_DURATION_METRIC = "realtime.handler.duration";
+    static final String OUTCOME_SUCCESS = "success";
+    static final String OUTCOME_ERROR = "error";
+    static final String EXCEPTION_NONE = "none";
 
-    public RealtimeMessageRouter(List<RealtimeDomainHandler> domainHandlers) {
+    private final Map<RouteKey, RealtimeDomainHandler> handlers;
+    private final MeterRegistry meterRegistry;
+
+    public RealtimeMessageRouter(List<RealtimeDomainHandler> domainHandlers, MeterRegistry meterRegistry) {
         this.handlers = registerHandlers(domainHandlers);
+        this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry는 null일 수 없습니다.");
     }
 
     public void route(
@@ -59,15 +68,26 @@ public class RealtimeMessageRouter {
         );
         JsonNode payload = envelope.payload() == null ? NullNode.getInstance() : envelope.payload();
 
+        ErrorTrackingResponder trackingResponder = new ErrorTrackingResponder(responder);
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String exception = EXCEPTION_NONE;
         try {
-            handler.handle(requestContext, payload, responder);
+            handler.handle(requestContext, payload, trackingResponder);
         } catch (Exception e) {
+            exception = e.getClass().getSimpleName();
             log.error(
                     "실시간 도메인 handler 처리 실패 - domain: {}, action: {}, memberId: {}, sessionId: {}",
                     routeKey.domain(), routeKey.action(), connectionContext.memberId(),
                     connectionContext.sessionId(), e
             );
-            sendError(responder, RealtimeRoutingErrorCode.INTERNAL_ERROR);
+            sendError(trackingResponder, RealtimeRoutingErrorCode.INTERNAL_ERROR);
+        } finally {
+            sample.stop(Timer.builder(HANDLER_DURATION_METRIC)
+                    .tag("domain", routeKey.domain())
+                    .tag("action", routeKey.action())
+                    .tag("outcome", trackingResponder.errorSent() ? OUTCOME_ERROR : OUTCOME_SUCCESS)
+                    .tag("exception", exception)
+                    .register(meterRegistry));
         }
     }
 
@@ -112,6 +132,31 @@ public class RealtimeMessageRouter {
 
     private void sendError(RealtimeResponder responder, RealtimeRoutingErrorCode errorCode) {
         responder.sendError(errorCode.getCode(), errorCode.getMessage());
+    }
+
+    private static final class ErrorTrackingResponder implements RealtimeResponder {
+
+        private final RealtimeResponder delegate;
+        private volatile boolean errorSent;
+
+        private ErrorTrackingResponder(RealtimeResponder delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void send(String type, Object data) {
+            delegate.send(type, data);
+        }
+
+        @Override
+        public void sendError(String errorCode, String message) {
+            errorSent = true;
+            delegate.sendError(errorCode, message);
+        }
+
+        private boolean errorSent() {
+            return errorSent;
+        }
     }
 
     private record RouteKey(String domain, String action) {

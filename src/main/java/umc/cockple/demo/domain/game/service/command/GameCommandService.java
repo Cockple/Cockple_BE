@@ -12,7 +12,6 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.events.GameStartedEvent;
@@ -28,11 +27,18 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
+import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
+import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameValidator;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -44,45 +50,36 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GameCommandService {
 
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.WAITING, GameStatus.PLAYING);
-
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
+    private final GameReader gameReader;
+    private final GameValidator gameValidator;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final ExerciseRepository exerciseRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
-    private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    private final GamePlayerValidator gamePlayerValidator;
+    private final GameBoardResultAssembler gameBoardResultAssembler;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 게임 대기 생성
      *
      * @param memberId 요청자
-     * @return 생성된 게임 ID
+     * @return 생성된 게임 ID + 생성 직후 보드 스냅샷
      */
-    public Long createGame(Long memberId, GameCreateCommand command) {
+    public GameCreateResult createGame(Long memberId, GameCreateCommand command) {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
         Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
                 .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
                 .collect(Collectors.toMap(GameBoardMember::getId, Function.identity()));
-        if (membersById.size() != command.gameBoardMemberIds().size()) {
-            throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
-        }
-        if (membersById.values().stream()
-                .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
-            throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
-        }
+        gamePlayerValidator.validateMembers(command.gameBoardMemberIds(), membersById);
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
-                gameBoard.getId(), ACTIVE_STATUSES);
+                gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
 
-        if (availabilityPolicy.hasWaitingConflict(
-                List.copyOf(membersById.values()), activeGames)) {
-            throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
-        }
+        gamePlayerValidator.validateWaitingAvailability(membersById, activeGames);
 
         int nextWaitingOrder = (int) gameRepository
                 .countByGameBoardIdAndStatus(gameBoard.getId(), GameStatus.WAITING) + 1;
@@ -94,27 +91,36 @@ public class GameCommandService {
         }
 
         Game savedGame = gameRepository.save(game);
-        publishMembersChanged(gameBoard.getId(), memberId);
+        gameBoard.advanceRevision();
+        GameBoardResult board = assembleBoardAfterCreate(gameBoard, activeGames, savedGame);
+        // 커밋 후 리스너가 이 snapshot을 재조회 없이 전파
+        eventPublisher.publishEvent(
+                GameBoardMembersChangedEvent.membersWithBoard(gameBoard.getId(), memberId, board));
         log.info("게임 대기 생성 - gameBoardId: {}, gameId: {}, 인원: {}",
                 gameBoard.getId(), savedGame.getId(), command.gameBoardMemberIds().size());
-        return savedGame.getId();
+        return new GameCreateResult(savedGame.getId(), board);
+    }
+
+    /**
+     * 검증 단계에서 조회한 활성 게임에 새 게임을 더해 보드 조립
+     */
+    private GameBoardResult assembleBoardAfterCreate(GameBoard gameBoard, List<Game> activeGames, Game savedGame) {
+        List<Court> courts = courtRepository.findByGameBoardIdOrderByCourtNoAsc(gameBoard.getId());
+        List<Game> gamesAfterCreate = new ArrayList<>(activeGames);
+        gamesAfterCreate.add(savedGame);
+        return gameBoardResultAssembler.assemble(gameBoard.getRevision(), true, courts, gamesAfterCreate);
     }
 
     /**
      * @param memberId 요청자
      */
     public void startGame(Long memberId, GameStartCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.WAITING) {
-            throw new GameException(GameErrorCode.GAME_NOT_WAITING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validateWaiting(game);
 
         Court court = courtRepository.findByIdAndGameBoardId(command.courtId(), gameBoard.getId())
                 .orElseThrow(() -> new GameException(GameErrorCode.COURT_NOT_FOUND));
@@ -124,6 +130,7 @@ public class GameCommandService {
 
         game.start(court, LocalDateTime.now());
         resequenceWaitingQueue(gameBoard.getId());
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
         publishGameStarted(gameBoard.getId(), game, court);
 
@@ -138,19 +145,15 @@ public class GameCommandService {
      * @param memberId 요청자
      */
     public void completeGame(Long memberId, GameCompleteCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validatePlaying(game);
 
         completeInternal(game);
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 완료 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
@@ -164,17 +167,12 @@ public class GameCommandService {
      * @return 삭제된 게임 ID + (restore 시) 플레이어 목록
      */
     public GameDeleteResult deleteGame(Long memberId, GameDeleteCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() == GameStatus.COMPLETED) {
-            throw new GameException(GameErrorCode.GAME_ALREADY_COMPLETED);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validateNotCompleted(game);
 
         boolean wasWaiting = game.getStatus() == GameStatus.WAITING;
         Long deletedGameId = game.getId();
@@ -186,6 +184,7 @@ public class GameCommandService {
         if (wasWaiting) {
             resequenceWaitingQueue(gameBoard.getId());
         }
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("게임 삭제 - gameBoardId: {}, gameId: {}, wasWaiting: {}, restore: {}",
@@ -195,26 +194,21 @@ public class GameCommandService {
 
     /**
      * 대기열 이동
-     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비운다.
-     * 경기 기록으로 남지 않으며 게임횟수도 증가시키지 않는다.
+     * 진행 중인 게임을 완료 기록 없이 같은 인원 그대로 대기열 맨 앞으로 되돌리고 코트를 비움
      *
      * @param memberId 요청자
      */
     public void moveGameToWaiting(Long memberId, GameToWaitingCommand command) {
-        GameBoard gameBoard = gameBoardReader.read(command.gameBoardId());
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validatePlaying(game);
 
         game.returnToWaiting(0);
         resequenceWaitingQueue(gameBoard.getId());
+        gameBoard.advanceRevision();
         publishMembersChanged(gameBoard.getId(), memberId);
 
         log.info("대기열 이동 - gameBoardId: {}, gameId: {}", gameBoard.getId(), game.getId());
@@ -245,6 +239,12 @@ public class GameCommandService {
             return;
         }
 
+        List<String> participantNames = game.getPlayers().stream()
+                .sorted(java.util.Comparator.comparingInt(GamePlayer::getPlayerOrder))
+                .map(GamePlayer::getGameBoardMember)
+                .map(GameBoardMember::getName)
+                .toList();
+
         Exercise exercise = exerciseRepository.findByGameBoardId(gameBoardId)
                 .orElseThrow(() -> new GameException(GameErrorCode.GAME_BOARD_NOT_FOUND));
         Party party = exercise.getParty();
@@ -254,13 +254,11 @@ public class GameCommandService {
                 party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
                 court.getCourtName(),
+                participantNames,
                 recipientMemberIds
         ));
     }
 
-    /**
-     * 대기열에 남은 게임들의 순서를 현재 순서 기준으로 1부터 다시 매긴다
-     */
     private void resequenceWaitingQueue(Long gameBoardId) {
         List<Game> waitingGames = gameRepository
                 .findByGameBoardIdAndStatusOrderByWaitingOrderAsc(gameBoardId, GameStatus.WAITING);

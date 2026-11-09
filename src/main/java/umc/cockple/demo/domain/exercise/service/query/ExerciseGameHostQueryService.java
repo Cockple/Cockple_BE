@@ -7,7 +7,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
 import umc.cockple.demo.domain.exercise.service.query.result.ExerciseGameHostResult;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.file.service.ImageUrlResolver;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
@@ -27,7 +27,7 @@ public class ExerciseGameHostQueryService {
 
     private final ExerciseReader exerciseReader;
     private final MemberPartyLookupService memberPartyLookupService;
-    private final MemberExerciseReader memberExerciseReader;
+    private final ExerciseParticipationReader exerciseParticipationReader;
     private final ExerciseValidator exerciseValidator;
     private final ImageUrlResolver imageUrlResolver;
 
@@ -41,7 +41,7 @@ public class ExerciseGameHostQueryService {
         List<Long> participantIds = memberParties.stream()
                 .map(memberParty -> memberParty.getMember().getId())
                 .toList();
-        Map<Long, LocalDate> lastExerciseDates = memberExerciseReader
+        Map<Long, LocalDate> lastExerciseDates = exerciseParticipationReader
                 .findLastExerciseDates(participantIds, partyId);
 
         List<ExerciseGameHostResult.Participant> participants = memberParties.stream()

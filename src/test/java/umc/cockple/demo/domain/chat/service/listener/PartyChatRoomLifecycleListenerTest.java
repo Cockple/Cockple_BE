@@ -20,6 +20,8 @@ import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.MemberFixture;
 import umc.cockple.demo.support.fixture.PartyFixture;
 
+import java.util.List;
+
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -87,7 +89,7 @@ class PartyChatRoomLifecycleListenerTest {
     void handlePartyDeleted_delegatesToPartyChatRoomLifecycleService() {
         Long partyId = 1L;
         Long deletedByMemberId = 10L;
-        PartyDeletedEvent event = PartyDeletedEvent.deleted(partyId, deletedByMemberId);
+        PartyDeletedEvent event = PartyDeletedEvent.deleted(partyId, deletedByMemberId, List.of(), null, null);
 
         listener.handlePartyDeleted(event);
 

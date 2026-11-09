@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -52,7 +52,7 @@ class ExerciseGuestIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
 
     private Member manager;
@@ -74,7 +74,7 @@ class ExerciseGuestIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();

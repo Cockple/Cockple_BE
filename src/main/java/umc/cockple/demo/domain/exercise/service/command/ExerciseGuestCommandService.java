@@ -9,6 +9,9 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.PromotionCandidate;
 import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseGuestInviteCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
@@ -18,6 +21,8 @@ import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
+
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -33,6 +38,7 @@ public class ExerciseGuestCommandService {
 
     private final ExerciseValidator exerciseValidator;
     private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
+    private final ExerciseWaitingPromotionService waitingPromotionService;
 
     public ExerciseGuestInviteResult inviteGuest(Long exerciseId, ExerciseGuestInviteCommand command) {
         log.info("게스트 초대 시작 - exerciseId: {}, inviterId: {}, guestName: {}",
@@ -66,8 +72,11 @@ public class ExerciseGuestCommandService {
         exerciseGameAssignmentValidator.validateGuestCancellation(
                 exercise.getGameBoard().getId(), guest.getId());
 
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(true, guestId));
         exercise.removeGuest(guest);
         guestRepository.delete(guest);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("게스트 초대 취소 완료 - exerciseId: {}, guestId: {}, memberId: {}",

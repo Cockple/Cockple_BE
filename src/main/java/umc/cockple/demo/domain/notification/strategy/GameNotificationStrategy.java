@@ -40,7 +40,8 @@ public class GameNotificationStrategy implements NotificationEventStrategy {
     @Override
     public List<NotificationRequest> convert(Object event) {
         if (event instanceof GameStartedEvent startedEvent) {
-            String content = notificationMessageGenerator.generateGameStartMessage(startedEvent.courtName());
+            String content = notificationMessageGenerator.generateGameStartMessage(
+                    startedEvent.courtName(), startedEvent.participantNames());
             return startedEvent.recipientMemberIds().stream()
                     .map(memberId -> request(
                             memberId,

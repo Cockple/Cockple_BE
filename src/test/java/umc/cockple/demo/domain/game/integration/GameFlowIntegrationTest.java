@@ -1,10 +1,15 @@
 package umc.cockple.demo.domain.game.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.game.domain.Court;
@@ -13,9 +18,11 @@ import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.enums.CourtStatus;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.repository.CourtRepository;
 import umc.cockple.demo.domain.game.repository.GameBoardMemberRepository;
 import umc.cockple.demo.domain.game.repository.GameRepository;
+import umc.cockple.demo.domain.game.repository.redis.GameBoardSubscriptionStore;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
 import umc.cockple.demo.domain.game.service.command.model.GameCompleteCommand;
@@ -24,9 +31,11 @@ import umc.cockple.demo.domain.game.service.command.model.GameCreateCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameDeleteCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameStartCommand;
 import umc.cockple.demo.domain.game.service.command.model.GameToWaitingCommand;
+import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -35,6 +44,8 @@ import umc.cockple.demo.domain.party.repository.PartyAddrRepository;
 import umc.cockple.demo.domain.party.repository.PartyRepository;
 import umc.cockple.demo.global.enums.Gender;
 import umc.cockple.demo.global.enums.Level;
+import umc.cockple.demo.global.realtime.session.RealtimeSessionRegistry;
+import umc.cockple.demo.global.realtime.transport.RealtimeWebSocketEndpoint;
 import umc.cockple.demo.support.IntegrationTestBase;
 import umc.cockple.demo.support.fixture.ExerciseFixture;
 import umc.cockple.demo.support.fixture.MemberFixture;
@@ -45,6 +56,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 
 @Transactional
 @DisplayName("게임 플로우 통합 테스트")
@@ -53,6 +67,11 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
     @Autowired private GameCommandService gameCommandService;
     @Autowired private GameCourtCommandService gameCourtCommandService;
     @Autowired private GameBoardQueryService gameBoardQueryService;
+    @Autowired private GameBoardMapper gameBoardMapper;
+    @Autowired private GameBoardBroadcaster gameBoardBroadcaster;
+    @Autowired private GameBoardSubscriptionStore subscriptionStore;
+    @Autowired private RealtimeSessionRegistry sessionRegistry;
+    @Autowired private ObjectMapper objectMapper;
 
     @Autowired private CourtRepository courtRepository;
     @Autowired private GameBoardMemberRepository gameBoardMemberRepository;
@@ -91,7 +110,9 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> memberIds = saveMembers(board, "김A", "김B", "김C", "김D");
 
         // --- #8 게임 대기 생성 ---
-        Long gameId = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), memberIds));
+        GameCreateResult createResult = gameCommandService.createGame(
+                actor, new GameCreateCommand(board.getId(), memberIds));
+        Long gameId = createResult.gameId();
 
         Game created = gameRepository.findById(gameId).orElseThrow();
         assertThat(created.getStatus()).isEqualTo(GameStatus.WAITING);
@@ -99,6 +120,7 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         assertThat(created.getPlayers()).hasSize(4);
 
         GameBoardResult afterCreate = gameBoardQueryService.getBoard(actor, board.getId());
+        assertThat(afterCreate.revision()).isEqualTo(1L);
         assertThat(afterCreate.isGameHost()).isTrue();
         assertThat(afterCreate.courtCount()).isEqualTo(2);
         assertThat(afterCreate.courts())
@@ -106,11 +128,14 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         assertThat(afterCreate.waitings())
                 .extracting(GameBoardResult.WaitingView::gameId)
                 .containsExactly(gameId);
+        // 생성 트랜잭션에서 만든 보드 스냅샷은 재조회한 보드와 같아야 한다.
+        assertThat(createResult.board()).isEqualTo(afterCreate);
 
         // --- #4 게임 시작: 1번 코트에 배치 ---
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameId, court1.getId()));
 
         GameBoardResult afterStart = gameBoardQueryService.getBoard(actor, board.getId());
+        assertThat(afterStart.revision()).isEqualTo(2L);
         GameBoardResult.CourtView startedCourt = courtOf(afterStart, court1.getId());
         assertThat(startedCourt.status()).isEqualTo(CourtStatus.PLAYING);
         assertThat(startedCourt.game()).isNotNull();
@@ -122,10 +147,48 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         gameCourtCommandService.moveCourt(actor, new GameCourtMoveCommand(board.getId(), court1.getId(), court2.getCourtNo()));
 
         GameBoardResult afterMove = gameBoardQueryService.getBoard(actor, board.getId());
+        assertThat(afterMove.revision()).isEqualTo(3L);
         assertThat(courtOf(afterMove, court1.getId()).status()).isEqualTo(CourtStatus.EMPTY);
         GameBoardResult.CourtView movedCourt = courtOf(afterMove, court2.getId());
         assertThat(movedCourt.status()).isEqualTo(CourtStatus.PLAYING);
         assertThat(movedCourt.game().gameId()).isEqualTo(gameId);
+    }
+
+    @Test
+    @DisplayName("시작 보드가 먼저 발행되면 늦은 생성 보드는 구독 세션에 전송하지 않는다")
+    void delayedCreationSnapshotIsNotSentToSubscriber() throws Exception {
+        Long boardId = board.getId();
+        Long courtId = courtRepository.findByGameBoardIdOrderByCourtNoAsc(boardId).get(0).getId();
+        GameCreateResult created = gameCommandService.createGame(
+                actor, new GameCreateCommand(boardId, saveMembers(board, "선수")));
+        gameCommandService.startGame(actor, new GameStartCommand(boardId, created.gameId(), courtId));
+        GameBoardResult playing = gameBoardQueryService.getBoard(actor, boardId);
+
+        WebSocketSession subscriber = mock(WebSocketSession.class);
+        String sessionId = "game-board-order-test";
+        given(subscriber.getId()).willReturn(sessionId);
+        given(subscriber.isOpen()).willReturn(true);
+        sessionRegistry.register(actor, RealtimeWebSocketEndpoint.SESSION_ENDPOINT, subscriber);
+        subscriptionStore.addSubscriber(boardId, actor, sessionId);
+        try {
+            gameBoardBroadcaster.broadcastBoardUpdate(
+                    boardId, playing.revision(), gameBoardMapper.toResponse(playing), null);
+            gameBoardBroadcaster.broadcastBoardUpdate(
+                    boardId, created.board().revision(), gameBoardMapper.toResponse(created.board()), null);
+
+            ArgumentCaptor<TextMessage> sent = ArgumentCaptor.forClass(TextMessage.class);
+            then(subscriber).should().sendMessage(sent.capture());
+            JsonNode payload = objectMapper.readTree(sent.getValue().getPayload());
+            assertThat(payload.path("type").asText()).isEqualTo("BOARD_UPDATED");
+            JsonNode data = payload.path("data");
+            assertThat(data.path("courts").get(0).path("status").asText()).isEqualTo("PLAYING");
+            assertThat(data.path("courts").get(0).path("game").path("gameId").asLong())
+                    .isEqualTo(created.gameId());
+            assertThat(data.path("waitings").isEmpty()).isTrue();
+        } finally {
+            subscriptionStore.removeSubscriber(boardId, actor, sessionId);
+            sessionRegistry.remove(actor, subscriber);
+        }
     }
 
     @Test
@@ -135,8 +198,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> members1 = saveMembers(board, "김A", "김B");
         List<Long> members2 = saveMembers(board, "김C", "김D");
 
-        Long game1 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members1)); // 대기 1번
-        Long game2 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members2)); // 대기 2번
+        Long game1 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members1)).gameId(); // 대기 1번
+        Long game2 = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), members2)).gameId(); // 대기 2번
 
         // --- #6 대기 1번(game1) 삭제 + 복원 ---
         GameDeleteResult result = gameCommandService.deleteGame(
@@ -164,8 +227,8 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         List<Long> membersB = saveMembers(board, "김B1", "김B2");
         List<Long> membersA = saveMembers(board, "김A1", "김A2");
 
-        Long gameB = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersB)); // 대기 1번
-        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)); // 대기 2번
+        Long gameB = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersB)).gameId(); // 대기 1번
+        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)).gameId(); // 대기 2번
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameA, court1.getId()));   // A 진행 (B는 대기 1번)
 
         // --- #7 대기열 이동: A를 기록 없이 대기열 맨 앞으로 ---
@@ -206,7 +269,7 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         Court court1 = courtRepository.findByGameBoardIdOrderByCourtNoAsc(board.getId()).get(0);
         List<Long> membersA = saveMembers(board, "김A1", "김A2");
 
-        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA));
+        Long gameA = gameCommandService.createGame(actor, new GameCreateCommand(board.getId(), membersA)).gameId();
         gameCommandService.startGame(actor, new GameStartCommand(board.getId(), gameA, court1.getId()));
 
         // --- 게임 완료 ---

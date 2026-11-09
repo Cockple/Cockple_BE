@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.contest.repository.ContestRepository;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.MemberQueryService;
@@ -58,13 +58,13 @@ class MemberProfileQueryCountTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired ExerciseRepository exerciseRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
 
     @PersistenceContext EntityManager em;
 
     @AfterEach
     void tearDown() {
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         contestRepository.deleteAll();
         memberPartyRepository.deleteAll();
         exerciseRepository.deleteAll();
@@ -117,7 +117,7 @@ class MemberProfileQueryCountTest extends IntegrationTestBase {
 
             var exercise = exerciseRepository.save(
                     ExerciseFixture.createExerciseWithAddr(party, LocalDate.now().plusDays(i + 1)));
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(member, exercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(member, exercise));
         }
         return member;
     }

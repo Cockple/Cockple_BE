@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +25,7 @@ import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult
 import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameCourtValidator;
 import umc.cockple.demo.support.fixture.GameFixture;
 
 import java.time.LocalDateTime;
@@ -52,7 +52,7 @@ class GameCourtCommandServiceTest {
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks private GameCourtCommandService gameCourtCommandService;
+    private GameCourtCommandService gameCourtCommandService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -60,6 +60,9 @@ class GameCourtCommandServiceTest {
 
     @BeforeEach
     void setUp() {
+        gameCourtCommandService = new GameCourtCommandService(
+                gameBoardReader, courtReader, courtRepository, gameRepository,
+                gameBoardAccessValidator, new GameCourtValidator(gameRepository), eventPublisher);
         board = GameFixture.gameBoard(BOARD_ID);
     }
 
@@ -73,7 +76,7 @@ class GameCourtCommandServiceTest {
             // given
             Court kept = GameFixture.court(10L, board, 1, "기존코트");
             Court removed = GameFixture.court(11L, board, 2, "삭제될코트");
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of(kept, removed));
             given(courtRepository.save(any(Court.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -125,7 +128,7 @@ class GameCourtCommandServiceTest {
         @DisplayName("courtName이 비어 있으면 'N번 코트' 기본값을 부여한다")
         void manageCourts_defaultCourtName() {
             // given
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of());
             given(courtRepository.save(any(Court.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -160,7 +163,7 @@ class GameCourtCommandServiceTest {
             // given - 목록에서 빠져 삭제 대상이 되는 코트(11L)에 PLAYING 게임이 있음
             Court kept = GameFixture.court(10L, board, 1, "유지코트");
             Court removed = GameFixture.court(11L, board, 2, "진행중코트");
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(courtReader.readAllByGameBoard(BOARD_ID)).willReturn(List.of(kept, removed));
             given(gameRepository.existsByCourtIdInAndStatus(List.of(11L), GameStatus.PLAYING))
                     .willReturn(true);
@@ -195,7 +198,7 @@ class GameCourtCommandServiceTest {
         @Test
         @DisplayName("게임 진행자가 아니면 GAME_BOARD_ACCESS_DENIED 예외로 코트를 변경하지 않는다")
         void manageCourts_deniesNonHost() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
                     .given(gameBoardAccessValidator).validateGameHost(BOARD_ID, MEMBER_ID);
 
@@ -213,7 +216,7 @@ class GameCourtCommandServiceTest {
         @Test
         @DisplayName("요청 courtId가 해당 게임판에 없으면 COURT_NOT_FOUND 예외")
         void manageCourts_foreignCourtId() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(courtReader.readAllByGameBoard(BOARD_ID))
                     .willReturn(List.of(GameFixture.court(10L, board, 1, "코트")));
 
@@ -240,7 +243,7 @@ class GameCourtCommandServiceTest {
             Court target = GameFixture.court(11L, board, 2, "2번");
             Game sourceGame = GameFixture.playingGame(50L, board, source, LocalDateTime.now());
 
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findByCourtIdAndStatus(10L, GameStatus.PLAYING)).willReturn(Optional.of(sourceGame));
             given(courtRepository.findByGameBoardIdAndCourtNo(BOARD_ID, 2)).willReturn(Optional.of(target));
             given(gameRepository.findByCourtIdAndStatus(11L, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -261,7 +264,7 @@ class GameCourtCommandServiceTest {
             Game sourceGame = GameFixture.playingGame(50L, board, source, LocalDateTime.now());
             Game targetGame = GameFixture.playingGame(51L, board, target, LocalDateTime.now());
 
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findByCourtIdAndStatus(10L, GameStatus.PLAYING)).willReturn(Optional.of(sourceGame));
             given(courtRepository.findByGameBoardIdAndCourtNo(BOARD_ID, 2)).willReturn(Optional.of(target));
             given(gameRepository.findByCourtIdAndStatus(11L, GameStatus.PLAYING)).willReturn(Optional.of(targetGame));
@@ -277,7 +280,7 @@ class GameCourtCommandServiceTest {
         @Test
         @DisplayName("게임 진행자가 아니면 GAME_BOARD_ACCESS_DENIED 예외로 코트를 이동하지 않는다")
         void moveCourt_deniesNonHost() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             willThrow(new GameException(GameErrorCode.GAME_BOARD_ACCESS_DENIED))
                     .given(gameBoardAccessValidator).validateGameHost(BOARD_ID, MEMBER_ID);
 
@@ -292,7 +295,7 @@ class GameCourtCommandServiceTest {
         @Test
         @DisplayName("원본 코트에 진행 중인 게임이 없으면 GAME_NOT_ON_COURT 예외")
         void moveCourt_noGameOnSource() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findByCourtIdAndStatus(10L, GameStatus.PLAYING)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> gameCourtCommandService.moveCourt(MEMBER_ID, new GameCourtMoveCommand(BOARD_ID, 10L, 2)))
@@ -306,7 +309,7 @@ class GameCourtCommandServiceTest {
         void moveCourt_targetCourtNotFound() {
             Court source = GameFixture.court(10L, board, 1, "1번");
             Game sourceGame = GameFixture.playingGame(50L, board, source, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findByCourtIdAndStatus(10L, GameStatus.PLAYING)).willReturn(Optional.of(sourceGame));
             given(courtRepository.findByGameBoardIdAndCourtNo(BOARD_ID, 9)).willReturn(Optional.empty());
 
@@ -321,7 +324,7 @@ class GameCourtCommandServiceTest {
         void moveCourt_sameCourtNoop() {
             Court source = GameFixture.court(10L, board, 1, "1번");
             Game sourceGame = GameFixture.playingGame(50L, board, source, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findByCourtIdAndStatus(10L, GameStatus.PLAYING)).willReturn(Optional.of(sourceGame));
             given(courtRepository.findByGameBoardIdAndCourtNo(BOARD_ID, 1)).willReturn(Optional.of(source));
 

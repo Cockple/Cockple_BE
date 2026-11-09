@@ -53,6 +53,14 @@ class AsyncConfigTest {
         assertPropagatesMdcAndPreventsLeak(executor);
     }
 
+    @Test
+    @DisplayName("gameExecutor는 MDC를 비동기 작업에 전파하고 다음 작업으로 누수하지 않는다")
+    void gameExecutorPropagatesMdcAndPreventsLeak() throws Exception {
+        ThreadPoolTaskExecutor executor = config.gameExecutor(1, 1, 1, 1, config.mdcTaskDecorator());
+
+        assertPropagatesMdcAndPreventsLeak(executor);
+    }
+
     /**
      * 풀에서 도는 작업에 requestId(MDC)가 전파되고, 스레드 재사용 시 이전 컨텍스트가 누수되지 않는지 검증한다.
      */

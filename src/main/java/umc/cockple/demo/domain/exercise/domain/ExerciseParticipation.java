@@ -7,14 +7,14 @@ import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.global.common.BaseEntity;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
+@Table(name = "member_exercise", uniqueConstraints = @UniqueConstraint(
         name = "uk_member_exercise_exercise_member",
         columnNames = {"exercise_id", "member_id"}))
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
-public class MemberExercise extends BaseEntity {
+public class ExerciseParticipation extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,8 +32,8 @@ public class MemberExercise extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ExerciseMemberShipStatus exerciseMemberShipStatus;
 
-    static MemberExercise create(Member member, Exercise exercise, ExerciseMemberShipStatus status) {
-        return MemberExercise.builder()
+    static ExerciseParticipation create(Member member, Exercise exercise, ExerciseMemberShipStatus status) {
+        return ExerciseParticipation.builder()
                 .member(member)
                 .exercise(exercise)
                 .exerciseMemberShipStatus(status)

@@ -24,8 +24,7 @@ public class LegacyNotificationDestinationMapper {
             );
         }
 
-        if (dto.target() == NotificationTarget.EXERCISE_MODIFY
-                || dto.target() == NotificationTarget.EXERCISE_ATTENDANCE) {
+        if (dto.target() == NotificationTarget.EXERCISE_MODIFY) {
             return new NotificationDestination(
                     NotificationResourceType.EXERCISE,
                     dto.exerciseId(),

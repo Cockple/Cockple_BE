@@ -22,7 +22,7 @@ import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.converter.PartyConverter;
@@ -69,7 +69,7 @@ class PartyQueryServiceTest {
     @Mock
     private MemberPartyRepository memberPartyRepository;
     @Mock
-    private MemberExerciseRepository memberExerciseRepository;
+    private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
@@ -117,7 +117,7 @@ class PartyQueryServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(memberParties);
-            given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(anyList(),
+            given(exerciseParticipationRepository.findLastExerciseDateByMemberIdsAndPartyId(anyList(),
                     eq(partyId)))
                     .willReturn(List.of());
 
@@ -161,7 +161,7 @@ class PartyQueryServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(memberParties);
-            given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(
+            given(exerciseParticipationRepository.findLastExerciseDateByMemberIdsAndPartyId(
                     List.of(10L, 20L), partyId)).willReturn(rawResult);
 
             // when
@@ -194,7 +194,7 @@ class PartyQueryServiceTest {
 
             given(partyRepository.findById(partyId)).willReturn(Optional.of(party));
             given(memberPartyRepository.findAllByPartyIdWithMember(partyId)).willReturn(memberParties);
-            given(memberExerciseRepository.findLastExerciseDateByMemberIdsAndPartyId(
+            given(exerciseParticipationRepository.findLastExerciseDateByMemberIdsAndPartyId(
                     List.of(10L), partyId)).willReturn(List.of());
 
             // when

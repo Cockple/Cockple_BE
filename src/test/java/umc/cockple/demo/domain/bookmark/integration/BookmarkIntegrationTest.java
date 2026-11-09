@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.domain.ExerciseAddr;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -49,7 +49,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
     @Autowired ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Autowired PartyBookmarkRepository partyBookmarkRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
 
 
     private Member member;
@@ -89,7 +89,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
     void tearDown() {
         exerciseBookmarkRepository.deleteAll();
         partyBookmarkRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -329,7 +329,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
         @BeforeEach
         void setUp() {
             // 먼저 저장 = 오래된 북마크
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(member, bookmarkExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(member, bookmarkExercise));
             exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                     .member(member)
                     .exercise(bookmarkExercise)
@@ -355,7 +355,7 @@ class BookmarkIntegrationTest extends IntegrationTestBase {
                             .build())
                     .build());
 
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(member, newExercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(member, newExercise));
             exerciseBookmarkRepository.save(ExerciseBookmark.builder()
                     .member(member)
                     .exercise(newExercise)

@@ -15,7 +15,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.service.query.lookup.ExerciseParticipantCountLookupService;
 import umc.cockple.demo.domain.bookmark.service.query.lookup.ExerciseBookmarkLookupService;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.query.PartyExerciseQueryService;
 import umc.cockple.demo.domain.exercise.service.query.result.PartyExerciseCalendarResult;
@@ -25,7 +25,7 @@ import umc.cockple.demo.domain.party.service.query.lookup.PartyLookupService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -63,7 +63,7 @@ class PartyExerciseQueryServiceTest {
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private MemberRepository memberRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private PartyRepository partyRepository;
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
 
@@ -74,7 +74,7 @@ class PartyExerciseQueryServiceTest {
     void setUp() {
         partyExerciseQueryService = new PartyExerciseQueryService(
                 new ExerciseReader(exerciseRepository),
-                new MemberExerciseReader(memberExerciseRepository),
+                new ExerciseParticipationReader(exerciseParticipationRepository),
                 new ExerciseParticipantCountLookupService(exerciseRepository),
                 new ExerciseBookmarkLookupService(exerciseBookmarkRepository),
                 new MemberLookupService(memberRepository),
@@ -142,7 +142,7 @@ class PartyExerciseQueryServiceTest {
                 given(exerciseBookmarkRepository.findAllExerciseIdsByMemberIdAndExerciseIds(
                         partyMember.getId(), List.of(exercise.getId())))
                         .willReturn(List.of(exercise.getId()));
-                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(
+                given(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(
                         partyMember.getId(), List.of(exercise.getId())))
                         .willReturn(List.of(exercise.getId()));
 

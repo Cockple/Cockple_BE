@@ -1,7 +1,7 @@
 package umc.cockple.demo.support.fixture;
 
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.enums.MemberStatus;
@@ -90,16 +90,16 @@ public class MemberFixture {
                 .build();
     }
 
-    public static MemberExercise createMemberExercise(Member member, Exercise exercise) {
-        return MemberExercise.builder()
+    public static ExerciseParticipation createExerciseParticipation(Member member, Exercise exercise) {
+        return ExerciseParticipation.builder()
                 .member(member)
                 .exercise(exercise)
                 .exerciseMemberShipStatus(ExerciseMemberShipStatus.PARTY_MEMBER)
                 .build();
     }
 
-    public static MemberExercise createExternalMemberExercise(Member member, Exercise exercise) {
-        return MemberExercise.builder()
+    public static ExerciseParticipation createExternalExerciseParticipation(Member member, Exercise exercise) {
+        return ExerciseParticipation.builder()
                 .member(member)
                 .exercise(exercise)
                 .exerciseMemberShipStatus(ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT)

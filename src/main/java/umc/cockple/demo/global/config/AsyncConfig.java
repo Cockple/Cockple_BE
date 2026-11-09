@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 지연 특성별로 벌크헤드(bulkhead) 격리
  * {@code chatExecutor} — 실시간/저지연
  * {@code notificationPushExecutor} — 외부 FCM HTTP 호출
+ * {@code gameExecutor} — 게임판 실시간 전파
  * {@code applicationTaskExecutor} — qualifier 없는 @Async의 기본 executor
  */
 @Configuration
@@ -77,6 +78,23 @@ public class AsyncConfig {
     ) {
         return buildExecutor("cockple-noti-push-", coreSize, maxSize, queueCapacity,
                 awaitTerminationSeconds, mdcTaskDecorator, logAndDiscardPolicy());
+    }
+
+    /**
+     * 게임판 실시간 전파 풀. 작업마다 짧은 읽기 트랜잭션으로 DB 커넥션을 잡으므로
+     * 동시 실행 수를 작게 두어 Hikari 커넥션 경쟁자를 늘리지 않음
+     */
+    @Bean("gameExecutor")
+    public ThreadPoolTaskExecutor gameExecutor(
+            @Value("${async.game.core-size:2}") int coreSize,
+            @Value("${async.game.max-size:4}") int maxSize,
+            @Value("${async.game.queue-capacity:500}") int queueCapacity,
+            @Value("${async.game.await-termination-seconds:30}") int awaitTerminationSeconds,
+            TaskDecorator mdcTaskDecorator
+    ) {
+        // 포화 시 호출 스레드에서 실행해 백프레셔
+        return buildExecutor("cockple-game-", coreSize, maxSize, queueCapacity,
+                awaitTerminationSeconds, mdcTaskDecorator, new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     /**

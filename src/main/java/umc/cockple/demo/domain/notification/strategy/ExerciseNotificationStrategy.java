@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseDeletedEvent;
+import umc.cockple.demo.domain.exercise.events.ExerciseJoinedEvent;
 import umc.cockple.demo.domain.exercise.events.ExerciseUpdatedEvent;
 import umc.cockple.demo.domain.notification.command.NotificationRequest;
 import umc.cockple.demo.domain.notification.domain.NotificationDestination;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class ExerciseNotificationStrategy implements NotificationEventStrategy {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM.dd");
+    private static final DateTimeFormatter JOINED_DATE_FORMATTER = DateTimeFormatter.ofPattern("MM.dd (E)", Locale.KOREAN);
 
     private final NotificationMessageGenerator notificationMessageGenerator;
     private final ObjectMapper objectMapper;
@@ -41,11 +43,31 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
     public boolean supports(Object event) {
         return event instanceof ExerciseDeletedEvent
                 || event instanceof ExerciseUpdatedEvent
+                || event instanceof ExerciseJoinedEvent
                 || event instanceof ExerciseAttendanceChangedEvent;
     }
 
     @Override
     public List<NotificationRequest> convert(Object event) {
+        if (event instanceof ExerciseJoinedEvent joinedEvent) {
+            String date = joinedEvent.exerciseDate().format(JOINED_DATE_FORMATTER);
+            return joinedEvent.recipientMemberIds().stream()
+                    .map(memberId -> request(
+                            memberId,
+                            joinedEvent.partyId(),
+                            joinedEvent.partyName(),
+                            joinedEvent.imageKey(),
+                            joinedEvent.exerciseId(),
+                            joinedEvent.exerciseDate(),
+                            notificationMessageGenerator.generateExerciseJoinedMessage(joinedEvent.participantName(), date),
+                            destination(joinedEvent.exerciseId()),
+                            NotificationType.CHANGE,
+                            joinedEvent.eventId(),
+                            NotificationOutboxEventType.EXERCISE_JOINED
+                    ))
+                    .toList();
+        }
+
         if (event instanceof ExerciseDeletedEvent deletedEvent) {
             String date = formatDate(deletedEvent.exerciseDate());
             return deletedEvent.recipientMemberIds().stream()
@@ -93,8 +115,9 @@ public class ExerciseNotificationStrategy implements NotificationEventStrategy {
                             attendanceEvent.imageKey(),
                             attendanceEvent.exerciseId(),
                             attendanceEvent.exerciseDate(),
-                            notificationMessageGenerator.generateExerciseAttendChangedMessage(),
-                            destination(attendanceEvent.exerciseId()),
+                            notificationMessageGenerator.generateExerciseAttendChangedMessage(attendanceEvent.guestName()),
+                            new NotificationDestination(NotificationResourceType.PARTY,
+                                    attendanceEvent.partyId(), NotificationAction.VIEW),
                             NotificationType.CHANGE,
                             attendanceEvent.eventId(),
                             NotificationOutboxEventType.EXERCISE_ATTENDANCE_CHANGED

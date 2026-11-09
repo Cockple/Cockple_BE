@@ -20,15 +20,11 @@ import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 
-import java.util.List;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class GameBoardMemberCommandService {
-
-    private static final List<GameStatus> ACTIVE_STATUSES =
-            List.of(GameStatus.PLAYING, GameStatus.WAITING);
 
     private final GameBoardReader gameBoardReader;
     private final GameBoardMemberReader gameBoardMemberReader;
@@ -51,12 +47,14 @@ public class GameBoardMemberCommandService {
     }
 
     public void updateMember(Long memberId, GameBoardMemberUpdateCommand command) {
+        GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(command.gameBoardId(), memberId);
         GameBoardMember gameBoardMember = gameBoardMemberReader.read(
                 command.gameBoardId(), command.gameBoardMemberId());
 
         gameBoardMember.updateInfo(
                 command.name(), command.gender(), command.level(), command.ageGroup());
+        gameBoard.advanceRevision();
 
         eventPublisher.publishEvent(GameBoardMembersChangedEvent.membersAndBoard(command.gameBoardId(), memberId));
     }
@@ -72,7 +70,7 @@ public class GameBoardMemberCommandService {
         }
         if (!command.participating()
                 && gameReader.existsByGameBoardMemberAndStatuses(
-                        command.gameBoardMemberId(), ACTIVE_STATUSES)) {
+                        command.gameBoardMemberId(), GameStatus.ACTIVE_STATUSES)) {
             throw new GameException(GameErrorCode.ACTIVE_GAME_MEMBER_CANNOT_BE_INACTIVE);
         }
 

@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseGuestCommandService;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
@@ -55,7 +55,7 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
     @Autowired GameBoardRepository gameBoardRepository;
     @Autowired GameBoardMemberRepository gameBoardMemberRepository;
@@ -93,7 +93,7 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
         gameRepository.deleteAll();
         jdbcTemplate.update("DELETE FROM game_board_member");
         guestRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -164,7 +164,7 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
                 .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                         .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
 
-        assertThat(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
+        assertThat(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
         assertThat(rosterCount()).isEqualTo(1);
     }
 
@@ -181,7 +181,7 @@ class ExerciseGameBoardRosterIntegrationTest extends IntegrationTestBase {
                 .satisfies(exception -> assertThat(((ExerciseException) exception).getCode())
                         .isEqualTo(ExerciseErrorCode.ASSIGNED_PLAYER_CANNOT_CANCEL));
 
-        assertThat(memberExerciseRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
+        assertThat(exerciseParticipationRepository.existsByExerciseAndMember(exercise, participant)).isTrue();
         assertThat(rosterCount()).isEqualTo(1);
     }
 

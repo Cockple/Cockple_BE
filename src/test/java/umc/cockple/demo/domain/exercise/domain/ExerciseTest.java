@@ -27,14 +27,14 @@ class ExerciseTest {
             Exercise exercise = exercise();
             Member member = member();
 
-            MemberExercise participation = exercise.addParticipation(
+            ExerciseParticipation participation = exercise.addParticipation(
                     member, ExerciseMemberShipStatus.PARTY_MEMBER);
 
             assertThat(participation.getExercise()).isSameAs(exercise);
             assertThat(participation.getMember()).isSameAs(member);
             assertThat(participation.getExerciseMemberShipStatus())
                     .isEqualTo(ExerciseMemberShipStatus.PARTY_MEMBER);
-            assertThat(exercise.getMemberExercises()).containsExactly(participation);
+            assertThat(exercise.getParticipations()).containsExactly(participation);
             assertThat(exercise.getNowCapacity()).isEqualTo(1);
         }
 
@@ -43,7 +43,7 @@ class ExerciseTest {
         void externalMemberParticipation() {
             Exercise exercise = exercise();
 
-            MemberExercise participation = exercise.addParticipation(
+            ExerciseParticipation participation = exercise.addParticipation(
                     member(), ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT);
 
             assertThat(participation.getExerciseMemberShipStatus())
@@ -55,12 +55,12 @@ class ExerciseTest {
     @DisplayName("참여를 제거하면 현재 인원이 감소한다")
     void removeParticipation() {
         Exercise exercise = exercise();
-        MemberExercise participation = exercise.addParticipation(
+        ExerciseParticipation participation = exercise.addParticipation(
                 member(), ExerciseMemberShipStatus.PARTY_MEMBER);
 
         exercise.removeParticipation(participation);
 
-        assertThat(exercise.getMemberExercises()).doesNotContain(participation);
+        assertThat(exercise.getParticipations()).doesNotContain(participation);
         assertThat(exercise.getNowCapacity()).isZero();
     }
 

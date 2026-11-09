@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.command.ExerciseParticipationCommandService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
@@ -47,7 +47,7 @@ class ExerciseParticipationConcurrencyIntegrationTest extends IntegrationTestBas
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired JdbcTemplate jdbcTemplate;
 
     private Member participant;
@@ -77,7 +77,7 @@ class ExerciseParticipationConcurrencyIntegrationTest extends IntegrationTestBas
     @AfterEach
     void tearDown() {
         jdbcTemplate.update("DELETE FROM game_board_member");
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -120,7 +120,7 @@ class ExerciseParticipationConcurrencyIntegrationTest extends IntegrationTestBas
                     .filteredOn(attempt -> attempt.errorCode() == ExerciseErrorCode.ALREADY_JOINED_EXERCISE)
                     .hasSize(1);
             assertThat(attempts).allSatisfy(attempt -> assertThat(attempt.unexpected()).isNull());
-            assertThat(memberExerciseRepository.count()).isEqualTo(1);
+            assertThat(exerciseParticipationRepository.count()).isEqualTo(1);
             assertThat(rosterCount()).isEqualTo(1);
         } finally {
             executor.shutdownNow();

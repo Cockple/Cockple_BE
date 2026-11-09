@@ -10,7 +10,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.GameBoard;
 import umc.cockple.demo.domain.game.domain.GameBoardMember;
@@ -53,7 +53,7 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired PartyRepository partyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GameBoardRepository gameBoardRepository;
     @Autowired GameBoardMemberRepository gameBoardMemberRepository;
     @Autowired GameRepository gameRepository;
@@ -91,7 +91,7 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
     void tearDown() {
         gameRepository.deleteAll();
         jdbcTemplate.update("DELETE FROM game_board_member");
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -102,16 +102,16 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
     @Test
     @DisplayName("미래 참가와 명단만 삭제하고 과거 참가 스냅샷은 보존한다")
     void withdraw_removesOnlyFutureParticipationAndRoster() {
-        assertThat(countMemberExercises(true)).isEqualTo(1);
-        assertThat(countMemberExercises(false)).isEqualTo(1);
+        assertThat(countExerciseParticipations(true)).isEqualTo(1);
+        assertThat(countExerciseParticipations(false)).isEqualTo(1);
         assertThat(countRosters(true)).isEqualTo(1);
         assertThat(countRosters(false)).isEqualTo(1);
 
         memberCommandService.withdrawMember(member.getId());
 
-        assertThat(countMemberExercises(true)).isZero();
+        assertThat(countExerciseParticipations(true)).isZero();
         assertThat(countRosters(true)).isZero();
-        assertThat(countMemberExercises(false)).isEqualTo(1);
+        assertThat(countExerciseParticipations(false)).isEqualTo(1);
         assertThat(countRosters(false)).isEqualTo(1);
         assertThat(memberRepository.findById(member.getId()).orElseThrow().getIsActive())
                 .isEqualTo(MemberStatus.INACTIVE);
@@ -127,7 +127,7 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
                 .hasFieldOrPropertyWithValue(
                         "code", MemberErrorCode.ASSIGNED_PLAYER_CANNOT_WITHDRAW);
 
-        assertThat(countMemberExercises(true)).isEqualTo(1);
+        assertThat(countExerciseParticipations(true)).isEqualTo(1);
         assertThat(countRosters(true)).isEqualTo(1);
         assertThat(memberRepository.findById(member.getId()).orElseThrow().getIsActive())
                 .isEqualTo(MemberStatus.ACTIVE);
@@ -161,7 +161,7 @@ class MemberGameBoardRosterWithdrawalIntegrationTest extends IntegrationTestBase
         gameRepository.saveAndFlush(waitingGame);
     }
 
-    private int countMemberExercises(boolean future) {
+    private int countExerciseParticipations(boolean future) {
         return countByDate("""
                 SELECT COUNT(*)
                 FROM member_exercise

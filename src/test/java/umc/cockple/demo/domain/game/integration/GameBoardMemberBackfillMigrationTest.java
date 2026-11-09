@@ -51,10 +51,10 @@ class GameBoardMemberBackfillMigrationTest {
             existingMemberId = insertMember(statement, "기존 회원", "MALE", "A", "1995-01-01", 93002L);
             oldMemberId = insertMember(statement, "고령 회원", "MALE", "C", "1940-01-01", 93003L);
 
-            insertMemberExercise(statement, firstExerciseId, firstMemberId, "2035-01-01 10:00:00.000000");
-            insertMemberExercise(statement, firstExerciseId, firstMemberId, "2035-02-01 10:00:00.000000");
-            insertMemberExercise(statement, secondExerciseId, existingMemberId, "2029-01-01 10:00:00.000000");
-            insertMemberExercise(statement, secondExerciseId, oldMemberId, "2029-02-01 10:00:00.000000");
+            insertExerciseParticipation(statement, firstExerciseId, firstMemberId, "2035-01-01 10:00:00.000000");
+            insertExerciseParticipation(statement, firstExerciseId, firstMemberId, "2035-02-01 10:00:00.000000");
+            insertExerciseParticipation(statement, secondExerciseId, existingMemberId, "2029-01-01 10:00:00.000000");
+            insertExerciseParticipation(statement, secondExerciseId, oldMemberId, "2029-02-01 10:00:00.000000");
 
             firstGuestId = insertGuest(statement, firstExerciseId, "첫 게스트", "MALE", "D");
             insertGuest(statement, secondExerciseId, "둘째 게스트", "FEMALE", "C");
@@ -135,7 +135,7 @@ class GameBoardMemberBackfillMigrationTest {
                     """))
                     .isEqualTo(1);
 
-            assertThatThrownBy(() -> insertMemberExercise(
+            assertThatThrownBy(() -> insertExerciseParticipation(
                     statement, firstExerciseId, firstMemberId, "2035-03-01 10:00:00.000000"))
                     .isInstanceOf(SQLException.class);
         }
@@ -184,7 +184,7 @@ class GameBoardMemberBackfillMigrationTest {
         return generatedId(statement);
     }
 
-    private void insertMemberExercise(
+    private void insertExerciseParticipation(
             Statement statement, long exerciseId, long memberId, String createdAt) throws SQLException {
         statement.executeUpdate("""
                 INSERT INTO member_exercise (

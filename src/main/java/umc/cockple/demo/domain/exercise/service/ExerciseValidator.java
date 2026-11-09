@@ -8,7 +8,7 @@ import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCreateCommand;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseUpdateCommand;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
@@ -32,7 +32,7 @@ public class ExerciseValidator {
             Role.PARTY_MANAGER, Role.PARTY_SUBMANAGER);
 
     private final MemberPartyLookupService memberPartyLookupService;
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
 
     public void validateCreateExercise(Long memberId, ExerciseCreateCommand command, Party party) {
         validatePartyIsActive(party);
@@ -136,7 +136,7 @@ public class ExerciseValidator {
     }
 
     private void validateAlreadyJoined(Exercise exercise, Member member) {
-        if(memberExerciseRepository.existsByExerciseAndMember(exercise, member)) {
+        if(exerciseParticipationRepository.existsByExerciseAndMember(exercise, member)) {
             throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
         }
     }

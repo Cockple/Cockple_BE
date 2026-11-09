@@ -10,28 +10,32 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.Guest;
 import umc.cockple.demo.domain.exercise.enums.ExerciseMemberShipStatus;
+import umc.cockple.demo.domain.exercise.events.ExerciseJoinedEvent;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.exercise.service.ExerciseValidator;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.ParticipantKey;
+import umc.cockple.demo.domain.exercise.service.ExerciseWaitingPromotionService.PromotionCandidate;
 import umc.cockple.demo.domain.exercise.service.ExerciseGameAssignmentValidator;
 import umc.cockple.demo.domain.exercise.service.command.model.ExerciseCancelByManagerCommand;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseCancelResult;
 import umc.cockple.demo.domain.exercise.service.command.result.ExerciseJoinResult;
-import umc.cockple.demo.domain.exercise.service.support.reader.MemberExerciseReader;
+import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseParticipationReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.ExerciseReader;
 import umc.cockple.demo.domain.exercise.service.support.reader.GuestReader;
 import umc.cockple.demo.domain.member.domain.Member;
-import umc.cockple.demo.domain.exercise.domain.MemberExercise;
-import umc.cockple.demo.domain.exercise.events.ExerciseAttendanceChangedEvent;
+import umc.cockple.demo.domain.exercise.domain.ExerciseParticipation;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.exception.ExerciseException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
-import umc.cockple.demo.domain.member.enums.MemberPartyStatus;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberLookupService;
 import umc.cockple.demo.domain.member.service.query.lookup.MemberPartyLookupService;
-import umc.cockple.demo.global.enums.Role;
+import umc.cockple.demo.domain.party.domain.Party;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -44,17 +48,18 @@ public class ExerciseParticipationCommandService {
     private static final String GAME_BOARD_MEMBER_UNIQUE_CONSTRAINT =
             "uk_game_board_member_board_member";
 
-    private final MemberExerciseRepository memberExerciseRepository;
+    private final ExerciseParticipationRepository exerciseParticipationRepository;
     private final GuestRepository guestRepository;
     private final ExerciseReader exerciseReader;
     private final GuestReader guestReader;
-    private final MemberExerciseReader memberExerciseReader;
+    private final ExerciseParticipationReader exerciseParticipationReader;
     private final MemberLookupService memberLookupService;
     private final MemberPartyLookupService memberPartyLookupService;
     private final ApplicationEventPublisher eventPublisher;
 
     private final ExerciseValidator exerciseValidator;
     private final ExerciseGameAssignmentValidator exerciseGameAssignmentValidator;
+    private final ExerciseWaitingPromotionService waitingPromotionService;
 
     public ExerciseJoinResult joinExercise(Long exerciseId, Long memberId) {
         log.info("운동 신청 시작 - exerciseId: {}, memberId: {}", exerciseId, memberId);
@@ -68,22 +73,22 @@ public class ExerciseParticipationCommandService {
         ExerciseMemberShipStatus membershipStatus = isPartyMember
                 ? ExerciseMemberShipStatus.PARTY_MEMBER
                 : ExerciseMemberShipStatus.EXTERNAL_PARTICIPANT;
-        MemberExercise memberExercise = exercise.addParticipation(member, membershipStatus);
+        ExerciseParticipation exerciseParticipation = exercise.addParticipation(member, membershipStatus);
 
-        MemberExercise savedMemberExercise = saveParticipation(memberExercise);
-        publishAttendanceChangedEvent(exercise, member.getId());
+        ExerciseParticipation savedExerciseParticipation = saveParticipation(exerciseParticipation);
+        publishExerciseJoined(exercise, member);
         publishGameBoardMembersChanged(exercise, memberId);
 
-        log.info("운동 신청 종료 - memberExerciseId: {}, isPartyMember : {}"
-                , savedMemberExercise.getId(), isPartyMember);
+        log.info("운동 신청 종료 - exerciseParticipationId: {}, isPartyMember : {}"
+                , savedExerciseParticipation.getId(), isPartyMember);
 
         return new ExerciseJoinResult(
-                savedMemberExercise.getId(), savedMemberExercise.getCreatedAt(), exercise.getNowCapacity());
+                savedExerciseParticipation.getId(), savedExerciseParticipation.getCreatedAt(), exercise.getNowCapacity());
     }
 
-    private MemberExercise saveParticipation(MemberExercise memberExercise) {
+    private ExerciseParticipation saveParticipation(ExerciseParticipation exerciseParticipation) {
         try {
-            return memberExerciseRepository.saveAndFlush(memberExercise);
+            return exerciseParticipationRepository.saveAndFlush(exerciseParticipation);
         } catch (DataIntegrityViolationException exception) {
             if (isDuplicateParticipation(exception)) {
                 throw new ExerciseException(ExerciseErrorCode.ALREADY_JOINED_EXERCISE);
@@ -122,15 +127,17 @@ public class ExerciseParticipationCommandService {
 
         Exercise exercise = exerciseReader.findByIdOrThrow(exerciseId);
         Member member = memberLookupService.findByIdOrThrow(memberId);
-        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, member);
+        ExerciseParticipation exerciseParticipation = exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, member);
         exerciseValidator.validateCancelParticipation(exercise);
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), member.getId());
 
-        exercise.removeParticipation(memberExercise);
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(false, memberId));
+        exercise.removeParticipation(exerciseParticipation);
 
-        memberExerciseRepository.delete(memberExercise);
-        publishAttendanceChangedEvent(exercise, member.getId());
+        exerciseParticipationRepository.delete(exerciseParticipation);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, memberId);
 
         log.info("운동 참여 취소 완료 - exerciseId: {}, memberId: {}, 현재 참여자 수: {}",
@@ -149,7 +156,10 @@ public class ExerciseParticipationCommandService {
 
         exerciseValidator.validateCancelCommonParticipationByManager(exercise, manager);
 
+        Optional<PromotionCandidate> promotionCandidate = waitingPromotionService.findPromotionCandidate(
+                exercise, new ParticipantKey(command.guest(), participantId));
         ExerciseCancelResult result = executeParticipantCancellation(exercise, participantId, command);
+        promotionCandidate.ifPresent(candidate -> waitingPromotionService.notifyPromoted(exercise, candidate));
         publishGameBoardMembersChanged(exercise, managerId);
 
         log.info("매니저에 의한 운동 참여 취소 완료 - exerciseId: {}, participantId: {}, 현재 참여자 수: {}",
@@ -186,37 +196,39 @@ public class ExerciseParticipationCommandService {
 
     private ExerciseCancelResult cancelMemberParticipation(Exercise exercise, Long participantId) {
         Member participant = memberLookupService.findByIdOrThrow(participantId);
-        MemberExercise memberExercise = memberExerciseReader.findMemberExerciseOrThrow(exercise, participant);
+        ExerciseParticipation exerciseParticipation = exerciseParticipationReader.findExerciseParticipationOrThrow(exercise, participant);
         exerciseGameAssignmentValidator.validateMemberCancellation(
                 exercise.getGameBoard().getId(), participant.getId());
 
-        exercise.removeParticipation(memberExercise);
+        exercise.removeParticipation(exerciseParticipation);
 
-        memberExerciseRepository.delete(memberExercise);
-        publishAttendanceChangedEvent(exercise, participant.getId());
+        exerciseParticipationRepository.delete(exerciseParticipation);
 
         return new ExerciseCancelResult(participant.getDisplayName(), exercise.getNowCapacity());
     }
 
-    private void publishAttendanceChangedEvent(Exercise exercise, Long subjectMemberId) {
-        var party = exercise.getParty();
-        List<Long> recipientMemberIds = party.getMemberParties().stream()
-                .filter(memberParty -> memberParty.getStatus() == MemberPartyStatus.ACTIVE)
-                .filter(memberParty -> memberParty.getRole() == Role.PARTY_MANAGER
-                        || memberParty.getRole() == Role.PARTY_SUBMANAGER)
-                .map(memberParty -> memberParty.getMember().getId())
-                .filter(memberId -> !memberId.equals(subjectMemberId))
-                .toList();
+    private void publishExerciseJoined(Exercise exercise, Member member) {
+        Set<ParticipantKey> waitingParticipants = waitingPromotionService.findWaitingParticipants(exercise);
+        if (waitingParticipants.contains(new ParticipantKey(false, member.getId()))) {
+            return;
+        }
 
-        eventPublisher.publishEvent(ExerciseAttendanceChangedEvent.changed(
-                exercise.getId(),
-                party.getId(),
-                party.getPartyName(),
+        List<Long> recipientMemberIds = exercise.getParticipations().stream()
+                .filter(participation -> participation.getExerciseMemberShipStatus() == ExerciseMemberShipStatus.PARTY_MEMBER)
+                .map(participation -> participation.getMember().getId())
+                .filter(memberId -> !memberId.equals(member.getId()))
+                .filter(memberId -> !waitingParticipants.contains(new ParticipantKey(false, memberId)))
+                .distinct()
+                .toList();
+        if (recipientMemberIds.isEmpty()) {
+            return;
+        }
+
+        Party party = exercise.getParty();
+        eventPublisher.publishEvent(ExerciseJoinedEvent.joined(
+                exercise.getId(), party.getId(), party.getPartyName(),
                 party.getPartyImg() != null ? party.getPartyImg().getImgKey() : null,
-                exercise.getDate(),
-                subjectMemberId,
-                recipientMemberIds
-        ));
+                exercise.getDate(), member.getDisplayName(), recipientMemberIds));
     }
 
     private void publishGameBoardMembersChanged(Exercise exercise, Long actorMemberId) {

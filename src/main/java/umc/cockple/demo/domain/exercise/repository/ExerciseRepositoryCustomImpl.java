@@ -10,7 +10,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.domain.QExercise;
 import umc.cockple.demo.domain.exercise.domain.QExerciseAddr;
 import umc.cockple.demo.domain.exercise.repository.support.ExerciseRecommendationSearchCondition;
-import umc.cockple.demo.domain.exercise.domain.QMemberExercise;
+import umc.cockple.demo.domain.exercise.domain.QExerciseParticipation;
 import umc.cockple.demo.domain.member.domain.QMemberParty;
 import umc.cockple.demo.domain.party.domain.QParty;
 import umc.cockple.demo.domain.party.domain.QPartyImg;
@@ -34,7 +34,7 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
     private final QParty party = QParty.party;
     private final QPartyLevel partyLevel = QPartyLevel.partyLevel;
     private final QMemberParty memberParty = QMemberParty.memberParty;
-    private final QMemberExercise memberExercise = QMemberExercise.memberExercise;
+    private final QExerciseParticipation exerciseParticipation = QExerciseParticipation.exerciseParticipation;
     private final QPartyImg partyImg = QPartyImg.partyImg;
 
     @Override
@@ -76,9 +76,9 @@ public class ExerciseRepositoryCustomImpl implements ExerciseRepositoryCustom {
 
         whereClause.and(
                 JPAExpressions.selectOne()
-                        .from(memberExercise)
-                        .where(memberExercise.exercise.id.eq(exercise.id)
-                                .and(memberExercise.member.id.eq(memberId)))
+                        .from(exerciseParticipation)
+                        .where(exerciseParticipation.exercise.id.eq(exercise.id)
+                                .and(exerciseParticipation.member.id.eq(memberId)))
                         .notExists()
         );
 

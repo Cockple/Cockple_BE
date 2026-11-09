@@ -13,7 +13,7 @@ import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
 import umc.cockple.demo.domain.exercise.repository.GuestRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -45,7 +45,7 @@ class PartyExerciseIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired GuestRepository guestRepository;
 
     private Member manager;
@@ -72,7 +72,7 @@ class PartyExerciseIntegrationTest extends IntegrationTestBase {
     @AfterEach
     void tearDown() {
         guestRepository.deleteAll();
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();
@@ -107,7 +107,7 @@ class PartyExerciseIntegrationTest extends IntegrationTestBase {
             @DisplayName("요청한 기간의 모임 운동 캘린더가 반환된다")
             void 요청한_기간의_모임_운동_캘린더가_반환된다() throws Exception {
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
 
                 mockMvc.perform(get("/api/parties/{partyId}/exercises/calender", party.getId())
                                 .param("startDate", startDate.toString())
@@ -157,7 +157,7 @@ class PartyExerciseIntegrationTest extends IntegrationTestBase {
                         ExerciseFixture.createExerciseWithAddr(party, defaultExerciseDate));
 
                 SecurityContextHelper.setAuthentication(normalMember.getId(), normalMember.getNickname());
-                memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, defaultExercise));
+                exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, defaultExercise));
 
                 mockMvc.perform(get("/api/parties/{partyId}/exercises/calender", party.getId()))
                         .andExpect(status().isOk())

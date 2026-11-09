@@ -14,7 +14,7 @@ import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.exception.ExerciseErrorCode;
 import umc.cockple.demo.domain.exercise.presentation.dto.gamehost.ExerciseGameHostDTO;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.domain.ProfileImg;
@@ -54,7 +54,7 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
     @Autowired PartyAddrRepository partyAddrRepository;
     @Autowired MemberPartyRepository memberPartyRepository;
     @Autowired ExerciseRepository exerciseRepository;
-    @Autowired MemberExerciseRepository memberExerciseRepository;
+    @Autowired ExerciseParticipationRepository exerciseParticipationRepository;
 
     private Member manager;
     private Member subManager;
@@ -103,13 +103,13 @@ class ExerciseGameHostIntegrationTest extends IntegrationTestBase {
                 ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 1, 12)));
         Exercise subManagerExercise = exerciseRepository.save(
                 ExerciseFixture.createExerciseWithAddr(party, LocalDate.of(2026, 1, 10)));
-        memberExerciseRepository.save(MemberFixture.createMemberExercise(manager, managerExercise));
-        memberExerciseRepository.save(MemberFixture.createMemberExercise(subManager, subManagerExercise));
+        exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(manager, managerExercise));
+        exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(subManager, subManagerExercise));
     }
 
     @AfterEach
     void tearDown() {
-        memberExerciseRepository.deleteAll();
+        exerciseParticipationRepository.deleteAll();
         exerciseRepository.deleteAll();
         memberPartyRepository.deleteAll();
         partyRepository.deleteAll();

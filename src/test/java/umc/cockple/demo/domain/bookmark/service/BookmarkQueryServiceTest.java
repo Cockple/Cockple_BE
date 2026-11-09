@@ -23,7 +23,7 @@ import umc.cockple.demo.domain.file.service.FileService;
 import umc.cockple.demo.domain.member.domain.Member;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.exception.MemberException;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -64,7 +64,7 @@ class BookmarkQueryServiceTest {
     @Mock private ExerciseBookmarkRepository exerciseBookmarkRepository;
     @Mock private PartyBookmarkRepository partyBookmarkRepository;
     @Mock private MemberPartyRepository memberPartyRepository;
-    @Mock private MemberExerciseRepository memberExerciseRepository;
+    @Mock private ExerciseParticipationRepository exerciseParticipationRepository;
     @Mock private ExerciseParticipantCountLookupService exerciseParticipantCountLookupService;
     @Mock private MemberRepository memberRepository;
     @Mock private BookmarkConverter bookmarkConverter;
@@ -110,7 +110,7 @@ class BookmarkQueryServiceTest {
                 given(exerciseBookmarkRepository.findAllByMemberWithDetails(member)).willReturn(new ArrayList<>());
                 given(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(anyLong(), anyList()))
                         .willReturn(new ArrayList<>());
-                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
+                given(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
                         .willReturn(new ArrayList<>());
 
                 // when
@@ -145,7 +145,7 @@ class BookmarkQueryServiceTest {
                 given(exerciseBookmarkRepository.findAllByMemberWithDetails(member)).willReturn(bookmarks);
                 given(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(anyLong(), anyList()))
                         .willReturn(List.of(party.getId()));
-                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
+                given(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
                         .willReturn(List.of(oldExercise.getId(), newExercise.getId()));
                 given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
                         .willReturn(Map.of(newExercise.getId(), 2, oldExercise.getId(), 1));
@@ -188,7 +188,7 @@ class BookmarkQueryServiceTest {
                 given(exerciseBookmarkRepository.findAllByMemberWithDetails(member)).willReturn(bookmarks);
                 given(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(anyLong(), anyList()))
                         .willReturn(List.of(party.getId()));
-                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
+                given(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(anyLong(), anyList()))
                         .willReturn(List.of(oldExercise.getId(), newExercise.getId()));
                 given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
                         .willReturn(Map.of(oldExercise.getId(), 1, newExercise.getId(), 2));
@@ -225,7 +225,7 @@ class BookmarkQueryServiceTest {
                 given(exerciseBookmarkRepository.findAllByMemberWithDetails(member)).willReturn(new ArrayList<>(List.of(bookmark)));
                 given(memberPartyRepository.findAllPartyIdsByMemberAndPartyIds(eq(member.getId()), anyList()))
                         .willReturn(List.of(party.getId())); // 모임 멤버
-                given(memberExerciseRepository.findAllExerciseIdsByMemberAndExerciseIds(eq(member.getId()), anyList()))
+                given(exerciseParticipationRepository.findAllExerciseIdsByMemberAndExerciseIds(eq(member.getId()), anyList()))
                         .willReturn(new ArrayList<>()); // 운동 미참여
                 given(exerciseParticipantCountLookupService.getParticipantCountsByExerciseIds(anyList()))
                         .willReturn(Map.of(exercise.getId(), 3));

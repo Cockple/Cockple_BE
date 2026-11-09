@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.domain.service.GamePairCount;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.repository.GameRepository;
 
 import java.util.Collection;
@@ -17,6 +19,11 @@ import java.util.List;
 public class GameReader {
 
     private final GameRepository gameRepository;
+
+    public Game read(Long gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
+    }
 
     public List<Game> readAllByGameBoardAndStatuses(
             Long gameBoardId, Collection<GameStatus> statuses) {

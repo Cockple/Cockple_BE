@@ -28,7 +28,8 @@ class GameNotificationStrategyTest {
     @DisplayName("게임 시작 이벤트를 지원한다")
     void supportsGameStartedEvent() {
         boolean supports = strategy.supports(
-                GameStartedEvent.started(1L, 10L, "모임", "image-key", "1번 코트", List.of(20L)));
+                GameStartedEvent.started(1L, 10L, "모임", "image-key", "1번 코트",
+                        List.of("김하나"), List.of(20L)));
 
         assertThat(supports).isTrue();
     }
@@ -37,7 +38,8 @@ class GameNotificationStrategyTest {
     @DisplayName("게임 시작 알림은 수신자별로 생성되고 게임판 destination을 가진다")
     void convertsGameStartedNotification() {
         List<NotificationRequest> requests = strategy.convert(
-                GameStartedEvent.started(1L, 10L, "모임", "image-key", "화이팅코트", List.of(20L, 30L)));
+                GameStartedEvent.started(1L, 10L, "모임", "image-key", "화이팅코트",
+                        List.of("김하나", "이두리"), List.of(20L, 30L)));
 
         assertThat(requests).extracting(NotificationRequest::recipientMemberId)
                 .containsExactly(20L, 30L);
@@ -52,12 +54,14 @@ class GameNotificationStrategyTest {
     }
 
     @Test
-    @DisplayName("게임 시작 알림 문구에 코트 이름이 들어간다")
-    void gameStartMessageContainsCourtName() {
+    @DisplayName("게임 시작 알림 문구에 코트 이름과 참가자 이름이 들어간다")
+    void gameStartMessageContainsCourtNameAndParticipants() {
         List<NotificationRequest> requests = strategy.convert(
-                GameStartedEvent.started(1L, 10L, "모임", "image-key", "화이팅코트", List.of(20L)));
+                GameStartedEvent.started(1L, 10L, "모임", "image-key", "화이팅코트",
+                        List.of("박나영", "김민지", "박민중", "박상진"), List.of(20L)));
 
-        assertThat(requests.get(0).content()).isEqualTo("'화이팅코트' 입장해주세요!");
+        assertThat(requests.get(0).content())
+                .isEqualTo("'화이팅코트' 입장해주세요!\n박나영 김민지 박민중 박상진");
     }
 
     @Test

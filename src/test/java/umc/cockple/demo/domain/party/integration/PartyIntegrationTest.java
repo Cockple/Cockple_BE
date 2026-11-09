@@ -33,7 +33,7 @@ import umc.cockple.demo.domain.member.domain.MemberAddr;
 import umc.cockple.demo.domain.member.domain.MemberParty;
 import umc.cockple.demo.domain.member.exception.MemberErrorCode;
 import umc.cockple.demo.domain.member.repository.MemberAddrRepository;
-import umc.cockple.demo.domain.exercise.repository.MemberExerciseRepository;
+import umc.cockple.demo.domain.exercise.repository.ExerciseParticipationRepository;
 import umc.cockple.demo.domain.member.repository.MemberPartyRepository;
 import umc.cockple.demo.domain.member.repository.MemberRepository;
 import umc.cockple.demo.domain.party.domain.Party;
@@ -81,7 +81,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
     @Autowired
     ExerciseRepository exerciseRepository;
     @Autowired
-    MemberExerciseRepository memberExerciseRepository;
+    ExerciseParticipationRepository exerciseParticipationRepository;
     @Autowired
     MemberAddrRepository memberAddrRepository;
     @Autowired
@@ -162,7 +162,7 @@ class PartyIntegrationTest extends IntegrationTestBase {
 
             // 운동 기록 추가
             Exercise exercise = exerciseRepository.save(ExerciseFixture.createExercise(party, LocalDate.of(2025, 1, 10)));
-            memberExerciseRepository.save(MemberFixture.createMemberExercise(normalMember, exercise));
+            exerciseParticipationRepository.save(MemberFixture.createExerciseParticipation(normalMember, exercise));
 
             mockMvc.perform(get("/api/parties/{partyId}/members", party.getId()))
                     .andExpect(status().isOk())
