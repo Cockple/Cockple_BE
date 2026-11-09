@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.websocket.broadcast;
+package umc.cockple.demo.domain.game.presentation.realtime.broadcast;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -6,12 +6,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.repository.redis.GameBoardSubscriber;
 import umc.cockple.demo.domain.game.repository.redis.GameBoardSubscriptionStore;
 import umc.cockple.demo.global.realtime.publish.RealtimeMessagePublisher;
 import umc.cockple.demo.global.realtime.publish.RealtimePublishResult;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -19,6 +21,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameBoardBroadcaster")
@@ -30,7 +33,8 @@ class GameBoardBroadcasterTest {
     @InjectMocks private GameBoardBroadcaster gameBoardBroadcaster;
 
     private static final Long BOARD_ID = 1L;
-    private static final Object BOARD_DATA = new Object();
+    private static final GameBoardDTO.Response BOARD_DATA =
+            new GameBoardDTO.Response(true, 0, List.of(), List.of());
     private static final Object MEMBERS_DATA = new Object();
 
     @Test
@@ -44,18 +48,38 @@ class GameBoardBroadcasterTest {
         given(realtimeMessagePublisher.publishToSession(any(), any(), any(), any(), any()))
                 .willReturn(new RealtimePublishResult(1, 1));
 
-        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, BOARD_DATA, "session-actor");
+        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, 0L, BOARD_DATA, "session-actor");
 
         // 같은 회원의 다른 탭 세션에도 전달된다 (memberId가 아니라 sessionId로 제외하므로)
         then(realtimeMessagePublisher).should().publishToSession(
                 eq(10L), eq("session-other-tab"),
-                eq(GameRealtimeProtocol.DOMAIN), eq(GameRealtimeProtocol.TYPE_BOARD_UPDATED), eq(BOARD_DATA));
+                eq(GameRealtimeProtocol.DOMAIN), eq(GameRealtimeProtocol.TYPE_BOARD_UPDATED), eq(BOARD_DATA.forBroadcast()));
         then(realtimeMessagePublisher).should().publishToSession(
                 eq(20L), eq("session-b"),
-                eq(GameRealtimeProtocol.DOMAIN), eq(GameRealtimeProtocol.TYPE_BOARD_UPDATED), eq(BOARD_DATA));
+                eq(GameRealtimeProtocol.DOMAIN), eq(GameRealtimeProtocol.TYPE_BOARD_UPDATED), eq(BOARD_DATA.forBroadcast()));
         // 변경을 일으킨 세션에는 전달하지 않는다
         then(realtimeMessagePublisher).should(never()).publishToSession(
                 eq(10L), eq("session-actor"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("새 보드를 발행한 뒤 도착한 이전 버전은 전송하지 않는다")
+    void skipsOlderBoardAfterPublishingNewerRevision() {
+        GameBoardSubscriber subscriber = new GameBoardSubscriber(10L, "session-1");
+        GameBoardDTO.Response olderBoard = new GameBoardDTO.Response(true, 1, List.of(), List.of());
+        given(subscriptionStore.getSubscribers(BOARD_ID)).willReturn(Set.of(subscriber));
+        given(realtimeMessagePublisher.publishToSession(
+                10L, "session-1", GameRealtimeProtocol.DOMAIN, GameRealtimeProtocol.TYPE_BOARD_UPDATED,
+                BOARD_DATA.forBroadcast())).willReturn(new RealtimePublishResult(1, 1));
+
+        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, 11L, BOARD_DATA, null);
+        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, 10L, olderBoard, null);
+
+        then(realtimeMessagePublisher).should().publishToSession(
+                10L, "session-1", GameRealtimeProtocol.DOMAIN, GameRealtimeProtocol.TYPE_BOARD_UPDATED,
+                BOARD_DATA.forBroadcast());
+        then(realtimeMessagePublisher).shouldHaveNoMoreInteractions();
+        then(subscriptionStore).should(times(1)).getSubscribers(BOARD_ID);
     }
 
     @Test
@@ -63,7 +87,7 @@ class GameBoardBroadcasterTest {
     void noSubscribersNoPublish() {
         given(subscriptionStore.getSubscribers(BOARD_ID)).willReturn(Set.of());
 
-        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, BOARD_DATA, null);
+        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, 0L, BOARD_DATA, null);
 
         then(realtimeMessagePublisher).should(never()).publishToSession(any(), any(), any(), any(), any());
     }
@@ -77,12 +101,12 @@ class GameBoardBroadcasterTest {
         given(realtimeMessagePublisher.publishToSession(any(), any(), any(), any(), any()))
                 .willReturn(new RealtimePublishResult(1, 1));
 
-        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, BOARD_DATA, null);
+        gameBoardBroadcaster.broadcastBoardUpdate(BOARD_ID, 0L, BOARD_DATA, null);
 
         then(realtimeMessagePublisher).should().publishToSession(
-                eq(10L), eq("session-1"), any(), any(), eq(BOARD_DATA));
+                eq(10L), eq("session-1"), any(), any(), eq(BOARD_DATA.forBroadcast()));
         then(realtimeMessagePublisher).should().publishToSession(
-                eq(20L), eq("session-2"), any(), any(), eq(BOARD_DATA));
+                eq(20L), eq("session-2"), any(), any(), eq(BOARD_DATA.forBroadcast()));
     }
 
     @Test

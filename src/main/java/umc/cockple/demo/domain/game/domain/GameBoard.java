@@ -22,6 +22,9 @@ public class GameBoard extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private long revision;
+
     @OneToMany(mappedBy = "gameBoard", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Court> courts = new ArrayList<>();
@@ -33,6 +36,10 @@ public class GameBoard extends BaseEntity {
     @OneToMany(mappedBy = "gameBoard", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<GameBoardMember> gameBoardMembers = new ArrayList<>();
+
+    public void advanceRevision() {
+        revision++;
+    }
 
     public static GameBoard create() {
         GameBoard gameBoard = GameBoard.builder().build();

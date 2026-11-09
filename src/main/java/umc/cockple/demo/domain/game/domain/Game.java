@@ -3,6 +3,8 @@ package umc.cockple.demo.domain.game.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import umc.cockple.demo.domain.game.enums.GameStatus;
+import umc.cockple.demo.domain.game.exception.GameErrorCode;
+import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.global.common.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -74,6 +76,9 @@ public class Game extends BaseEntity {
     }
 
     public void complete(LocalDateTime completedAt) {
+        if (status != GameStatus.PLAYING) {
+            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
+        }
         this.status = GameStatus.COMPLETED;
         if (this.court != null) {
             this.courtNo = this.court.getCourtNo();

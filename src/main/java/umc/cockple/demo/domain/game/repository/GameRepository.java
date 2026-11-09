@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Game;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 
@@ -63,11 +64,19 @@ public interface GameRepository extends JpaRepository<Game, Long>, GameRepositor
             "where g.id in :ids")
     List<Game> findByIdInWithPlayers(@Param("ids") Collection<Long> ids);
 
+    @Query("select distinct g.gameBoard.id from Game g " +
+            "where g.status = :status and g.startedAt < :threshold")
+    @Transactional(readOnly = true)
+    List<Long> findStaleGameBoardIds(
+            @Param("status") GameStatus status,
+            @Param("threshold") LocalDateTime threshold);
+
     @Query("select distinct g from Game g " +
             "left join fetch g.players p " +
             "left join fetch p.gameBoardMember " +
-            "where g.status = :status and g.startedAt is not null and g.startedAt < :threshold")
-    List<Game> findByStatusAndStartedAtBeforeWithPlayers(
+            "where g.gameBoard.id = :gameBoardId and g.status = :status and g.startedAt < :threshold")
+    List<Game> findStaleGamesByGameBoardIdWithPlayers(
+            @Param("gameBoardId") Long gameBoardId,
             @Param("status") GameStatus status,
             @Param("threshold") LocalDateTime threshold);
 }

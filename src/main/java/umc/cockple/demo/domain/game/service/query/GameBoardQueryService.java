@@ -2,6 +2,8 @@ package umc.cockple.demo.domain.game.service.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import umc.cockple.demo.domain.game.domain.Court;
 import umc.cockple.demo.domain.game.domain.Game;
@@ -17,7 +19,7 @@ import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessVal
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 @RequiredArgsConstructor
 public class GameBoardQueryService {
 
@@ -26,6 +28,11 @@ public class GameBoardQueryService {
     private final GameRepository gameRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
     private final GameBoardResultAssembler gameBoardResultAssembler;
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ, propagation = Propagation.REQUIRES_NEW)
+    public GameBoardResult getCommittedBoard(Long memberId, Long gameBoardId) {
+        return getBoard(memberId, gameBoardId);
+    }
 
     /**
      * 코트 보드 조회. 조회 자체는 인증된 회원이면 누구나 가능
@@ -40,6 +47,6 @@ public class GameBoardQueryService {
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 gameBoard.getId(), GameStatus.ACTIVE_STATUSES);
 
-        return gameBoardResultAssembler.assemble(isGameHost, courts, activeGames);
+        return gameBoardResultAssembler.assemble(gameBoard.getRevision(), isGameHost, courts, activeGames);
     }
 }

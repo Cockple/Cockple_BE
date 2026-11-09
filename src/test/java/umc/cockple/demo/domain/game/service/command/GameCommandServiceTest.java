@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.game.domain.Court;
@@ -38,7 +38,10 @@ import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameValidator;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -51,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
@@ -67,11 +71,12 @@ class GameCommandServiceTest {
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
-    @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    @Spy private GamePlayerValidator gamePlayerValidator =
+            new GamePlayerValidator(new GameBoardMemberAvailabilityPolicy());
     @Mock private GameBoardResultAssembler gameBoardResultAssembler;
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks private GameCommandService gameCommandService;
+    private GameCommandService gameCommandService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -83,6 +88,10 @@ class GameCommandServiceTest {
 
     @BeforeEach
     void setUp() {
+        gameCommandService = new GameCommandService(
+                gameBoardReader, gameRepository, new GameReader(gameRepository), new GameValidator(),
+                courtRepository, gameBoardMemberRepository, exerciseRepository,
+                gameBoardAccessValidator, gamePlayerValidator, gameBoardResultAssembler, eventPublisher);
         board = GameFixture.gameBoard(BOARD_ID);
         court = GameFixture.court(COURT_ID, board, 1, "1번 코트");
     }
@@ -96,7 +105,7 @@ class GameCommandServiceTest {
         void startGame_placesWaitingGameOnCourt() {
             // given
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -130,7 +139,7 @@ class GameCommandServiceTest {
             Party party = Party.builder().id(10L).partyName("우리모임").build();
             Exercise exercise = Exercise.builder().party(party).build();
 
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -173,7 +182,7 @@ class GameCommandServiceTest {
             Party party = Party.builder().id(10L).partyName("우리모임").build();
             Exercise exercise = Exercise.builder().party(party).build();
 
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -204,7 +213,7 @@ class GameCommandServiceTest {
             GamePlayer guest = GameFixture.player(
                     GameFixture.member(1L, board, "게스트", Level.A), 0);
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, guest);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -226,7 +235,7 @@ class GameCommandServiceTest {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
             Game remaining1 = GameFixture.waitingGame(51L, board, 2);
             Game remaining2 = GameFixture.waitingGame(52L, board, 3);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.empty());
@@ -244,7 +253,7 @@ class GameCommandServiceTest {
         @Test
         @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
         void startGame_gameNotFound() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID)))
@@ -258,7 +267,7 @@ class GameCommandServiceTest {
         void startGame_gameOfOtherBoard() {
             GameBoard otherBoard = GameFixture.gameBoard(2L);
             Game gameOfOtherBoard = GameFixture.waitingGame(GAME_ID, otherBoard, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(gameOfOtherBoard));
 
             assertThatThrownBy(() -> gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID)))
@@ -271,7 +280,7 @@ class GameCommandServiceTest {
         @DisplayName("대기 상태가 아닌 게임이면 GAME_NOT_WAITING 예외")
         void startGame_notWaiting() {
             Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
 
             assertThatThrownBy(() -> gameCommandService.startGame(MEMBER_ID, new GameStartCommand(BOARD_ID, GAME_ID, COURT_ID)))
@@ -284,7 +293,7 @@ class GameCommandServiceTest {
         @DisplayName("목적지 코트가 없으면 COURT_NOT_FOUND 예외")
         void startGame_courtNotFound() {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.empty());
 
@@ -299,7 +308,7 @@ class GameCommandServiceTest {
         void startGame_courtAlreadyInUse() {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
             Game occupying = GameFixture.playingGame(99L, board, court, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(courtRepository.findByIdAndGameBoardId(COURT_ID, BOARD_ID)).willReturn(Optional.of(court));
             given(gameRepository.findByCourtIdAndStatus(COURT_ID, GameStatus.PLAYING)).willReturn(Optional.of(occupying));
@@ -315,12 +324,12 @@ class GameCommandServiceTest {
     @DisplayName("createGame (#8 게임 대기 생성)")
     class CreateGame {
 
-        private final GameBoardResult assembledBoard = new GameBoardResult(true, 1, List.of(), List.of());
+        private final GameBoardResult assembledBoard = new GameBoardResult(0L, true, 1, List.of(), List.of());
 
         @BeforeEach
         void setUpBoardAssembly() {
             // 생성 성공 케이스에서만 보드를 조립하므로 예외 케이스에서 쓰이지 않아도 되도록 lenient로 둔다.
-            lenient().when(gameBoardResultAssembler.assemble(anyBoolean(), anyList(), anyList()))
+            lenient().when(gameBoardResultAssembler.assemble(anyLong(), anyBoolean(), anyList(), anyList()))
                     .thenReturn(assembledBoard);
         }
 
@@ -376,7 +385,7 @@ class GameCommandServiceTest {
 
             @SuppressWarnings("unchecked")
             ArgumentCaptor<List<Game>> gamesCaptor = ArgumentCaptor.forClass(List.class);
-            then(gameBoardResultAssembler).should().assemble(eq(true), eq(List.of(court)), gamesCaptor.capture());
+            then(gameBoardResultAssembler).should().assemble(eq(1L), eq(true), eq(List.of(court)), gamesCaptor.capture());
             List<Game> assembledGames = gamesCaptor.getValue();
             assertThat(assembledGames).hasSize(2);
             assertThat(assembledGames.get(0)).isSameAs(existingWaiting);
@@ -445,7 +454,9 @@ class GameCommandServiceTest {
             given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
                     .willReturn(List.of(member));
-            given(availabilityPolicy.hasWaitingConflict(any(), any())).willReturn(true);
+            Game waitingGame = GameFixture.waitingGame(40L, board, 1, GameFixture.player(member, 0));
+            given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
+                    .willReturn(List.of(waitingGame));
 
             assertThatThrownBy(() -> gameCommandService.createGame(
                     MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))
@@ -514,7 +525,7 @@ class GameCommandServiceTest {
         void deleteGame_waitingResequences() {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
             Game remaining = GameFixture.waitingGame(51L, board, 2);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
                     .willReturn(List.of(remaining));
@@ -532,7 +543,7 @@ class GameCommandServiceTest {
         @DisplayName("진행 게임을 취소하면 삭제만 하고 대기열 재정렬은 하지 않는다")
         void deleteGame_playingNoResequence() {
             Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
 
             gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false));
@@ -550,7 +561,7 @@ class GameCommandServiceTest {
             // 입력 순서를 뒤집어 정렬 검증
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1,
                     GameFixture.player(m8, 1), GameFixture.player(m7, 0));
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
                     .willReturn(List.of());
@@ -569,7 +580,7 @@ class GameCommandServiceTest {
         void deleteGame_noRestoreEmptyPlayers() {
             GameBoardMember m7 = GameFixture.member(7L, board, "선수7", Level.A);
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1, GameFixture.player(m7, 0));
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
             given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
                     .willReturn(List.of());
@@ -582,7 +593,7 @@ class GameCommandServiceTest {
         @Test
         @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
         void deleteGame_gameNotFound() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false)))
@@ -596,7 +607,7 @@ class GameCommandServiceTest {
         void deleteGame_alreadyCompleted() {
             Game completed = Game.builder()
                     .id(GAME_ID).gameBoard(board).status(GameStatus.COMPLETED).build();
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(completed));
 
             assertThatThrownBy(() -> gameCommandService.deleteGame(MEMBER_ID, new GameDeleteCommand(BOARD_ID, GAME_ID, false)))
@@ -619,7 +630,7 @@ class GameCommandServiceTest {
             Game playing = GameFixture.playingGame(GAME_ID, board, court, LocalDateTime.now(),
                     GameFixture.player(m1, 0), GameFixture.player(m2, 1));
             Game otherWaiting = GameFixture.waitingGame(60L, board, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
             // 재정렬: 되돌린 게임(임시순서 0) → 1번, 기존 대기 게임 → 2번
             given(gameRepository.findByGameBoardIdAndStatusOrderByWaitingOrderAsc(BOARD_ID, GameStatus.WAITING))
@@ -650,7 +661,7 @@ class GameCommandServiceTest {
         @Test
         @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
         void moveGameToWaiting_gameNotFound() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> gameCommandService.moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(BOARD_ID, GAME_ID)))
@@ -663,7 +674,7 @@ class GameCommandServiceTest {
         @DisplayName("진행 중인 게임이 아니면 GAME_NOT_PLAYING 예외")
         void moveGameToWaiting_notPlaying() {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
 
             assertThatThrownBy(() -> gameCommandService.moveGameToWaiting(MEMBER_ID, new GameToWaitingCommand(BOARD_ID, GAME_ID)))
@@ -686,7 +697,7 @@ class GameCommandServiceTest {
             LocalDateTime startedAt = LocalDateTime.now().minusMinutes(15);
             Game playing = GameFixture.playingGame(GAME_ID, board, court, startedAt,
                     GameFixture.player(m1, 0), GameFixture.player(m2, 1));
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playing));
 
             // when
@@ -708,7 +719,7 @@ class GameCommandServiceTest {
         @Test
         @DisplayName("게임을 찾을 수 없으면 GAME_NOT_FOUND 예외")
         void completeGame_gameNotFound() {
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
@@ -722,7 +733,7 @@ class GameCommandServiceTest {
         void completeGame_gameOfOtherBoard() {
             GameBoard otherBoard = GameFixture.gameBoard(2L);
             Game playingOfOther = GameFixture.playingGame(GAME_ID, otherBoard, court, LocalDateTime.now());
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(playingOfOther));
 
             assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))
@@ -735,7 +746,7 @@ class GameCommandServiceTest {
         @DisplayName("진행 중인 게임이 아니면 GAME_NOT_PLAYING 예외")
         void completeGame_notPlaying() {
             Game waiting = GameFixture.waitingGame(GAME_ID, board, 1);
-            given(gameBoardReader.read(BOARD_ID)).willReturn(board);
+            given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameRepository.findById(GAME_ID)).willReturn(Optional.of(waiting));
 
             assertThatThrownBy(() -> gameCommandService.completeGame(MEMBER_ID, new GameCompleteCommand(BOARD_ID, GAME_ID)))

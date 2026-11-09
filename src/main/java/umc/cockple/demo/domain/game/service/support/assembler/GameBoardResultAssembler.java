@@ -32,7 +32,7 @@ public class GameBoardResultAssembler {
      * @param courts      게임판의 코트 목록(courtNo 오름차순)
      * @param activeGames PLAYING/WAITING 게임, 순서 무관
      */
-    public GameBoardResult assemble(boolean isGameHost, List<Court> courts, List<Game> activeGames) {
+    public GameBoardResult assemble(long revision, boolean isGameHost, List<Court> courts, List<Game> activeGames) {
         Map<Long, Game> playingGameByCourtId = activeGames.stream()
                 .filter(game -> game.getStatus() == GameStatus.PLAYING && game.getCourt() != null)
                 .collect(Collectors.toMap(game -> game.getCourt().getId(), Function.identity(), (a, b) -> a));
@@ -48,7 +48,7 @@ public class GameBoardResultAssembler {
                 .map(this::toWaitingView)
                 .toList();
 
-        return new GameBoardResult(isGameHost, courts.size(), courtViews, waitingViews);
+        return new GameBoardResult(revision, isGameHost, courts.size(), courtViews, waitingViews);
     }
 
     private GameBoardResult.CourtView toCourtView(Court court, Game playingGame) {
