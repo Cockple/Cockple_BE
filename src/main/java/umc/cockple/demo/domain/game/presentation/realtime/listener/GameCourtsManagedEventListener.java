@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.listener;
+package umc.cockple.demo.domain.game.presentation.realtime.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
-import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 
 /**
  * 코트 관리(REST) 커밋 후, 같은 게임판을 구독 중인 다른 사용자에게 최신 보드를 push

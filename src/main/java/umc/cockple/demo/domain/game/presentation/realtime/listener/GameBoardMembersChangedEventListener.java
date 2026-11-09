@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.listener;
+package umc.cockple.demo.domain.game.presentation.realtime.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
-import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 
 import java.util.List;
 

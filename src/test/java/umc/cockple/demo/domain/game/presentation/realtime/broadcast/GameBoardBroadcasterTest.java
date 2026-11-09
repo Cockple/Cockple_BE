@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.websocket.broadcast;
+package umc.cockple.demo.domain.game.presentation.realtime.broadcast;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

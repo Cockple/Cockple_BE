@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.websocket.broadcast;
+package umc.cockple.demo.domain.game.presentation.realtime.broadcast;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

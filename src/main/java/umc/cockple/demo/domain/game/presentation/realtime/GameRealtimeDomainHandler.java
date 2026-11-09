@@ -27,7 +27,7 @@ import umc.cockple.demo.domain.game.service.command.result.GameCreateResult;
 import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
-import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 import umc.cockple.demo.domain.game.service.websocket.subscription.GameBoardSubscriptionService;
 import umc.cockple.demo.global.realtime.routing.RealtimeDomainHandler;
 import umc.cockple.demo.global.realtime.routing.RealtimeRequestContext;

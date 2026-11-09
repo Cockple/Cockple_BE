@@ -1,4 +1,4 @@
-package umc.cockple.demo.domain.game.service.listener;
+package umc.cockple.demo.domain.game.presentation.realtime.listener;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,7 @@ import umc.cockple.demo.domain.game.service.query.GameBoardQueryService;
 import umc.cockple.demo.domain.game.service.query.model.GameBoardMemberSearchQuery;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardMemberResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
-import umc.cockple.demo.domain.game.service.websocket.broadcast.GameBoardBroadcaster;
+import umc.cockple.demo.domain.game.presentation.realtime.broadcast.GameBoardBroadcaster;
 
 import java.util.List;
 
