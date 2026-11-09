@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,8 +38,10 @@ import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameValidator;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -75,7 +76,7 @@ class GameCommandServiceTest {
     @Mock private GameBoardResultAssembler gameBoardResultAssembler;
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks private GameCommandService gameCommandService;
+    private GameCommandService gameCommandService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -87,6 +88,10 @@ class GameCommandServiceTest {
 
     @BeforeEach
     void setUp() {
+        gameCommandService = new GameCommandService(
+                gameBoardReader, gameRepository, new GameReader(gameRepository), new GameValidator(),
+                courtRepository, gameBoardMemberRepository, exerciseRepository,
+                gameBoardAccessValidator, gamePlayerValidator, gameBoardResultAssembler, eventPublisher);
         board = GameFixture.gameBoard(BOARD_ID);
         court = GameFixture.court(COURT_ID, board, 1, "1번 코트");
     }

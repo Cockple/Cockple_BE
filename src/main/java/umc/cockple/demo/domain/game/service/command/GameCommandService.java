@@ -32,8 +32,10 @@ import umc.cockple.demo.domain.game.service.command.result.GameDeleteResult;
 import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
+import umc.cockple.demo.domain.game.service.support.reader.GameReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
 import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameValidator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,6 +55,8 @@ public class GameCommandService {
 
     private final GameBoardReader gameBoardReader;
     private final GameRepository gameRepository;
+    private final GameReader gameReader;
+    private final GameValidator gameValidator;
     private final CourtRepository courtRepository;
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final ExerciseRepository exerciseRepository;
@@ -117,14 +121,9 @@ public class GameCommandService {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.WAITING) {
-            throw new GameException(GameErrorCode.GAME_NOT_WAITING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validateWaiting(game);
 
         Court court = courtRepository.findByIdAndGameBoardId(command.courtId(), gameBoard.getId())
                 .orElseThrow(() -> new GameException(GameErrorCode.COURT_NOT_FOUND));
@@ -152,14 +151,9 @@ public class GameCommandService {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validatePlaying(game);
 
         completeInternal(game);
         gameBoard.advanceRevision();
@@ -179,14 +173,9 @@ public class GameCommandService {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() == GameStatus.COMPLETED) {
-            throw new GameException(GameErrorCode.GAME_ALREADY_COMPLETED);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validateNotCompleted(game);
 
         boolean wasWaiting = game.getStatus() == GameStatus.WAITING;
         Long deletedGameId = game.getId();
@@ -216,14 +205,9 @@ public class GameCommandService {
         GameBoard gameBoard = gameBoardReader.readForUpdate(command.gameBoardId());
         gameBoardAccessValidator.validateGameHost(gameBoard.getId(), memberId);
 
-        Game game = gameRepository.findById(command.gameId())
-                .orElseThrow(() -> new GameException(GameErrorCode.GAME_NOT_FOUND));
-        if (!game.getGameBoard().getId().equals(gameBoard.getId())) {
-            throw new GameException(GameErrorCode.GAME_NOT_FOUND);
-        }
-        if (game.getStatus() != GameStatus.PLAYING) {
-            throw new GameException(GameErrorCode.GAME_NOT_PLAYING);
-        }
+        Game game = gameReader.read(command.gameId());
+        gameValidator.validateBelongsToBoard(game, gameBoard.getId());
+        gameValidator.validatePlaying(game);
 
         game.returnToWaiting(0);
         resequenceWaitingQueue(gameBoard.getId());
