@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import umc.cockple.demo.domain.game.domain.Court;
@@ -39,6 +40,7 @@ import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
 import umc.cockple.demo.global.enums.Level;
 import umc.cockple.demo.support.fixture.GameFixture;
 
@@ -68,7 +70,8 @@ class GameCommandServiceTest {
     @Mock private GameBoardMemberRepository gameBoardMemberRepository;
     @Mock private ExerciseRepository exerciseRepository;
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
-    @Mock private GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    @Spy private GamePlayerValidator gamePlayerValidator =
+            new GamePlayerValidator(new GameBoardMemberAvailabilityPolicy());
     @Mock private GameBoardResultAssembler gameBoardResultAssembler;
     @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -446,7 +449,9 @@ class GameCommandServiceTest {
             given(gameBoardReader.readForUpdate(BOARD_ID)).willReturn(board);
             given(gameBoardMemberRepository.findByGameBoardIdAndIdIn(BOARD_ID, List.of(7L)))
                     .willReturn(List.of(member));
-            given(availabilityPolicy.hasWaitingConflict(any(), any())).willReturn(true);
+            Game waitingGame = GameFixture.waitingGame(40L, board, 1, GameFixture.player(member, 0));
+            given(gameRepository.findByGameBoardIdAndStatusInWithPlayers(eq(BOARD_ID), anyList()))
+                    .willReturn(List.of(waitingGame));
 
             assertThatThrownBy(() -> gameCommandService.createGame(
                     MEMBER_ID, new GameCreateCommand(BOARD_ID, List.of(7L))))

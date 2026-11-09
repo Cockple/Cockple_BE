@@ -12,7 +12,6 @@ import umc.cockple.demo.domain.game.domain.GameBoardMember;
 import umc.cockple.demo.domain.game.domain.GamePlayer;
 import umc.cockple.demo.domain.exercise.domain.Exercise;
 import umc.cockple.demo.domain.exercise.repository.ExerciseRepository;
-import umc.cockple.demo.domain.game.domain.service.GameBoardMemberAvailabilityPolicy;
 import umc.cockple.demo.domain.game.enums.GameStatus;
 import umc.cockple.demo.domain.game.events.GameBoardMembersChangedEvent;
 import umc.cockple.demo.domain.game.events.GameStartedEvent;
@@ -34,6 +33,7 @@ import umc.cockple.demo.domain.game.service.query.result.GameBoardResult;
 import umc.cockple.demo.domain.game.service.support.assembler.GameBoardResultAssembler;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GamePlayerValidator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public class GameCommandService {
     private final GameBoardMemberRepository gameBoardMemberRepository;
     private final ExerciseRepository exerciseRepository;
     private final GameBoardAccessValidator gameBoardAccessValidator;
-    private final GameBoardMemberAvailabilityPolicy availabilityPolicy;
+    private final GamePlayerValidator gamePlayerValidator;
     private final GameBoardResultAssembler gameBoardResultAssembler;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -74,20 +74,11 @@ public class GameCommandService {
         Map<Long, GameBoardMember> membersById = gameBoardMemberRepository
                 .findByGameBoardIdAndIdIn(gameBoard.getId(), command.gameBoardMemberIds()).stream()
                 .collect(Collectors.toMap(GameBoardMember::getId, Function.identity()));
-        if (membersById.size() != command.gameBoardMemberIds().size()) {
-            throw new GameException(GameErrorCode.GAME_BOARD_MEMBER_NOT_FOUND);
-        }
-        if (membersById.values().stream()
-                .anyMatch(gameBoardMember -> !Boolean.TRUE.equals(gameBoardMember.getParticipating()))) {
-            throw new GameException(GameErrorCode.INACTIVE_GAME_PLAYER);
-        }
+        gamePlayerValidator.validateMembers(command.gameBoardMemberIds(), membersById);
         List<Game> activeGames = gameRepository.findByGameBoardIdAndStatusInWithPlayers(
                 gameBoard.getId(), ACTIVE_STATUSES);
 
-        if (availabilityPolicy.hasWaitingConflict(
-                List.copyOf(membersById.values()), activeGames)) {
-            throw new GameException(GameErrorCode.UNAVAILABLE_GAME_PLAYER);
-        }
+        gamePlayerValidator.validateWaitingAvailability(membersById, activeGames);
 
         int nextWaitingOrder = (int) gameRepository
                 .countByGameBoardIdAndStatus(gameBoard.getId(), GameStatus.WAITING) + 1;
