@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +25,7 @@ import umc.cockple.demo.domain.game.service.command.result.GameCourtManageResult
 import umc.cockple.demo.domain.game.service.support.reader.CourtReader;
 import umc.cockple.demo.domain.game.service.support.reader.GameBoardReader;
 import umc.cockple.demo.domain.game.service.support.validator.GameBoardAccessValidator;
+import umc.cockple.demo.domain.game.service.support.validator.GameCourtValidator;
 import umc.cockple.demo.support.fixture.GameFixture;
 
 import java.time.LocalDateTime;
@@ -52,7 +52,7 @@ class GameCourtCommandServiceTest {
     @Mock private GameBoardAccessValidator gameBoardAccessValidator;
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks private GameCourtCommandService gameCourtCommandService;
+    private GameCourtCommandService gameCourtCommandService;
 
     private static final Long MEMBER_ID = 100L;
     private static final Long BOARD_ID = 1L;
@@ -60,6 +60,9 @@ class GameCourtCommandServiceTest {
 
     @BeforeEach
     void setUp() {
+        gameCourtCommandService = new GameCourtCommandService(
+                gameBoardReader, courtReader, courtRepository, gameRepository,
+                gameBoardAccessValidator, new GameCourtValidator(gameRepository), eventPublisher);
         board = GameFixture.gameBoard(BOARD_ID);
     }
 
