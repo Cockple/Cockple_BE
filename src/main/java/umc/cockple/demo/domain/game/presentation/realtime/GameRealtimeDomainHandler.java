@@ -10,6 +10,10 @@ import umc.cockple.demo.domain.game.exception.GameErrorCode;
 import umc.cockple.demo.domain.game.exception.GameException;
 import umc.cockple.demo.domain.game.presentation.dto.GameBoardDTO;
 import umc.cockple.demo.domain.game.presentation.mapper.GameBoardMapper;
+import umc.cockple.demo.domain.game.presentation.realtime.GameRealtimeAck.DeletedPlayer;
+import umc.cockple.demo.domain.game.presentation.realtime.GameRealtimeAck.GameCreatedAck;
+import umc.cockple.demo.domain.game.presentation.realtime.GameRealtimeAck.GameDeletedAck;
+import umc.cockple.demo.domain.game.presentation.realtime.GameRealtimeAck.SubscriptionAck;
 import umc.cockple.demo.domain.game.realtime.GameRealtimeProtocol;
 import umc.cockple.demo.domain.game.service.command.GameCommandService;
 import umc.cockple.demo.domain.game.service.command.GameCourtCommandService;
@@ -249,15 +253,4 @@ public class GameRealtimeDomainHandler implements RealtimeDomainHandler {
                 GameErrorCode.INVALID_REALTIME_PAYLOAD.getMessage());
     }
 
-    private record SubscriptionAck(Long gameBoardId) {
-    }
-
-    private record GameCreatedAck(Long gameId, GameBoardDTO.Response board) {
-    }
-
-    private record GameDeletedAck(Long gameId, List<DeletedPlayer> players, GameBoardDTO.Response board) {
-    }
-
-    private record DeletedPlayer(Long gameBoardMemberId, String name, String level, int playerOrder) {
-    }
 }
